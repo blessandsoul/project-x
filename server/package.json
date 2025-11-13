@@ -1,0 +1,36 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Fastify server with MySQL2 and TypeScript using ES modules",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "fastify",
+    "mysql2",
+    "typescript",
+    "esmodules"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "mysql2": "^3.15.3"
+  },
+  "devDependencies": {
+    "@fastify/type-provider-json-schema-to-ts": "^5.0.0",
+    "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
+    "fastify-plugin": "^5.1.0",
+    "nodemon": "^3.1.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
