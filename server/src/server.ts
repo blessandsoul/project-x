@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import { databasePlugin } from './config/database.js';
-import { authPlugin } from './config/auth.js';
-import { errorHandlerPlugin } from './config/errorHandler.js';
+import { authPlugin } from './middleware/auth.js';
+import { errorHandlerPlugin } from './middleware/errorHandler.js';
 import { healthRoutes } from './routes/health.js';
 import { userRoutes } from './routes/user.js';
 
