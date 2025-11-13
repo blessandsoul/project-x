@@ -7,8 +7,6 @@ interface DatabaseConfig {
   user: string;
   password: string;
   database: string;
-  port: number;
-  connectionLimit: number;
 }
 
 declare module 'fastify' {
@@ -18,13 +16,19 @@ declare module 'fastify' {
 }
 
 const databasePlugin = fp(async (fastify: FastifyInstance) => {
+  // Validate required environment variables
+  const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+
   const config: DatabaseConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'myapp',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
+    host: process.env.MYSQL_HOST!,
+    user: process.env.MYSQL_USER!,
+    password: process.env.MYSQL_PASSWORD!,
+    database: process.env.MYSQL_DATABASE!,
   };
 
   const pool = mysql.createPool(config);
