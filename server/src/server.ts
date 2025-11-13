@@ -5,13 +5,14 @@ import { authPlugin } from './middleware/auth.js';
 import { errorHandlerPlugin } from './middleware/errorHandler.js';
 import { healthRoutes } from './routes/health.js';
 import { userRoutes } from './routes/user.js';
+import { vinRoutes } from './routes/vin.js';
 
 /**
  * Fastify Server Application
  *
  * Main server file that initializes and configures the Fastify application.
  * Registers plugins for database connectivity, authentication, and API routes.
- * Sets up health check endpoints and user management APIs.
+ * Sets up health check endpoints, user management APIs, and VIN decoding services.
  *
  * Environment Variables:
  * - PORT: Server port (default: 3000)
@@ -31,6 +32,7 @@ await fastify.register(errorHandlerPlugin);
 // Register routes
 await fastify.register(healthRoutes);
 await fastify.register(userRoutes);
+await fastify.register(vinRoutes);
 
 // Start server
 const start = async () => {
