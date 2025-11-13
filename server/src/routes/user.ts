@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController } from '../controllers/userController.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
+import { ValidationError, AuthenticationError, NotFoundError, ConflictError } from '../types/errors.js';
 
 /**
  * User Routes
@@ -43,16 +44,10 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    try {
-      const userData: UserCreate = request.body as UserCreate;
-      const result = await userController.register(userData);
+    const userData: UserCreate = request.body as UserCreate;
+    const result = await userController.register(userData);
 
-      reply.code(201).send(result);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      fastify.log.error(error);
-      reply.code(400).send({ error: message });
-    }
+    reply.code(201).send(result);
   });
 
   /**
@@ -77,16 +72,10 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    try {
-      const credentials: UserLogin = request.body as UserLogin;
-      const result = await userController.login(credentials);
+    const credentials: UserLogin = request.body as UserLogin;
+    const result = await userController.login(credentials);
 
-      reply.send(result);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
-      fastify.log.error(error);
-      reply.code(401).send({ error: message });
-    }
+    reply.send(result);
   });
 
   /**
@@ -102,18 +91,12 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/profile', {
     preHandler: fastify.authenticate,
   }, async (request, reply) => {
-    try {
-      if (!request.user) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      const user = await userController.getProfile(request.user.id);
-      reply.send(user);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get profile';
-      fastify.log.error(error);
-      reply.code(404).send({ error: message });
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
     }
+
+    const user = await userController.getProfile(request.user.id);
+    reply.send(user);
   });
 
   /**
@@ -140,20 +123,14 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    try {
-      if (!request.user) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      const updates: UserUpdate = request.body as UserUpdate;
-      const updatedUser = await userController.updateProfile(request.user.id, updates);
-
-      reply.send(updatedUser);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
-      fastify.log.error(error);
-      reply.code(400).send({ error: message });
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
     }
+
+    const updates: UserUpdate = request.body as UserUpdate;
+    const updatedUser = await userController.updateProfile(request.user.id, updates);
+
+    reply.send(updatedUser);
   });
 
   /**
@@ -169,18 +146,12 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete('/profile', {
     preHandler: fastify.authenticate,
   }, async (request, reply) => {
-    try {
-      if (!request.user) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      await userController.deleteUser(request.user.id);
-      reply.send({ message: 'Account deleted successfully' });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete account';
-      fastify.log.error(error);
-      reply.code(404).send({ error: message });
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
     }
+
+    await userController.deleteUser(request.user.id);
+    reply.send({ message: 'Account deleted successfully' });
   });
 };
 
