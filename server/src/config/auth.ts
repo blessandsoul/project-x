@@ -3,7 +3,11 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { JWTPayload, AuthUser } from '../types/user.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -16,7 +20,7 @@ const authPlugin = fp(async (fastify) => {
   // JWT verification function
   const verifyToken = (token: string): JWTPayload => {
     try {
-      return jwt.verify(token, JWT_SECRET) as JWTPayload;
+      return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload;
     } catch (error) {
       throw new Error('Invalid token');
     }
