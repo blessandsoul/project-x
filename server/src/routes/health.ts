@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
+import { VinController } from '../controllers/vinController.js';
 
 /**
  * Health Check Routes
@@ -7,25 +8,69 @@ import { FastifyPluginAsync } from 'fastify';
  * Used by load balancers, monitoring systems, and deployment pipelines.
  *
  * Endpoints:
- * - GET /health - Basic application health check
+ * - GET /health - Comprehensive application health check (includes DB and VIN services)
  * - GET /health/db - Database connectivity health check
  */
 const healthRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /health
    *
-   * Basic health check endpoint that returns application status,
-   * current timestamp, and server uptime.
+   * Comprehensive health check endpoint that verifies application status,
+   * database connectivity, and external service dependencies (VIN decoder).
    *
-   * Response: { status: string, timestamp: string, uptime: number }
-   * Status: Always 200 (OK)
+   * Response: { status: string, timestamp: string, uptime: number, services: object }
+   * Status: 200 (OK) if all services healthy, 503 (Service Unavailable) if any critical service fails
    */
   fastify.get('/health', async (request, reply) => {
-    return {
+    const vinController = new VinController(fastify);
+    const healthChecks = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      services: {} as any
     };
+
+    let overallHealthy = true;
+
+    // Database health check
+    try {
+      const [rows] = await fastify.mysql.execute('SELECT 1 as test');
+      healthChecks.services.database = {
+        status: 'healthy',
+        responseTime: Date.now() // Could track timing if needed
+      };
+    } catch (error) {
+      healthChecks.services.database = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Database connection failed'
+      };
+      overallHealthy = false;
+    }
+
+    // VIN service health check
+    try {
+      const vinHealth = await vinController.getServiceHealth();
+      healthChecks.services.vinDecoder = {
+        status: vinHealth.healthy ? 'healthy' : 'unhealthy',
+        responseTime: vinHealth.responseTime,
+        error: vinHealth.error
+      };
+      if (!vinHealth.healthy) {
+        overallHealthy = false;
+      }
+    } catch (error) {
+      healthChecks.services.vinDecoder = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'VIN service check failed'
+      };
+      overallHealthy = false;
+    }
+
+    // Set overall status
+    healthChecks.status = overallHealthy ? 'ok' : 'degraded';
+
+    const statusCode = overallHealthy ? 200 : 503;
+    return reply.code(statusCode).send(healthChecks);
   });
 
   /**
