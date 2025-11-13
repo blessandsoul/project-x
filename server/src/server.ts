@@ -2,9 +2,23 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import { databasePlugin } from './config/database.js';
 import { authPlugin } from './config/auth.js';
+import { errorHandlerPlugin } from './config/errorHandler.js';
 import { healthRoutes } from './routes/health.js';
 import { userRoutes } from './routes/user.js';
 
+/**
+ * Fastify Server Application
+ *
+ * Main server file that initializes and configures the Fastify application.
+ * Registers plugins for database connectivity, authentication, and API routes.
+ * Sets up health check endpoints and user management APIs.
+ *
+ * Environment Variables:
+ * - PORT: Server port (default: 3000)
+ * - HOST: Server host (default: 127.0.0.1)
+ * - JWT_SECRET: Required for authentication
+ * - DATABASE_URL: Required for database connection
+ */
 const fastify = Fastify({
   logger: true,
 });
@@ -12,6 +26,7 @@ const fastify = Fastify({
 // Register plugins
 await fastify.register(databasePlugin);
 await fastify.register(authPlugin);
+await fastify.register(errorHandlerPlugin);
 
 // Register routes
 await fastify.register(healthRoutes);

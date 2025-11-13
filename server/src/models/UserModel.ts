@@ -2,12 +2,29 @@ import mysql from 'mysql2/promise';
 import { FastifyInstance } from 'fastify';
 import { User, UserCreate, UserUpdate } from '../types/user.js';
 import { BaseModel } from './BaseModel.js';
+import { DatabaseError, ValidationError } from '../types/errors.js';
 
+/**
+ * User Model
+ *
+ * Handles all database operations related to user management including
+ * CRUD operations, authentication queries, and data validation.
+ * Extends BaseModel for common database functionality.
+ */
 export class UserModel extends BaseModel {
   constructor(fastify: FastifyInstance) {
     super(fastify);
   }
 
+  /**
+   * Create a new user record in the database
+   *
+   * Inserts user data and automatically sets created_at and updated_at timestamps.
+   * Returns the complete user object after creation.
+   *
+   * @param userData - User creation data (email, username, password hash)
+   * @returns Complete user object with generated ID and timestamps
+   */
   async create(userData: UserCreate): Promise<User> {
     const { email, username, password } = userData;
 
@@ -21,7 +38,7 @@ export class UserModel extends BaseModel {
     // Return the created user (we know it exists since we just created it)
     const user = await this.findById(userId);
     if (!user) {
-      throw new Error('Failed to retrieve created user');
+      throw new DatabaseError('Failed to retrieve created user');
     }
     return user;
   }
@@ -53,6 +70,15 @@ export class UserModel extends BaseModel {
     return rows.length > 0 ? rows[0] as User & { password_hash: string } : null;
   }
 
+  /**
+   * Find user by email or username for authentication
+   *
+   * Attempts to find user first by email, then by username if not found.
+   * Used during login to locate user account by their identifier.
+   *
+   * @param identifier - Email address or username
+   * @returns User object with password hash included, or null if not found
+   */
   async findByIdentifier(identifier: string): Promise<User | null> {
     // First try to find by email
     let user = await this.findByEmail(identifier);
@@ -74,6 +100,18 @@ export class UserModel extends BaseModel {
     return rows as User[];
   }
 
+  /**
+   * Update user profile information
+   *
+   * Dynamically builds UPDATE query based on provided fields.
+   * Only updates fields that are present in the updates object.
+   * Automatically updates the updated_at timestamp.
+   *
+   * @param id - User ID to update
+   * @param updates - Partial user data to update
+   * @returns Updated user object or null if user not found
+   * @throws Error if no valid fields provided for update
+   */
   async update(id: number, updates: UserUpdate): Promise<User | null> {
     const { email, username, password } = updates;
     const updateFields: string[] = [];
@@ -95,7 +133,7 @@ export class UserModel extends BaseModel {
     }
 
     if (updateFields.length === 0) {
-      throw new Error('No valid fields to update');
+      throw new ValidationError('No valid fields to update');
     }
 
     updateFields.push('updated_at = NOW()');

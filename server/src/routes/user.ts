@@ -2,12 +2,34 @@ import { FastifyPluginAsync } from 'fastify';
 import { UserController } from '../controllers/userController.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
 
+/**
+ * User Routes
+ *
+ * Defines all user-related API endpoints including authentication,
+ * registration, profile management, and account operations.
+ *
+ * Endpoints:
+ * - POST /register - User registration
+ * - POST /login - User authentication
+ * - GET /profile - Get user profile (authenticated)
+ * - PUT /profile - Update user profile (authenticated)
+ * - DELETE /profile - Delete user account (authenticated)
+ */
 const userRoutes: FastifyPluginAsync = async (fastify) => {
   const userController = new UserController(fastify);
 
   // TODO: Add rate limiting using @fastify/rate-limit plugin for better Fastify integration
 
-  // Register user
+  /**
+   * POST /register
+   *
+   * Register a new user account with email, username, and password.
+   * Validates uniqueness constraints and returns authentication token.
+   *
+   * Request Body: { email: string, username: string, password: string }
+   * Response: { token: string, user: { id: number, email: string, username: string } }
+   * Status: 201 (Created) on success, 400 (Bad Request) on validation error
+   */
   fastify.post('/register', {
     schema: {
       body: {
@@ -33,7 +55,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // Login user
+  /**
+   * POST /login
+   *
+   * Authenticate user with email/username and password.
+   * Returns JWT token for subsequent authenticated requests.
+   *
+   * Request Body: { identifier: string, password: string }
+   * Response: { token: string, user: { id: number, email: string, username: string } }
+   * Status: 200 (OK) on success, 401 (Unauthorized) on invalid credentials
+   */
   fastify.post('/login', {
     schema: {
       body: {
@@ -58,7 +89,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // Get user profile (protected route)
+  /**
+   * GET /profile
+   *
+   * Retrieve authenticated user's profile information.
+   * Requires valid JWT token in Authorization header.
+   *
+   * Headers: Authorization: Bearer <token>
+   * Response: User profile object
+   * Status: 200 (OK) on success, 401 (Unauthorized) if not authenticated, 404 (Not Found) if user deleted
+   */
   fastify.get('/profile', {
     preHandler: fastify.authenticate,
   }, async (request, reply) => {
@@ -76,7 +116,17 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // Update user profile (protected route)
+  /**
+   * PUT /profile
+   *
+   * Update authenticated user's profile information.
+   * Allows partial updates to email, username, and password.
+   *
+   * Headers: Authorization: Bearer <token>
+   * Request Body: { email?: string, username?: string, password?: string }
+   * Response: Updated user profile object
+   * Status: 200 (OK) on success, 400 (Bad Request) on validation error, 401 (Unauthorized) if not authenticated
+   */
   fastify.put('/profile', {
     preHandler: fastify.authenticate,
     schema: {
@@ -106,7 +156,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // Delete user account (protected route)
+  /**
+   * DELETE /profile
+   *
+   * Permanently delete authenticated user's account.
+   * This action cannot be undone and removes all user data.
+   *
+   * Headers: Authorization: Bearer <token>
+   * Response: { message: string }
+   * Status: 200 (OK) on success, 401 (Unauthorized) if not authenticated, 404 (Not Found) if user not found
+   */
   fastify.delete('/profile', {
     preHandler: fastify.authenticate,
   }, async (request, reply) => {
