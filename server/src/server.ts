@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
+import cors from 'fastify-cors';
 import { databasePlugin } from './config/database.js';
 import { authPlugin } from './middleware/auth.js';
 import { errorHandlerPlugin } from './middleware/errorHandler.js';
@@ -25,6 +26,10 @@ const fastify = Fastify({
 });
 
 // Register plugins
+await fastify.register(cors, {
+  origin: true,
+  credentials: true,
+});
 await fastify.register(databasePlugin);
 await fastify.register(authPlugin);
 await fastify.register(errorHandlerPlugin);
@@ -33,6 +38,24 @@ await fastify.register(errorHandlerPlugin);
 await fastify.register(healthRoutes);
 await fastify.register(userRoutes);
 await fastify.register(vinRoutes);
+
+fastify.get('/heavy', async (request, reply) => {
+  // Simulate some CPU work
+  let total = 0;
+  const iterations = 5_000_000;
+  for (let i = 0; i < iterations; i++) {
+    total += i % 10;
+  }
+
+  // Simulate an async operation (e.g. external API / DB call)
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  reply.send({
+    total,
+    iterations,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Start server
 const start = async () => {
