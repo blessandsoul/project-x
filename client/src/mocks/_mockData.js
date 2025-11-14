@@ -1,0 +1,285 @@
+// Mock data for development and testing
+// All data should be sourced from this file during development
+// TODO-FX: Replace with real API calls
+
+import { faker } from '@faker-js/faker';
+
+// Generate mock companies
+const generateCompanies = (count = 20) => {
+  const services = [
+    'Full Import Service', 'Documentation', 'Shipping', 'Customs Clearance',
+    'Vehicle Inspection', 'Insurance', 'Storage', 'Delivery'
+  ];
+
+  const states = [
+    'California', 'Texas', 'Florida', 'New York', 'Illinois',
+    'Pennsylvania', 'Ohio', 'Georgia', 'North Carolina', 'Michigan'
+  ];
+
+  return Array.from({ length: count }, (_, i) => {
+    const reviewCount = faker.number.int({ min: 5, max: 100 });
+    const reviews = Array.from({ length: Math.min(reviewCount, 10) }, () => ({
+      id: faker.string.uuid(),
+      userName: faker.person.fullName(),
+      rating: faker.number.int({ min: 1, max: 5 }),
+      comment: faker.lorem.sentence({ min: 10, max: 30 }),
+      date: faker.date.past({ years: 1 }).toISOString().split('T')[0]
+    }));
+
+    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
+    return {
+      id: (i + 1).toString(),
+      name: faker.company.name() + ' Auto Import',
+      logo: `https://api.dicebear.com/7.x/initials/svg?seed=${faker.company.name()}`,
+      description: faker.lorem.sentences({ min: 2, max: 4 }),
+      services: faker.helpers.arrayElements(services, { min: 2, max: 5 }),
+      priceRange: {
+        min: faker.number.int({ min: 1000, max: 3000 }),
+        max: faker.number.int({ min: 4000, max: 10000 }),
+        currency: 'USD'
+      },
+      rating: Math.round(avgRating * 10) / 10,
+      reviewCount,
+      vipStatus: faker.datatype.boolean({ probability: 0.3 }),
+      location: {
+        state: faker.helpers.arrayElement(states),
+        city: faker.location.city()
+      },
+      contact: {
+        email: faker.internet.email(),
+        phone: faker.phone.number(),
+        website: faker.internet.url()
+      },
+      establishedYear: faker.number.int({ min: 1990, max: 2020 }),
+      reviews
+    };
+  });
+};
+
+export const mockCompanies = generateCompanies();
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/companies
+// Expected Data:
+//   type: array
+//   items:
+//     type: object
+//     properties:
+//       id:
+//         type: string
+//         example: "1"
+//       name:
+//         type: string
+//         example: "Premium Auto Import LLC"
+//       logo:
+//         type: string
+//         format: uri
+//       description:
+//         type: string
+//       services:
+//         type: array
+//         items:
+//           type: string
+//       priceRange:
+//         type: object
+//         properties:
+//           min:
+//             type: number
+//           max:
+//             type: number
+//           currency:
+//             type: string
+//             example: "USD"
+//       rating:
+//         type: number
+//         minimum: 0
+//         maximum: 5
+//       reviewCount:
+//         type: integer
+//       vipStatus:
+//         type: boolean
+//       location:
+//         type: object
+//         properties:
+//           state:
+//             type: string
+//           city:
+//             type: string
+//       contact:
+//         type: object
+//         properties:
+//           email:
+//             type: string
+//             format: email
+//           phone:
+//             type: string
+//           website:
+//             type: string
+//             format: uri
+//       establishedYear:
+//         type: integer
+//       reviews:
+//         type: array
+//         items:
+//           type: object
+//           properties:
+//             id:
+//               type: string
+//             userName:
+//               type: string
+//             rating:
+//               type: number
+//               minimum: 1
+//               maximum: 5
+//             comment:
+//               type: string
+//             date:
+//               type: string
+//               format: date
+
+export const mockUser = {
+  id: '1',
+  name: faker.person.fullName(),
+  email: faker.internet.email(),
+  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${faker.person.firstName()}`
+};
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/user/profile
+// Expected Data:
+//   type: object
+//   properties:
+//     id:
+//       type: string
+//     name:
+//       type: string
+//     email:
+//       type: string
+//       format: email
+//     avatar:
+//       type: string
+//       format: uri
+
+export const mockNavigationItems = [
+  { id: 'home', label: 'მთავარი', href: '/' },
+  { id: 'search', label: 'ძიება', href: '/search' },
+  { id: 'catalog', label: 'კატალოგი', href: '/catalog' },
+  { id: 'dashboard', label: 'დაფა', href: '/dashboard' }
+];
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/navigation
+// Expected Data:
+//   type: array
+//   items:
+//     type: object
+//     properties:
+//       id:
+//         type: string
+//       label:
+//         type: string
+//       href:
+//         type: string
+//         format: uri
+
+export const mockContent = {
+  title: 'იმპორტირება აშშ-დან საქართველოში',
+  subtitle: 'იპოვეთ სანდო კომპანიები ავტომობილების იმპორტისთვის',
+  description: 'ჩვენი პლატფორმა დაგეხმარებათ იპოვოთ საუკეთესო კომპანიები ავტომობილების იმპორტისთვის აშშ-დან საქართველოში. ფართო არჩევანი, გამჭვირვალე ფასები და მაღალი რეიტინგი.',
+  features: [
+    {
+      id: '1',
+      title: 'სრული მომსახურება',
+      description: 'დოკუმენტაციიდან მიწოდებამდე - ყველაფერი ერთ ადგილას'
+    },
+    {
+      id: '2',
+      title: 'გამოცდილი კომპანიები',
+      description: 'მხოლოდ ვერიფიცირებული და რეიტინგული იმპორტიორები'
+    },
+    {
+      id: '3',
+      title: 'გამჭვირვალე ფასები',
+      description: 'არცერთი დამალული გადასახადი ან საკომისიო'
+    }
+  ]
+};
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/content/home
+// Expected Data:
+//   type: object
+//   properties:
+//     title:
+//       type: string
+//     subtitle:
+//       type: string
+//     description:
+//       type: string
+//     features:
+//       type: array
+//       items:
+//         type: object
+//         properties:
+//           id:
+//             type: string
+//           title:
+//             type: string
+//           description:
+//             type: string
+
+export const mockFooterLinks = [
+  { id: 'privacy', label: 'კონფიდენციალურობა', href: '/privacy' },
+  { id: 'terms', label: 'წესები', href: '/terms' },
+  { id: 'support', label: 'დახმარება', href: '/support' }
+];
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/footer/links
+// Expected Data:
+//   type: array
+//   items:
+//     type: object
+//     properties:
+//       id:
+//         type: string
+//       label:
+//         type: string
+//       href:
+//         type: string
+//       format: uri
+
+export const mockSearchFilters = {
+  geography: ['California', 'Texas', 'Florida', 'New York', 'Georgia'],
+  services: ['Full Import Service', 'Documentation', 'Shipping', 'Customs Clearance', 'Vehicle Inspection'],
+  priceRange: [1000, 10000],
+  rating: 0,
+  vipOnly: false
+};
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/search/filters
+// Expected Data:
+//   type: object
+//   properties:
+//     geography:
+//       type: array
+//       items:
+//         type: string
+//     services:
+//       type: array
+//       items:
+//         type: string
+//     priceRange:
+//       type: array
+//       items:
+//         type: number
+//       minItems: 2
+//       maxItems: 2
+//     rating:
+//       type: number
+//       minimum: 0
+//       maximum: 5
+//     vipOnly:
+//       type: boolean

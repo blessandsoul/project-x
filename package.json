@@ -1,0 +1,7 @@
+{
+  "name": "projectx-root",
+  "private": true,
+  "scripts": {
+    "code-graph-rag-mcp": "code-graph-rag-mcp ."
+  }
+}

@@ -43,3 +43,21 @@ Thumbs.db
 
 # agents
 .claude/agents
+.claude/commands/ultra-think.md
+.cursor/rules/content.mdc
+.cursor/rules/context.mdc
+.cursor/rules/documentation.mdc
+.cursor/rules/react-perfomance.mdc
+.cursor/rules/review.mdc
+.cursor/rules/rule.mdc
+.cursor/rules/security.mdc
+.cursor/rules/seo.mdc
+.cursor/rules/ui.mdc
+.windsurf/rules/content.md
+.windsurf/rules/context.md
+.windsurf/rules/documentation.md
+.windsurf/rules/javascript.md
+.windsurf/rules/perfomance.md
+.windsurf/rules/review.md
+.windsurf/rules/security.md
+.windsurf/rules/seo.md

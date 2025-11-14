@@ -1,0 +1,35 @@
+{
+  "header": {
+    "brand": "ProjectX",
+    "menu": "Menu",
+    "avatar_alt": "User avatar",
+    "sign_in": "Sign In"
+  },
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "content": {
+    "get_started": "Get Started",
+    "learn_more": "Learn More",
+    "ready_to_start": "Ready to Start?",
+    "join_thousands": "Join thousands of users building amazing things.",
+    "sign_up_now": "Sign Up Now"
+  },
+  "footer": {
+    "brand": "ProjectX",
+    "description": "Building the future of web development.",
+    "company": "Company",
+    "support": "Support",
+    "connect": "Connect",
+    "help": "Help Center",
+    "contact": "Contact Us",
+    "twitter": "Twitter",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "All rights reserved."
+  }
+}
