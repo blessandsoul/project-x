@@ -1,0 +1,20 @@
+### Added
+- New component <HomePage> with header, content, and footer layout
+- New component <Header> with navigation and user profile
+- New component <Content> with hero section and feature cards
+- New component <Footer> with links and social media
+- shadcn-ui component library setup with Button, Card, and Separator
+- Tailwind CSS configuration with custom theme variables
+- Internationalization ready with translation files
+- Comprehensive test suite for all components
+- TypeScript interfaces and type safety
+- Car import platform mock data with faker.js
+- Company search page with filters (geography, services, price, rating, VIP)
+- Company catalog page with sorting and search
+- Company profile pages with detailed information and reviews
+- Routing system for all pages
+- Custom green theme with Georgian font
+- Accessibility features with ARIA labels and keyboard navigation
+- Root npm script "code-graph-rag-mcp" and updated start-dev.bat for one-click dev startup
+- Real user authentication flow using /register and /login API endpoints with JWT persistence
+- Root-level README.md documenting project overview, setup, and API documentation links
