@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
-import cors from 'fastify-cors';
+import cors from '@fastify/cors';
 import { databasePlugin } from './config/database.js';
 import { authPlugin } from './middleware/auth.js';
 import { errorHandlerPlugin } from './middleware/errorHandler.js';
