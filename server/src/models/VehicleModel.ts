@@ -72,6 +72,8 @@ export class VehicleModel extends BaseModel {
       year?: number;
       yearFrom?: number;
       yearTo?: number;
+      priceFrom?: number;
+      priceTo?: number;
       mileageFrom?: number;
       mileageTo?: number;
       fuelType?: string;
@@ -81,7 +83,7 @@ export class VehicleModel extends BaseModel {
     limit: number = 50,
     offset: number = 0,
   ): Promise<Vehicle[]> {
-    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 200 ? limit : 50;
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 250 ? limit : 50;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
     const conditions: string[] = [];
@@ -106,6 +108,14 @@ export class VehicleModel extends BaseModel {
     if (typeof filters.yearTo === 'number' && Number.isFinite(filters.yearTo)) {
       conditions.push('year <= ?');
       params.push(filters.yearTo);
+    }
+    if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
+      conditions.push('calc_price >= ?');
+      params.push(filters.priceFrom);
+    }
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
+      conditions.push('calc_price <= ?');
+      params.push(filters.priceTo);
     }
     if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
       conditions.push('mileage >= ?');
@@ -143,7 +153,24 @@ export class VehicleModel extends BaseModel {
         yard_name,
         source,
         retail_value,
-        calc_price
+        calc_price,
+        engine_fuel AS fuel_type,
+        vehicle_type AS category,
+        drive,
+        (
+          SELECT vp.url
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = vehicles.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS primary_photo_url,
+        (
+          SELECT vp.thumb_url_min
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = vehicles.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS primary_thumb_url
       FROM vehicles
       ${where}
       ORDER BY id DESC
@@ -166,6 +193,8 @@ export class VehicleModel extends BaseModel {
     year?: number;
     yearFrom?: number;
     yearTo?: number;
+    priceFrom?: number;
+    priceTo?: number;
     mileageFrom?: number;
     mileageTo?: number;
     fuelType?: string;
@@ -186,6 +215,43 @@ export class VehicleModel extends BaseModel {
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
       params.push(filters.year);
+    }
+    if (typeof filters.yearFrom === 'number' && Number.isFinite(filters.yearFrom)) {
+      conditions.push('year >= ?');
+      params.push(filters.yearFrom);
+    }
+    if (typeof filters.yearTo === 'number' && Number.isFinite(filters.yearTo)) {
+      conditions.push('year <= ?');
+      params.push(filters.yearTo);
+    }
+    if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
+      conditions.push('calc_price >= ?');
+      params.push(filters.priceFrom);
+    }
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
+      conditions.push('calc_price <= ?');
+      params.push(filters.priceTo);
+    }
+    if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
+      conditions.push('mileage >= ?');
+      params.push(filters.mileageFrom);
+    }
+    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo)) {
+      conditions.push('mileage <= ?');
+      params.push(filters.mileageTo);
+    }
+    if (filters.fuelType) {
+      conditions.push('(engine_fuel LIKE ? OR engine_fuel_rus LIKE ?)');
+      const pattern = `%${filters.fuelType}%`;
+      params.push(pattern, pattern);
+    }
+    if (filters.category) {
+      conditions.push('vehicle_type LIKE ?');
+      params.push(`%${filters.category}%`);
+    }
+    if (filters.drive) {
+      conditions.push('drive LIKE ?');
+      params.push(`%${filters.drive}%`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

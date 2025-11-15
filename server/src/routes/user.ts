@@ -134,6 +134,34 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   /**
+   * GET /users
+   *
+   * Retrieve a list of all users.
+   * Requires valid JWT token in Authorization header.
+   *
+   * Headers: Authorization: Bearer <token>
+   * Query Parameters: limit (integer, default: 10), offset (integer, default: 0)
+   * Response: Array of user objects
+   * Status: 200 (OK) on success, 401 (Unauthorized) if not authenticated
+   */
+  fastify.get('/users', {
+    preHandler: fastify.authenticate,
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { limit = 10, offset = 0 } = request.query as { limit?: number; offset?: number };
+    const users = await userController.getAllUsers(limit, offset);
+    reply.send(users);
+  });
+
+  /**
    * DELETE /profile
    *
    * Permanently delete authenticated user's account.

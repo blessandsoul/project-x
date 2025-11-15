@@ -68,10 +68,19 @@ export interface Vehicle {
   vehicle_type_key?: string | null;
   trim?: string | null;
   engine_volume?: number | null;
+  fuel_type?: string | null;
   engine_fuel?: string | null;
-  drive?: string | null;
+  drive: string | null;
   transmission?: string | null;
   cylinders?: string | null;
+  category?: string | null;
+
+  // Primary image for list/search views
+  primary_photo_url?: string | null;
+  primary_thumb_url?: string | null;
+
+  // Whether this vehicle is in the current user's favorites (only populated when authenticated)
+  is_favorite?: boolean;
 
   // Pricing
   retail_value?: number | null;

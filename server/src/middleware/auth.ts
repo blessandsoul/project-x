@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { JWTPayload, AuthUser } from '../types/user.js';
 import { AuthenticationError } from '../types/errors.js';
@@ -17,11 +17,16 @@ import { AuthenticationError } from '../types/errors.js';
  * - Token generation with configurable expiration
  * - Environment variable validation for security
  */
-const JWT_SECRET = process.env.JWT_SECRET;
+const ENV_JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+const JWT_ISSUER = process.env.JWT_ISSUER;
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE;
 
-if (!JWT_SECRET) {
+if (!ENV_JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
+
+const JWT_SECRET: string = ENV_JWT_SECRET;
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -43,7 +48,11 @@ const authPlugin = fp(async (fastify) => {
    */
   const verifyToken = (token: string): JWTPayload => {
     try {
-      return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload;
+      return jwt.verify(token, JWT_SECRET, {
+        // Only enforce issuer/audience if they are configured
+        issuer: JWT_ISSUER || undefined,
+        audience: JWT_AUDIENCE || undefined,
+      }) as unknown as JWTPayload;
     } catch (error) {
       throw new AuthenticationError('Invalid token');
     }
@@ -64,12 +73,24 @@ const authPlugin = fp(async (fastify) => {
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
+      const altHeader = (request.headers as Record<string, string | string[] | undefined>)['x-access-token'];
 
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      let token: string | undefined;
+
+      // Prefer standard Authorization header
+      if (typeof authHeader === 'string' && authHeader.length > 0) {
+        token = authHeader.startsWith('Bearer ')
+          ? authHeader.substring(7) // Remove 'Bearer ' prefix
+          : authHeader; // Allow raw token without Bearer
+      } else if (typeof altHeader === 'string' && altHeader.length > 0) {
+        // Fallback to x-access-token header if provided
+        token = altHeader;
+      }
+
+      if (!token) {
         return reply.code(401).send({ error: 'Access token required' });
       }
 
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
       const decoded = verifyToken(token);
 
       // Add user to request object
@@ -96,7 +117,16 @@ const authPlugin = fp(async (fastify) => {
    * @returns Signed JWT token string
    */
   fastify.decorate('generateToken', (payload: Omit<JWTPayload, 'iat' | 'exp'>) => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+    const options: SignOptions = {
+      issuer: JWT_ISSUER || undefined,
+      audience: JWT_AUDIENCE || undefined,
+    };
+
+    if (JWT_EXPIRES_IN) {
+      (options as any).expiresIn = JWT_EXPIRES_IN;
+    }
+
+    return jwt.sign(payload, JWT_SECRET, options);
   });
 });
 

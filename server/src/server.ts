@@ -12,6 +12,7 @@ import { vinRoutes } from './routes/vin.js';
 import { companyRoutes } from './routes/company.js';
 import { auctionRoutes } from './routes/auction.js';
 import { vehicleRoutes } from './routes/vehicle.js';
+import { favoritesRoutes } from './routes/favorites.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 
 /**
@@ -49,6 +50,7 @@ await fastify.register(vinRoutes);
 await fastify.register(companyRoutes);
 await fastify.register(auctionRoutes);
 await fastify.register(vehicleRoutes);
+await fastify.register(favoritesRoutes);
 
 // fastify.get('/heavy', async (request, reply) => {
 //   // Simulate some CPU work
