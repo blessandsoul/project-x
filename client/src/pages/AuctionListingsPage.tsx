@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockNavigationItems, mockFooterLinks, mockCars } from '@/mocks/_mockData';
+import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
 import { useVehicleSearchQuotes } from '@/hooks/useVehicleSearchQuotes';
 import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
 import { fetchVehiclePhotos } from '@/api/vehicles';
@@ -22,94 +22,8 @@ type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
 type DamageType = 'all' | 'front' | 'rear' | 'side';
 type SortOption = 'relevance' | 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
-interface AuctionCar {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage: number;
-  imageUrl: string;
-  images: string[];
-  vin: string;
-  auction: AuctionHouse;
-  status: LotStatus;
-  damage: DamageType;
-  buyNow: boolean;
-  document: string;
-  yardName: string;
-  saleState: string;
-  mainDamage: string;
-  hasKeys: boolean;
-  runAndDrive: boolean;
-  retailValue: number;
-  calcPrice: number;
-  finalBid: number;
-}
-
-const enrichCarsForAuctions = (): AuctionCar[] => {
-  const auctionHouses: AuctionHouse[] = ['Copart', 'IAAI', 'Manheim'];
-  const statuses: LotStatus[] = ['run', 'enhanced', 'non-runner'];
-  const damages: DamageType[] = ['front', 'rear', 'side'];
-
-  return mockCars.slice(0, 30).map((baseCar, index) => {
-    const auction = auctionHouses[index % auctionHouses.length];
-    const status = statuses[index % statuses.length];
-    const damage = damages[index % damages.length];
-    const buyNow = index % 4 === 0;
-    const price = baseCar.price;
-
-    // Mock fields to mirror real auction API structure
-    const documentOptions = ['Salvage (Texas)', 'Clean (Florida)', 'Salvage (California)', 'Clean (New York)'];
-    const yardOptions = ['Houston-North (TX)', 'Miami (FL)', 'Los Angeles (CA)', 'Newark (NJ)'];
-    const stateOptions = ['TX', 'FL', 'CA', 'NJ'];
-    const mainDamageOptions = ['FRONT END', 'REAR END', 'MECHANICAL', 'SIDE'];
-
-    const document = documentOptions[index % documentOptions.length];
-    const yardName = yardOptions[index % yardOptions.length];
-    const saleState = stateOptions[index % stateOptions.length];
-    const mainDamage = mainDamageOptions[index % mainDamageOptions.length];
-    const hasKeys = index % 3 !== 0;
-    const runAndDrive = index % 5 !== 0;
-    const retailValue = Math.round(price * 1.6);
-    const finalBid = Math.round(price * 0.9);
-    const calcPrice = Math.round(finalBid + 2500);
-
-    const imageIndex = (index % 100) + 1;
-    const images = Array.from({ length: 8 }).map((_, i) => {
-      const idx = ((imageIndex + i) % 100) + 1;
-      return `/cars/${idx}.webp`;
-    });
-    const imageUrl = images[0];
-
-    return {
-      id: baseCar.id,
-      make: baseCar.make,
-      model: baseCar.model,
-      year: baseCar.year,
-      price,
-      mileage: baseCar.mileage,
-      imageUrl,
-      images,
-      vin: baseCar.vin,
-      auction,
-      status,
-      damage,
-      buyNow,
-      document,
-      yardName,
-      saleState,
-      mainDamage,
-      hasKeys,
-      runAndDrive,
-      retailValue,
-      calcPrice,
-      finalBid,
-    };
-  });
-};
-
-const auctionCars: AuctionCar[] = enrichCarsForAuctions();
+// NOTE: mockCars-based auction listings were used for demo purposes earlier.
+// The page now relies solely on real API data via useVehicleSearchQuotes.
 
 const getDeliveryRangeToPoti = (state: string): { min: number; max: number } => {
   switch (state) {
@@ -153,17 +67,14 @@ const AuctionListingsPage = () => {
   const [maxMileage, setMaxMileage] = useState<number[]>([200000]);
   const [exactYear, setExactYear] = useState<number | ''>('');
   const [minMileage, setMinMileage] = useState<number | ''>('');
-  const [fuelType, setFuelType] = useState('');
-  const [category, setCategory] = useState('');
-  const [drive, setDrive] = useState('');
+  const [fuelType, setFuelType] = useState('all');
+  const [category, setCategory] = useState('all');
+  const [drive, setDrive] = useState('all');
   const [limit, setLimit] = useState(20);
   const [page, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
-  const [galleryCar, setGalleryCar] = useState<AuctionCar | null>(null);
-  const [galleryImageIndex, setGalleryImageIndex] = useState(0);
-  const [galleryThumbPage, setGalleryThumbPage] = useState(0);
   const [backendGallery, setBackendGallery] = useState<{
     id: number;
     title: string;
@@ -190,9 +101,9 @@ const AuctionListingsPage = () => {
         mileage_to: maxMileage[0],
         price_from: priceRange[0],
         price_to: priceRange[1],
-        fuel_type: fuelType || undefined,
-        category: category || undefined,
-        drive: drive || undefined,
+        fuel_type: fuelType === 'all' ? undefined : fuelType,
+        category: category === 'all' ? undefined : category,
+        drive: drive === 'all' ? undefined : drive,
         limit,
         offset: (page - 1) * limit,
       };
@@ -295,41 +206,6 @@ const AuctionListingsPage = () => {
       // keep fallback photo only
     }
   };
-
-  const filteredCars = useMemo(() => {
-    const baseFiltered = auctionCars.filter((car) => {
-      const byAuction = auctionFilter === 'all' || car.auction === auctionFilter;
-      const byStatus = statusFilter === 'all' || car.status === statusFilter;
-      const byDamage = damageFilter === 'all' || car.damage === damageFilter;
-      const byPrice = car.price >= priceRange[0] && car.price <= priceRange[1];
-      const byYear = car.year >= yearRange[0] && car.year <= yearRange[1];
-      const byMileage = car.mileage <= maxMileage[0];
-      const byBuyNow = !buyNowOnly || car.buyNow;
-      const bySearch =
-        trimmedQuery.length === 0 ||
-        car.make.toLowerCase().includes(trimmedQuery) ||
-        car.model.toLowerCase().includes(trimmedQuery);
-
-      return byAuction && byStatus && byDamage && byPrice && byYear && byMileage && byBuyNow && bySearch;
-    });
-
-    const sorted = [...baseFiltered].sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'year-new':
-          return b.year - a.year;
-        case 'year-old':
-          return a.year - b.year;
-        default:
-          return 0;
-      }
-    });
-
-    return sorted;
-  }, [auctionFilter, statusFilter, damageFilter, priceRange, yearRange, maxMileage, buyNowOnly, searchQuery, sortBy]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -543,7 +419,7 @@ const AuctionListingsPage = () => {
                       <SelectValue placeholder="ყველა" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">ყველა</SelectItem>
+                      <SelectItem value="all">ყველა</SelectItem>
                       <SelectItem value="gas">ბენზინი</SelectItem>
                       <SelectItem value="diesel">დიზელი</SelectItem>
                       <SelectItem value="hybrid">ჰიბრიდი</SelectItem>
@@ -561,7 +437,7 @@ const AuctionListingsPage = () => {
                       <SelectValue placeholder="ყველა" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">ყველა</SelectItem>
+                      <SelectItem value="all">ყველა</SelectItem>
                       <SelectItem value="suv">SUV</SelectItem>
                       <SelectItem value="sedan">Sedan</SelectItem>
                       <SelectItem value="coupe">Coupe</SelectItem>
@@ -580,7 +456,7 @@ const AuctionListingsPage = () => {
                       <SelectValue placeholder="ყველა" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">ყველა</SelectItem>
+                      <SelectItem value="all">ყველა</SelectItem>
                       <SelectItem value="fwd">FWD</SelectItem>
                       <SelectItem value="rwd">RWD</SelectItem>
                       <SelectItem value="4wd">4WD / AWD</SelectItem>
@@ -623,9 +499,9 @@ const AuctionListingsPage = () => {
                     setMaxMileage([200000]);
                     setExactYear('');
                     setMinMileage('');
-                    setFuelType('');
-                    setCategory('');
-                    setDrive('');
+                    setFuelType('all');
+                    setCategory('all');
+                    setDrive('all');
                     setLimit(20);
                     setPage(1);
                     setBuyNowOnly(false);
@@ -641,17 +517,18 @@ const AuctionListingsPage = () => {
 
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between text-xs text-muted-foreground">
             <span>
-              ნაჩვენებია {filteredCars.length} ლოტი {auctionCars.length}-დან (დემო მონაცემები)
+              {!isBackendLoading && !backendError && backendData
+                ? `ნაჩვენებია ${filteredBackendItems.length} ლოტი ${backendData.total}-დან (რეალური API)`
+                : 'იტვირთება რეალური აუქციონის მონაცემები...'}
             </span>
             <span>
-              რეალური ძიება: {' '}
               {isBackendLoading && 'იტვირთება...'}
               {!isBackendLoading && backendError && 'ვერ მოხერხდა რეალური მონაცემების ჩატვირთვა'}
               {!isBackendLoading && !backendError && backendData && `ნაპოვნი მანქანები: ${backendData.total}`}
             </span>
           </div>
 
-          {/* Backend-powered results */}
+          {/* Backend-powered results only */}
           <div className="space-y-3 mt-4">
             <h2 className="text-sm font-semibold">რეალური შედეგები (Vehicles + Quotes API)</h2>
             {isBackendLoading && (
@@ -826,333 +703,10 @@ const AuctionListingsPage = () => {
             )}
           </div>
 
-          {/* Existing mock-based demo grid remains as a fallback/demo section */}
-
-          {filteredCars.length === 0 ? (
-            <Card className="py-10 flex flex-col items-center justify-center gap-3">
-              <Icon icon="mdi:car-off" className="h-10 w-10 text-muted-foreground" />
-              <h2 className="text-base font-semibold">ამ პარამეტრებით ლოტები ვერ მოიძებნა</h2>
-              <p className="text-xs text-muted-foreground">
-                სცადეთ სხვა აუქციონი, სტატუსი ან გაზარდეთ ფასის დიაპაზონი.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-1"
-                onClick={() => {
-                  setAuctionFilter('all');
-                  setStatusFilter('all');
-                  setDamageFilter('all');
-                  setPriceRange([500, 30000]);
-                  setYearRange([2010, 2024]);
-                  setMaxMileage([200000]);
-                  setBuyNowOnly(false);
-                  setSearchQuery('');
-                  setSortBy('relevance');
-                }}
-              >
-                ფილტრების გასუფთავება
-              </Button>
-            </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredCars.map((car) => (
-                <Card key={car.id} className="overflow-hidden flex flex-col p-0">
-                  <button
-                    type="button"
-                    className="relative h-40 w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
-                    onClick={() => {
-                      setGalleryCar(car);
-                      setGalleryImageIndex(0);
-                    }}
-                  >
-                    <img
-                      src={car.imageUrl}
-                      alt={`${car.year} ${car.make} ${car.model}`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                      <Badge className="bg-black/80 text-[11px] text-white border-none flex items-center gap-1 px-2 py-0.5 rounded-full">
-                        <Icon icon="mdi:gavel" className="h-3 w-3" />
-                        <span>{car.auction}</span>
-                      </Badge>
-                      {car.runAndDrive && (
-                        <Badge className="bg-emerald-500/90 text-[11px] text-white border-none flex items-center gap-1 px-2 py-0.5 rounded-full">
-                          <Icon icon="mdi:engine" className="h-3 w-3" />
-                          <span>Run &amp; Drive</span>
-                        </Badge>
-                      )}
-                      {!car.hasKeys && (
-                        <Badge className="bg-red-500/90 text-[11px] text-white border-none flex items-center gap-1 px-2 py-0.5 rounded-full">
-                          <Icon icon="mdi:key-off" className="h-3 w-3" />
-                          <span>No Keys</span>
-                        </Badge>
-                      )}
-                      {car.buyNow && (
-                        <Badge className="bg-amber-500/90 text-[11px] text-white border-none flex items-center gap-1 px-2 py-0.5 rounded-full">
-                          <Icon icon="mdi:flash" className="h-3 w-3" />
-                          <span>Buy Now</span>
-                        </Badge>
-                      )}
-                    </div>
-                  </button>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base leading-tight">
-                          {car.year} {car.make} {car.model}
-                        </CardTitle>
-                        <p className="text-[11px] text-muted-foreground mt-1">
-                          {car.yardName} • {car.saleState}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[11px] text-muted-foreground">მიმდინარე ფასი</div>
-                        <div className="font-semibold text-sm">${car.finalBid.toLocaleString()}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          სავაჭრო ღირებულება: ${car.retailValue.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0 flex-1 flex flex-col justify-between text-xs">
-                    <div className="space-y-2 mb-3">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground">გარბენი</span>
-                          <span>{car.mileage.toLocaleString()} km</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground">დოკუმენტი</span>
-                          <span className="truncate" title={car.document}>{car.document}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground">ძირითადი დაზიანება</span>
-                          <span className="uppercase text-[11px]">{car.mainDamage}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-muted-foreground">Run &amp; Drive</span>
-                          <span>{car.runAndDrive ? 'კი' : 'არა'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Icon icon="mdi:cash" className="h-4 w-4 text-primary" />
-                        <span>
-                          სავარაუდო სრული ფასი იმპორტით:
-                          {' '}
-                          <span className="font-medium">
-                            ${car.calcPrice.toLocaleString()} USD
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
-                      <span className="text-[10px] text-muted-foreground truncate">
-                        VIN: {car.vin}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3 text-xs"
-                      >
-                        დეტალურად ნახვა
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-          <AnimatePresence>
-            {galleryCar && (
-              <motion.div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                onClick={() => setGalleryCar(null)}
-              >
-                <motion.div
-                  className="max-w-4xl w-full bg-background rounded-lg shadow-lg overflow-hidden"
-                  initial={{ scale: 0.96, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.96, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  {/* Top bar */}
-                  <div className="flex items-center justify-between px-4 py-2 border-b">
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <Badge className="bg-black/80 text-[11px] text-white border-none">
-                        {galleryCar.auction}
-                      </Badge>
-                      <span className="text-muted-foreground">
-                        {galleryCar.year} {galleryCar.make} {galleryCar.model}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      className="h-7 w-7 text-[11px]"
-                      onClick={() => setGalleryCar(null)}
-                      aria-label="დახურვა"
-                    >
-                      <Icon icon="mdi:close" className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row">
-                    {/* Image + thumbnails */}
-                    <div className="w-full md:w-2/3 bg-background flex flex-col items-center justify-center">
-                      <div className="w-full flex items-center justify-center">
-                        <img
-                          src={galleryCar.images[galleryImageIndex] ?? galleryCar.imageUrl}
-                          alt={`${galleryCar.year} ${galleryCar.make} ${galleryCar.model}`}
-                          className="w-full max-h-[460px] object-contain"
-                        />
-                      </div>
-                      <div className="flex items-center justify-center gap-2 p-3 w-full">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7 text-[11px]"
-                          disabled={galleryThumbPage === 0}
-                          onClick={() => setGalleryThumbPage((prev) => Math.max(0, prev - 1))}
-                          aria-label="Previous photos"
-                        >
-                          <Icon icon="mdi:chevron-left" className="h-3 w-3" />
-                        </Button>
-                        <div className="flex flex-nowrap gap-2 justify-center">
-                          {(() => {
-                            const perPage = 6;
-                            const start = galleryThumbPage * perPage;
-                            const current = galleryCar.images.slice(start, start + perPage);
-
-                            return current.map((img, index) => {
-                              const globalIndex = start + index;
-                              return (
-                                <button
-                                  key={img}
-                                  type="button"
-                                  className={`h-12 w-16 flex-shrink-0 overflow-hidden rounded-sm border ${
-                                    globalIndex === galleryImageIndex
-                                      ? 'border-primary'
-                                      : 'border-border hover:border-primary/60'
-                                  }`}
-                                  onClick={() => setGalleryImageIndex(globalIndex)}
-                                >
-                                  <img
-                                    src={img}
-                                    alt={`thumb-${globalIndex}`}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </button>
-                              );
-                            });
-                          })()}
-                        </div>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7 text-[11px]"
-                          disabled={(galleryThumbPage + 1) * 6 >= galleryCar.images.length}
-                          onClick={() =>
-                            setGalleryThumbPage((prev) =>
-                              (prev + 1) * 6 < galleryCar.images.length ? prev + 1 : prev,
-                            )
-                          }
-                          aria-label="Next photos"
-                        >
-                          <Icon icon="mdi:chevron-right" className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Info on the right */}
-                    <div className="w-full md:w-1/3 border-t md:border-t-0 md:border-l px-4 py-3 text-[11px] space-y-4 flex flex-col justify-between">
-                      <div className="space-y-1">
-                        <div className="font-semibold text-sm leading-tight">
-                          {galleryCar.year} {galleryCar.make} {galleryCar.model}
-                        </div>
-                        <div className="text-muted-foreground">
-                          VIN: <span className="font-medium">{galleryCar.vin}</span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          {galleryCar.yardName} • {galleryCar.saleState}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">მიმდინარე ფასი</span>
-                          <span className="font-semibold text-sm">${galleryCar.finalBid.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-muted-foreground">
-                          <span>სავაჭრო ღირებულება</span>
-                          <span className="font-medium text-foreground">${galleryCar.retailValue.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-muted-foreground">
-                          <span>სრული ფასი იმპორტით</span>
-                          <span className="font-medium text-foreground">${galleryCar.calcPrice.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {(() => {
-                          const { min, max } = getDeliveryRangeToPoti(galleryCar.saleState);
-                          const totalMin = galleryCar.calcPrice + min;
-                          const totalMax = galleryCar.calcPrice + max;
-
-                          return (
-                            <>
-                              <p className="text-muted-foreground font-medium">მიწოდება ფოთამდე</p>
-                              <div className="flex items-center justify-between text-muted-foreground">
-                                <span>ლოგისტიკა აშშ პორტიდან ფოთამდე</span>
-                                <span className="font-semibold text-foreground">
-                                  ${min.toLocaleString()} - ${max.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-muted-foreground">
-                                <span>სრული ფასი ფოთამდე (დაახლოებით)</span>
-                                <span className="font-semibold text-foreground">
-                                  ${totalMin.toLocaleString()} - ${totalMax.toLocaleString()}
-                                </span>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-muted-foreground">
-                        <div>
-                          <span className="block">გარბენი</span>
-                          <span className="font-medium text-foreground">{galleryCar.mileage.toLocaleString()} km</span>
-                        </div>
-                        <div>
-                          <span className="block">ძირითადი დაზიანება</span>
-                          <span className="font-medium text-foreground uppercase">{galleryCar.mainDamage}</span>
-                        </div>
-                        <div>
-                          <span className="block">Run &amp; Drive</span>
-                          <span className="font-medium text-foreground">{galleryCar.runAndDrive ? 'კი' : 'არა'}</span>
-                        </div>
-                        <div>
-                          <span className="block">გასაღები</span>
-                          <span className="font-medium text-foreground">{galleryCar.hasKeys ? 'კი' : 'არა'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
           <AnimatePresence>
             {backendGallery && (
               <motion.div
-                className="fixed inset-0 z-40 flex items-center justify-center bg-black/70"
+                className="fixed inset-0 z-40 bg-black/70 px-2 sm:px-4 py-4 sm:py-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -1160,7 +714,7 @@ const AuctionListingsPage = () => {
                 onClick={() => setBackendGallery(null)}
               >
                 <motion.div
-                  className="max-w-4xl w-full bg-background rounded-lg shadow-lg overflow-hidden"
+                  className="fixed left-1/2 top-1/2 z-[45] w-[calc(100%-1.5rem)] max-w-4xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col"
                   initial={{ scale: 0.96, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.96, opacity: 0 }}
@@ -1210,7 +764,7 @@ const AuctionListingsPage = () => {
                           >
                             <Icon icon="mdi:chevron-left" className="h-3 w-3" />
                           </Button>
-                          <div className="flex flex-nowrap gap-2 justify-center">
+                          <div className="flex flex-1 flex-nowrap gap-2 justify-start overflow-x-auto">
                             {(() => {
                               const perPage = 6;
                               const start = backendGalleryThumbPage * perPage;
