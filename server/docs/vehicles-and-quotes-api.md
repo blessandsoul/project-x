@@ -6,8 +6,34 @@ This document describes how vehicle data and quote calculations work in the back
 - Vehicle CRUD/read endpoints
 - Quote calculation endpoints that use vehicles
 - Search filters (year, price, mileage, fuel, etc.)
+- Currency handling for quotes (USD and GEL)
 
 It is intended as reference for implementing or consuming the backend from other services or AI agents.
+
+---
+
+## Currency Support (USD / GEL)
+
+All prices are stored and calculated internally in **USD**.
+
+Quote-related endpoints support an optional **`currency`** parameter so clients can request
+responses in either USD or GEL:
+
+- `currency` (optional, case-insensitive):
+  - `"usd"` → keep values in USD (default when omitted)
+  - `"gel"` → convert values to Georgian Lari using the latest `USD -> GEL` rate
+    stored in the `exchange_rates` table.
+
+If an unsupported value is provided (anything other than `usd` / `gel`), the backend
+returns a validation error.
+
+Converted fields:
+
+- `total_price` on each quote.
+- `breakdown.total_price` when present and numeric.
+
+The FX rate is refreshed once per day using an external API and cached in
+`exchange_rates`. See `docs/fx-and-currency-api.md` for details.
 
 ---
 
@@ -201,6 +227,11 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
 
 - `vehicleId` – numeric vehicle ID.
 
+**Query params (optional):**
+
+- `currency` – `"usd"` (default) or `"gel"`. Controls the currency of returned
+  `total_price` values and `breakdown.total_price`.
+
 **Request body:**
 
 - Currently no body fields are required; path param is enough.
@@ -231,7 +262,7 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
   "quotes": [
     {
       "company_name": "ACME Shipping",
-      "total_price": 12345.67, // vehicle + shipping + insurance
+      "total_price": 12345.67, // vehicle + shipping + insurance, in requested currency
       "delivery_time_days": 35, // optional per-company override
       "breakdown": {
         "base_price": 500,
@@ -297,6 +328,12 @@ Pagination:
 
 - `limit` (number, default 20, max 50) – vehicles per page.
 - `offset` (number, default 0) – number of vehicles to skip.
+
+Currency:
+
+- `currency` (string, optional) – `"usd"` (default) or `"gel"`. When set to `"gel"`,
+  all quote `total_price` values and `breakdown.total_price` are converted using the
+  latest stored USD->GEL exchange rate.
 
 **Filter behavior:**
 
