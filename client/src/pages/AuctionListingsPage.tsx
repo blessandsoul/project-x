@@ -523,7 +523,7 @@ const AuctionListingsPage = () => {
             </span>
             <span>
               {isBackendLoading && 'იტვირთება...'}
-              {!isBackendLoading && backendError && 'ვერ მოხერხდა რეალური მონაცემების ჩატვირთვა'}
+              {!isBackendLoading && backendError && backendError}
               {!isBackendLoading && !backendError && backendData && `ნაპოვნი მანქანები: ${backendData.total}`}
             </span>
           </div>
@@ -549,7 +549,12 @@ const AuctionListingsPage = () => {
             {!isBackendLoading && backendError && (
               <Card className="border-destructive/40 bg-destructive/5 text-xs">
                 <CardContent className="py-3 flex items-center justify-between gap-3">
-                  <span className="text-destructive">ვერ მოხერხდა რეალური მონაცემების ჩატვირთვა</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-destructive">ვერ მოხერხდა რეალური მონაცემების ჩატვირთვა</span>
+                    <span className="text-[11px] text-muted-foreground break-words">
+                      {backendError}
+                    </span>
+                  </div>
                   <Button
                     type="button"
                     size="sm"
@@ -558,6 +563,45 @@ const AuctionListingsPage = () => {
                     onClick={() => refetchBackend()}
                   >
                     თავიდან ცდა
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {!isBackendLoading && !backendError && backendData && filteredBackendItems.length === 0 && (
+              <Card className="text-xs">
+                <CardContent className="py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">ამ ფილტრებით ვერ მოიძებნა მანქანები</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      სცადეთ ფილტრების განულება ან შეცვლა და კიდევ ერთხელ სცადეთ.
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-3 text-[11px]"
+                    onClick={() => {
+                      setAuctionFilter('all')
+                      setStatusFilter('all')
+                      setDamageFilter('all')
+                      setPriceRange([500, 30000])
+                      setYearRange([2010, 2024])
+                      setMaxMileage([200000])
+                      setExactYear('')
+                      setMinMileage('')
+                      setFuelType('all')
+                      setCategory('all')
+                      setDrive('all')
+                      setLimit(20)
+                      setPage(1)
+                      setBuyNowOnly(false)
+                      setSearchQuery('')
+                      setSortBy('relevance')
+                    }}
+                  >
+                    ფილტრების განულება
                   </Button>
                 </CardContent>
               </Card>

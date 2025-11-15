@@ -32,19 +32,7 @@ export async function calculateVehicleQuotes(vehicleId: number): Promise<Vehicle
 }
 
 export async function searchVehicleQuotes(filters: VehiclesSearchFilters): Promise<SearchQuotesResponse> {
-  const params = new URLSearchParams()
-
-  (Object.entries(filters) as [keyof VehiclesSearchFilters, VehiclesSearchFilters[keyof VehiclesSearchFilters]][])
-    .forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '') {
-        return
-      }
-
-      params.append(key, String(value))
-    })
-
-  const query = params.toString()
-  const path = query ? `/vehicles/search-quotes?${query}` : '/vehicles/search-quotes'
-
-  return apiGet<SearchQuotesResponse>(path)
+  // Backend implements this as POST /vehicles/search-quotes with JSON body
+  // matching docs/vehicles-and-quotes-api.md and server/src/routes/company.ts
+  return apiPost<SearchQuotesResponse>('/vehicles/search-quotes', filters)
 }
