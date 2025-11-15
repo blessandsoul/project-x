@@ -138,6 +138,52 @@ export const mockCompanies = generateCompanies();
 //               type: string
 //               format: date
 
+function generateCars(companies, targetCount = 40) {
+  const cars = [];
+
+  const bodyTypes = ['Sedan', 'SUV', 'Coupe', 'Hatchback', 'Pickup', 'Wagon'];
+  const fuelTypes = ['Gasoline', 'Diesel', 'Hybrid', 'Electric'];
+  const transmissions = ['Automatic', 'Manual'];
+
+  if (!Array.isArray(companies) || companies.length === 0) {
+    return cars;
+  }
+
+  const companiesCount = companies.length;
+  const basePerCompany = Math.max(1, Math.floor(targetCount / companiesCount));
+
+  companies.forEach((company) => {
+    const count = faker.number.int({ min: basePerCompany, max: basePerCompany + 1 });
+
+    for (let i = 0; i < count; i += 1) {
+      const make = faker.vehicle.manufacturer();
+      const model = faker.vehicle.model();
+      const year = faker.number.int({ min: 2010, max: 2024 });
+      const price = faker.number.int({ min: 5000, max: 60000 });
+      const mileage = faker.number.int({ min: 10000, max: 150000 });
+
+      cars.push({
+        id: faker.string.uuid(),
+        companyId: company.id,
+        make,
+        model,
+        year,
+        price,
+        mileage,
+        imageUrl: `https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=600`,
+        vin: faker.vehicle.vin(),
+        bodyType: faker.helpers.arrayElement(bodyTypes),
+        fuelType: faker.helpers.arrayElement(fuelTypes),
+        transmission: faker.helpers.arrayElement(transmissions),
+      });
+    }
+  });
+
+  return cars.slice(0, targetCount);
+}
+
+export const mockCars = generateCars(mockCompanies);
+
 export const mockUser = {
   id: '1',
   name: faker.person.fullName(),
@@ -162,10 +208,13 @@ export const mockUser = {
 //       format: uri
 
 export const mockNavigationItems = [
-  { id: 'home', label: 'მთავარი', href: '/' },
-  { id: 'search', label: 'ძიება', href: '/search' },
-  { id: 'catalog', label: 'კატალოგი', href: '/catalog' },
-  { id: 'dashboard', label: 'დაფა', href: '/dashboard' }
+  { id: 'home', label: '\u10db\u10d7\u10d0\u10d5\u10d0\u10e0\u10d8', href: '/' },
+  { id: 'search', label: '\u10eb\u10d8\u10d4\u10d1\u10d0', href: '/search' },
+  { id: 'catalog', label: '\u10d9\u10d0\u10e2\u10d0\u10da\u10dd\u10d2\u10d8', href: '/catalog' },
+  { id: 'dashboard', label: '\u10d3\u10d0\u10e4\u10d0', href: '/dashboard' },
+  { id: 'logisticsRadar', label: '\u10da\u10dd\u10d2\u10d8\u10e1\u10e2\u10d8\u10d9\u10d8\u10e1 \u10e0\u10d0\u10d3\u10d0\u10e0\u10d8', href: '/logistics-radar' },
+  { id: 'auctionListings', label: '\u10d0\u10e5\u10e2\u10d8\u10e3\u10e0\u10d8 \u10d0\u10e3\u10e5\u10ea\u10d8\u10dd\u10dc\u10d4\u10d1\u10d8', href: '/auction-listings' },
+  { id: 'carfax', label: 'VIN \u10e8\u10d4\u10db\u10dd\u10ec\u10db\u10d4\u10d1\u10d0', href: '/vin' }
 ];
 
 // TODO-FX: Replace with real API call.

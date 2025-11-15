@@ -41,27 +41,27 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboardIcon,
     },
     {
       title: "Lifecycle",
-      url: "#",
+      url: "/search",
       icon: ListIcon,
     },
     {
       title: "Analytics",
-      url: "#",
+      url: "/dashboard",
       icon: BarChartIcon,
     },
     {
       title: "Projects",
-      url: "#",
+      url: "/catalog",
       icon: FolderIcon,
     },
     {
       title: "Team",
-      url: "#",
+      url: "/dashboard",
       icon: UsersIcon,
     },
   ],
@@ -70,7 +70,7 @@ const data = {
       title: "Capture",
       icon: CameraIcon,
       isActive: true,
-      url: "#",
+      url: "/dashboard",
       items: [
         {
           title: "Active Proposals",
@@ -85,7 +85,7 @@ const data = {
     {
       title: "Proposal",
       icon: FileTextIcon,
-      url: "#",
+      url: "/dashboard",
       items: [
         {
           title: "Active Proposals",
@@ -100,7 +100,7 @@ const data = {
     {
       title: "Prompts",
       icon: FileCodeIcon,
-      url: "#",
+      url: "/dashboard",
       items: [
         {
           title: "Active Proposals",
@@ -116,34 +116,34 @@ const data = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/dashboard",
       icon: SettingsIcon,
     },
     {
       title: "Get Help",
-      url: "#",
+      url: "/",
       icon: HelpCircleIcon,
     },
     {
       title: "Search",
-      url: "#",
+      url: "/search",
       icon: SearchIcon,
     },
   ],
   documents: [
     {
       name: "Data Library",
-      url: "#",
+      url: "/dashboard",
       icon: DatabaseIcon,
     },
     {
       name: "Reports",
-      url: "#",
+      url: "/dashboard",
       icon: ClipboardListIcon,
     },
     {
       name: "Word Assistant",
-      url: "#",
+      url: "/dashboard",
       icon: FileIcon,
     },
   ],

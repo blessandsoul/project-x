@@ -1,4 +1,7 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useState } from 'react'
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
+import { Card, CardContent } from '@/components/ui/card'
+import { Icon } from '@iconify/react/dist/iconify.js'
 
 const FAQ_ITEMS = [
   {
@@ -28,6 +31,22 @@ const FAQ_ITEMS = [
 ]
 
 export function FAQSection() {
+  const shouldReduceMotion = useReducedMotion()
+  const [openId, setOpenId] = useState<number | null>(FAQ_ITEMS[0]?.id ?? null)
+
+  const getCardMotionProps = (index: number) => {
+    if (shouldReduceMotion) {
+      return {}
+    }
+
+    const delay = index * 0.05
+
+    return {
+      initial: { opacity: 0, y: 8 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.25, ease: 'easeOut' as const, delay },
+    }
+  }
   return (
     <section
       className="border-b bg-background"
@@ -46,19 +65,71 @@ export function FAQSection() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {FAQ_ITEMS.map((item) => (
-            <Card key={item.id} className="border-muted/60">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  {item.question}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{item.answer}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid gap-3 md:grid-cols-2" role="list">
+          {FAQ_ITEMS.map((item, index) => {
+            const isOpen = openId === item.id
+
+            return (
+              <motion.article
+                key={item.id}
+                {...getCardMotionProps(index)}
+                role="listitem"
+              >
+                <Card className="border-muted/60">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+                    onClick={() => setOpenId(isOpen ? null : item.id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-panel-${item.id}`}
+                  >
+                    <span className="text-sm font-medium md:text-base">
+                      {item.question}
+                    </span>
+                    <motion.span
+                      animate={
+                        shouldReduceMotion
+                          ? undefined
+                          : { rotate: isOpen ? 180 : 0 }
+                      }
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                    >
+                      <Icon
+                        icon="mdi:chevron-down"
+                        className="h-4 w-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    </motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        id={`faq-panel-${item.id}`}
+                        initial={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+                        animate={
+                          shouldReduceMotion
+                            ? { opacity: 1 }
+                            : { height: 'auto', opacity: 1 }
+                        }
+                        exit={
+                          shouldReduceMotion
+                            ? { opacity: 0 }
+                            : { height: 0, opacity: 0 }
+                        }
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                      >
+                        <CardContent className="px-4 pb-4 pt-0">
+                          <p className="text-sm text-muted-foreground">
+                            {item.answer}
+                          </p>
+                        </CardContent>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.article>
+            )
+          })}
         </div>
       </div>
     </section>

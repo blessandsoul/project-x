@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
+import UserMenu from './UserMenu';
 
 interface User {
   id: string;
@@ -20,15 +22,46 @@ interface NavigationItem {
 interface HeaderProps {
   user?: User | null;
   navigationItems: NavigationItem[];
+  isSticky?: boolean;
 }
 
-// TODO-FX: Connect to i18n library.
-const t = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+const STORAGE_KEY_USER = 'projectx_auth_user';
+// TODO-FX: Replace with real i18n implementation.
+const HEADER_MESSAGES: Record<string, string> = {
+  'header.brand': 'ProjectX',
+  'header.menu': 'მენიუ',
+  'header.sign_in': 'შესვლა',
+};
 
-const Header: React.FC<HeaderProps> = ({ user, navigationItems }) => {
+const NAV_MESSAGES: Record<string, string> = {
+  'navigation.home': 'მთავარი',
+  'navigation.search': 'ძიება',
+  'navigation.catalog': 'კატალოგი',
+  'navigation.dashboard': 'დაფა',
+  'navigation.logisticsRadar': 'ლოგისტიკის რადარი',
+  'navigation.auctionListings': 'აქტიური აუქციონები',
+  'navigation.carfax': 'VIN შემოწმება',
+};
+
+const t = (key: string): string => HEADER_MESSAGES[key] ?? NAV_MESSAGES[key] ?? key;
+
+const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true }) => {
   const navigate = useNavigate();
   const { user: authUser, isAuthenticated, logout } = useAuth();
-  const effectiveUser = isAuthenticated ? authUser : user ?? null;
+  let storedUser: User | null = null;
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY_USER);
+      if (raw) {
+        storedUser = JSON.parse(raw) as User;
+      }
+    } catch {
+      storedUser = null;
+    }
+  }
+
+  const effectiveUser = authUser ?? storedUser ?? (isAuthenticated ? authUser : user ?? null);
   // TODO-FX: Replace with real API call.
   // API Endpoint: GET /api/user/profile
   // Expected Data:
@@ -47,26 +80,30 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems }) => {
 
   return (
     <header
-      className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      className={`${isSticky ? 'sticky top-0 ' : ''}z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}
       role="banner"
     >
-      <div className="container mx-auto flex h-14 items-center">
+      <div className="container mx-auto px-2 sm:px-4 lg:px-6 flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
-          <a className="mr-6 flex items-center space-x-2" href="/">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
             <Icon icon="mdi:home" className="h-6 w-6" />
             <span className="hidden font-bold sm:inline-block">
               {t('header.brand')}
             </span>
-          </a>
+          </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             {navigationItems.map((item: NavigationItem) => (
-              <Link
+              <NavLink
                 key={item.id}
                 to={item.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                className={({ isActive }) =>
+                  isActive
+                    ? 'transition-colors text-primary'
+                    : 'transition-colors text-foreground/60 hover:text-foreground/80'
+                }
               >
                 {t(`navigation.${item.id}`)}
-              </Link>
+              </NavLink>
             ))}
           </nav>
         </div>
@@ -74,35 +111,44 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems }) => {
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              className="md:hidden"
-              size="icon"
-              aria-label={t('header.menu')}
-            >
-              <Icon icon="mdi:menu" className="h-5 w-5" />
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="md:hidden"
+                  size="icon"
+                  aria-label={t('header.menu')}
+                >
+                  <Icon icon="mdi:menu" className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col gap-4 p-4 md:hidden">
+                <SheetHeader>
+                  <SheetTitle>{t('header.brand')}</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col space-y-3">
+                  {navigationItems.map((item: NavigationItem) => (
+                    <SheetClose asChild key={item.id}>
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) =>
+                          isActive
+                            ? 'flex items-center rounded-md px-2 py-1.5 text-base font-semibold text-primary bg-primary/5'
+                            : 'flex items-center rounded-md px-2 py-1.5 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-muted'
+                        }
+                      >
+                        {t(`navigation.${item.id}`)}
+                      </NavLink>
+                    </SheetClose>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
 
           <nav className="flex items-center">
             {effectiveUser ? (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">{effectiveUser.name}</span>
-                <img
-                  src={effectiveUser.avatar}
-                  alt={t('header.avatar_alt')}
-                  className="h-8 w-8 rounded-full"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-2"
-                  onClick={logout}
-                  aria-label={t('header.sign_out')}
-                >
-                  <Icon icon="mdi:logout" className="h-4 w-4" />
-                </Button>
-              </div>
+              <UserMenu user={effectiveUser} onLogout={logout} />
             ) : (
               <Button
                 variant="default"
@@ -135,6 +181,7 @@ Header.propTypes = {
       href: PropTypes.string.isRequired,
     })
   ).isRequired,
+  isSticky: PropTypes.bool,
 };
 
 export default Header;

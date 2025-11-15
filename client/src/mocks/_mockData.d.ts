@@ -1,8 +1,16 @@
+export type UserRole = 'user' | 'dealer' | 'company' | 'admin';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar: string;
+
+  // Local-only fields for role-based dashboard
+  role?: UserRole;
+  dealerSlug?: string | null;
+  companyId?: string | null;
+  companySlug?: string | null;
 }
 
 export interface NavigationItem {
@@ -65,6 +73,21 @@ export interface Review {
   date: string;
 }
 
+export interface Car {
+  id: string;
+  companyId: string;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  mileage: number;
+  imageUrl: string;
+  vin: string;
+  bodyType: string;
+  fuelType: string;
+  transmission: string;
+}
+
 export interface SearchFilters {
   geography: string[];
   services: string[];
@@ -79,3 +102,4 @@ export declare const mockContent: ContentData;
 export declare const mockFooterLinks: FooterLink[];
 export declare const mockCompanies: Company[];
 export declare const mockSearchFilters: SearchFilters;
+export declare const mockCars: Car[];

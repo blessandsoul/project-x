@@ -3,7 +3,10 @@
     "brand": "ProjectX",
     "menu": "Menu",
     "avatar_alt": "User avatar",
-    "sign_in": "Sign In"
+    "sign_in": "Sign In",
+    "sign_out": "Sign Out",
+    "profile": "Profile",
+    "open_profile_menu": "Open profile menu"
   },
   "navigation": {
     "home": "Home",

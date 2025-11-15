@@ -5,24 +5,26 @@
 
 @theme {
   --color-background: #ffffff;
-  --color-foreground: #0f172a;
+  --color-foreground: #1F1F1F;
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  --color-card-foreground: #1F1F1F;
   --color-popover: #ffffff;
-  --color-popover-foreground: #0f172a;
-  --color-primary: #0BDA51;
+  --color-popover-foreground: #1F1F1F;
+  --color-primary: #0A9B44;
   --color-primary-foreground: #f8fafc;
-  --color-secondary: #f1f5f9;
-  --color-secondary-foreground: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+  --color-secondary: #F5F5F5;
+  --color-secondary-foreground: #1F1F1F;
+  --color-muted: #F5F5F5;
+  --color-muted-foreground: #666666;
   --color-accent: #f1f5f9;
-  --color-accent-foreground: #0f172a;
+  --color-accent-foreground: #1F1F1F;
+  --color-warning: #FFA500;
+  --color-warning-foreground: #1F1F1F;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #f8fafc;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
-  --color-ring: #0BDA51;
+  --color-ring: #0AD14B;
   --radius: 0.5rem;
 
   --container-center: true;
