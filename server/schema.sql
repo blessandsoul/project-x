@@ -12,6 +12,17 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_created_at (created_at)
 );
 
+-- User favorite vehicles (watchlist)
+CREATE TABLE IF NOT EXISTS user_favorite_vehicles (
+  user_id INT NOT NULL,
+  vehicle_id BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (user_id, vehicle_id),
+  CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_favorites_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+);
+
 -- Optional: Create a sessions table if you want to implement session-based auth later
 -- CREATE TABLE IF NOT EXISTS sessions (
 --   id VARCHAR(255) PRIMARY KEY,

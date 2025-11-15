@@ -74,6 +74,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * later using backend logic.
    */
   fastify.post('/companies', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -105,6 +106,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * If the company does not exist, a 404 Not Found is returned.
    */
   fastify.put('/companies/:id', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -141,7 +143,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * cascading deletes to company_social_links and company_quotes so
    * that no orphaned records remain.
    */
-  fastify.delete('/companies/:id', async (request, reply) => {
+  fastify.delete('/companies/:id', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const companyId = parseInt(id, 10);
     if (!Number.isFinite(companyId) || companyId <= 0) {
@@ -182,6 +186,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * added when needed.
    */
   fastify.post('/companies/:companyId/social-links', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -210,6 +215,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * company path and operates directly on the social link id.
    */
   fastify.put('/social-links/:id', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -235,7 +241,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Delete a social link. This does not affect the parent company.
    */
-  fastify.delete('/social-links/:id', async (request, reply) => {
+  fastify.delete('/social-links/:id', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const linkId = parseInt(id, 10);
     if (!Number.isFinite(linkId) || linkId <= 0) {
@@ -271,6 +279,29 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const result = await controller.calculateQuotesForVehicle(id);
 
     return reply.code(201).send(result);
+  });
+
+  /**
+   * GET /vehicles/:vehicleId/cheapest-quotes
+   *
+   * Compute and return the cheapest quotes for a single vehicle across
+   * all companies without persisting them to the database. Intended for
+   * vehicle details pages where only the best offers are needed.
+   */
+  fastify.get('/vehicles/:vehicleId/cheapest-quotes', async (request, reply) => {
+    const { vehicleId } = request.params as { vehicleId: string };
+    const id = parseInt(vehicleId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ValidationError('Invalid vehicle id');
+    }
+
+    const { limit } = request.query as { limit?: string };
+    const parsedLimit = limit ? parseInt(limit, 10) : 3;
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 3;
+
+    const fullResult = await controller.calculateQuotesForVehicle(id);
+    const quotes = fullResult.quotes.slice(0, safeLimit);
+    return reply.send({ ...fullResult, quotes });
   });
 
   /**
@@ -411,6 +442,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * user-facing flows where IDs are not visible.
    */
   fastify.post('/quotes', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -438,6 +470,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * directly manipulate quote records.
    */
   fastify.put('/quotes/:id', {
+    preHandler: fastify.authenticate,
     schema: {
       body: {
         type: 'object',
@@ -466,7 +499,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * Delete a quote. This is another admin-focused operation and should
    * not generally be exposed in public user interfaces.
    */
-  fastify.delete('/quotes/:id', async (request, reply) => {
+  fastify.delete('/quotes/:id', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const quoteId = parseInt(id, 10);
     if (!Number.isFinite(quoteId) || quoteId <= 0) {

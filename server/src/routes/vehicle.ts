@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { VehicleModel } from '../models/VehicleModel.js';
+import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
 
 /**
@@ -11,6 +12,138 @@ import { ValidationError, NotFoundError } from '../types/errors.js';
  */
 const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   const vehicleModel = new VehicleModel(fastify);
+  const favoriteModel = new FavoriteModel(fastify);
+
+  // ---------------------------------------------------------------------------
+  // GET /vehicles/search
+  //
+  // Search vehicles by filters suitable for frontend search UI.
+  // Supports make/model/year range, price range, mileage range and
+  // several other fields. Returns paginated results with meta data.
+  // ---------------------------------------------------------------------------
+  fastify.get('/vehicles/search', async (request, reply) => {
+    const query = request.query as {
+      make?: string;
+      model?: string;
+      year?: string;
+      year_from?: string;
+      year_to?: string;
+      price_from?: string;
+      price_to?: string;
+      mileage_from?: string;
+      mileage_to?: string;
+      fuel_type?: string;
+      category?: string;
+      drive?: string;
+      page?: string;
+      limit?: string;
+    };
+
+    const filters: {
+      make?: string;
+      model?: string;
+      year?: number;
+      yearFrom?: number;
+      yearTo?: number;
+      priceFrom?: number;
+      priceTo?: number;
+      mileageFrom?: number;
+      mileageTo?: number;
+      fuelType?: string;
+      category?: string;
+      drive?: string;
+    } = {};
+
+    if (query.make && query.make.trim().length > 0) {
+      filters.make = query.make.trim();
+    }
+    if (query.model && query.model.trim().length > 0) {
+      filters.model = query.model.trim();
+    }
+    if (query.year) {
+      const v = Number.parseInt(query.year, 10);
+      if (Number.isFinite(v)) filters.year = v;
+    }
+    if (query.year_from) {
+      const v = Number.parseInt(query.year_from, 10);
+      if (Number.isFinite(v)) filters.yearFrom = v;
+    }
+    if (query.year_to) {
+      const v = Number.parseInt(query.year_to, 10);
+      if (Number.isFinite(v)) filters.yearTo = v;
+    }
+    if (query.price_from) {
+      const v = Number.parseFloat(query.price_from);
+      if (Number.isFinite(v)) filters.priceFrom = v;
+    }
+    if (query.price_to) {
+      const v = Number.parseFloat(query.price_to);
+      if (Number.isFinite(v)) filters.priceTo = v;
+    }
+    if (query.mileage_from) {
+      const v = Number.parseInt(query.mileage_from, 10);
+      if (Number.isFinite(v)) filters.mileageFrom = v;
+    }
+    if (query.mileage_to) {
+      const v = Number.parseInt(query.mileage_to, 10);
+      if (Number.isFinite(v)) filters.mileageTo = v;
+    }
+    if (query.fuel_type && query.fuel_type.trim().length > 0) {
+      filters.fuelType = query.fuel_type.trim();
+    }
+    if (query.category && query.category.trim().length > 0) {
+      filters.category = query.category.trim();
+    }
+    if (query.drive && query.drive.trim().length > 0) {
+      filters.drive = query.drive.trim();
+    }
+
+    const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+
+    const pageParam = query.page ? Number.parseInt(query.page, 10) : 1;
+    const pageFromClient = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const offset = (pageFromClient - 1) * limit;
+
+    // If an Authorization header is present, attempt to authenticate so
+    // we can optionally attach is_favorite flags. If authentication
+    // fails, we treat the request as anonymous.
+    const authHeader = (request.headers as any).authorization;
+    if (authHeader) {
+      try {
+        await (fastify as any).authenticate(request, reply);
+      } catch {
+        if (reply.sent) {
+          return;
+        }
+      }
+    }
+
+    const total = await vehicleModel.countByFilters(filters);
+    if (total === 0) {
+      return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
+    }
+
+    const items = await vehicleModel.searchByFilters(filters, limit, offset);
+
+    // If user is authenticated, mark which vehicles are already in favorites
+    let itemsWithFavoriteFlag = items;
+    const user = (request as any).user as { id: number } | undefined;
+    if (user && Array.isArray(items) && items.length > 0) {
+      const vehicleIds = items.map((v: any) => v.id as number);
+      const favoriteIds = await favoriteModel.getFavoritesForUserAndVehicles(user.id, vehicleIds);
+      const favoriteSet = new Set(favoriteIds);
+      itemsWithFavoriteFlag = items.map((v: any) => ({
+        ...v,
+        is_favorite: favoriteSet.has(v.id),
+      }));
+    }
+
+    const page = Math.floor(offset / limit) + 1;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    return reply.send({ items: itemsWithFavoriteFlag, total, limit, page, totalPages });
+  });
 
   // ---------------------------------------------------------------------------
   // GET /vehicles
