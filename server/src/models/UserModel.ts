@@ -26,11 +26,27 @@ export class UserModel extends BaseModel {
    * @returns Complete user object with generated ID and timestamps
    */
   async create(userData: UserCreate): Promise<User> {
-    const { email, username, password } = userData;
+    const {
+      email,
+      username,
+      password,
+      role = 'user',
+      dealer_slug = null,
+      company_id = null,
+      onboarding_ends_at = null,
+    } = userData;
 
     const result = await this.executeCommand(
-      'INSERT INTO users (email, username, password_hash, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
-      [email, username, password]
+      'INSERT INTO users (email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [
+        email,
+        username,
+        role,
+        dealer_slug,
+        company_id,
+        onboarding_ends_at,
+        password,
+      ]
     );
 
     const userId = result.insertId;
@@ -45,7 +61,7 @@ export class UserModel extends BaseModel {
 
   async findById(id: number): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE id = ?',
       [id]
     );
 
@@ -54,7 +70,7 @@ export class UserModel extends BaseModel {
 
   async findByEmail(email: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, password_hash, created_at, updated_at FROM users WHERE email = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE email = ?',
       [email]
     );
 
@@ -63,7 +79,7 @@ export class UserModel extends BaseModel {
 
   async findByUsername(username: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, password_hash, created_at, updated_at FROM users WHERE username = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE username = ?',
       [username]
     );
 
@@ -93,7 +109,7 @@ export class UserModel extends BaseModel {
 
   async findAll(limit: number = 10, offset: number = 0): Promise<User[]> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
 
@@ -113,7 +129,7 @@ export class UserModel extends BaseModel {
    * @throws Error if no valid fields provided for update
    */
   async update(id: number, updates: UserUpdate): Promise<User | null> {
-    const { email, username, password } = updates;
+    const { email, username, password, role, dealer_slug, company_id, onboarding_ends_at } = updates;
     const updateFields: string[] = [];
     const updateValues: any[] = [];
 
@@ -130,6 +146,26 @@ export class UserModel extends BaseModel {
     if (password) {
       updateFields.push('password_hash = ?');
       updateValues.push(password);
+    }
+
+    if (role) {
+      updateFields.push('role = ?');
+      updateValues.push(role);
+    }
+
+    if (dealer_slug !== undefined) {
+      updateFields.push('dealer_slug = ?');
+      updateValues.push(dealer_slug);
+    }
+
+    if (company_id !== undefined) {
+      updateFields.push('company_id = ?');
+      updateValues.push(company_id);
+    }
+
+    if (onboarding_ends_at !== undefined) {
+      updateFields.push('onboarding_ends_at = ?');
+      updateValues.push(onboarding_ends_at);
     }
 
     if (updateFields.length === 0) {

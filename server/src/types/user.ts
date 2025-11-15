@@ -1,7 +1,13 @@
+export type UserRole = 'user' | 'dealer' | 'company' | 'admin';
+
 export interface User {
   id: number;
   email: string;
   username: string;
+  role: UserRole;
+  dealer_slug: string | null;
+  company_id: number | null;
+  onboarding_ends_at: Date | null;
   password_hash: string;
   created_at: Date;
   updated_at: Date;
@@ -11,12 +17,20 @@ export interface UserCreate {
   email: string;
   username: string;
   password: string;
+  role?: UserRole; // defaults to 'user' at the database/model level
+  dealer_slug?: string | null;
+  company_id?: number | null;
+  onboarding_ends_at?: Date | null;
 }
 
 export interface UserUpdate {
   email?: string;
   username?: string;
   password?: string;
+  role?: UserRole;
+  dealer_slug?: string | null;
+  company_id?: number | null;
+  onboarding_ends_at?: Date | null;
 }
 
 export interface UserLogin {
@@ -28,12 +42,14 @@ export interface AuthUser {
   id: number;
   email: string;
   username: string;
+  role?: UserRole; // optional for backward compatibility
 }
 
 export interface JWTPayload {
   userId: number;
   email: string;
   username: string;
+   role?: UserRole;
   iat?: number;
   exp?: number;
 }

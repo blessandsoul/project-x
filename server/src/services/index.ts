@@ -6,3 +6,6 @@
  */
 
 export { VinDecoderService } from './VinDecoderService.js';
+export { ShippingQuoteService } from './ShippingQuoteService.js';
+export { GeoLocatorService } from './GeoLocatorService.js';
+export { AuctionApiService } from './AuctionApiService.js';

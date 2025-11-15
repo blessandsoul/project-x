@@ -54,6 +54,8 @@ export class UserController {
       email,
       username,
       password: passwordHash,
+      // role, dealer_slug, company_id, onboarding_ends_at can be
+      // extended here later if registration needs to support them.
     });
 
     // Generate token
@@ -61,11 +63,12 @@ export class UserController {
       userId: user.id,
       email: user.email,
       username: user.username,
+      role: user.role,
     });
 
     return {
       token,
-      user: { id: user.id, email: user.email, username: user.username },
+      user: { id: user.id, email: user.email, username: user.username, role: user.role },
     };
   }
 

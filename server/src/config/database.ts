@@ -2,13 +2,6 @@ import mysql from 'mysql2/promise';
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
 
-interface DatabaseConfig {
-  host: string;
-  user: string;
-  password: string;
-  database: string;
-}
-
 declare module 'fastify' {
   interface FastifyInstance {
     mysql: mysql.Pool;
@@ -24,14 +17,25 @@ const databasePlugin = fp(async (fastify: FastifyInstance) => {
     throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
 
-  const config: DatabaseConfig = {
+  // Configure a robust MySQL connection pool. The mysql2/promise import
+  // already returns a promise-based pool, so there is no need to call
+  // .promise() here.
+  const pool = mysql.createPool({
     host: process.env.MYSQL_HOST!,
     user: process.env.MYSQL_USER!,
     password: process.env.MYSQL_PASSWORD!,
     database: process.env.MYSQL_DATABASE!,
-  };
-
-  const pool = mysql.createPool(config);
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 60000,
+    // Prevent stale connections from causing first-request failures
+    maxIdle: 10, // Maximum idle connections (same as connectionLimit)
+    idleTimeout: 60000, // Close idle connections after 60 seconds
+    // Test connections/keep them alive to avoid stale connection errors
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000, // Send keepalive packets every 10 seconds
+  });
 
   // Test the connection
   try {
