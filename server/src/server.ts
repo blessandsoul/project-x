@@ -14,6 +14,7 @@ import { auctionRoutes } from './routes/auction.js';
 import { vehicleRoutes } from './routes/vehicle.js';
 import { favoritesRoutes } from './routes/favorites.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
+import { FxRateService } from './services/FxRateService.js';
 
 /**
  * Fastify Server Application
@@ -76,6 +77,7 @@ await fastify.register(favoritesRoutes);
 
 // Use pre-obtained API_TOKEN from env and refresh active lots every hour.
 const auctionApiService = new AuctionApiService(fastify);
+const fxRateService = new FxRateService(fastify);
 
 // cron.schedule('0 * * * *', async () => {
 //   const now = new Date();
@@ -90,12 +92,29 @@ const auctionApiService = new AuctionApiService(fastify);
 //   }
 // });
 
-// Run an initial fetch on startup so the cache is warm before the first cron tick.
-// (async () => {
-//   const now = new Date();
-//   // const time = auctionApiService.buildHourStartTimeString(now);
-//   const time = '13.11.2025 20:00';
+// Refresh USD->GEL FX rate once per day. The FxRateService checks the
+// exchange_rates table first and only calls the external API if there is
+// no row for the current UTC date, so this will not spam the free plan.
+cron.schedule('5 0 * * *', async () => {
+  try {
+    fastify.log.info('Running daily FX rate refresh job');
+    await fxRateService.ensureTodayUsdGelRate();
+    fastify.log.info('Daily FX rate refresh job completed');
+  } catch (error) {
+    fastify.log.error({ error }, 'Daily FX rate refresh job failed');
+  }
+});
 
+// Run an initial fetch on startup so the cache is warm before the first cron tick.
+(async () => {
+  try {
+    fastify.log.info('Running initial FX rate fetch on startup');
+    await fxRateService.ensureTodayUsdGelRate();
+    fastify.log.info('Initial FX rate fetch completed');
+  } catch (error) {
+    fastify.log.error({ error }, 'Initial FX rate fetch failed');
+  }
+})();
 //   try {
 //     fastify.log.info({ time }, 'Running initial auction active lots fetch on startup');
 //     await auctionApiService.getActiveLotsHourly(time);
@@ -110,6 +129,11 @@ const start = async () => {
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
     const host = process.env.HOST || '127.0.0.1';
+
+    // Ensure there is a USD->GEL rate for today before starting the
+    // server. If a rate already exists for the current UTC date, this
+    // is a no-op and does not call the external API.
+    await fxRateService.ensureTodayUsdGelRate();
 
     await fastify.listen({ port, host });
     console.log(`Server listening on http://${host}:${port}`);

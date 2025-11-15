@@ -271,12 +271,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post('/vehicles/:vehicleId/calculate-quotes', async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
+    const { currency } = request.query as { currency?: string };
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    const result = await controller.calculateQuotesForVehicle(id);
+    const result = await controller.calculateQuotesForVehicle(id, currency);
 
     return reply.code(201).send(result);
   });
@@ -290,16 +291,16 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/vehicles/:vehicleId/cheapest-quotes', async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
+    const { limit, currency } = request.query as { limit?: string; currency?: string };
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    const { limit } = request.query as { limit?: string };
     const parsedLimit = limit ? parseInt(limit, 10) : 3;
     const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 3;
 
-    const fullResult = await controller.calculateQuotesForVehicle(id);
+    const fullResult = await controller.calculateQuotesForVehicle(id, currency);
     const quotes = fullResult.quotes.slice(0, safeLimit);
     return reply.send({ ...fullResult, quotes });
   });
@@ -338,6 +339,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       drive?: string;
       limit?: number;
       offset?: number;
+      currency?: string;
     };
 
     const filters: {
@@ -394,7 +396,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const limit = typeof body.limit === 'number' ? body.limit : 20;
     const offset = typeof body.offset === 'number' ? body.offset : 0;
 
-    const result = await controller.searchQuotesForVehicles(filters, limit, offset);
+    const result = await controller.searchQuotesForVehicles(filters, limit, offset, body.currency);
     return reply.send(result);
   });
 
@@ -407,12 +409,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/vehicles/:vehicleId/quotes', async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
+    const { currency } = request.query as { currency?: string };
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    const quotes = await controller.getQuotesByVehicle(id);
+    const quotes = await controller.getQuotesByVehicle(id, currency);
     return reply.send(quotes);
   });
 
@@ -424,12 +427,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/companies/:companyId/quotes', async (request, reply) => {
     const { companyId } = request.params as { companyId: string };
+    const { currency } = request.query as { currency?: string };
     const id = parseInt(companyId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid company id');
     }
 
-    const quotes = await controller.getQuotesByCompany(id);
+    const quotes = await controller.getQuotesByCompany(id, currency);
     return reply.send(quotes);
   });
 

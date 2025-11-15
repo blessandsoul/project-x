@@ -15,6 +15,7 @@ import { CompanyModel } from '../models/CompanyModel.js';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
+import { FxRateService } from '../services/FxRateService.js';
 
 interface CalculatedQuoteResponse {
   company_name: string;
@@ -47,12 +48,14 @@ export class CompanyController {
   private companyModel: CompanyModel;
   private vehicleModel: VehicleModel;
   private shippingQuoteService: ShippingQuoteService;
+  private fxRateService: FxRateService;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.companyModel = new CompanyModel(fastify);
     this.vehicleModel = new VehicleModel(fastify);
     this.shippingQuoteService = new ShippingQuoteService(fastify);
+    this.fxRateService = new FxRateService(fastify);
   }
 
   // ---------------------------------------------------------------------------
@@ -135,6 +138,49 @@ export class CompanyController {
   // ---------------------------------------------------------------------------
   // Quotes (auto-calculated per vehicle & company)
   // ---------------------------------------------------------------------------
+  private normalizeCurrencyCode(rawCurrency?: string): 'USD' | 'GEL' {
+    if (!rawCurrency) {
+      return 'USD';
+    }
+
+    const upper = rawCurrency.trim().toUpperCase();
+    if (upper === 'USD') return 'USD';
+    if (upper === 'GEL') return 'GEL';
+
+    throw new ValidationError('Unsupported currency. Allowed values: usd, gel');
+  }
+
+  private async maybeConvertQuoteTotals(
+    quotes: CalculatedQuoteResponse[],
+    currency: 'USD' | 'GEL',
+  ): Promise<CalculatedQuoteResponse[]> {
+    if (currency === 'USD') {
+      return quotes;
+    }
+
+    const rate = await this.fxRateService.getLatestUsdGelRate();
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      throw new ValidationError('Exchange rate for USD->GEL is not available');
+    }
+
+    return quotes.map((q) => {
+      const convertedTotal = q.total_price * rate;
+      const breakdown = q.breakdown ? { ...q.breakdown } : q.breakdown;
+
+      if (breakdown && typeof breakdown === 'object') {
+        if (typeof breakdown.total_price === 'number') {
+          breakdown.total_price = breakdown.total_price * rate;
+        }
+      }
+
+      return {
+        company_name: q.company_name,
+        total_price: convertedTotal,
+        delivery_time_days: q.delivery_time_days,
+        breakdown,
+      };
+    });
+  }
   private async ensureVehicleExists(vehicleId: number): Promise<void> {
     const exists = await this.vehicleModel.existsById(vehicleId);
     if (!exists) {
@@ -155,7 +201,10 @@ export class CompanyController {
    *   - Insert a row into company_quotes
    * - Return a vehicle + quotes response DTO for the frontend.
    */
-  async calculateQuotesForVehicle(vehicleId: number): Promise<VehicleQuotesResponse> {
+  async calculateQuotesForVehicle(
+    vehicleId: number,
+    currency?: string,
+  ): Promise<VehicleQuotesResponse> {
     const vehicle: Vehicle | null = await this.vehicleModel.findById(vehicleId);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
@@ -194,9 +243,12 @@ export class CompanyController {
       });
     }
 
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    const convertedQuotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+
     // Sort quotes by total_price ascending so the client sees the
     // cheapest offers first.
-    quotes.sort((a, b) => a.total_price - b.total_price);
+    convertedQuotes.sort((a, b) => a.total_price - b.total_price);
 
     return {
       vehicle_id: vehicle.id,
@@ -207,7 +259,7 @@ export class CompanyController {
       yard_name: vehicle.yard_name,
       source: vehicle.source,
       distance_miles: distanceMiles,
-      quotes,
+      quotes: convertedQuotes,
     };
   }
 
@@ -236,6 +288,7 @@ export class CompanyController {
     },
     limit: number = 20,
     offset: number = 0,
+    currency?: string,
   ): Promise<{
     items: VehicleQuotesResponse[];
     total: number;
@@ -281,6 +334,7 @@ export class CompanyController {
     }
 
     const items: VehicleQuotesResponse[] = [];
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
 
     for (const vehicle of vehicles) {
       const { distanceMiles, quotes: computedQuotes } =
@@ -304,12 +358,14 @@ export class CompanyController {
         continue;
       }
 
-      const quotes: CalculatedQuoteResponse[] = filteredComputedQuotes.map((cq) => ({
+      let quotes: CalculatedQuoteResponse[] = filteredComputedQuotes.map((cq) => ({
         company_name: cq.companyName,
         total_price: cq.totalPrice,
         delivery_time_days: cq.deliveryTimeDays,
         breakdown: cq.breakdown,
       }));
+
+      quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
 
       items.push({
         vehicle_id: vehicle.id,
@@ -330,18 +386,80 @@ export class CompanyController {
     return { items, total, limit: safeLimit, offset: safeOffset, page, totalPages };
   }
 
-  async getQuotesByVehicle(vehicleId: number): Promise<CompanyQuote[]> {
+  async getQuotesByVehicle(vehicleId: number, currency?: string): Promise<CompanyQuote[]> {
     // Validate vehicle exists to avoid leaking orphaned records
     await this.ensureVehicleExists(vehicleId);
-    return this.companyModel.getQuotesByVehicleId(vehicleId);
+    const quotes = await this.companyModel.getQuotesByVehicleId(vehicleId);
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    if (normalizedCurrency === 'USD') {
+      return quotes;
+    }
+
+    const rate = await this.fxRateService.getLatestUsdGelRate();
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      throw new ValidationError('Exchange rate for USD->GEL is not available');
+    }
+
+    return quotes.map((q) => {
+      const converted: CompanyQuote = {
+        ...q,
+        total_price: q.total_price * rate,
+      };
+
+      if (converted.breakdown && typeof converted.breakdown === 'object') {
+        try {
+          const breakdown: any = converted.breakdown;
+          if (typeof breakdown.total_price === 'number') {
+            breakdown.total_price = breakdown.total_price * rate;
+          }
+          converted.breakdown = breakdown;
+        } catch {
+          // ignore breakdown conversion errors
+        }
+      }
+
+      return converted;
+    });
   }
 
-  async getQuotesByCompany(companyId: number): Promise<CompanyQuote[]> {
+  async getQuotesByCompany(companyId: number, currency?: string): Promise<CompanyQuote[]> {
     const company = await this.companyModel.findById(companyId);
     if (!company) {
       throw new NotFoundError('Company');
     }
-    return this.companyModel.getQuotesByCompanyId(companyId);
+    const quotes = await this.companyModel.getQuotesByCompanyId(companyId);
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    if (normalizedCurrency === 'USD') {
+      return quotes;
+    }
+
+    const rate = await this.fxRateService.getLatestUsdGelRate();
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      throw new ValidationError('Exchange rate for USD->GEL is not available');
+    }
+
+    return quotes.map((q) => {
+      const converted: CompanyQuote = {
+        ...q,
+        total_price: q.total_price * rate,
+      };
+
+      if (converted.breakdown && typeof converted.breakdown === 'object') {
+        try {
+          const breakdown: any = converted.breakdown;
+          if (typeof breakdown.total_price === 'number') {
+            breakdown.total_price = breakdown.total_price * rate;
+          }
+          converted.breakdown = breakdown;
+        } catch {
+          // ignore breakdown conversion errors
+        }
+      }
+
+      return converted;
+    });
   }
 
   async createQuoteAdmin(data: CompanyQuoteCreate): Promise<CompanyQuote> {
