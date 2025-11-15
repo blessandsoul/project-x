@@ -401,6 +401,34 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   /**
+   * POST /vehicles/compare
+   *
+   * Compare quotes for a fixed list of vehicles. The client provides a
+   * small array of vehicle IDs (e.g. from favorites or a search
+   * result), and the backend computes quotes for each and returns a
+   * comparison-friendly structure in a single response.
+   */
+  fastify.post('/vehicles/compare', async (request, reply) => {
+    const body = request.body as {
+      vehicle_ids?: number[];
+      quotes_per_vehicle?: number;
+      currency?: string;
+    };
+
+    const vehicleIds = Array.isArray(body.vehicle_ids) ? body.vehicle_ids : [];
+    if (!vehicleIds.length) {
+      throw new ValidationError('vehicle_ids array is required and must not be empty');
+    }
+
+    const quotesPerVehicle = typeof body.quotes_per_vehicle === 'number'
+      ? body.quotes_per_vehicle
+      : 3;
+
+    const result = await controller.compareVehicles(vehicleIds, quotesPerVehicle, body.currency);
+    return reply.send(result);
+  });
+
+  /**
    * GET /vehicles/:vehicleId/quotes
    *
    * Fetch all quotes for a given vehicle across all companies. This

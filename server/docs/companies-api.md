@@ -345,6 +345,8 @@ Key points:
     - Normalizes all price fields to numbers.
     - Applies `final_formula` overrides if present.
     - Computes `total_price` including vehicle `calc_price` and insurance based on `retail_value`.
+    - Optionally converts quote totals to GEL when the `currency` parameter
+      is set to `"gel"` on quote endpoints (see `fx-and-currency-api.md`).
 
 This means you can:
 
@@ -365,6 +367,7 @@ This means you can:
 3. Once created, the company will automatically be included in:
    - `POST /vehicles/:vehicleId/calculate-quotes`.
    - `POST /vehicles/search-quotes` (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
+   - `POST /vehicles/compare` (vehicle comparison flows).
 
 ### 2. Adjusting Pricing
 

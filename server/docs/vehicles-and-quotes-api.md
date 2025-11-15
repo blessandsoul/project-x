@@ -392,6 +392,99 @@ Currency:
 
 ---
 
+## Compare Vehicles API
+
+### POST `/vehicles/compare`
+
+**Description:**
+
+Compare quotes for a fixed list of vehicles. The client provides a small
+array of vehicle IDs (e.g. from favorites or a search result), and the
+backend computes quotes for each and returns a comparison-friendly
+structure in a single response.
+
+**Method:** `POST`
+
+**Request body:**
+
+```jsonc
+{
+  "vehicle_ids": [123, 456, 789], // required, 15 numeric IDs
+  "quotes_per_vehicle": 3, // optional, default 3
+  "currency": "gel" // optional, "usd" (default) or "gel"
+}
+```
+
+Constraints:
+
+- `vehicle_ids` must be a non-empty array.
+- Duplicate IDs are ignored; each vehicle appears at most once in the
+  response.
+- After de-duplication, at most **5** vehicles may be compared in a
+  single call. Sending more than 5 results in a validation error.
+
+**Processing steps:**
+
+1. Validate `vehicle_ids` array (non-empty, max 5 after de-duplication).
+2. For each unique `vehicle_id`:
+   - Load the vehicle via `VehicleModel.findById`.
+   - Compute quotes for the vehicle using `ShippingQuoteService` and the
+     configured set of companies (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
+   - Sort quotes by `total_price` ascending.
+   - Convert totals to the requested `currency` (`usd` or `gel`).
+   - Keep only the best `quotes_per_vehicle` quotes per vehicle.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "currency": "GEL",
+  "vehicles": [
+    {
+      "vehicle_id": 123,
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2018,
+      "mileage": 95000,
+      "yard_name": "Dallas, TX",
+      "source": "copart",
+      "distance_miles": 7800,
+      "quotes": [
+        {
+          "company_name": "ACME Shipping",
+          "total_price": 13000,
+          "delivery_time_days": 35,
+          "breakdown": {
+            /* same structure as other quote breakdowns, in requested currency */
+          }
+        },
+        {
+          "company_name": "FastLine",
+          "total_price": 13200,
+          "delivery_time_days": 30,
+          "breakdown": {
+            /* ... */
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` (`VALIDATION_ERROR`) when:
+  - `vehicle_ids` is missing or empty.
+  - Any `vehicle_id` is not a valid positive number.
+  - More than 5 unique `vehicle_ids` are provided.
+- `404 Not Found` (`NOT_FOUND_ERROR`) if any referenced vehicle does not
+  exist.
+- `422 Unprocessable Entity` (`ValidationError`) if no companies are
+  configured for quote calculation.
+
+---
+
 ## Summary of Filters vs Columns
 
 | Request field  | Internal filter key | Column(s) used                                       |

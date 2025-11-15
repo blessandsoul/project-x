@@ -71,6 +71,12 @@ const errorHandlerPlugin = fp(async (fastify) => {
       errorCode = 'DATABASE_ERROR';
       message = 'Database configuration error';
     }
+    // Handle Fastify JSON body parse errors explicitly to avoid generic 500s
+    else if (error.message.includes('Body is not valid JSON')) {
+      statusCode = 400;
+      errorCode = 'BAD_REQUEST_BODY';
+      message = 'Body is not valid JSON but content-type is application/json';
+    }
     // Handle other known errors
     else if (error.name === 'SyntaxError') {
       statusCode = 400;

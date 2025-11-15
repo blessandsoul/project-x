@@ -386,6 +386,144 @@ export class CompanyController {
     return { items, total, limit: safeLimit, offset: safeOffset, page, totalPages };
   }
 
+  /**
+   * Compare quotes for a fixed list of vehicles.
+   *
+   * This method is intended for "compare vehicles" flows where the
+   * client already knows a small set of vehicle IDs (e.g. from
+   * favorites or a search result) and wants to see quotes for each in
+   * a single response.
+   */
+  async compareVehicles(
+    vehicleIds: number[],
+    quotesPerVehicle: number = 3,
+    currency?: string,
+  ): Promise<{
+    currency: 'USD' | 'GEL';
+    vehicles: Array<{
+      vehicle_id: number;
+      make: string;
+      model: string;
+      year: number;
+      mileage: number | null;
+      yard_name: string;
+      source: string;
+      distance_miles: number;
+      quotes: CalculatedQuoteResponse[];
+    }>;
+  }> {
+    if (!Array.isArray(vehicleIds) || vehicleIds.length === 0) {
+      throw new ValidationError('vehicle_ids array is required');
+    }
+
+    // De-duplicate vehicle IDs while preserving the original order so
+    // that clients can safely send arrays that may contain
+    // duplicates (e.g. from UI selections) without receiving
+    // duplicate entries in the response.
+    const uniqueIds: number[] = [];
+    const seen = new Set<number>();
+    for (const rawId of vehicleIds) {
+      const id = rawId;
+      if (!seen.has(id)) {
+        seen.add(id);
+        uniqueIds.push(id);
+      }
+    }
+
+    if (!uniqueIds.length) {
+      throw new ValidationError('vehicle_ids array is required');
+    }
+
+    if (uniqueIds.length > 5) {
+      throw new ValidationError('You can compare at most 5 vehicles at a time');
+    }
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+
+    // For comparison flows we expect a small number of vehicles, but we
+    // still reuse the same company limiting logic as search flows so
+    // that performance characteristics remain predictable.
+    const rawCompanyLimit = process.env.SEARCH_QUOTES_COMPANY_LIMIT;
+    let companyLimit = Number(rawCompanyLimit ?? 10);
+    if (!Number.isFinite(companyLimit) || companyLimit <= 0) {
+      companyLimit = 10;
+    }
+    if (companyLimit > 1000) {
+      companyLimit = 1000;
+    }
+
+    const companies = await this.companyModel.findAll(companyLimit, 0);
+    if (!companies.length) {
+      throw new ValidationError('No companies configured for quote calculation');
+    }
+
+    const vehicles: Vehicle[] = [];
+    for (const id of uniqueIds) {
+      if (!Number.isFinite(id) || id <= 0) {
+        throw new ValidationError('Invalid vehicle id in vehicle_ids array');
+      }
+      const vehicle = await this.vehicleModel.findById(id);
+      if (!vehicle) {
+        throw new NotFoundError('Vehicle');
+      }
+      vehicles.push(vehicle);
+    }
+
+    const results: Array<{
+      vehicle_id: number;
+      make: string;
+      model: string;
+      year: number;
+      mileage: number | null;
+      yard_name: string;
+      source: string;
+      distance_miles: number;
+      quotes: CalculatedQuoteResponse[];
+    }> = [];
+
+    // Normalize quotesPerVehicle to a safe positive integer.
+    let quotesLimit = Number(quotesPerVehicle);
+    if (!Number.isFinite(quotesLimit) || quotesLimit <= 0) {
+      quotesLimit = 3;
+    }
+
+    for (const vehicle of vehicles) {
+      const { distanceMiles, quotes: computedQuotes } =
+        await this.shippingQuoteService.computeQuotesForVehicle(vehicle, companies);
+
+      let quotes: CalculatedQuoteResponse[] = computedQuotes.map((cq) => ({
+        company_name: cq.companyName,
+        total_price: cq.totalPrice,
+        delivery_time_days: cq.deliveryTimeDays,
+        breakdown: cq.breakdown,
+      }));
+
+      quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+
+      // Sort by total_price ascending and limit to quotesPerVehicle so
+      // the response remains small and focused on the best options.
+      quotes.sort((a, b) => a.total_price - b.total_price);
+      const limitedQuotes = quotes.slice(0, quotesLimit);
+
+      results.push({
+        vehicle_id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        mileage: (vehicle as any).mileage ?? null,
+        yard_name: vehicle.yard_name,
+        source: vehicle.source,
+        distance_miles: distanceMiles,
+        quotes: limitedQuotes,
+      });
+    }
+
+    return {
+      currency: normalizedCurrency,
+      vehicles: results,
+    };
+  }
+
   async getQuotesByVehicle(vehicleId: number, currency?: string): Promise<CompanyQuote[]> {
     // Validate vehicle exists to avoid leaking orphaned records
     await this.ensureVehicleExists(vehicleId);
