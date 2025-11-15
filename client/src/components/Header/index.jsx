@@ -1,11 +1,46 @@
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { useAuth } from '@/hooks/useAuth';
 
-// TODO-FX: Connect to i18n library.
-const t = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+const STORAGE_KEY_USER = 'projectx_auth_user';
+
+// TODO-FX: Replace with real i18n implementation.
+const HEADER_MESSAGES = {
+  'header.brand': 'ProjectX',
+  'header.menu': 'მენიუ',
+  'header.sign_in': 'შესვლა',
+  'header.avatar_alt': 'მომხმარებლის ავატარი',
+};
+
+const NAV_MESSAGES = {
+  'navigation.home': 'მთავარი',
+  'navigation.search': 'ძიება',
+  'navigation.catalog': 'კატალოგი',
+  'navigation.dashboard': 'დაფა',
+};
+
+const t = (key) => HEADER_MESSAGES[key] ?? NAV_MESSAGES[key] ?? key;
 
 const Header = ({ user, navigationItems, onNavigate }) => {
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+
+  let storedUser = null;
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY_USER);
+      if (raw) {
+        storedUser = JSON.parse(raw);
+      }
+    } catch {
+      storedUser = null;
+    }
+  }
+
+  const effectiveUser = authUser || storedUser || user || null;
   // TODO-FX: Replace with real API call.
   // API Endpoint: GET /api/user/profile
   // Expected Data:
@@ -62,17 +97,22 @@ const Header = ({ user, navigationItems, onNavigate }) => {
           </div>
 
           <nav className="flex items-center">
-            {user ? (
+            {effectiveUser ? (
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-sm font-medium">{effectiveUser.name}</span>
                 <img
-                  src={user.avatar}
+                  src={effectiveUser.avatar}
                   alt={t('header.avatar_alt')}
                   className="h-8 w-8 rounded-full"
                 />
               </div>
             ) : (
-              <Button variant="default" size="sm">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate('/login')}
+                aria-label={t('header.sign_in')}
+              >
                 <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
                 {t('header.sign_in')}
               </Button>

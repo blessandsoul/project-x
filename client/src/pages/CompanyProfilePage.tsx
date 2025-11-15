@@ -1,28 +1,101 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Header from '@/components/Header';
+import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { CompanyRating } from '@/components/company/CompanyRating';
+import { VipBadge } from '@/components/company/VipBadge';
+import { EmptyState } from '@/components/company/EmptyState';
 import { Separator } from '@/components/ui/separator';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { mockNavigationItems, mockFooterLinks, mockCompanies } from '@/mocks/_mockData';
+import { mockNavigationItems, mockFooterLinks, mockCompanies, mockCars } from '@/mocks/_mockData';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useCompaniesData } from '@/hooks/useCompaniesData';
+import { useQuotesSearch } from '@/hooks/useQuotesSearch';
 
 const CompanyProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const company = mockCompanies.find(c => c.id === id);
+  const { favorites, toggleFavorite } = useFavorites();
+  const { addRecentlyViewed } = useRecentlyViewed();
+  const { companies, isLoading } = useCompaniesData();
+  const company = companies.find((c) => c.id === id) ?? mockCompanies.find((c) => c.id === id);
+  const companyCars = mockCars.filter((car) => car.companyId === (company?.id ?? ''));
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [quotePrice, setQuotePrice] = useState<number>(20000);
+  const [quoteDistance, setQuoteDistance] = useState<number>(5500);
+  const { quotes, isLoading: isQuotesLoading, error: quotesError, searchQuotes } = useQuotesSearch();
+
+  useEffect(() => {
+    if (company) {
+      addRecentlyViewed(company.id);
+    }
+  }, [company, addRecentlyViewed]);
+
+  const handleSubmitContact = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!company || isSubmittingContact) {
+      return;
+    }
+
+    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
+      return;
+    }
+
+    setIsSubmittingContact(true);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setIsContactOpen(false);
+      setContactName('');
+      setContactEmail('');
+      setContactMessage('');
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header user={null} navigationItems={mockNavigationItems} />
+        <main className="flex-1 flex items-center justify-center" aria-busy="true">
+          <Card className="p-8">
+            <div className="flex flex-col items-center gap-4">
+              <Icon icon="mdi:loading" className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </Card>
+        </main>
+        <Footer footerLinks={mockFooterLinks} />
+      </div>
+    );
+  }
 
   if (!company) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header user={null} navigationItems={mockNavigationItems} />
         <main className="flex-1 flex items-center justify-center">
-          <Card className="p-8 text-center">
-            <Icon icon="mdi:alert-circle" className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold mb-2">კომპანია არ მოიძებნა</h2>
-            <p className="text-muted-foreground mb-4">მოთხოვნილი კომპანია არ არსებობს</p>
-            <Button onClick={() => navigate('/catalog')}>დაბრუნება კატალოგში</Button>
+          <Card className="p-8">
+            <EmptyState
+              icon="mdi:alert-circle"
+              title="კომპანია არ მოიძებნა"
+              description="მოთხოვნილი კომპანია არ არსებობს"
+              action={(
+                <Button onClick={() => navigate('/catalog')}>
+                  დაბრუნება კატალოგში
+                </Button>
+              )}
+            />
           </Card>
         </main>
         <Footer footerLinks={mockFooterLinks} />
@@ -59,19 +132,26 @@ const CompanyProfilePage = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h1 className="text-3xl font-bold">{company.name}</h1>
-                  {company.vipStatus && (
-                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                      <Icon icon="mdi:crown" className="mr-1 h-3 w-3" />
-                      VIP
-                    </Badge>
-                  )}
+                  {company.vipStatus && <VipBadge />}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full ml-2"
+                    onClick={() => toggleFavorite(company.id)}
+                    aria-pressed={favorites.includes(company.id)}
+                    aria-label={favorites.includes(company.id) ? 'საყვარელი სიიდან ამოღება' : 'დამატება რჩეულებში'}
+                  >
+                    <Icon
+                      icon={favorites.includes(company.id) ? 'mdi:heart' : 'mdi:heart-outline'}
+                      className={favorites.includes(company.id) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
+                    />
+                  </Button>
                 </div>
 
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="flex items-center">
-                    <Icon icon="mdi:star" className="h-5 w-5 text-yellow-400 fill-current" />
-                    <span className="text-lg font-semibold ml-1">{company.rating}</span>
-                    <span className="text-muted-foreground ml-1">
+                    <CompanyRating rating={company.rating} size="md" />
+                    <span className="text-muted-foreground ml-2">
                       ({company.reviewCount} შეფასება)
                     </span>
                   </div>
@@ -90,10 +170,73 @@ const CompanyProfilePage = () => {
                 </p>
 
                 <div className="flex flex-wrap gap-3">
-                  <Button size="lg">
-                    <Icon icon="mdi:phone" className="mr-2 h-4 w-4" />
-                    დაკავშირება
-                  </Button>
+                  <Sheet open={isContactOpen} onOpenChange={setIsContactOpen}>
+                    <Button
+                      size="lg"
+                      onClick={() => setIsContactOpen(true)}
+                    >
+                      <Icon icon="mdi:phone" className="mr-2 h-4 w-4" />
+                      დაკავშირება
+                    </Button>
+                    <SheetContent side="right" aria-label="კომპანიასთან დაკავშირება">
+                      <SheetHeader>
+                        <SheetTitle>კომპანიასთან დაკავშირება</SheetTitle>
+                        <SheetDescription>
+                          შეავსეთ ფორმა, რათა გადაგიგზავნოთ შეკითხვა კომპანიას {company.name}.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <form
+                        className="flex flex-col gap-4 p-4 pt-0"
+                        onSubmit={handleSubmitContact}
+                      >
+                        <div className="space-y-1">
+                          <Label htmlFor="contact-name">თქვენი სახელი</Label>
+                          <Input
+                            id="contact-name"
+                            type="text"
+                            value={contactName}
+                            onChange={(event) => setContactName(event.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="contact-email">ელ. ფოსტა</Label>
+                          <Input
+                            id="contact-email"
+                            type="email"
+                            value={contactEmail}
+                            onChange={(event) => setContactEmail(event.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="contact-message">შეტყობინება</Label>
+                          <textarea
+                            id="contact-message"
+                            value={contactMessage}
+                            onChange={(event) => setContactMessage(event.target.value)}
+                            required
+                            className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                        </div>
+                        <SheetFooter>
+                          <Button
+                            type="submit"
+                            disabled={isSubmittingContact}
+                            className="w-full"
+                          >
+                            {isSubmittingContact && (
+                              <Icon
+                                icon="mdi:loading"
+                                className="mr-2 h-4 w-4 animate-spin"
+                              />
+                            )}
+                            გაგზავნა
+                          </Button>
+                        </SheetFooter>
+                      </form>
+                    </SheetContent>
+                  </Sheet>
                   <Button variant="outline" size="lg">
                     <Icon icon="mdi:email" className="mr-2 h-4 w-4" />
                     მეილი
@@ -126,13 +269,53 @@ const CompanyProfilePage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {company.services.map(service => (
                       <div key={service} className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-green-600" />
+                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-primary" />
                         <span className="text-sm font-medium">{service}</span>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
+
+              {companyCars.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>იმპორტირებული ავტომობილების მაგალითები</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {companyCars.slice(0, 4).map((car) => (
+                        <div
+                          key={car.id}
+                          className="flex gap-3 rounded-lg border bg-muted/40 p-3"
+                        >
+                          <img
+                            src={car.imageUrl}
+                            alt={`${car.make} ${car.model}`}
+                            className="h-16 w-24 rounded-md object-cover"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-semibold">
+                                {car.year} {car.make} {car.model}
+                              </p>
+                              <span className="text-xs font-medium text-primary">
+                                ${car.price.toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {car.bodyType} • {car.fuelType} • {car.transmission}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              გარბენი: {car.mileage.toLocaleString()} km
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Reviews */}
               <Card>
@@ -150,7 +333,7 @@ const CompanyProfilePage = () => {
                               <Icon
                                 key={i}
                                 icon="mdi:star"
-                                className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                className={`h-4 w-4 ${i < review.rating ? 'text-warning fill-current' : 'text-gray-300'}`}
                               />
                             ))}
                           </div>
@@ -234,6 +417,77 @@ const CompanyProfilePage = () => {
                     <Icon icon="mdi:send" className="mr-2 h-4 w-4" />
                     გაგზავნა შეტყობინება
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quote Calculator (draft) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>ფასის გამოთვლა (დრაფტი)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quote-price">ავტომობილის ფასი (USD)</Label>
+                    <Input
+                      id="quote-price"
+                      type="number"
+                      value={quotePrice}
+                      onChange={(event) => setQuotePrice(Number(event.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quote-distance">დაშორება მილიებში</Label>
+                    <Input
+                      id="quote-distance"
+                      type="number"
+                      value={quoteDistance}
+                      onChange={(event) => setQuoteDistance(Number(event.target.value) || 0)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={isQuotesLoading}
+                    onClick={() => {
+                      if (!company) return;
+                      void searchQuotes({
+                        vehicle: {
+                          vin: null,
+                          price: quotePrice,
+                          distance_miles: quoteDistance,
+                        },
+                        filters: {
+                          min_company_rating: 0,
+                          max_total_price: null,
+                        },
+                      });
+                    }}
+                  >
+                    {isQuotesLoading && (
+                      <Icon
+                        icon="mdi:loading"
+                        className="mr-2 h-4 w-4 animate-spin"
+                      />
+                    )}
+                    გამოთვალე ფასი
+                  </Button>
+
+                  {quotesError && (
+                    <p className="text-sm text-red-500 mt-2">{quotesError}</p>
+                  )}
+
+                  {quotes.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {quotes.map((quote) => (
+                        <div
+                          key={quote.company.id}
+                          className="flex items-center justify-between text-sm border rounded-md px-3 py-2"
+                        >
+                          <span className="font-medium">{quote.company.name}</span>
+                          <span className="font-semibold">${quote.total_price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

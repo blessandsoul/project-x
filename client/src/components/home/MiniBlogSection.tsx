@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
 
@@ -23,6 +24,21 @@ const POSTS = [
 ]
 
 export function MiniBlogSection() {
+  const shouldReduceMotion = useReducedMotion()
+
+  const getCardMotionProps = (index: number) => {
+    if (shouldReduceMotion) {
+      return {}
+    }
+
+    const delay = index * 0.05
+
+    return {
+      initial: { opacity: 0, y: 8 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.25, ease: 'easeOut' as const, delay },
+    }
+  }
   return (
     <section
       className="border-b bg-muted/10"
@@ -43,23 +59,29 @@ export function MiniBlogSection() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {POSTS.map((post) => (
-            <Card key={post.id} className="h-full border-muted/60">
-              <CardHeader className="space-y-2">
-                <CardTitle className="flex items-start gap-2 text-base font-semibold">
-                  <Icon
-                    icon="mdi:lightbulb-on-outline"
-                    className="mt-0.5 h-4 w-4 text-primary"
-                    aria-hidden="true"
-                  />
-                  <span>{post.title}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{post.description}</p>
-              </CardContent>
-            </Card>
+        <div className="grid gap-4 md:grid-cols-3" role="list">
+          {POSTS.map((post, index) => (
+            <motion.article
+              key={post.id}
+              {...getCardMotionProps(index)}
+              role="listitem"
+            >
+              <Card className="h-full border-muted/60">
+                <CardHeader className="space-y-2">
+                  <CardTitle className="flex items-start gap-2 text-base font-semibold">
+                    <Icon
+                      icon="mdi:lightbulb-on-outline"
+                      className="mt-0.5 h-4 w-4 text-primary"
+                      aria-hidden="true"
+                    />
+                    <span>{post.title}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{post.description}</p>
+                </CardContent>
+              </Card>
+            </motion.article>
           ))}
         </div>
       </div>

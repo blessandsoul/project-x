@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { mockCompanies, type Company } from '@/mocks/_mockData'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { VipBadge } from '@/components/company/VipBadge'
 
 export function CompanyCompareSection() {
   const companies = useMemo<Company[]>(() => {
@@ -30,71 +32,113 @@ export function CompanyCompareSection() {
           </div>
         </div>
 
-        <Card className="border-muted/60">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold text-muted-foreground">
-              ძირითადი შედარება
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-xs md:text-sm">
-              <thead className="border-b bg-muted/50">
-                <tr className="text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">კომპანია</th>
-                  <th className="px-3 py-2 font-medium">რეიტინგი</th>
-                  <th className="px-3 py-2 font-medium">შეფასებები</th>
-                  <th className="px-3 py-2 font-medium">ფასი (min-max)</th>
-                  <th className="px-3 py-2 font-medium">VIP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companies.map((company) => (
-                  <tr key={company.id} className="border-b last:border-b-0">
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{company.name}</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {company.location.city}, {company.location.state}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1">
-                        <Icon
-                          icon="mdi:star"
-                          className="h-3 w-3 text-yellow-400"
-                          aria-hidden="true"
-                        />
-                        <span>{company.rating.toFixed(1)}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {company.reviewCount}
-                    </td>
-                    <td className="px-3 py-2">
-                      ${company.priceRange.min} – ${company.priceRange.max}
-                    </td>
-                    <td className="px-3 py-2">
-                      {company.vipStatus ? (
-                        <Icon
-                          icon="mdi:check-circle"
-                          className="h-4 w-4 text-primary"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Icon
-                          icon="mdi:close-circle"
-                          className="h-4 w-4 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-full rounded-md border bg-card">
+            <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-1/3 min-w-[220px]">კომპანია</TableHead>
+                    <TableHead className="min-w-[120px] text-right">რეიტინგი</TableHead>
+                    <TableHead className="min-w-[140px] text-right">ფასი (USD)</TableHead>
+                    <TableHead className="min-w-[120px] text-right">შეფასებები</TableHead>
+                    <TableHead className="min-w-[80px] text-center">VIP</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {companies.map((company, index) => {
+                    const initials = company.name
+                      .split(' ')
+                      .filter((part) => part.length > 0)
+                      .map((part) => part[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()
+
+                    // Demo tiers: 0 = VIP DIAMOND, 1 = VIP GOLD, 2 = VIP SILVER
+                    const tier = index === 0 ? 'diamond' : index === 1 ? 'gold' : 'silver'
+                    const rowClassName =
+                      tier === 'diamond'
+                        ? 'bg-emerald-50/80 border-l-4 border-emerald-500'
+                        : tier === 'gold'
+                          ? 'bg-amber-50/80 border-l-4 border-amber-400'
+                          : 'bg-slate-50/80 border-l-4 border-slate-300'
+
+                    return (
+                      <TableRow
+                        key={company.id}
+                        className={rowClassName}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage
+                                alt={company.name}
+                                src={company.logo}
+                              />
+                              <AvatarFallback>{initials}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">
+                                  {company.name}
+                                </span>
+                                <span
+                                  className={
+                                    tier === 'diamond'
+                                      ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700'
+                                      : tier === 'gold'
+                                        ? 'rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700'
+                                        : 'rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700'
+                                  }
+                                >
+                                  {tier === 'diamond'
+                                    ? 'VIP DIAMOND'
+                                    : tier === 'gold'
+                                      ? 'VIP GOLD'
+                                      : 'VIP SILVER'}
+                                </span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {company.location.city}, {company.location.state}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          <div className="inline-flex items-center justify-end gap-1">
+                            <Icon
+                              icon="mdi:star"
+                              className="h-4 w-4 text-yellow-400"
+                              aria-hidden="true"
+                            />
+                            <span>{company.rating.toFixed(1)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {company.priceRange.min.toLocaleString()} -{' '}
+                          {company.priceRange.max.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {company.reviewCount}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {company.vipStatus ? (
+                            <VipBadge className="inline-flex" />
+                          ) : (
+                            <Icon
+                              icon="mdi:close-circle"
+                              className="inline-block h-4 w-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
       </div>
     </section>
   )

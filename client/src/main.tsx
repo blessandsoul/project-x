@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from '@/hooks/useAuth'
+import { SearchProvider } from '@/hooks/useCompanySearch'
+import { FavoritesProvider } from '@/hooks/useFavorites'
+import { RecentlyViewedProvider } from '@/hooks/useRecentlyViewed'
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
@@ -25,7 +28,13 @@ if (typeof window !== 'undefined') {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <App />
+      <FavoritesProvider>
+        <RecentlyViewedProvider>
+          <SearchProvider>
+            <App />
+          </SearchProvider>
+        </RecentlyViewedProvider>
+      </FavoritesProvider>
     </AuthProvider>
   </StrictMode>,
 )

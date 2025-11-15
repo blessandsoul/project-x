@@ -57,3 +57,17 @@ Summary:
 - Removed mock-based login so authentication is only driven by real backend responses.
 Status: Auth flow ready for end-to-end testing with running backend.
 VC-004: Added root README.md with project overview, setup instructions, and API documentation links.
+
+VC-005: Implemented shared search filter context, skeleton loading on search/catalog pages, and favorites integration across search, catalog, profile, and dashboard.
+
+VC-006: Added recently viewed tracking, mock car data linked to companies, imported cars section in company profiles, client-side pagination for catalog, and basic tests for search and catalog pages.
+
+VC-007: Integrated home QuickSearch with shared SearchContext, persisted search filters in localStorage, added contact sheet on company profile, improved accessibility (aria-live/aria-busy) for search/catalog results, visualized active filters as badges, and added dashboard tests for favorites/recently viewed.
+
+VC-008: Improved main header and SiteHeader clickability and mobile navigation.
+
+Summary:
+- Updated main Header to use react-router Link for the brand logo and added a mobile navigation sheet using shadcn-ui Sheet with navigation items for small screens.
+- Ensured all navigation items are clickable on both desktop (inline nav) and mobile (slide-in sheet) and reuse the same navigationItems config and i18n keys.
+- Made the Documents title in SiteHeader clickable by wrapping it in a Link to /dashboard, keeping layout and sidebar trigger intact.
+Status: Headers now provide consistent, fully clickable navigation across desktop and mobile, aligned with existing routing.

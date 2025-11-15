@@ -18,3 +18,7 @@
 - Root npm script "code-graph-rag-mcp" and updated start-dev.bat for one-click dev startup
 - Real user authentication flow using /register and /login API endpoints with JWT persistence
 - Root-level README.md documenting project overview, setup, and API documentation links
+- Shared search filter context, skeleton loading on company search/catalog pages, and favorites integration across search, catalog, profile, and dashboard
+- Recently viewed tracking, mock car data and imported cars section in company profiles, client-side pagination in catalog, and basic tests for company search/catalog pages
+- Home QuickSearch integrated with shared SearchContext, persisted search filters in localStorage, contact sheet on company profile, accessibility tweaks for search/catalog results, active filter badges, and dashboard tests for favorites and recently viewed
+ - Improved main Header and SiteHeader clickability and added a mobile navigation sheet for small screens

@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CompanyRating } from '@/components/company/CompanyRating'
+import { VipBadge } from '@/components/company/VipBadge'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { mockCompanies, type Company } from '@/mocks/_mockData'
 
@@ -39,7 +40,7 @@ export function FeaturedCompaniesSection() {
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/catalog')}>
             <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
-            ხედვა ყველა კომპანიის
+            ყველა კომპანიის ნახვა
           </Button>
         </div>
 
@@ -47,7 +48,9 @@ export function FeaturedCompaniesSection() {
           {companies.map((company) => (
             <Card
               key={company.id}
-              className="h-full cursor-pointer border-muted/60 transition-all hover:-translate-y-1 hover:shadow-md"
+              className={`h-full cursor-pointer border-muted/60 transition-all hover:-translate-y-1 hover:shadow-md ${
+                company.vipStatus ? 'border-primary/50 bg-primary/5' : ''
+              }`}
               onClick={() => navigate(`/company/${company.id}`)}
             >
               <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -62,22 +65,11 @@ export function FeaturedCompaniesSection() {
                     </span>
                   </div>
                 </div>
-                {company.vipStatus && (
-                  <Badge className="bg-orange-100 text-[10px] font-semibold uppercase tracking-wide text-orange-800">
-                    VIP
-                  </Badge>
-                )}
+                {company.vipStatus && <VipBadge />}
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="flex items-center">
-                    <Icon
-                      icon="mdi:star"
-                      className="h-4 w-4 text-yellow-400"
-                      aria-hidden="true"
-                    />
-                    <span className="ml-1 font-medium">{company.rating.toFixed(1)}</span>
-                  </div>
+                  <CompanyRating rating={company.rating} />
                   <span className="text-xs text-muted-foreground">
                     ({company.reviewCount} შეფასება)
                   </span>
@@ -96,6 +88,23 @@ export function FeaturedCompaniesSection() {
                     ფასი, სრული მომსახურებით
                   </span>
                 </div>
+                {company.vipStatus && (
+                  <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-muted-foreground">
+                    {company.services.slice(0, 3).map((service) => (
+                      <span
+                        key={service}
+                        className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-primary"
+                      >
+                        <Icon
+                          icon="mdi:star-circle"
+                          className="mr-1 h-3 w-3"
+                          aria-hidden="true"
+                        />
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

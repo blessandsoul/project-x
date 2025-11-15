@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
@@ -7,6 +8,7 @@ import { mockCompanies } from '@/mocks/_mockData'
 
 export function HeroSection() {
   const navigate = useNavigate()
+  const shouldReduceMotion = useReducedMotion()
 
   const stats = useMemo(() => {
     const total = mockCompanies.length
@@ -29,7 +31,12 @@ export function HeroSection() {
     >
       <div className="container mx-auto py-12 md:py-20">
         <div className="grid gap-10 md:grid-cols-2 md:items-center">
-          <div className="space-y-6">
+          <motion.div
+            className="space-y-6"
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' as const }}
+          >
             <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <Icon icon="mdi:shield-check" className="mr-1 h-3 w-3" />
               სანდო იმპორტის პლატფორმა აშშ-დან საქართველოში
@@ -48,7 +55,11 @@ export function HeroSection() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => navigate('/search')}>
+              <Button
+                size="lg"
+                onClick={() => navigate('/search')}
+                motionVariant="scale"
+              >
                 <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" />
                 იპოვე კომპანია
               </Button>
@@ -56,9 +67,10 @@ export function HeroSection() {
                 size="lg"
                 variant="outline"
                 onClick={() => navigate('/catalog')}
+                motionVariant="scale"
               >
                 <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
-                ხედვა კატალოგი
+                კატალოგის ნახვა
               </Button>
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -79,9 +91,14 @@ export function HeroSection() {
                 <span>გამჭვირვალე ფასები</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex justify-center md:justify-end">
+          <motion.div
+            className="flex justify-center md:justify-end"
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' as const, delay: 0.08 }}
+          >
             <Card className="w-full max-w-sm border-primary/20 bg-background/80 shadow-sm">
               <CardContent className="space-y-4 pt-6">
                 <p className="text-sm font-medium text-muted-foreground">
@@ -128,7 +145,7 @@ export function HeroSection() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

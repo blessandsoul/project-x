@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Icon } from '@iconify/react/dist/iconify.js'
@@ -24,6 +25,22 @@ export function TestimonialsSection() {
     return all.slice(0, 3)
   }, [])
 
+  const shouldReduceMotion = useReducedMotion()
+
+  const getCardMotionProps = (index: number) => {
+    if (shouldReduceMotion) {
+      return {}
+    }
+
+    const delay = index * 0.06
+
+    return {
+      initial: { opacity: 0, y: 8 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.3, ease: 'easeOut' as const, delay },
+    }
+  }
+
   if (testimonials.length === 0) return null
 
   return (
@@ -44,7 +61,7 @@ export function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3" role="list">
           {testimonials.map((item, index) => {
             const avatarImages = [
               '/avatars/user.jpg',
@@ -59,8 +76,13 @@ export function TestimonialsSection() {
               .slice(0, 2)
 
             return (
-              <Card key={item.id} className="h-full border-muted/60">
-                <CardHeader className="space-y-3">
+              <motion.article
+                key={item.id}
+                {...getCardMotionProps(index)}
+                role="listitem"
+              >
+                <Card className="h-full border-muted/60">
+                  <CardHeader className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={avatarSrc} alt={item.userName} />
@@ -85,10 +107,11 @@ export function TestimonialsSection() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{item.comment}</p>
-                </CardContent>
-              </Card>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{item.comment}</p>
+                  </CardContent>
+                </Card>
+              </motion.article>
             )
           })}
         </div>
