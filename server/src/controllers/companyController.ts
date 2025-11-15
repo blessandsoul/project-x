@@ -13,7 +13,9 @@ import {
 import { Vehicle } from '../types/vehicle.js';
 import { CompanyModel } from '../models/CompanyModel.js';
 import { VehicleModel } from '../models/VehicleModel.js';
-import { ValidationError, NotFoundError } from '../types/errors.js';
+import { CompanyReviewModel } from '../models/CompanyReviewModel.js';
+import { ValidationError, NotFoundError, AuthorizationError } from '../types/errors.js';
+import { CompanyReview, CompanyReviewCreate, CompanyReviewUpdate } from '../types/companyReview.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
 import { FxRateService } from '../services/FxRateService.js';
 
@@ -47,6 +49,7 @@ export class CompanyController {
   private fastify: FastifyInstance;
   private companyModel: CompanyModel;
   private vehicleModel: VehicleModel;
+  private companyReviewModel: CompanyReviewModel;
   private shippingQuoteService: ShippingQuoteService;
   private fxRateService: FxRateService;
 
@@ -54,6 +57,7 @@ export class CompanyController {
     this.fastify = fastify;
     this.companyModel = new CompanyModel(fastify);
     this.vehicleModel = new VehicleModel(fastify);
+    this.companyReviewModel = new CompanyReviewModel(fastify);
     this.shippingQuoteService = new ShippingQuoteService(fastify);
     this.fxRateService = new FxRateService(fastify);
   }
@@ -66,16 +70,103 @@ export class CompanyController {
     return this.companyModel.create(data);
   }
 
-  async getCompanyById(id: number): Promise<CompanyWithRelations> {
-    const company = await this.companyModel.getWithRelations(id);
-    if (!company) {
+  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number }> {
+    const withRelations = await this.companyModel.getWithRelations(id);
+    if (!withRelations) {
       throw new NotFoundError('Company');
     }
-    return company;
+
+    const { social_links, quotes: _quotes, ...company } = withRelations;
+    const agg = await this.companyReviewModel.getAggregatedRating(id);
+
+    return {
+      ...(company as Company),
+      social_links,
+      // rating on the company row is already maintained by
+      // updateCompanyRating; reviewCount is derived from the
+      // aggregation so the frontend can show "X reviews".
+      reviewCount: agg.count,
+    };
   }
 
-  async getCompanies(limit: number = 100, offset: number = 0): Promise<Company[]> {
-    return this.companyModel.findAll(limit, offset);
+  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number }>> {
+    const companies = await this.companyModel.findAll(limit, offset);
+    if (!companies.length) {
+      return [];
+    }
+
+    const ids = companies.map((c) => c.id);
+    const counts = await this.companyReviewModel.countByCompanyIds(ids);
+
+    return companies.map((c) => ({
+      ...c,
+      reviewCount: counts[c.id] ?? 0,
+    }));
+  }
+
+  async searchCompanies(params: {
+    limit?: number | undefined;
+    offset?: number | undefined;
+    minRating?: number | undefined;
+    minBasePrice?: number | undefined;
+    maxBasePrice?: number | undefined;
+    maxTotalFee?: number | undefined;
+    country?: string | undefined;
+    city?: string | undefined;
+    isVip?: boolean | undefined;
+    isOnboardingFree?: boolean | undefined;
+    search?: string | undefined;
+    orderBy?: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
+    orderDirection?: 'asc' | 'desc' | undefined;
+  }): Promise<{ items: Array<Company & { reviewCount: number }>; total: number; limit: number; offset: number }> {
+    const {
+      limit = 20,
+      offset = 0,
+      minRating,
+      minBasePrice,
+      maxBasePrice,
+      maxTotalFee,
+      country,
+      city,
+      isVip,
+      isOnboardingFree,
+      search,
+      orderBy,
+      orderDirection,
+    } = params;
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const { items, total } = await this.companyModel.search({
+      limit: safeLimit,
+      offset: safeOffset,
+      minRating,
+      minBasePrice,
+      maxBasePrice,
+      maxTotalFee,
+      country,
+      city,
+      isVip,
+      isOnboardingFree,
+      search,
+      orderBy,
+      orderDirection,
+    });
+
+    if (!items.length) {
+      return { items: [], total, limit: safeLimit, offset: safeOffset };
+    }
+
+    const ids = items.map((c) => c.id);
+    const counts = await this.companyReviewModel.countByCompanyIds(ids);
+
+    const withCounts = items.map((c) => ({
+      ...c,
+      reviewCount: counts[c.id] ?? 0,
+    }));
+
+    return { items: withCounts, total, limit: safeLimit, offset: safeOffset };
   }
 
   async updateCompany(id: number, updates: CompanyUpdate): Promise<Company> {
@@ -136,6 +227,109 @@ export class CompanyController {
   }
 
   // ---------------------------------------------------------------------------
+  // Reviews (user-generated, dependent on company_id)
+  // ---------------------------------------------------------------------------
+
+  async getCompanyReviewsPaginated(companyId: number, limit: number = 10, offset: number = 0): Promise<{
+    items: CompanyReview[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 50 ? limit : 10;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const [items, total] = await Promise.all([
+      this.companyReviewModel.getByCompanyId(companyId, safeLimit, safeOffset),
+      this.companyReviewModel.countByCompanyId(companyId),
+    ]);
+
+    return { items, total, limit: safeLimit, offset: safeOffset };
+  }
+
+  async createCompanyReview(companyId: number, userId: number, payload: { rating: number; comment?: string | null }): Promise<CompanyReview> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const { rating, comment = null } = payload;
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      throw new ValidationError('Rating must be a number between 1 and 5');
+    }
+
+    const createData: CompanyReviewCreate = {
+      company_id: companyId,
+      user_id: userId,
+      rating,
+      comment,
+    };
+
+    const created = await this.companyReviewModel.create(createData);
+    await this.companyReviewModel.updateCompanyRating(companyId);
+    return created;
+  }
+
+  async updateCompanyReview(companyId: number, reviewId: number, userId: number, updates: CompanyReviewUpdate): Promise<CompanyReview> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const existing = await this.companyReviewModel.getById(reviewId);
+    if (!existing || existing.company_id !== companyId) {
+      throw new NotFoundError('Review');
+    }
+
+    if (existing.user_id !== userId) {
+      throw new AuthorizationError('You can only modify your own reviews');
+    }
+
+    if (updates.rating !== undefined) {
+      const r = updates.rating;
+      if (!Number.isFinite(r) || r < 1 || r > 5) {
+        throw new ValidationError('Rating must be a number between 1 and 5');
+      }
+    }
+
+    const updated = await this.companyReviewModel.update(reviewId, updates);
+    if (!updated) {
+      throw new NotFoundError('Review');
+    }
+
+    await this.companyReviewModel.updateCompanyRating(companyId);
+    return updated;
+  }
+
+  async deleteCompanyReview(companyId: number, reviewId: number, userId: number): Promise<void> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const existing = await this.companyReviewModel.getById(reviewId);
+    if (!existing || existing.company_id !== companyId) {
+      throw new NotFoundError('Review');
+    }
+
+    if (existing.user_id !== userId) {
+      throw new AuthorizationError('You can only delete your own reviews');
+    }
+
+    const deleted = await this.companyReviewModel.delete(reviewId);
+    if (!deleted) {
+      throw new NotFoundError('Review');
+    }
+
+    await this.companyReviewModel.updateCompanyRating(companyId);
+  }
+
+  // ---------------------------------------------------------------------------
   // Quotes (auto-calculated per vehicle & company)
   // ---------------------------------------------------------------------------
   private normalizeCurrencyCode(rawCurrency?: string): 'USD' | 'GEL' {
@@ -180,6 +374,69 @@ export class CompanyController {
         breakdown,
       };
     });
+  }
+
+  async getCompanyQuotesPaginated(companyId: number, limit: number = 20, offset: number = 0, currency?: string): Promise<{
+    items: CompanyQuote[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const allQuotes = await this.companyModel.getQuotesByCompanyId(companyId);
+    const total = allQuotes.length;
+
+    const pageSlice = allQuotes.slice(safeOffset, safeOffset + safeLimit);
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    if (normalizedCurrency === 'USD') {
+      return {
+        items: pageSlice,
+        total,
+        limit: safeLimit,
+        offset: safeOffset,
+      };
+    }
+
+    const rate = await this.fxRateService.getLatestUsdGelRate();
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      throw new ValidationError('Exchange rate for USD->GEL is not available');
+    }
+
+    const convertedItems = pageSlice.map((q) => {
+      const converted: CompanyQuote = {
+        ...q,
+        total_price: q.total_price * rate,
+      };
+
+      if (converted.breakdown && typeof converted.breakdown === 'object') {
+        try {
+          const breakdown: any = converted.breakdown;
+          if (typeof breakdown.total_price === 'number') {
+            breakdown.total_price = breakdown.total_price * rate;
+          }
+          converted.breakdown = breakdown;
+        } catch {
+          // ignore breakdown conversion errors
+        }
+      }
+
+      return converted;
+    });
+
+    return {
+      items: convertedItems,
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+    };
   }
   private async ensureVehicleExists(vehicleId: number): Promise<void> {
     const exists = await this.vehicleModel.existsById(vehicleId);

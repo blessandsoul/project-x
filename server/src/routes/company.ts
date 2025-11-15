@@ -47,6 +47,89 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   /**
+   * GET /companies/search
+   *
+   * Search companies with filters and sorting (cheapest, top-rated, etc.).
+   */
+  fastify.get('/companies/search', async (request, reply) => {
+    const {
+      limit,
+      offset,
+      min_rating,
+      min_base_price,
+      max_base_price,
+      max_total_fee,
+      country,
+      city,
+      is_vip,
+      onboarding_free,
+      search,
+      order_by,
+      order_direction,
+    } = request.query as {
+      limit?: string;
+      offset?: string;
+      min_rating?: string;
+      min_base_price?: string;
+      max_base_price?: string;
+      max_total_fee?: string;
+      country?: string;
+      city?: string;
+      is_vip?: string;
+      onboarding_free?: string;
+      search?: string;
+      order_by?: string;
+      order_direction?: string;
+    };
+
+    if (typeof search === 'string') {
+      const trimmed = search.trim();
+      if (trimmed.length > 0 && trimmed.length < 4) {
+        return reply.status(400).send({
+          error: 'SEARCH_TOO_SHORT',
+          message: 'search parameter must be at least 4 characters long when provided',
+        });
+      }
+    }
+
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
+    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+
+    let typedOrderBy: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
+    if (order_by === 'rating' || order_by === 'cheapest' || order_by === 'name' || order_by === 'newest') {
+      typedOrderBy = order_by;
+    } else {
+      typedOrderBy = undefined;
+    }
+
+    let typedOrderDirection: 'asc' | 'desc' | undefined;
+    if (order_direction === 'asc' || order_direction === 'desc') {
+      typedOrderDirection = order_direction;
+    } else {
+      typedOrderDirection = undefined;
+    }
+
+    const params = {
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+      offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      minRating: typeof min_rating === 'string' ? Number(min_rating) : undefined,
+      minBasePrice: typeof min_base_price === 'string' ? Number(min_base_price) : undefined,
+      maxBasePrice: typeof max_base_price === 'string' ? Number(max_base_price) : undefined,
+      maxTotalFee: typeof max_total_fee === 'string' ? Number(max_total_fee) : undefined,
+      country: country && country.trim().length > 0 ? country : undefined,
+      city: city && city.trim().length > 0 ? city : undefined,
+      isVip: typeof is_vip === 'string' ? is_vip === 'true' : undefined,
+      isOnboardingFree: typeof onboarding_free === 'string' ? onboarding_free === 'true' : undefined,
+      search: search && search.trim().length > 0 ? search.trim() : undefined,
+      orderBy: typedOrderBy,
+      orderDirection: typedOrderDirection,
+    };
+
+    const result = await controller.searchCompanies(params);
+    return reply.send(result);
+  });
+
+  /**
    * GET /companies/:id
    *
    * Fetch a single company by ID, including its related social links
@@ -251,6 +334,134 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await controller.deleteSocialLink(linkId);
+    return reply.code(204).send();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Company Reviews: user-generated reviews tied to company_id
+  // ---------------------------------------------------------------------------
+
+  /**
+   * GET /companies/:companyId/reviews
+   *
+   * Fetch all reviews for a company. Public endpoint.
+   */
+  fastify.get('/companies/:companyId/reviews', async (request, reply) => {
+    const { companyId } = request.params as { companyId: string };
+    const { limit, offset } = request.query as { limit?: string; offset?: string };
+
+    const id = parseInt(companyId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
+    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+
+    const safeLimit = Number.isFinite(parsedLimit) ? parsedLimit : 10;
+    const safeOffset = Number.isFinite(parsedOffset) ? parsedOffset : 0;
+
+    const result = await controller.getCompanyReviewsPaginated(id, safeLimit, safeOffset);
+    return reply.send(result);
+  });
+
+  /**
+   * POST /companies/:companyId/reviews
+   *
+   * Create a new review for a company. Requires authentication. The
+   * review is always associated with the authenticated user.
+   */
+  fastify.post('/companies/:companyId/reviews', {
+    preHandler: fastify.authenticate,
+    schema: {
+      body: {
+        type: 'object',
+        required: ['rating'],
+        properties: {
+          rating: { type: 'number', minimum: 1, maximum: 5 },
+          comment: { type: ['string', 'null'], maxLength: 2000 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { companyId } = request.params as { companyId: string };
+    const id = parseInt(companyId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+
+    if (!request.user || typeof request.user.id !== 'number') {
+      throw new ValidationError('Authenticated user is required to create reviews');
+    }
+
+    const body = request.body as { rating: number; comment?: string | null };
+    const created = await controller.createCompanyReview(id, request.user.id, body);
+    return reply.code(201).send(created);
+  });
+
+  /**
+   * PUT /companies/:companyId/reviews/:reviewId
+   *
+   * Update an existing review. Only the owner of the review can update
+   * it. Requires authentication.
+   */
+  fastify.put('/companies/:companyId/reviews/:reviewId', {
+    preHandler: fastify.authenticate,
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          rating: { type: 'number', minimum: 1, maximum: 5 },
+          comment: { type: ['string', 'null'], maxLength: 2000 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { companyId, reviewId } = request.params as { companyId: string; reviewId: string };
+    const company = parseInt(companyId, 10);
+    const review = parseInt(reviewId, 10);
+
+    if (!Number.isFinite(company) || company <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+    if (!Number.isFinite(review) || review <= 0) {
+      throw new ValidationError('Invalid review id');
+    }
+
+    if (!request.user || typeof request.user.id !== 'number') {
+      throw new ValidationError('Authenticated user is required to update reviews');
+    }
+
+    const updates = request.body as { rating?: number; comment?: string | null };
+    const updated = await controller.updateCompanyReview(company, review, request.user.id, updates);
+    return reply.send(updated);
+  });
+
+  /**
+   * DELETE /companies/:companyId/reviews/:reviewId
+   *
+   * Delete an existing review. Only the owner of the review can delete
+   * it. Requires authentication.
+   */
+  fastify.delete('/companies/:companyId/reviews/:reviewId', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    const { companyId, reviewId } = request.params as { companyId: string; reviewId: string };
+    const company = parseInt(companyId, 10);
+    const review = parseInt(reviewId, 10);
+
+    if (!Number.isFinite(company) || company <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+    if (!Number.isFinite(review) || review <= 0) {
+      throw new ValidationError('Invalid review id');
+    }
+
+    if (!request.user || typeof request.user.id !== 'number') {
+      throw new ValidationError('Authenticated user is required to delete reviews');
+    }
+
+    await controller.deleteCompanyReview(company, review, request.user.id);
     return reply.code(204).send();
   });
 

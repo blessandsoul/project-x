@@ -10,6 +10,112 @@ Main components:
 
 ---
 
+### GET `/companies/search`
+
+**Description:**
+
+Search companies with filters, pagination and sorting. This endpoint is intended for frontend company listings (search results, explore screens, etc.).
+
+**Method:** `GET`
+
+**Query params:**
+
+- `limit` (optional, number) – page size, default 20, max 100.
+- `offset` (optional, number) – number of companies to skip, default 0.
+- `search` (optional, string) – case‑insensitive search on company `name`.
+  - When provided, must be **at least 4 characters** long.
+  - Shorter non‑empty values cause `400 Bad Request` with:
+    - `error: "SEARCH_TOO_SHORT"`.
+- `min_rating` (optional, number) – minimum average rating.
+- `min_base_price` (optional, number) – minimum `base_price`.
+- `max_base_price` (optional, number) – maximum `base_price`.
+- `max_total_fee` (optional, number) – maximum total fixed shipping fee, implemented as a filter on `cheapest_score` (see below).
+- `country` (optional, string) – exact match on `country` code/value.
+- `city` (optional, string) – exact match on `city`.
+- `is_vip` (optional, boolean: `true`/`false`) – filter VIP companies.
+- `onboarding_free` (optional, boolean: `true`/`false`) – filter companies with free onboarding.
+- `order_by` (optional, string) – sort field:
+  - `"rating"` – weighted rating (see below).
+  - `"cheapest"` – cheapest companies first, based on `cheapest_score`.
+  - `"name"` – alphabetical by name.
+  - `"newest"` – newest companies first (by `created_at`).
+- `order_direction` (optional, string) – `"asc"` or `"desc"` for supported sort modes.
+
+**Sorting details:**
+
+- When `order_by = "cheapest"`:
+  - Default is **cheapest first** (`cheapest_score ASC`) when no `order_direction` is provided.
+  - `order_direction=desc` inverts this (most expensive first).
+- When `order_by = "rating"`:
+
+  - Uses a **weighted rating** that considers both rating and review count:
+
+    ```sql
+    ORDER BY (rating * LEAST(review_count, 20)) DESC, rating DESC
+    ```
+
+  - `review_count` is the number of reviews per company from `company_reviews`.
+  - This means a company with many reviews and a 4.9 rating will rank above a company with a single 5.0 review.
+
+- When `order_by` is not provided but `search` is provided:
+  - The same **weighted rating** order is used by default.
+- When neither `order_by` nor `search` is provided:
+  - Default order is `created_at DESC` (newest first).
+
+**`cheapest_score` background:**
+
+- `cheapest_score` is a precomputed numeric column on `companies` used purely for fast filtering/sorting.
+- It is calculated in the backend whenever company pricing changes:
+
+  ```text
+  cheapest_score = base_price + customs_fee + service_fee + broker_fee
+  ```
+
+- The search API uses `cheapest_score` for:
+  - `max_total_fee` filter.
+  - `order_by=cheapest` sorting.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 10,
+      "name": "ACME Shipping",
+      "logo": "https://...",
+      "base_price": 500,
+      "price_per_mile": 0.5,
+      "customs_fee": 300,
+      "service_fee": 200,
+      "broker_fee": 150,
+      "final_formula": null,
+      "description": "Fast shipping to Poti",
+      "phone_number": "+995...",
+      "rating": 4.9,
+      "country": "GE",
+      "city": "Tbilisi",
+      "is_vip": true,
+      "is_onboarding_free": true,
+      "cheapest_score": 1150,
+      "created_at": "2025-11-16T00:00:00.000Z",
+      "updated_at": "2025-11-16T00:00:00.000Z",
+      "reviewCount": 42
+    }
+  ],
+  "total": 120,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – when `search` is present but shorter than 4 characters.
+- Standard error handling for internal errors via the global error handler.
+
+---
+
 ## Data Model: Company
 
 **Table:** `companies`
@@ -67,6 +173,8 @@ Each company object includes at least:
 - `final_formula`
 - `description`
 - `phone_number`
+- `rating` – numeric average rating (0–5) derived from reviews.
+- `reviewCount` – total number of reviews for this company.
 - `created_at`
 - `updated_at`
 
@@ -91,9 +199,11 @@ Return one company by ID, including its related social links and quotes.
 
 **Response 200 JSON:**
 
-- All company fields from above.
+- All company fields from above (including `rating` and `reviewCount`).
 - `social_links`: array of social link objects `{ id, company_id, url, created_at, updated_at }`.
-- `quotes`: array of `CompanyQuote` objects (see Quotes API doc if needed).
+
+Quotes are no longer embedded directly in this response; use the
+paginated quotes endpoint instead (see below).
 
 **Error responses:**
 
@@ -368,6 +478,99 @@ This means you can:
    - `POST /vehicles/:vehicleId/calculate-quotes`.
    - `POST /vehicles/search-quotes` (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
    - `POST /vehicles/compare` (vehicle comparison flows).
+
+---
+
+## Company Reviews API (Summary)
+
+Reviews are user-generated and stored in `company_reviews`. They are not
+embedded in the company object; instead, they are exposed via a
+paginated endpoint.
+
+### GET `/companies/:companyId/reviews`
+
+**Description:**
+
+Return a paginated list of reviews for a company.
+
+**Query params:**
+
+- `limit` (optional, number) – page size, default 10, max 50.
+- `offset` (optional, number) – number of reviews to skip, default 0.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 1,
+      "company_id": 10,
+      "user_id": 5,
+      "rating": 5,
+      "comment": "Great experience",
+      "created_at": "2025-11-16T00:00:00.000Z",
+      "updated_at": "2025-11-16T00:00:00.000Z"
+    }
+  ],
+  "total": 123,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+Use the `rating` and `reviewCount` fields on `/companies` and
+`/companies/:id` for aggregated information, and this endpoint for
+actual review content.
+
+---
+
+## Company Quotes API (Summary)
+
+Quotes for a company (across vehicles) are exposed via a dedicated,
+paginated endpoint. They are not embedded into `/companies/:id`.
+
+### GET `/companies/:companyId/quotes`
+
+**Description:**
+
+Fetch a paginated list of quotes for a specific company across all
+vehicles.
+
+**Query params:**
+
+- `limit` (optional, number) – page size, default 20, max 100.
+- `offset` (optional, number) – number of quotes to skip, default 0.
+- `currency` (optional, string) – `"usd"` (default) or `"gel"`. When
+  `"gel"`, `total_price` and `breakdown.total_price` are converted
+  using the latest FX rate.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 1,
+      "company_id": 10,
+      "vehicle_id": 123,
+      "total_price": 12345.67,
+      "breakdown": {
+        /* pricing breakdown object */
+      },
+      "delivery_time_days": 35,
+      "created_at": "2025-11-16T00:00:00.000Z"
+    }
+  ],
+  "total": 200,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+This endpoint is intended for admin/reporting views or company detail
+tabs that need to list many quotes, while keeping the main
+`/companies/:id` response small.
 
 ### 2. Adjusting Pricing
 
