@@ -1,0 +1,413 @@
+# Vehicles & Quotes API
+
+This document describes how vehicle data and quote calculations work in the backend, focusing on:
+
+- `VehicleModel` (DB access for the `vehicles` table)
+- Vehicle CRUD/read endpoints
+- Quote calculation endpoints that use vehicles
+- Search filters (year, price, mileage, fuel, etc.)
+
+It is intended as reference for implementing or consuming the backend from other services or AI agents.
+
+---
+
+## Data Model: Vehicle
+
+**Table:** `vehicles`
+
+Key columns used by the current APIs:
+
+- `id` (number) – primary key
+- `brand_name` (string) – brand, also exposed as `make`
+- `model_name` (string) – model, also exposed as `model`
+- `year` (number) – model year
+- `yard_name` (string) – auction yard name (used for distance)
+- `source` (string) – source (e.g. Copart/IAAI)
+- `mileage` (number or null) – odometer reading
+- `retail_value` (number or string) – used in insurance calculation
+- `calc_price` (number or string) – vehicle price from auction
+- `engine_fuel` (string or null) – fuel type in English
+- `engine_fuel_rus` (string or null) – fuel type in Russian/alt language
+- `vehicle_type` (string or null) – category (e.g. SUV, Sedan)
+- `drive` (string or null) – drive wheels info (e.g. FWD, RWD, 4WD)
+
+`VehicleModel` exposes these operations (simplified):
+
+- `findById(id)` – load a single vehicle (fields above + aliases `make`, `model`).
+- `findAll(limit, offset)` – list vehicles with basic fields.
+- `searchByFilters(filters, limit, offset)` – search vehicles for the search-quotes endpoint.
+- `countByFilters(filters)` – count vehicles matching `searchByFilters` filters.
+- `getPhotosByVehicleId(vehicleId)` – fetch vehicle photos.
+- `deleteById(id)` – delete vehicle.
+- `upsertFromAuctionLots(lots)` – batch ingest/update vehicles from auction API.
+
+---
+
+## Vehicle API
+
+### GET `/vehicles`
+
+**Description:**
+Return a paginated list of vehicles with basic fields.
+
+**Method:** `GET`
+
+**Query params (current implementation in code is fixed limit/offset or internal; if extended later, they would typically be):**
+
+- `limit` (optional, default 100, max 1000)
+- `offset` (optional, default 0)
+
+**Response 200 JSON (array of vehicles):**
+
+Each item includes (based on current `findAll`):
+
+- `id`
+- `brand_name`
+- `model_name`
+- `make` (alias for `brand_name`)
+- `model` (alias for `model_name`)
+- `year`
+- `yard_name`
+- `source`
+- `retail_value`
+
+**Errors:**
+
+- Standard error wrapper via global error handler (validation errors are unlikely on this endpoint).
+
+---
+
+### GET `/vehicles/:id`
+
+**Description:**
+Return a single vehicle by ID with core fields needed for quotes.
+
+**Method:** `GET`
+
+**Path params:**
+
+- `id` – numeric vehicle ID.
+
+**Response 200 JSON:**
+
+- `id`
+- `brand_name`
+- `model_name`
+- `make`
+- `model`
+- `year`
+- `yard_name`
+- `source`
+- `retail_value`
+- `calc_price`
+
+**Error responses:**
+
+- `404 Not Found` if the vehicle does not exist.
+- `400 Bad Request` if `id` is not a valid number (handled as `ValidationError`).
+
+---
+
+### DELETE `/vehicles/:id`
+
+**Description:**
+Delete a vehicle from the database.
+
+**Method:** `DELETE`
+
+**Path params:**
+
+- `id` – numeric vehicle ID.
+
+**Response 204 No Content:**
+
+- Empty body on success.
+
+**Error responses:**
+
+- `404 Not Found` if the vehicle does not exist.
+- `400 Bad Request` for invalid `id`.
+
+---
+
+### GET `/vehicles/:id/photos`
+
+**Description:**
+Return all photos for a vehicle.
+
+**Method:** `GET`
+
+**Path params:**
+
+- `id` – numeric vehicle ID.
+
+**Response 200 JSON (array):**
+
+Each item (from `vehicle_photos`):
+
+- `id`
+- `vehicle_id`
+- `url`
+- `thumb_url`
+- `thumb_url_min`
+- `thumb_url_middle`
+
+**Error responses:**
+
+- `404 Not Found` if the vehicle does not exist (depending on controller guard) or just an empty array if photos are missing.
+
+---
+
+### GET `/vehicles/:id/full`
+
+**Description:**
+Return a combined object with vehicle core data + photos.
+
+**Method:** `GET`
+
+**Path params:**
+
+- `id` – numeric vehicle ID.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "vehicle": {
+    /* same shape as GET /vehicles/:id */
+  },
+  "photos": [
+    /* same shape as GET /vehicles/:id/photos */
+  ]
+}
+```
+
+**Error responses:**
+
+- `404 Not Found` if the vehicle does not exist.
+
+---
+
+## Quote Calculation API (Per Vehicle)
+
+### POST `/vehicles/:vehicleId/calculate-quotes`
+
+**Description:**
+Calculate quotes for **all companies** for a single vehicle and **persist** them into `company_quotes`. Returns the created quotes plus distance.
+
+**Method:** `POST`
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID.
+
+**Request body:**
+
+- Currently no body fields are required; path param is enough.
+
+**Processing steps:**
+
+1. Load vehicle via `VehicleModel.findById(vehicleId)`.
+2. Load companies via `CompanyModel.findAll` (up to 1000).
+3. Compute distance from `vehicle.yard_name` to Poti, Georgia using `ShippingQuoteService` (yards table + cache + Geoapify fallback).
+4. For each company, compute quote using:
+   - `base_price`, `price_per_mile`, `customs_fee`, `service_fee`, `broker_fee`.
+   - `distance_miles`.
+   - Vehicle `retail_value` (insurance) and `calc_price` (vehicle cost).
+5. Insert one row into `company_quotes` per company.
+
+**Response 201 JSON:**
+
+```jsonc
+{
+  "vehicle_id": 123,
+  "make": "Toyota",
+  "model": "Corolla",
+  "year": 2018,
+  "mileage": 85000,
+  "yard_name": "Dallas, TX",
+  "source": "copart",
+  "distance_miles": 7800,
+  "quotes": [
+    {
+      "company_name": "ACME Shipping",
+      "total_price": 12345.67, // vehicle + shipping + insurance
+      "delivery_time_days": 35, // optional per-company override
+      "breakdown": {
+        "base_price": 500,
+        "distance_miles": 7800,
+        "price_per_mile": 0.5,
+        "mileage_cost": 3900,
+        "customs_fee": 300,
+        "service_fee": 200,
+        "broker_fee": 150,
+        "retail_value": 20000,
+        "insurance_rate": 0.01,
+        "insurance_fee": 200,
+        "shipping_total": 5050,
+        "calc_price": 7300,
+        "total_price": 12350,
+        "formula_source": "default" // or "final_formula"
+      }
+    }
+  ]
+}
+```
+
+**Error responses:**
+
+- `404 Not Found` — vehicle not found.
+- `400 Bad Request` — invalid `vehicleId` path parameter.
+- `422 Unprocessable Entity` (via `ValidationError`) — no companies configured or unable to compute distance.
+
+---
+
+## Search Quotes API (Vehicles + Quotes, Not Persisted)
+
+### POST `/vehicles/search-quotes`
+
+**Description:**
+Search vehicles by multiple filters, compute quotes for each vehicle for a limited number of companies, and return everything **without** writing to `company_quotes`.
+
+Used for search/list screens.
+
+**Method:** `POST`
+
+**Request body fields (all optional):**
+
+Vehicle filters:
+
+- `make` (string) – partial match on `brand_name`.
+- `model` (string) – partial match on `model_name`.
+- `year` (number) – exact match on `year`.
+- `year_from` (number) – `year >= year_from`.
+- `year_to` (number) – `year <= year_to`.
+- `mileage_from` (number) – `mileage >= mileage_from`.
+- `mileage_to` (number) – `mileage <= mileage_to`.
+- `fuel_type` (string) – partial match on `(engine_fuel OR engine_fuel_rus)`.
+- `category` (string) – partial match on `vehicle_type`.
+- `drive` (string) – partial match on `drive` (e.g. `"4WD"`).
+
+Quote-level filters:
+
+- `price_from` (number) – minimum **total quote price** (vehicle + shipping).
+- `price_to` (number) – maximum **total quote price**.
+
+Pagination:
+
+- `limit` (number, default 20, max 50) – vehicles per page.
+- `offset` (number, default 0) – number of vehicles to skip.
+
+**Filter behavior:**
+
+- All provided filters are combined with `AND`.
+- Vehicle filters are applied in SQL via `VehicleModel.searchByFilters` / `countByFilters`.
+- `price_from` / `price_to` are applied **in memory** on each computed quote’s `total_price`.
+  - Vehicles with **no quotes** inside the requested price range are skipped.
+
+**Companies limit:**
+
+- The number of companies considered per search is limited by `SEARCH_QUOTES_COMPANY_LIMIT` env var.
+- Default: 10.
+- Hard max: 1000.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "vehicle_id": 123,
+      "make": "Toyota",
+      "model": "Corolla",
+      "year": 2018,
+      "mileage": 85000,
+      "yard_name": "Dallas, TX",
+      "source": "copart",
+      "distance_miles": 7800,
+      "quotes": [
+        {
+          "company_name": "ACME Shipping",
+          "total_price": 12345.67,
+          "delivery_time_days": 35,
+          "breakdown": {
+            /* same format as above */
+          }
+        }
+      ]
+    }
+  ],
+  "total": 1234, // total number of vehicles matching DB filters
+  "limit": 20, // effective limit
+  "offset": 0, // effective offset
+  "page": 1, // derived from offset/limit
+  "totalPages": 62 // ceil(total / limit)
+}
+```
+
+**Error responses:**
+
+- `422 Unprocessable Entity` (ValidationError) — when:
+  - No vehicles found for the given filters.
+  - No companies configured for quote calculation.
+  - Distance cannot be determined for the yard.
+- `400 Bad Request` — if the request body contains invalid types (e.g., non-numeric `limit`).
+
+---
+
+## Summary of Filters vs Columns
+
+| Request field  | Internal filter key | Column(s) used                                       |
+| -------------- | ------------------- | ---------------------------------------------------- |
+| `make`         | `make`              | `vehicles.brand_name`                                |
+| `model`        | `model`             | `vehicles.model_name`                                |
+| `year`         | `year`              | `vehicles.year`                                      |
+| `year_from`    | `yearFrom`          | `vehicles.year >=`                                   |
+| `year_to`      | `yearTo`            | `vehicles.year <=`                                   |
+| `mileage_from` | `mileageFrom`       | `vehicles.mileage >=`                                |
+| `mileage_to`   | `mileageTo`         | `vehicles.mileage <=`                                |
+| `fuel_type`    | `fuelType`          | `vehicles.engine_fuel` OR `vehicles.engine_fuel_rus` |
+| `category`     | `category`          | `vehicles.vehicle_type`                              |
+| `drive`        | `drive`             | `vehicles.drive`                                     |
+| `price_from`   | `priceFrom`         | in-memory filter on `total_price` (quotes)           |
+| `price_to`     | `priceTo`           | in-memory filter on `total_price` (quotes)           |
+
+---
+
+## Suggested Additional API Docs
+
+To give another developer (or AI) a complete view of the backend, it would be useful to create similar `.md` docs for these areas:
+
+1. **Companies & Pricing API**
+
+   - File idea: `docs/companies-api.md`
+   - Would cover:
+     - `POST /companies`, `PUT /companies/:id`, `GET /companies`, `GET /companies/:id`, `DELETE /companies/:id`.
+     - Pricing fields (`base_price`, `price_per_mile`, `customs_fee`, `service_fee`, `broker_fee`, `final_formula`).
+     - How `final_formula` overrides default pricing.
+
+2. **Company Quotes API**
+
+   - File idea: `docs/company-quotes-api.md`
+   - Would cover:
+     - `GET /vehicles/:vehicleId/quotes`
+     - `GET /companies/:companyId/quotes`
+     - Admin `POST /quotes`, `PUT /quotes/:id`, `DELETE /quotes/:id`.
+     - Structure of `company_quotes` table and `breakdown` JSON.
+
+3. **Auction Ingestion API**
+
+   - File idea: `docs/auction-api.md`
+   - Would cover:
+     - `AuctionApiService` operations.
+     - `auctionRoutes` endpoints (if exposed) for triggering ingest.
+     - How `upsertFromAuctionLots` maps auction payloads into `vehicles`, `brands`, `models`, `vehicle_photos`, `vehicle_lot_bids`.
+
+4. **Geo & Distance / ShippingQuoteService**
+   - File idea: `docs/shipping-quotes-engine.md`
+   - Would cover:
+     - Distance computation flow (yards table → in-memory cache → Redis (optional) → Geoapify fallback).
+     - Quote formula (base price + mileage cost + customs + service + broker + insurance + vehicle cost).
+     - How `final_formula` JSON can override fee components.
+
+If you tell me which of these you want next (e.g. "companies-api" + "company-quotes-api"), I can generate the corresponding `.md` files in the same style as this document.

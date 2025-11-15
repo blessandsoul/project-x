@@ -194,6 +194,10 @@ export class CompanyController {
       });
     }
 
+    // Sort quotes by total_price ascending so the client sees the
+    // cheapest offers first.
+    quotes.sort((a, b) => a.total_price - b.total_price);
+
     return {
       vehicle_id: vehicle.id,
       make: vehicle.make,
