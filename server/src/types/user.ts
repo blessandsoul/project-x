@@ -8,6 +8,7 @@ export interface User {
   dealer_slug: string | null;
   company_id: number | null;
   onboarding_ends_at: Date | null;
+  is_blocked: boolean;
   password_hash: string;
   created_at: Date;
   updated_at: Date;
@@ -31,6 +32,7 @@ export interface UserUpdate {
   dealer_slug?: string | null;
   company_id?: number | null;
   onboarding_ends_at?: Date | null;
+  is_blocked?: boolean;
 }
 
 export interface UserLogin {

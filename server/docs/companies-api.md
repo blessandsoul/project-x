@@ -124,15 +124,15 @@ Key columns used by the API:
 
 - `id` (number) – primary key.
 - `name` (string) – company name.
-- `logo` (string or null) – logo URL.
-- `base_price` (DECIMAL/string) – fixed base component of shipping price.
-- `price_per_mile` (DECIMAL/string) – cost per mile.
-- `customs_fee` (DECIMAL/string) – customs-related fee.
-- `service_fee` (DECIMAL/string) – service/handling fee.
-- `broker_fee` (DECIMAL/string) – brokerage fee.
+- `logo` (string or null) – logo URL. Must be a valid HTTP(S) URL.
+- `base_price` (DECIMAL/string) – fixed base component of shipping price. Non-negative.
+- `price_per_mile` (DECIMAL/string) – cost per mile. Non-negative.
+- `customs_fee` (DECIMAL/string) – customs-related fee. Non-negative.
+- `service_fee` (DECIMAL/string) – service/handling fee. Non-negative.
+- `broker_fee` (DECIMAL/string) – brokerage fee. Non-negative.
 - `final_formula` (JSON or null) – optional per-company overrides of the default pricing formula.
-- `description` (string or null) – human description.
-- `phone_number` (string or null) – contact phone.
+- `description` (string or null) – human description. Up to ~2000 characters.
+- `phone_number` (string or null) – contact phone. Basic validation enforces phone-like characters only (digits, spaces, `+`, `-`, parentheses) and a length between 7 and 20 characters.
 - `created_at`, `updated_at` – timestamps.
 
 `CompanyModel` also manages:
@@ -207,7 +207,7 @@ paginated quotes endpoint instead (see below).
 
 **Error responses:**
 
-- `400 Bad Request` – invalid `id` (non-numeric or <= 0).
+- `400 Bad Request` – invalid `id`.
 - `404 Not Found` – company does not exist.
 
 ---
@@ -223,13 +223,13 @@ Create a new company with pricing configuration. Companies are required before a
 
 ```jsonc
 {
-  "name": "ACME Shipping", // required
-  "logo": "https://...", // optional
-  "base_price": 500, // required, number
-  "price_per_mile": 0.5, // required, number
-  "customs_fee": 300, // required, number
-  "service_fee": 200, // required, number
-  "broker_fee": 150, // required, number
+  "name": "ACME Shipping", // required, 1–255 chars
+  "logo": "https://...", // optional, must be a valid HTTP(S) URL
+  "base_price": 500, // required, number >= 0
+  "price_per_mile": 0.5, // required, number >= 0
+  "customs_fee": 300, // required, number >= 0
+  "service_fee": 200, // required, number >= 0
+  "broker_fee": 150, // required, number >= 0
   "final_formula": {
     // optional, overrides default formula
     "base_price": 600, // optional override
@@ -239,10 +239,25 @@ Create a new company with pricing configuration. Companies are required before a
     "broker_fee": 160,
     "delivery_time_days": 35
   },
-  "description": "Fast shipping to Poti", // optional
-  "phone_number": "+995..." // optional
+  "description": "Fast shipping to Poti", // optional, up to 2000 chars
+  "phone_number": "+995..." // optional, 7–20 chars, phone-style string
 }
 ```
+
+#### Validation rules
+
+| Field            | Required | Type           | Constraints                                                 |
+| ---------------- | -------- | -------------- | ----------------------------------------------------------- |
+| `name`           | yes      | string         | 1–255 characters                                            |
+| `logo`           | no       | string \| null | HTTP(S) URL, max 500 characters                             |
+| `base_price`     | yes      | number         | `>= 0`                                                      |
+| `price_per_mile` | yes      | number         | `>= 0`                                                      |
+| `customs_fee`    | yes      | number         | `>= 0`                                                      |
+| `service_fee`    | yes      | number         | `>= 0`                                                      |
+| `broker_fee`     | yes      | number         | `>= 0`                                                      |
+| `final_formula`  | no       | object \| null | Optional JSON overrides; when present must be a JSON object |
+| `description`    | no       | string \| null | Max 2000 characters                                         |
+| `phone_number`   | no       | string \| null | 7–20 characters, digits/spaces/`+`/`-`/`(` `)` only         |
 
 **Default pricing formula (when `final_formula` is not used):**
 
@@ -374,9 +389,15 @@ Create a social link for a company.
 
 ```jsonc
 {
-  "url": "https://facebook.com/acme"
+  "url": "https://facebook.com/acme" // required, HTTP(S) URL, max length ~500
 }
 ```
+
+#### Validation rules
+
+| Field | Required | Type   | Constraints                   |
+| ----- | -------- | ------ | ----------------------------- |
+| `url` | yes      | string | HTTP(S) URL, 5–500 characters |
 
 **Response 201 JSON:**
 
@@ -404,9 +425,15 @@ Update an existing social link.
 
 ```jsonc
 {
-  "url": "https://instagram.com/acme"
+  "url": "https://instagram.com/acme" // optional, HTTP(S) URL, max length ~500
 }
 ```
+
+#### Validation rules
+
+| Field | Required | Type   | Constraints                   |
+| ----- | -------- | ------ | ----------------------------- |
+| `url` | no       | string | HTTP(S) URL, 5–500 characters |
 
 **Response 200 JSON:**
 
@@ -441,46 +468,6 @@ Delete a social link.
 
 ---
 
-## How Company Pricing Interacts with Quotes
-
-The **Companies & Pricing API** doesn’t compute quotes by itself, but its data is consumed by `ShippingQuoteService` when you call quote endpoints.
-
-Key points:
-
-- `base_price`, `price_per_mile`, `customs_fee`, `service_fee`, `broker_fee` are all required to compute shipping.
-- `final_formula` is optional JSON that can override these per company without changing code.
-- When quote endpoints run:
-  - They pull `Company` objects via `CompanyModel.findAll(...)`.
-  - For each company and vehicle, `ShippingQuoteService`:
-    - Normalizes all price fields to numbers.
-    - Applies `final_formula` overrides if present.
-    - Computes `total_price` including vehicle `calc_price` and insurance based on `retail_value`.
-    - Optionally converts quote totals to GEL when the `currency` parameter
-      is set to `"gel"` on quote endpoints (see `fx-and-currency-api.md`).
-
-This means you can:
-
-- Use the Companies API to:
-  - Add new shippers.
-  - Tweak their pricing.
-  - Override formulas via JSON.
-- Without any additional code changes in the quote engine.
-
----
-
-## Typical Flows
-
-### 1. Onboarding a New Company
-
-1. Call `POST /companies` with base prices and fees.
-2. Optionally call `POST /companies/:companyId/social-links` to attach social URLs.
-3. Once created, the company will automatically be included in:
-   - `POST /vehicles/:vehicleId/calculate-quotes`.
-   - `POST /vehicles/search-quotes` (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
-   - `POST /vehicles/compare` (vehicle comparison flows).
-
----
-
 ## Company Reviews API (Summary)
 
 Reviews are user-generated and stored in `company_reviews`. They are not
@@ -508,7 +495,7 @@ Return a paginated list of reviews for a company.
       "company_id": 10,
       "user_id": 5,
       "rating": 5,
-      "comment": "Great experience",
+      "comment": "Great experience", // at least 10 characters when provided
       "created_at": "2025-11-16T00:00:00.000Z",
       "updated_at": "2025-11-16T00:00:00.000Z"
     }
@@ -522,6 +509,18 @@ Return a paginated list of reviews for a company.
 Use the `rating` and `reviewCount` fields on `/companies` and
 `/companies/:id` for aggregated information, and this endpoint for
 actual review content.
+
+#### Validation rules (create/update)
+
+For the corresponding write endpoints:
+
+- **POST** `/companies/:companyId/reviews`
+- **PUT** `/companies/:companyId/reviews/:reviewId`
+
+| Field     | Required (POST) | Required (PUT) | Type           | Constraints                    |
+| --------- | --------------- | -------------- | -------------- | ------------------------------ |
+| `rating`  | yes             | no             | number         | `1 <= rating <= 5`             |
+| `comment` | no              | no             | string \| null | If present: 10–2000 characters |
 
 ---
 

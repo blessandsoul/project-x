@@ -61,7 +61,7 @@ export class UserModel extends BaseModel {
 
   async findById(id: number): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, password_hash, created_at, updated_at FROM users WHERE id = ?',
       [id]
     );
 
@@ -70,7 +70,7 @@ export class UserModel extends BaseModel {
 
   async findByEmail(email: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE email = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, password_hash, created_at, updated_at FROM users WHERE email = ?',
       [email]
     );
 
@@ -79,7 +79,7 @@ export class UserModel extends BaseModel {
 
   async findByUsername(username: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users WHERE username = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, password_hash, created_at, updated_at FROM users WHERE username = ?',
       [username]
     );
 
@@ -107,11 +107,58 @@ export class UserModel extends BaseModel {
     return user;
   }
 
-  async findAll(limit: number = 10, offset: number = 0): Promise<User[]> {
-    const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, password_hash, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset]
-    );
+  async findAll(
+    limit: number = 10,
+    offset: number = 0,
+    filters?: {
+      email?: string;
+      username?: string;
+      role?: 'user' | 'dealer' | 'company' | 'admin';
+      is_blocked?: boolean;
+      company_id?: number;
+    }
+  ): Promise<User[]> {
+    const where: string[] = [];
+    const params: any[] = [];
+
+    if (filters) {
+      if (filters.email && filters.email.trim().length > 0) {
+        where.push('email LIKE ?');
+        params.push(`%${filters.email.trim()}%`);
+      }
+
+      if (filters.username && filters.username.trim().length > 0) {
+        where.push('username LIKE ?');
+        params.push(`%${filters.username.trim()}%`);
+      }
+
+      if (filters.role) {
+        where.push('role = ?');
+        params.push(filters.role);
+      }
+
+      if (typeof filters.is_blocked === 'boolean') {
+        where.push('is_blocked = ?');
+        params.push(filters.is_blocked ? 1 : 0);
+      }
+
+      if (typeof filters.company_id === 'number') {
+        where.push('company_id = ?');
+        params.push(filters.company_id);
+      }
+    }
+
+    let sql =
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, password_hash, created_at, updated_at FROM users';
+
+    if (where.length > 0) {
+      sql += ` WHERE ${where.join(' AND ')}`;
+    }
+
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const rows = await this.executeQuery(sql, params);
 
     return rows as User[];
   }
@@ -129,7 +176,7 @@ export class UserModel extends BaseModel {
    * @throws Error if no valid fields provided for update
    */
   async update(id: number, updates: UserUpdate): Promise<User | null> {
-    const { email, username, password, role, dealer_slug, company_id, onboarding_ends_at } = updates;
+    const { email, username, password, role, dealer_slug, company_id, onboarding_ends_at, is_blocked } = updates;
     const updateFields: string[] = [];
     const updateValues: any[] = [];
 
@@ -168,6 +215,11 @@ export class UserModel extends BaseModel {
       updateValues.push(onboarding_ends_at);
     }
 
+	    if (is_blocked !== undefined) {
+	      updateFields.push('is_blocked = ?');
+	      updateValues.push(is_blocked ? 1 : 0);
+	    }
+
     if (updateFields.length === 0) {
       throw new ValidationError('No valid fields to update');
     }
@@ -205,6 +257,53 @@ export class UserModel extends BaseModel {
       'SELECT COUNT(*) as count FROM users'
     );
 
+    return rows[0].count;
+  }
+
+  async countWithFilters(filters?: {
+    email?: string;
+    username?: string;
+    role?: 'user' | 'dealer' | 'company' | 'admin';
+    is_blocked?: boolean;
+    company_id?: number;
+  }): Promise<number> {
+    const where: string[] = [];
+    const params: any[] = [];
+
+    if (filters) {
+      if (filters.email && filters.email.trim().length > 0) {
+        where.push('email LIKE ?');
+        params.push(`%${filters.email.trim()}%`);
+      }
+
+      if (filters.username && filters.username.trim().length > 0) {
+        where.push('username LIKE ?');
+        params.push(`%${filters.username.trim()}%`);
+      }
+
+      if (filters.role) {
+        where.push('role = ?');
+        params.push(filters.role);
+      }
+
+      if (typeof filters.is_blocked === 'boolean') {
+        where.push('is_blocked = ?');
+        params.push(filters.is_blocked ? 1 : 0);
+      }
+
+      if (typeof filters.company_id === 'number') {
+        where.push('company_id = ?');
+        params.push(filters.company_id);
+      }
+    }
+
+    let sql = 'SELECT COUNT(*) as count FROM users';
+
+    if (where.length > 0) {
+      sql += ` WHERE ${where.join(' AND ')}`;
+    }
+
+    const rows = await this.executeQuery(sql, params);
     return rows[0].count;
   }
 }

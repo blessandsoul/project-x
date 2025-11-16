@@ -857,16 +857,34 @@ export class CompanyController {
     });
   }
 
-  async createQuoteAdmin(data: CompanyQuoteCreate): Promise<CompanyQuote> {
-    // Admin-only operation: both company_id and vehicle_id must be valid
+  async createQuoteAdmin(data: Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>): Promise<CompanyQuote> {
+    // Admin-only operation: both company_id and vehicle_id must be valid.
     const company = await this.companyModel.findById(data.company_id);
     if (!company) {
       throw new NotFoundError('Company');
     }
 
-    await this.ensureVehicleExists(data.vehicle_id);
+    const vehicle: Vehicle | null = await this.vehicleModel.findById(data.vehicle_id);
+    if (!vehicle) {
+      throw new NotFoundError('Vehicle');
+    }
 
-    return this.companyModel.createQuote(data);
+    // Reuse the same pricing logic as automatic quote calculation.
+    const { quotes: computedQuotes } = await this.shippingQuoteService.computeQuotesForVehicle(vehicle, [company]);
+    const [cq] = computedQuotes;
+    if (!cq) {
+      throw new ValidationError('Unable to compute quote for the given company and vehicle');
+    }
+
+    const quoteCreate: CompanyQuoteCreate = {
+      company_id: data.company_id,
+      vehicle_id: data.vehicle_id,
+      total_price: cq.totalPrice,
+      breakdown: cq.breakdown,
+      delivery_time_days: cq.deliveryTimeDays,
+    };
+
+    return this.companyModel.createQuote(quoteCreate);
   }
 
   async updateQuote(id: number, updates: CompanyQuoteUpdate): Promise<CompanyQuote> {

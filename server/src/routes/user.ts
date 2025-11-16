@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController } from '../controllers/userController.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
-import { ValidationError, AuthenticationError, NotFoundError, ConflictError } from '../types/errors.js';
+import { ValidationError, AuthenticationError, NotFoundError, ConflictError, AuthorizationError } from '../types/errors.js';
 
 /**
  * User Routes
@@ -133,33 +133,189 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     reply.send(updatedUser);
   });
 
-  /**
-   * GET /users
-   *
-   * Retrieve a list of all users.
-   * Requires valid JWT token in Authorization header.
-   *
-   * Headers: Authorization: Bearer <token>
-   * Query Parameters: limit (integer, default: 10), offset (integer, default: 0)
-   * Response: Array of user objects
-   * Status: 200 (OK) on success, 401 (Unauthorized) if not authenticated
-   */
-  fastify.get('/users', {
-    preHandler: fastify.authenticate,
-    schema: {
-      querystring: {
-        type: 'object',
-        properties: {
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
-          offset: { type: 'integer', minimum: 0, default: 0 },
-        },
-      },
-    },
-  }, async (request, reply) => {
-    const { limit = 10, offset = 0 } = request.query as { limit?: number; offset?: number };
-    const users = await userController.getAllUsers(limit, offset);
-    reply.send(users);
-  });
+	  // ---------------------------------------------------------------------------
+	  // Admin User Management (/admin/...)
+	  // ---------------------------------------------------------------------------
+
+	  /**
+	   * GET /admin/users
+	   *
+	   * Admin: Retrieve paginated list of users with optional filters.
+	   */
+	  fastify.get('/admin/users', {
+	    preHandler: fastify.authenticate,
+	    schema: {
+	      querystring: {
+	        type: 'object',
+	        properties: {
+	          limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+	          offset: { type: 'integer', minimum: 0, default: 0 },
+	          email: { type: 'string', minLength: 1, maxLength: 255 },
+	          username: { type: 'string', minLength: 1, maxLength: 255 },
+	          role: { type: 'string', enum: ['user', 'dealer', 'company', 'admin'] },
+	          is_blocked: { type: 'boolean' },
+	          company_id: { type: 'integer', minimum: 1 },
+	        },
+	      },
+	    },
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to access this resource');
+	    }
+	    const { limit = 10, offset = 0, email, username, role, is_blocked, company_id } = request.query as {
+	      limit?: number;
+	      offset?: number;
+	      email?: string;
+	      username?: string;
+	      role?: 'user' | 'dealer' | 'company' | 'admin';
+	      is_blocked?: boolean;
+	      company_id?: number;
+	    };
+	    const filters: {
+	      email?: string;
+	      username?: string;
+	      role?: 'user' | 'dealer' | 'company' | 'admin';
+	      is_blocked?: boolean;
+	      company_id?: number;
+	    } = {};
+	    if (email) filters.email = email;
+	    if (username) filters.username = username;
+	    if (role) filters.role = role;
+	    if (typeof is_blocked === 'boolean') filters.is_blocked = is_blocked;
+	    if (typeof company_id === 'number') filters.company_id = company_id;
+	    const items = await userController.getAllUsers(limit, offset, filters);
+	    const total = await userController.getUserCountWithFilters(filters);
+	    reply.send({
+	      items,
+	      meta: {
+	        limit,
+	        offset,
+	        count: items.length,
+	        total,
+	      },
+	    });
+	  });
+
+	  /**
+	   * GET /admin/users/:id
+	   *
+	   * Admin: Get full information about a specific user.
+	   */
+	  fastify.get('/admin/users/:id', {
+	    preHandler: fastify.authenticate,
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to access this resource');
+	    }
+	    const { id } = request.params as { id: string };
+	    const userId = parseInt(id, 10);
+	    if (!Number.isFinite(userId) || userId <= 0) {
+	      throw new ValidationError('Invalid user id');
+	    }
+	    const user = await userController.getUserByIdAdmin(userId);
+	    reply.send(user);
+	  });
+
+	  /**
+	   * PATCH /admin/users/:id
+	   *
+	   * Admin: Update selected fields on a user (role, dealer/company links, onboarding, block state).
+	   */
+	  fastify.patch('/admin/users/:id', {
+	    preHandler: fastify.authenticate,
+	    schema: {
+	      body: {
+	        type: 'object',
+	        properties: {
+	          role: { type: 'string', enum: ['user', 'dealer', 'company', 'admin'] },
+	          dealer_slug: { type: ['string', 'null'] },
+	          company_id: { type: ['integer', 'null'], minimum: 1 },
+	          onboarding_ends_at: { type: ['string', 'null'], format: 'date-time' },
+	          is_blocked: { type: 'boolean' },
+	        },
+	      },
+	    },
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to update users');
+	    }
+	    const { id } = request.params as { id: string };
+	    const userId = parseInt(id, 10);
+	    if (!Number.isFinite(userId) || userId <= 0) {
+	      throw new ValidationError('Invalid user id');
+	    }
+	    const body = request.body as Partial<UserUpdate> & { is_blocked?: boolean };
+	    const updates: UserUpdate = {};
+	    if (body.role) updates.role = body.role;
+	    if ('dealer_slug' in body) updates.dealer_slug = body.dealer_slug ?? null;
+	    if ('company_id' in body) updates.company_id = body.company_id ?? null;
+	    if ('onboarding_ends_at' in body) {
+	      updates.onboarding_ends_at = body.onboarding_ends_at ? new Date(body.onboarding_ends_at as any) : null;
+	    }
+	    if (typeof body.is_blocked === 'boolean') updates.is_blocked = body.is_blocked;
+	    const updated = await userController.updateUserAdmin(userId, updates as any);
+	    reply.send(updated);
+	  });
+
+	  /**
+	   * DELETE /admin/users/:id
+	   *
+	   * Admin: Permanently delete a user account by ID.
+	   */
+	  fastify.delete('/admin/users/:id', {
+	    preHandler: fastify.authenticate,
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to delete users');
+	    }
+	    const { id } = request.params as { id: string };
+	    const userId = parseInt(id, 10);
+	    if (!Number.isFinite(userId) || userId <= 0) {
+	      throw new ValidationError('Invalid user id');
+	    }
+	    await userController.deleteUser(userId);
+	    reply.code(204).send();
+	  });
+
+	  /**
+	   * POST /admin/users/:id/block
+	   *
+	   * Admin: Block a user account.
+	   */
+	  fastify.post('/admin/users/:id/block', {
+	    preHandler: fastify.authenticate,
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to block users');
+	    }
+	    const { id } = request.params as { id: string };
+	    const userId = parseInt(id, 10);
+	    if (!Number.isFinite(userId) || userId <= 0) {
+	      throw new ValidationError('Invalid user id');
+	    }
+	    const updated = await userController.setUserBlocked(userId, true);
+	    reply.send(updated);
+	  });
+
+	  /**
+	   * POST /admin/users/:id/unblock
+	   *
+	   * Admin: Unblock a user account.
+	   */
+	  fastify.post('/admin/users/:id/unblock', {
+	    preHandler: fastify.authenticate,
+	  }, async (request, reply) => {
+	    if (!request.user || request.user.role !== 'admin') {
+	      throw new AuthorizationError('Admin role required to unblock users');
+	    }
+	    const { id } = request.params as { id: string };
+	    const userId = parseInt(id, 10);
+	    if (!Number.isFinite(userId) || userId <= 0) {
+	      throw new ValidationError('Invalid user id');
+	    }
+	    const updated = await userController.setUserBlocked(userId, false);
+	    reply.send(updated);
+	  });
 
   /**
    * DELETE /profile

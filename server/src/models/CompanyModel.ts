@@ -334,14 +334,6 @@ export class CompanyModel extends BaseModel {
     const fields: string[] = [];
     const values: any[] = [];
 
-    if (updates.total_price !== undefined) {
-      fields.push('total_price = ?');
-      values.push(updates.total_price);
-    }
-    if (updates.breakdown !== undefined) {
-      fields.push('breakdown = ?');
-      values.push(updates.breakdown ? JSON.stringify(updates.breakdown) : null);
-    }
     if (updates.delivery_time_days !== undefined) {
       fields.push('delivery_time_days = ?');
       values.push(updates.delivery_time_days);

@@ -7,7 +7,7 @@ import {
   CompanyQuoteCreate,
   CompanyQuoteUpdate,
 } from '../types/company.js';
-import { ValidationError } from '../types/errors.js';
+import { ValidationError, AuthorizationError } from '../types/errors.js';
 
 /**
  * Company, Social Links, and Quotes Routes
@@ -164,19 +164,31 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['name', 'base_price', 'price_per_mile', 'customs_fee', 'service_fee', 'broker_fee'],
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 255 },
-          logo: { type: 'string', nullable: true },
-          base_price: { type: 'number' },
-          price_per_mile: { type: 'number' },
-          customs_fee: { type: 'number' },
-          service_fee: { type: 'number' },
-          broker_fee: { type: 'number' },
+          logo: {
+            type: ['string', 'null'],
+            maxLength: 500,
+            format: 'uri',
+            pattern: '^https?://',
+          },
+          base_price: { type: 'number', minimum: 0 },
+          price_per_mile: { type: 'number', minimum: 0 },
+          customs_fee: { type: 'number', minimum: 0 },
+          service_fee: { type: 'number', minimum: 0 },
+          broker_fee: { type: 'number', minimum: 0 },
           final_formula: { type: ['object', 'null'] },
-          description: { type: ['string', 'null'] },
-          phone_number: { type: ['string', 'null'] },
+          description: { type: ['string', 'null'], maxLength: 2000 },
+          phone_number: {
+            type: ['string', 'null'],
+            maxLength: 20,
+            pattern: '^\\+?[0-9\\- ()]{7,20}$',
+          },
         },
       },
     },
   }, async (request, reply) => {
+    if (!request.user || request.user.role !== 'admin') {
+      throw new AuthorizationError('Admin role required to create quotes');
+    }
     const payload = request.body as CompanyCreate;
     const created = await controller.createCompany(payload);
     return reply.code(201).send(created);
@@ -195,15 +207,24 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 255 },
-          logo: { type: 'string', nullable: true },
-          base_price: { type: 'number' },
-          price_per_mile: { type: 'number' },
-          customs_fee: { type: 'number' },
-          service_fee: { type: 'number' },
-          broker_fee: { type: 'number' },
+          logo: {
+            type: ['string', 'null'],
+            maxLength: 500,
+            format: 'uri',
+            pattern: '^https?://',
+          },
+          base_price: { type: 'number', minimum: 0 },
+          price_per_mile: { type: 'number', minimum: 0 },
+          customs_fee: { type: 'number', minimum: 0 },
+          service_fee: { type: 'number', minimum: 0 },
+          broker_fee: { type: 'number', minimum: 0 },
           final_formula: { type: ['object', 'null'] },
-          description: { type: ['string', 'null'] },
-          phone_number: { type: ['string', 'null'] },
+          description: { type: ['string', 'null'], maxLength: 2000 },
+          phone_number: {
+            type: ['string', 'null'],
+            maxLength: 20,
+            pattern: '^\\+?[0-9\\- ()]{7,20}$',
+          },
         },
       },
     },
@@ -275,7 +296,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         required: ['url'],
         properties: {
-          url: { type: 'string', minLength: 1, maxLength: 500 },
+          url: {
+            type: 'string',
+            minLength: 5,
+            maxLength: 500,
+            format: 'uri',
+            pattern: '^https?://',
+          },
         },
       },
     },
@@ -303,7 +330,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       body: {
         type: 'object',
         properties: {
-          url: { type: 'string', minLength: 1, maxLength: 500 },
+          url: {
+            type: 'string',
+            minLength: 5,
+            maxLength: 500,
+            format: 'uri',
+            pattern: '^https?://',
+          },
         },
       },
     },
@@ -379,7 +412,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['rating'],
         properties: {
           rating: { type: 'number', minimum: 1, maximum: 5 },
-          comment: { type: ['string', 'null'], maxLength: 2000 },
+          comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
       },
     },
@@ -412,7 +445,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         properties: {
           rating: { type: 'number', minimum: 1, maximum: 5 },
-          comment: { type: ['string', 'null'], maxLength: 2000 },
+          comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
       },
     },
@@ -480,7 +513,23 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * - Loads all companies and creates one company_quotes row per company
    * - Returns a vehicle + quotes object to the frontend.
    */
-  fastify.post('/vehicles/:vehicleId/calculate-quotes', async (request, reply) => {
+  fastify.post('/vehicles/:vehicleId/calculate-quotes', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['vehicleId'],
+        properties: {
+          vehicleId: { type: 'integer', minimum: 1 },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
     const { currency } = request.query as { currency?: string };
     const id = parseInt(vehicleId, 10);
@@ -500,7 +549,24 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * all companies without persisting them to the database. Intended for
    * vehicle details pages where only the best offers are needed.
    */
-  fastify.get('/vehicles/:vehicleId/cheapest-quotes', async (request, reply) => {
+  fastify.get('/vehicles/:vehicleId/cheapest-quotes', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['vehicleId'],
+        properties: {
+          vehicleId: { type: 'integer', minimum: 1 },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 20 },
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
     const { limit, currency } = request.query as { limit?: string; currency?: string };
     const id = parseInt(vehicleId, 10);
@@ -534,7 +600,30 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *   "offset": 0            // optional, default 0
    * }
    */
-  fastify.post('/vehicles/search-quotes', async (request, reply) => {
+  fastify.post('/vehicles/search-quotes', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          make: { type: 'string', minLength: 2, maxLength: 100 },
+          model: { type: 'string', minLength: 2, maxLength: 100 },
+          year: { type: 'integer', minimum: 1950, maximum: 2100 },
+          year_from: { type: 'integer', minimum: 1950, maximum: 2100 },
+          year_to: { type: 'integer', minimum: 1950, maximum: 2100 },
+          price_from: { type: 'number', minimum: 0 },
+          price_to: { type: 'number', minimum: 0 },
+          mileage_from: { type: 'number', minimum: 0 },
+          mileage_to: { type: 'number', minimum: 0 },
+          fuel_type: { type: 'string', minLength: 1, maxLength: 50 },
+          category: { type: 'string', minLength: 1, maxLength: 50 },
+          drive: { type: 'string', minLength: 1, maxLength: 50 },
+          limit: { type: 'integer', minimum: 1, maximum: 50 },
+          offset: { type: 'integer', minimum: 0 },
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const body = request.body as {
       make?: string;
       model?: string;
@@ -552,6 +641,24 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       offset?: number;
       currency?: string;
     };
+
+    const hasSearchFilter =
+      (typeof body.make === 'string' && body.make.trim().length > 0) ||
+      (typeof body.model === 'string' && body.model.trim().length > 0) ||
+      typeof body.year === 'number' ||
+      typeof body.year_from === 'number' ||
+      typeof body.year_to === 'number' ||
+      typeof body.price_from === 'number' ||
+      typeof body.price_to === 'number' ||
+      typeof body.mileage_from === 'number' ||
+      typeof body.mileage_to === 'number' ||
+      (typeof body.fuel_type === 'string' && body.fuel_type.trim().length > 0) ||
+      (typeof body.category === 'string' && body.category.trim().length > 0) ||
+      (typeof body.drive === 'string' && body.drive.trim().length > 0);
+
+    if (!hasSearchFilter) {
+      throw new ValidationError('At least one search filter (make, model, year, price, mileage, fuel_type, category, drive) must be provided');
+    }
 
     const filters: {
       make?: string;
@@ -619,7 +726,24 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * result), and the backend computes quotes for each and returns a
    * comparison-friendly structure in a single response.
    */
-  fastify.post('/vehicles/compare', async (request, reply) => {
+  fastify.post('/vehicles/compare', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['vehicle_ids'],
+        properties: {
+          vehicle_ids: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 50,
+            items: { type: 'integer', minimum: 1 },
+          },
+          quotes_per_vehicle: { type: 'integer', minimum: 1, maximum: 20 },
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const body = request.body as {
       vehicle_ids?: number[];
       quotes_per_vehicle?: number;
@@ -646,7 +770,23 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * endpoint is typically used by the frontend to show the list of
    * available offers for a selected vehicle.
    */
-  fastify.get('/vehicles/:vehicleId/quotes', async (request, reply) => {
+  fastify.get('/vehicles/:vehicleId/quotes', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['vehicleId'],
+        properties: {
+          vehicleId: { type: 'integer', minimum: 1 },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
     const { currency } = request.query as { currency?: string };
     const id = parseInt(vehicleId, 10);
@@ -689,18 +829,21 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     schema: {
       body: {
         type: 'object',
-        required: ['company_id', 'vehicle_id', 'total_price'],
+        required: ['company_id', 'vehicle_id'],
         properties: {
           company_id: { type: 'integer', minimum: 1 },
           vehicle_id: { type: 'integer', minimum: 1 },
-          total_price: { type: 'number' },
-          breakdown: { type: ['object', 'null'] },
-          delivery_time_days: { type: ['integer', 'null'], minimum: 0 },
+          // All monetary fields (base_price, price_per_mile, fees, total_price)
+          // are derived by backend pricing logic; admin does not provide them here.
         },
       },
     },
   }, async (request, reply) => {
-    const payload = request.body as CompanyQuoteCreate;
+    if (!request.user || request.user.role !== 'admin') {
+      throw new AuthorizationError('Admin role required to create quotes');
+    }
+
+    const payload = request.body as Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>;
     const created = await controller.createQuoteAdmin(payload);
     return reply.code(201).send(created);
   });
@@ -718,13 +861,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       body: {
         type: 'object',
         properties: {
-          total_price: { type: 'number' },
-          breakdown: { type: ['object', 'null'] },
           delivery_time_days: { type: ['integer', 'null'], minimum: 0 },
         },
       },
     },
   }, async (request, reply) => {
+    if (!request.user || request.user.role !== 'admin') {
+      throw new AuthorizationError('Admin role required to update quotes');
+    }
+
     const { id } = request.params as { id: string };
     const quoteId = parseInt(id, 10);
     if (!Number.isFinite(quoteId) || quoteId <= 0) {
@@ -745,6 +890,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete('/quotes/:id', {
     preHandler: fastify.authenticate,
   }, async (request, reply) => {
+    if (!request.user || request.user.role !== 'admin') {
+      throw new AuthorizationError('Admin role required to delete quotes');
+    }
     const { id } = request.params as { id: string };
     const quoteId = parseInt(id, 10);
     if (!Number.isFinite(quoteId) || quoteId <= 0) {
