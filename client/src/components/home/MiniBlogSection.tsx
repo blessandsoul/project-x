@@ -1,6 +1,9 @@
+import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { EmptyState } from '@/components/company/EmptyState'
 
 const POSTS = [
   {
@@ -41,7 +44,7 @@ export function MiniBlogSection() {
   }
   return (
     <section
-      className="border-b bg-muted/10"
+      className="border-b bg-background"
       aria-labelledby="home-blog-heading"
     >
       <div className="container mx-auto py-10 md:py-12">
@@ -60,29 +63,52 @@ export function MiniBlogSection() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3" role="list">
-          {POSTS.map((post, index) => (
-            <motion.article
-              key={post.id}
-              {...getCardMotionProps(index)}
-              role="listitem"
-            >
-              <Card className="h-full border-muted/60">
-                <CardHeader className="space-y-2">
-                  <CardTitle className="flex items-start gap-2 text-base font-semibold">
-                    <Icon
-                      icon="mdi:lightbulb-on-outline"
-                      className="mt-0.5 h-4 w-4 text-primary"
-                      aria-hidden="true"
-                    />
-                    <span>{post.title}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{post.description}</p>
-                </CardContent>
-              </Card>
-            </motion.article>
-          ))}
+          {POSTS.length === 0 ? (
+            <Card className="md:col-span-3 p-8">
+              <EmptyState
+                icon="mdi:file-document-outline"
+                title="სტატიები ჯერ არ არის დამატებული"
+                description="როგორც კი სასარგებლო რჩევები და სტატეები დაემატება პლატფორმას, ისინი გამოჩნდება აქ. ამ ეტაპზე შეგიძლიათ გაეცნოთ იმპორტის კომპანიებს კატალოგში."
+                action={(
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="inline-flex items-center gap-1"
+                  >
+                    <Link to="/catalog">
+                      <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
+                      <span>კატალოგის ნახვა</span>
+                    </Link>
+                  </Button>
+                )}
+              />
+            </Card>
+          ) : (
+            POSTS.map((post, index) => (
+              <motion.article
+                key={post.id}
+                {...getCardMotionProps(index)}
+                role="listitem"
+              >
+                <Card className="h-full border-muted/60">
+                  <CardHeader className="space-y-2">
+                    <CardTitle className="flex items-start gap-2 text-base font-semibold">
+                      <Icon
+                        icon="mdi:lightbulb-on-outline"
+                        className="mt-0.5 h-4 w-4 text-primary"
+                        aria-hidden="true"
+                      />
+                      <span>{post.title}</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{post.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.article>
+            ))
+          )}
         </div>
       </div>
     </section>

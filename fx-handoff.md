@@ -71,3 +71,5 @@ Summary:
 - Ensured all navigation items are clickable on both desktop (inline nav) and mobile (slide-in sheet) and reuse the same navigationItems config and i18n keys.
 - Made the Documents title in SiteHeader clickable by wrapping it in a Link to /dashboard, keeping layout and sidebar trigger intact.
 Status: Headers now provide consistent, fully clickable navigation across desktop and mobile, aligned with existing routing.
+
+VC-009: Rebranded the UI to TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy.

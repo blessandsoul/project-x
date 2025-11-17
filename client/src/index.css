@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Georgian:wght@100..900&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -10,27 +10,28 @@
   --color-card-foreground: #1F1F1F;
   --color-popover: #ffffff;
   --color-popover-foreground: #1F1F1F;
-  --color-primary: #0A9B44;
+  --color-primary: #1B4D3E;
   --color-primary-foreground: #f8fafc;
   --color-secondary: #F5F5F5;
   --color-secondary-foreground: #1F1F1F;
   --color-muted: #F5F5F5;
   --color-muted-foreground: #666666;
-  --color-accent: #f1f5f9;
+  --color-accent: #FA8072;
   --color-accent-foreground: #1F1F1F;
-  --color-warning: #FFA500;
+  --color-warning: #FA8072;
   --color-warning-foreground: #1F1F1F;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #f8fafc;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
-  --color-ring: #0AD14B;
+  --color-ring: #1B4D3E;
   --radius: 0.5rem;
 
   --container-center: true;
   --container-padding: 1rem;
 
   --font-georgian: 'Noto Sans Georgian', sans-serif;
+  --font-sans: 'Inter', 'Noto Sans Georgian', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .dark {
@@ -40,19 +41,21 @@
   --color-card-foreground: #f8fafc;
   --color-popover: #0f172a;
   --color-popover-foreground: #f8fafc;
-  --color-primary: #0AD14B;
+  --color-primary: #1B4D3E;
   --color-primary-foreground: #0f172a;
   --color-secondary: #1e293b;
   --color-secondary-foreground: #f8fafc;
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
-  --color-accent: #1e293b;
-  --color-accent-foreground: #f8fafc;
+  --color-accent: #FA8072;
+  --color-accent-foreground: #1F1F1F;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #f8fafc;
   --color-border: #1e293b;
   --color-input: #1e293b;
-  --color-ring: #0AD14B;
+  --color-ring: #1B4D3E;
+  --color-warning: #FA8072;
+  --color-warning-foreground: #1F1F1F;
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
   --sidebar-primary: hsl(224.3 76.3% 48%);
@@ -91,6 +94,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-georgian);
+    font-family: var(--font-sans);
   }
 }

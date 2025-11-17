@@ -22,3 +22,4 @@
 - Recently viewed tracking, mock car data and imported cars section in company profiles, client-side pagination in catalog, and basic tests for company search/catalog pages
 - Home QuickSearch integrated with shared SearchContext, persisted search filters in localStorage, contact sheet on company profile, accessibility tweaks for search/catalog results, active filter badges, and dashboard tests for favorites and recently viewed
  - Improved main Header and SiteHeader clickability and added a mobile navigation sheet for small screens
+ - Rebranded the platform as TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy

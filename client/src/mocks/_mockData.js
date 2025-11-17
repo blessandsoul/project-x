@@ -332,3 +332,57 @@ export const mockSearchFilters = {
 //       maximum: 5
 //     vipOnly:
 //       type: boolean
+
+const generateRecentCases = (count = 3) => {
+  const destinations = ['Tbilisi', 'Batumi', 'Poti', 'Kutaisi'];
+
+  return Array.from({ length: count }, () => {
+    const make = faker.vehicle.manufacturer();
+    const model = faker.vehicle.model();
+    const fromCity = faker.location.city();
+    const toCity = faker.helpers.arrayElement(destinations);
+    const days = faker.number.int({ min: 10, max: 35 });
+
+    return {
+      id: faker.string.uuid(),
+      make,
+      model,
+      from: `USA (${fromCity})`,
+      to: toCity,
+      days,
+      completedAt: faker.date.past({ years: 1 }).toISOString().split('T')[0]
+    };
+  });
+};
+
+export const mockRecentCases = generateRecentCases();
+
+// TODO-FX: Replace with real API call.
+// API Endpoint: GET /api/imports/recent-cases
+// Expected Data:
+//   type: array
+//   items:
+//     type: object
+//     properties:
+//       id:
+//         type: string
+//         example: "case-1"
+//       make:
+//         type: string
+//         example: "BMW"
+//       model:
+//         type: string
+//         example: "X5"
+//       from:
+//         type: string
+//         example: "USA (New York)"
+//       to:
+//         type: string
+//         example: "Batumi"
+//       days:
+//         type: integer
+//         example: 12
+//       completedAt:
+//         type: string
+//         format: date
+//         example: "2024-05-12"

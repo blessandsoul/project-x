@@ -1580,7 +1580,7 @@ export default function DashboardPage() {
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
                     <Link to="/">
-                      ProjectX
+                      TrustedImporters.Ge
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>

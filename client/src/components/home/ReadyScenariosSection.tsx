@@ -94,12 +94,13 @@ export function ReadyScenariosSection() {
     <motion.section
       {...sectionMotionProps}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="border-b bg-muted/10"
+      className="border-b bg-background"
+      id="home-ready-scenarios-section"
       aria-labelledby="home-ready-scenarios-heading"
       role="region"
     >
       <div className="container mx-auto py-10">
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-primary/30 bg-primary/5">
           <CardHeader className="gap-2">
             <div className="flex items-center gap-2">
               <Icon icon="mdi:map-marker-path" className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -107,7 +108,10 @@ export function ReadyScenariosSection() {
                 id="home-ready-scenarios-heading"
                 className="text-lg font-semibold"
               >
-                მზად სცენარები ძიებისთვის
+                <span className="block text-xs font-semibold uppercase text-primary tracking-wide mb-1">
+                  მინი-ქვიზი
+                </span>
+                <span>მზად სცენარები ძიებისთვის</span>
               </CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
