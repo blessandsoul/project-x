@@ -6,7 +6,7 @@ interface UseVehiclePhotosMapOptions {
   vehicleIds: number[]
 }
 
-type PhotosMap = Record<number, string | null>
+type PhotosMap = Record<number, string[]>
 
 export function useVehiclePhotosMap({ vehicleIds }: UseVehiclePhotosMapOptions): PhotosMap {
   const [photosMap, setPhotosMap] = useState<PhotosMap>({})
@@ -27,10 +27,12 @@ export function useVehiclePhotosMap({ vehicleIds }: UseVehiclePhotosMapOptions):
         uniqueIds.map(async (id) => {
           try {
             const photos = await fetchVehiclePhotos(id)
-            const first = Array.isArray(photos) && (photos as VehiclePhoto[])[0]
-            nextMap[id] = first ? first.thumb_url || first.url : null
+            const list = Array.isArray(photos) ? (photos as VehiclePhoto[]) : []
+            nextMap[id] = list
+              .map((photo) => photo.thumb_url || photo.url || photo.thumb_url_middle)
+              .filter((url): url is string => Boolean(url))
           } catch {
-            nextMap[id] = null
+            nextMap[id] = []
           }
         }),
       )

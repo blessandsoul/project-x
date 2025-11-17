@@ -16,8 +16,8 @@ interface FooterProps {
 
 // TODO-FX: Connect to i18n library.
 const translations: Record<string, string> = {
-  'footer.brand': 'US Car Import Georgia',
-  'footer.description': 'პლატფორმა, რომელიც გაძლევთ საშუალებას მოძებნოთ და შემოიყვანოთ ავტომობილები აშშ-დან საქართველოში.',
+  'footer.brand': 'TrustedImporters.Ge',
+  'footer.description': 'საიტი გეხმარებათ შეარჩიოთ სანდო ავტოიმპორტიორი მისაღები ფასებით და მომსახურებით — ყველა შეთავაზება და ფასი ერთ სივრცეში, მარტივად შესადარებლად.',
   'footer.company': 'კომპანია',
   'footer.support': 'დახმარება',
   'footer.connect': 'დაკავშირება',

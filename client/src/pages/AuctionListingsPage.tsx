@@ -85,7 +85,6 @@ const AuctionListingsPage = () => {
     photos: string[];
   } | null>(null);
   const [backendGalleryIndex, setBackendGalleryIndex] = useState(0);
-  const [backendGalleryThumbPage, setBackendGalleryThumbPage] = useState(0);
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
 
@@ -189,7 +188,6 @@ const AuctionListingsPage = () => {
       photos: [fallbackPhotoUrl],
     });
     setBackendGalleryIndex(0);
-    setBackendGalleryThumbPage(0);
 
     try {
       const photos = await fetchVehiclePhotos(item.vehicle_id);
@@ -651,25 +649,46 @@ const AuctionListingsPage = () => {
                   aria-label="რეალური ლოტების შედეგები"
                 >
                   {filteredBackendItems.map((item) => {
-                  const photoUrl = photosByVehicleId[item.vehicle_id] || '/cars/1.webp';
-                  const bestQuote = item.quotes.reduce((min, quote) =>
-                    quote.total_price < min.total_price ? quote : min,
-                  item.quotes[0]);
+                  const photoUrls = photosByVehicleId[item.vehicle_id] || [];
+                  const mainPhotoUrl = photoUrls[0] ?? '/cars/1.webp';
+                  const averagePrice = Math.round(
+                    item.quotes.reduce((sum, quote) => sum + quote.total_price, 0) /
+                      item.quotes.length,
+                  );
 
                   return (
                     <Card key={`${item.vehicle_id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
                       <button
                         type="button"
                         className="relative h-40 w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
-                        onClick={() => handleOpenBackendGallery(item, photoUrl)}
+                        onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
                       >
                         <img
-                          src={photoUrl}
+                          src={mainPhotoUrl}
                           alt={`${item.year} ${item.make} ${item.model}`}
                           className="h-full w-full object-cover"
                           loading="lazy"
                         />
                       </button>
+                      {photoUrls.length > 1 && (
+                        <div className="flex items-center gap-1 px-2 pt-2 pb-1 overflow-x-auto">
+                          {photoUrls.slice(0, 5).map((thumbUrl, index) => (
+                            <button
+                              key={`${item.vehicle_id}-thumb-${index}`}
+                              type="button"
+                              className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-sm border border-border hover:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/60"
+                              onClick={() => handleOpenBackendGallery(item, thumbUrl)}
+                            >
+                              <img
+                                src={thumbUrl}
+                                alt={`${item.year} ${item.make} ${item.model} thumb ${index + 1}`}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
                           <div>
@@ -679,12 +698,6 @@ const AuctionListingsPage = () => {
                             <p className="text-[11px] text-muted-foreground mt-1">
                               {item.yard_name} • {item.source}
                             </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[11px] text-muted-foreground">საუკეთესო სრული ფასი</div>
-                            <div className="font-semibold text-sm">
-                              ${bestQuote.total_price.toLocaleString()}
-                            </div>
                           </div>
                         </div>
                       </CardHeader>
@@ -700,21 +713,14 @@ const AuctionListingsPage = () => {
                               <span>{item.distance_miles.toLocaleString()} mi</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Icon icon="mdi:cash" className="h-4 w-4 text-primary" />
-                            <span>
-                              სრული ფასი იმპორტით:
-                              {' '}
-                              <span className="font-medium">
-                                ${bestQuote.total_price.toLocaleString()} USD
-                              </span>
-                            </span>
-                          </div>
                         </div>
                         <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
-                          <span className="text-[10px] text-muted-foreground truncate">
-                            კომპანია: {bestQuote.company_name}
-                          </span>
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
+                            <span className="font-medium">
+                              ${averagePrice.toLocaleString()}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2">
                             <Button
                               variant="default"
@@ -786,72 +792,33 @@ const AuctionListingsPage = () => {
                   </div>
                   <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-2/3 bg-background flex flex-col items-center justify-center">
-                      <div className="w-full flex items-center justify-center">
+                      <div className="w-full flex items-center justify-center p-3">
                         <img
                           src={backendGallery.photos[backendGalleryIndex] ?? backendGallery.photos[0]}
                           alt={backendGallery.title}
-                          className="w-full max-h-[460px] object-contain"
+                          className="w-full max-h-[420px] object-contain"
                         />
                       </div>
                       {backendGallery.photos.length > 1 && (
-                        <div className="flex items-center justify-center gap-2 p-3 w-full">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            className="h-7 w-7 text-[11px]"
-                            disabled={backendGalleryThumbPage === 0}
-                            onClick={() =>
-                              setBackendGalleryThumbPage((prev) => Math.max(0, prev - 1))
-                            }
-                            aria-label="Previous photos"
-                          >
-                            <Icon icon="mdi:chevron-left" className="h-3 w-3" />
-                          </Button>
-                          <div className="flex flex-1 flex-nowrap gap-2 justify-start overflow-x-auto">
-                            {(() => {
-                              const perPage = 6;
-                              const start = backendGalleryThumbPage * perPage;
-                              const current = backendGallery.photos.slice(start, start + perPage);
-
-                              return current.map((photoUrl, index) => {
-                                const globalIndex = start + index;
-                                return (
-                                  <button
-                                    key={photoUrl + globalIndex}
-                                    type="button"
-                                    className={`h-12 w-16 flex-shrink-0 overflow-hidden rounded-sm border ${
-                                      globalIndex === backendGalleryIndex
-                                        ? 'border-primary'
-                                        : 'border-border hover:border-primary/60'
-                                    }`}
-                                    onClick={() => setBackendGalleryIndex(globalIndex)}
-                                  >
-                                    <img
-                                      src={photoUrl}
-                                      alt={`thumb-${globalIndex}`}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            className="h-7 w-7 text-[11px]"
-                            disabled={(backendGalleryThumbPage + 1) * 6 >= backendGallery.photos.length}
-                            onClick={() =>
-                              setBackendGalleryThumbPage((prev) =>
-                                (prev + 1) * 6 < backendGallery.photos.length ? prev + 1 : prev,
-                              )
-                            }
-                            aria-label="Next photos"
-                          >
-                            <Icon icon="mdi:chevron-right" className="h-3 w-3" />
-                          </Button>
+                        <div className="flex flex-wrap items-center justify-center gap-2 px-3 pb-3 w-full">
+                          {backendGallery.photos.slice(0, 6).map((photoUrl, index) => (
+                            <button
+                              key={photoUrl + index}
+                              type="button"
+                              className={`h-12 w-16 overflow-hidden rounded-sm border ${
+                                index === backendGalleryIndex
+                                  ? 'border-primary'
+                                  : 'border-border hover:border-primary/60'
+                              }`}
+                              onClick={() => setBackendGalleryIndex(index)}
+                            >
+                              <img
+                                src={photoUrl}
+                                alt={`thumb-${index}`}
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -879,7 +846,7 @@ const AuctionListingsPage = () => {
                           <Button
                             type="button"
                             size="sm"
-                            className="h-8 px-3 text-xs"
+                            className="h-7 px-2 text-[10px]"
                             onClick={() =>
                               navigate(`/vehicle/${backendGallery.id}`, {
                                 state: { scrollToOffers: true },
@@ -892,7 +859,7 @@ const AuctionListingsPage = () => {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-8 px-3 text-xs"
+                            className="h-7 px-2 text-[10px]"
                             onClick={() => navigate(`/vehicle/${backendGallery.id}`)}
                           >
                             დეტალურად ნახვა

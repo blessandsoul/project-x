@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const BRAND_LOGOS = [
   { id: 1, name: 'BMW', src: '/car-logos/bmw.png' },
@@ -12,7 +13,7 @@ const BRAND_LOGOS = [
 export function BrandLogosSection() {
   return (
     <section
-      className="border-b bg-muted/20"
+      className="border-b bg-background"
       aria-labelledby="home-brands-heading"
     >
       <div className="container mx-auto py-8 md:py-10">
@@ -22,8 +23,22 @@ export function BrandLogosSection() {
               id="home-brands-heading"
               className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              ბრენდები, რომლებსაც ხშირად იღებენ ამერიკიდან
+              ჩვენი პარტნიორები
             </h2>
+            <p className="text-xs text-muted-foreground">
+              სანდო ბანკები, ლოგისტიკის და დაზღვევის პარტნიორები, რომლებსაც ვეყრდნობით
+              იმპორტის პროცესში.
+            </p>
+          </div>
+          <div className="mt-1 md:mt-0">
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto px-0 text-xs text-primary"
+              type="button"
+            >
+              როგორ ვირჩევთ პარტნიორებს
+            </Button>
           </div>
         </div>
 

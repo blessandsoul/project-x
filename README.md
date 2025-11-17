@@ -1,6 +1,6 @@
-# PROJECTX – US Car Import Services Platform
+# TrustedImporters.Ge – US Car Import Platform for Georgia
 
-A full-stack web platform for discovering and comparing car import companies that bring vehicles from the USA to Georgia.
+A trusted platform for discovering and comparing car import companies that bring vehicles from the USA to Georgia.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ A full-stack web platform for discovering and comparing car import companies tha
 
 ## Overview
 
-PROJECTX is a full-stack demo platform that helps users in Georgia discover and compare car import services from the USA.
+TrustedImporters.Ge is a full-stack demo platform that helps users in Georgia discover and compare car import services from the USA.
 
 The application provides:
 

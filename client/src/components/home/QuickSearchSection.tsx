@@ -239,7 +239,7 @@ export function QuickSearchSection() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
+              <div className="space-y-3 rounded-md border border-muted/60 bg-background p-4">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Icon
                     icon="mdi:lightning-bolt"

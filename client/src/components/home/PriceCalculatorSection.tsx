@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useCompanySearch } from '@/hooks/useCompanySearch'
 import { mockSearchFilters } from '@/mocks/_mockData'
 
@@ -89,7 +90,8 @@ export function PriceCalculatorSection() {
     <motion.section
       {...sectionMotionProps}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="border-b bg-muted/10"
+      className="border-b bg-background"
+      id="home-price-calculator-section"
       aria-labelledby="home-price-calculator-heading"
       role="region"
     >
@@ -138,7 +140,7 @@ export function PriceCalculatorSection() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md bg-muted/60 p-4">
+              <div className="space-y-3 rounded-md border border-muted/60 bg-background p-4">
                 <div className="flex items-center gap-2">
                   <Icon
                     icon="mdi:shield-check-outline"
@@ -146,6 +148,33 @@ export function PriceCalculatorSection() {
                     aria-hidden="true"
                   />
                   <p className="text-sm font-medium">სავარაუდო სრული ღირებულება</p>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span>
+                    გათვლა მოიცავს მომსახურების საფასურს და საბაჟო გადასახადებს (დემო რეჟიმი).
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                      >
+                        <Icon
+                          icon="mdi:shield-check-outline"
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                        />
+                        <span>უსაფრთხო გადახდა</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={4}>
+                      <p>
+                        მომავალში გადასახდელი თანხა ნაწილებად დაიბლოკება და სრულად გადაეცემა
+                        იმპორტიორს მხოლოდ იმპორტის დადასტურების შემდეგ. ახლა ეს არის დემო
+                        ინფორმაცია.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <p className="text-2xl font-bold">
                   {formatUsd(totalRange[0])} – {formatUsd(totalRange[1])}

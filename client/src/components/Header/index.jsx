@@ -8,7 +8,7 @@ const STORAGE_KEY_USER = 'projectx_auth_user';
 
 // TODO-FX: Replace with real i18n implementation.
 const HEADER_MESSAGES = {
-  'header.brand': 'ProjectX',
+  'header.brand': 'TrustedImporters.Ge',
   'header.menu': 'მენიუ',
   'header.sign_in': 'შესვლა',
   'header.avatar_alt': 'მომხმარებლის ავატარი',
