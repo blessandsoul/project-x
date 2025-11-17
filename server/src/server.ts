@@ -13,8 +13,10 @@ import { companyRoutes } from './routes/company.js';
 import { auctionRoutes } from './routes/auction.js';
 import { vehicleRoutes } from './routes/vehicle.js';
 import { favoritesRoutes } from './routes/favorites.js';
+import { catalogRoutes } from './routes/catalog.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
+import { CatalogModel } from './models/CatalogModel.js';
 
 /**
  * Fastify Server Application
@@ -52,6 +54,7 @@ await fastify.register(companyRoutes);
 await fastify.register(auctionRoutes);
 await fastify.register(vehicleRoutes);
 await fastify.register(favoritesRoutes);
+await fastify.register(catalogRoutes);
 
 // fastify.get('/heavy', async (request, reply) => {
 //   // Simulate some CPU work
@@ -78,6 +81,7 @@ await fastify.register(favoritesRoutes);
 // Use pre-obtained API_TOKEN from env and refresh active lots every hour.
 const auctionApiService = new AuctionApiService(fastify);
 const fxRateService = new FxRateService(fastify);
+const catalogModel = new CatalogModel(fastify);
 
 // cron.schedule('0 * * * *', async () => {
 //   const now = new Date();
@@ -102,6 +106,20 @@ cron.schedule('5 0 * * *', async () => {
     fastify.log.info('Daily FX rate refresh job completed');
   } catch (error) {
     fastify.log.error({ error }, 'Daily FX rate refresh job failed');
+  }
+});
+
+// Sync vehicle makes/models catalog from VPIC once per month. This keeps the
+// local vehicle_makes and vehicle_models tables reasonably fresh without
+// hitting the external API on every request.
+cron.schedule('0 3 1 * *', async () => {
+  try {
+    fastify.log.info('Running monthly catalog sync for vehicle makes/models');
+    await catalogModel.syncVehicleType('car');
+    await catalogModel.syncVehicleType('motorcycle');
+    fastify.log.info('Monthly catalog sync completed');
+  } catch (error) {
+    fastify.log.error({ error }, 'Monthly catalog sync failed');
   }
 });
 
