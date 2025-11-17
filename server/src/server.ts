@@ -42,7 +42,7 @@ await fastify.register(databasePlugin);
 await fastify.register(authPlugin);
 await fastify.register(errorHandlerPlugin);
 // to auth in auction-api.app
-await fastify.register(auctionApiPlugin);
+// await fastify.register(auctionApiPlugin);
 
 // Register routes
 await fastify.register(healthRoutes);
