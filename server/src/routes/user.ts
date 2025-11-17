@@ -277,46 +277,6 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	    reply.code(204).send();
 	  });
 
-	  /**
-	   * POST /admin/users/:id/block
-	   *
-	   * Admin: Block a user account.
-	   */
-	  fastify.post('/admin/users/:id/block', {
-	    preHandler: fastify.authenticate,
-	  }, async (request, reply) => {
-	    if (!request.user || request.user.role !== 'admin') {
-	      throw new AuthorizationError('Admin role required to block users');
-	    }
-	    const { id } = request.params as { id: string };
-	    const userId = parseInt(id, 10);
-	    if (!Number.isFinite(userId) || userId <= 0) {
-	      throw new ValidationError('Invalid user id');
-	    }
-	    const updated = await userController.setUserBlocked(userId, true);
-	    reply.send(updated);
-	  });
-
-	  /**
-	   * POST /admin/users/:id/unblock
-	   *
-	   * Admin: Unblock a user account.
-	   */
-	  fastify.post('/admin/users/:id/unblock', {
-	    preHandler: fastify.authenticate,
-	  }, async (request, reply) => {
-	    if (!request.user || request.user.role !== 'admin') {
-	      throw new AuthorizationError('Admin role required to unblock users');
-	    }
-	    const { id } = request.params as { id: string };
-	    const userId = parseInt(id, 10);
-	    if (!Number.isFinite(userId) || userId <= 0) {
-	      throw new ValidationError('Invalid user id');
-	    }
-	    const updated = await userController.setUserBlocked(userId, false);
-	    reply.send(updated);
-	  });
-
   /**
    * DELETE /profile
    *

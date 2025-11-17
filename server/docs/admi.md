@@ -256,7 +256,7 @@ Admin: Get full information about a specific user by ID.
 
 **Description:**
 
-Admin: Update selected fields on a user: role, dealer/company links, onboarding end date, and blocked state.
+Admin: Update selected fields on a user: role, dealer/company links, onboarding end date, and blocked state. This endpoint is also the **only** way to block or unblock a user by toggling the `is_blocked` field.
 
 **Method:** `PATCH`
 
@@ -271,7 +271,7 @@ Admin: Update selected fields on a user: role, dealer/company links, onboarding 
 
 **Request body (JSON):**
 
-All fields optional; only provided fields are updated.
+All fields optional; only provided fields are updated. To block a user, set `is_blocked` to `true`. To unblock a user, set `is_blocked` to `false`.
 
 ```jsonc
 {
@@ -279,7 +279,7 @@ All fields optional; only provided fields are updated.
   "dealer_slug": "dealer-123", // optional, string or null
   "company_id": 42, // optional, integer or null
   "onboarding_ends_at": "2025-01-01T00:00:00Z", // optional, ISO date-time or null
-  "is_blocked": true // optional, boolean
+  "is_blocked": true // optional, boolean; true = blocked, false = unblocked
 }
 ```
 
@@ -333,78 +333,6 @@ Admin: Permanently delete a user account by ID.
 **Response 204 No Content:**
 
 - Empty body on success.
-
-**Error responses:**
-
-- `400 Bad Request` – invalid `id`.
-- `401 Unauthorized` – missing/invalid token.
-- `403 Forbidden` – authenticated but not `role = 'admin'`.
-- `404 Not Found` – user not found.
-
----
-
-### POST `/admin/users/:id/block`
-
-**Description:**
-
-Admin: Block a user account so they cannot authenticate.
-
-**Method:** `POST`
-
-**Authentication & authorization:**
-
-- Requires `Authorization: Bearer <token>`
-- Requires authenticated user to have `role = 'admin'`
-
-**Path params:**
-
-- `id` – numeric user ID.
-
-#### Validation rules
-
-| Field | Location | Required | Type    | Constraints |
-| ----- | -------- | -------- | ------- | ----------- |
-| `id`  | path     | yes      | integer | `>= 1`      |
-
-**Response 200 JSON:**
-
-- Updated user object with `is_blocked: true`.
-
-**Error responses:**
-
-- `400 Bad Request` – invalid `id`.
-- `401 Unauthorized` – missing/invalid token.
-- `403 Forbidden` – authenticated but not `role = 'admin'`.
-- `404 Not Found` – user not found.
-
----
-
-### POST `/admin/users/:id/unblock`
-
-**Description:**
-
-Admin: Unblock a user account so they can authenticate again.
-
-**Method:** `POST`
-
-**Authentication & authorization:**
-
-- Requires `Authorization: Bearer <token>`
-- Requires authenticated user to have `role = 'admin'`
-
-**Path params:**
-
-- `id` – numeric user ID.
-
-#### Validation rules
-
-| Field | Location | Required | Type    | Constraints |
-| ----- | -------- | -------- | ------- | ----------- |
-| `id`  | path     | yes      | integer | `>= 1`      |
-
-**Response 200 JSON:**
-
-- Updated user object with `is_blocked: false`.
 
 **Error responses:**
 
