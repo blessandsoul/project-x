@@ -89,7 +89,8 @@ export class CatalogModel extends BaseModel {
 
     const makes = response.data.Results ?? [];
 
-    // Upsert makes
+    // First, upsert all makes so the catalog is complete even if model
+    // fetching fails for some of them.
     for (const make of makes) {
       const { MakeId, MakeName } = make;
       await this.executeCommand(
@@ -100,31 +101,42 @@ export class CatalogModel extends BaseModel {
            updated_at = NOW()`,
         [vehicleType, MakeId, MakeName],
       );
+    }
 
-      // Ensure models for this make are present. We keep it simple for now
-      // and upsert all models each time sync runs.
-      const modelsUrl = `${VPIC_BASE_URL}/GetModelsForMake/${encodeURIComponent(MakeName)}?format=json`;
-      const modelsResponse = await axios.get<{ Results: VpicModel[] }>(modelsUrl);
-      const models = modelsResponse.data.Results ?? [];
+    // Second, ensure models for each make are present. Errors for one make
+    // should not abort the entire sync.
+    for (const make of makes) {
+      const { MakeId, MakeName } = make;
+      try {
+        const modelsUrl = `${VPIC_BASE_URL}/GetModelsForMake/${encodeURIComponent(
+          MakeName,
+        )}?format=json`;
+        const modelsResponse = await axios.get<{ Results: VpicModel[] }>(modelsUrl);
+        const models = modelsResponse.data.Results ?? [];
 
-      const makeIdRows = await this.executeQuery(
-        'SELECT id FROM vehicle_makes WHERE vehicle_type = ? AND external_make_id = ? LIMIT 1',
-        [vehicleType, MakeId],
-      );
-      if (!makeIdRows.length) {
-        continue;
-      }
-      const localMakeId = (makeIdRows[0] as { id: number }).id;
-
-      for (const model of models) {
-        await this.executeCommand(
-          `INSERT INTO vehicle_models (make_id, external_model_id, name, created_at, updated_at)
-           VALUES (?, ?, ?, NOW(), NOW())
-           ON DUPLICATE KEY UPDATE
-             name = VALUES(name),
-             updated_at = NOW()`,
-          [localMakeId, model.Model_ID, model.Model_Name],
+        const makeIdRows = await this.executeQuery(
+          'SELECT id FROM vehicle_makes WHERE vehicle_type = ? AND external_make_id = ? LIMIT 1',
+          [vehicleType, MakeId],
         );
+        if (!makeIdRows.length) {
+          continue;
+        }
+        const localMakeId = (makeIdRows[0] as { id: number }).id;
+
+        for (const model of models) {
+          await this.executeCommand(
+            `INSERT INTO vehicle_models (make_id, external_model_id, name, created_at, updated_at)
+             VALUES (?, ?, ?, NOW(), NOW())
+             ON DUPLICATE KEY UPDATE
+               name = VALUES(name),
+               updated_at = NOW()`,
+            [localMakeId, model.Model_ID, model.Model_Name],
+          );
+        }
+      } catch {
+        // Ignore failures for individual makes so the rest of the catalog
+        // can still be synchronized.
+        continue;
       }
     }
   }
