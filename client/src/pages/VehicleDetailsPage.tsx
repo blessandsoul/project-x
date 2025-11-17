@@ -40,20 +40,17 @@ const VehicleDetailsPage = () => {
   const [orderPhone, setOrderPhone] = useState('')
   const [orderComment, setOrderComment] = useState('')
   const [showOnlyPremium, setShowOnlyPremium] = useState(false)
+  const [isRecalculating, setIsRecalculating] = useState(false)
   const vehicleId = useMemo(() => {
     if (!params.id) return null
     const parsed = Number(params.id)
     return Number.isFinite(parsed) ? parsed : null
   }, [params.id])
 
-  const { vehicle, photos, quotes, distanceMiles, isLoading, error, isQuotesMock, recalculate } =
+  const { vehicle, photos, quotes, distanceMiles, isLoading, error, recalculate } =
     useVehicleDetails(vehicleId)
 
-  const liveViewersCount = useMemo(() => {
-    if (!vehicleId) return null
-    const base = (vehicleId % 5) + 3
-    return base
-  }, [vehicleId])
+  const isInitialLoading = isLoading && !vehicle
 
   const THUMBS_PER_PAGE = 6
 
@@ -83,6 +80,11 @@ const VehicleDetailsPage = () => {
     }
   }, [activePhotoIndex, photos.length])
 
+  const handleRecalculate = () => {
+    setIsRecalculating(true)
+    recalculate()
+  }
+
   useEffect(() => {
     if (!isLightboxOpen) return
 
@@ -97,6 +99,20 @@ const VehicleDetailsPage = () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isLightboxOpen])
+
+  const closeBreakdownPopup = () => {
+    if (breakdownCloseTimeoutRef.current != null) {
+      window.clearTimeout(breakdownCloseTimeoutRef.current)
+      breakdownCloseTimeoutRef.current = null
+    }
+
+    setIsBreakdownEntering(false)
+
+    breakdownCloseTimeoutRef.current = window.setTimeout(() => {
+      setActiveBreakdownQuote(null)
+      breakdownCloseTimeoutRef.current = null
+    }, 200)
+  }
 
   useEffect(() => {
     if (!activeBreakdownQuote) return
@@ -122,9 +138,18 @@ const VehicleDetailsPage = () => {
   const sortedQuotes = useMemo<VehicleQuote[]>(() => {
     if (!quotes.length) return []
 
+    const getTotalPriceNumeric = (quote: VehicleQuote): number => {
+      const raw = quote.total_price as number | string
+      const numeric = typeof raw === 'number' ? raw : Number(raw)
+      return Number.isFinite(numeric) ? numeric : 0
+    }
+
     return [...quotes].sort((a, b) => {
-      if (a.total_price !== b.total_price) {
-        return a.total_price - b.total_price
+      const aPrice = getTotalPriceNumeric(a)
+      const bPrice = getTotalPriceNumeric(b)
+
+      if (aPrice !== bPrice) {
+        return aPrice - bPrice
       }
 
       const aDays = a.delivery_time_days
@@ -146,15 +171,24 @@ const VehicleDetailsPage = () => {
   const averageTotalPrice = useMemo<number | null>(() => {
     if (!sortedQuotes.length) return null
 
-    const sum = sortedQuotes.reduce((acc, quote) => acc + quote.total_price, 0)
+    const sum = sortedQuotes.reduce((acc, quote) => {
+      const raw = quote.total_price as number | string
+      const numeric = typeof raw === 'number' ? raw : Number(raw)
+      return acc + (Number.isFinite(numeric) ? numeric : 0)
+    }, 0)
+
     return sum / sortedQuotes.length
   }, [sortedQuotes])
 
   const savingsAmount = useMemo<number | null>(() => {
     if (sortedQuotes.length < 2) return null
 
-    const cheapest = sortedQuotes[0]?.total_price
-    const mostExpensive = sortedQuotes[sortedQuotes.length - 1]?.total_price
+    const cheapestRaw = sortedQuotes[0]?.total_price as number | string
+    const mostExpensiveRaw = sortedQuotes[sortedQuotes.length - 1]?.total_price as number | string
+
+    const cheapest = typeof cheapestRaw === 'number' ? cheapestRaw : Number(cheapestRaw)
+    const mostExpensive =
+      typeof mostExpensiveRaw === 'number' ? mostExpensiveRaw : Number(mostExpensiveRaw)
 
     if (cheapest == null || mostExpensive == null) return null
 
@@ -177,20 +211,6 @@ const VehicleDetailsPage = () => {
     const target = vipLabel ? premiumQuotes : standardQuotes
     target.push({ quote, index, vipLabel })
   })
-
-  const closeBreakdownPopup = () => {
-    if (breakdownCloseTimeoutRef.current != null) {
-      window.clearTimeout(breakdownCloseTimeoutRef.current)
-      breakdownCloseTimeoutRef.current = null
-    }
-
-    setIsBreakdownEntering(false)
-
-    breakdownCloseTimeoutRef.current = window.setTimeout(() => {
-      setActiveBreakdownQuote(null)
-      breakdownCloseTimeoutRef.current = null
-    }, 200)
-  }
 
   const openOrderPopupForQuote = (quote: VehicleQuote) => {
     setSelectedQuote(quote)
@@ -313,6 +333,39 @@ const VehicleDetailsPage = () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isRecalculating) return
+
+    if (!isLoading) {
+      const timeoutId = window.setTimeout(() => {
+        setIsRecalculating(false)
+      }, 500)
+
+      return () => {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [isLoading, isRecalculating])
+
+  const formatMoney = (value: number | string | null | undefined): string | null => {
+    if (value == null) return null
+
+    const numeric = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(numeric)) return null
+
+    return `$${numeric.toLocaleString()} USD`
+  }
+
+  const formatMileage = (value: number | string | null | undefined): string | null => {
+    if (value == null) return null
+
+    const cleaned = typeof value === 'number' ? String(value) : String(value).replace(/[^0-9.-]/g, '')
+    const numeric = Number(cleaned)
+    if (!Number.isFinite(numeric)) return null
+
+    return `${numeric.toLocaleString()} km`
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header
@@ -347,7 +400,7 @@ const VehicleDetailsPage = () => {
                 )}
               </div>
 
-              {isLoading && (
+              {isInitialLoading && (
                 <div className="grid gap-6 md:grid-cols-3" aria-busy="true">
                   <div className="md:col-span-2 space-y-4">
                     <div className="space-y-2">
@@ -374,7 +427,7 @@ const VehicleDetailsPage = () => {
                 </div>
               )}
 
-              {!isLoading && error && (
+              {!isInitialLoading && error && (
                 <Card className="border-destructive/40 bg-destructive/5">
                   <CardContent className="py-4 flex items-center justify-between gap-3 text-sm">
                     <span className="text-destructive">{error}</span>
@@ -391,7 +444,7 @@ const VehicleDetailsPage = () => {
                 </Card>
               )}
 
-              {!isLoading && !error && vehicle && (
+              {!isInitialLoading && !error && vehicle && (
                 <div className="grid gap-6 md:grid-cols-5">
                   <Card className="md:col-span-3 flex flex-col">
                     <CardContent className="flex-1 flex flex-col gap-4">
@@ -485,6 +538,300 @@ const VehicleDetailsPage = () => {
                           <span>ფოტოები მიუწვდომელია</span>
                         </div>
                       )}
+
+                      <div
+                        className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] text-muted-foreground pt-2"
+                        aria-label="ავტომობილის ძირითადი მონაცემები"
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            წლის გამოშვება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">{vehicle.year}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            გარბენი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {formatMileage(vehicle.mileage) || 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            VIN
+                          </span>
+                          <span className="text-xs font-medium text-foreground break-all">
+                            {vehicle.vin || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ძრავი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.engine_volume ? `${vehicle.engine_volume}L` : '—'}
+                            {vehicle.engine_fuel ? ` · ${vehicle.engine_fuel}` : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ტრანსმისია
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.transmission || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            წამყვანი ღერძი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.drive || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ფერი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.color || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            მდგომარეობა
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.status || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ძირითადი დაზიანება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.damage_main_damages || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            დამატებითი დაზიანება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.damage_secondary_damages || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            გასაღებები
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.has_keys_readable || (vehicle.has_keys ? 'yes' : 'no') || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            Run & Drive
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.run_and_drive || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            აუქციონის ეზო
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.yard_name || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            მდებარეობა (ქალაქი / штат)
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.city || '—'}
+                            {vehicle.sale_title_state ? `, ${vehicle.sale_title_state}` : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            საბაზრო ღირებულება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {formatMoney(vehicle.retail_value) || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            გამოთვლილი ფასი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {formatMoney(vehicle.calc_price) || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            გამყიდველი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.seller || '—'}
+                            {vehicle.seller_type ? ` · ${vehicle.seller_type}` : ''}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            დოკუმენტი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.document || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            სათაური / title
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.sale_title_type || vehicle.title || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            აღჭურვილობა
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.equipment || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ID / ლოტის ნომერი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.id}
+                            {vehicle.number ? ` · ${vehicle.number}` : ''}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            წყარო ლოტის ID
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.source_lot_id || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            salvage ID
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.salvage_id || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ცილინდრები
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.cylinders || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            შეკეთების ღირებულება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.repair_cost ? `$${Number(vehicle.repair_cost).toLocaleString()} USD` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            damage status
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.damage_status || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            Airbags
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.airbags || '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            Odometer brand
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.odometer_brand || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            Final bid / Buy it now
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.final_bid ? `$${Number(vehicle.final_bid).toLocaleString()} USD` : '—'}
+                            {Number(vehicle.buy_it_now_price) > 0
+                              ? ` · Buy now: $${Number(vehicle.buy_it_now_price).toLocaleString()} USD`
+                              : ''}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            ნახვები
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.views ?? 0}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            გაყიდვის თარიღი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.sold_at_date || vehicle.sold_at || '—'}
+                            {vehicle.sold_at_time ? ` · ${vehicle.sold_at_time}` : ''}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            დროის სარტყელი
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.timezone || '—'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                            შექმნა / განახლება
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {vehicle.created_at || '—'}
+                            {vehicle.updated_at ? ` · ${vehicle.updated_at}` : ''}
+                          </span>
+                        </div>
+                      </div>
+
                     </CardContent>
                   </Card>
 
@@ -499,7 +846,7 @@ const VehicleDetailsPage = () => {
                               size="sm"
                               variant="outline"
                               className="h-8 px-3 text-xs flex items-center gap-1"
-                              onClick={recalculate}
+                              onClick={handleRecalculate}
                               disabled={isLoading}
                               aria-busy={isLoading}
                             >
@@ -520,12 +867,23 @@ const VehicleDetailsPage = () => {
                         <span className="text-[11px] text-muted-foreground">
                           შეადარე იმპორტის სრული ფასი და მიწოდების დრო სხვადასხვა სანდო კომპანიისგან აშშ-დან საქართველოში.
                         </span>
+                        {distanceMiles != null && (
+                          <span className="text-[11px] text-muted-foreground">
+                            დისტანცია ფოთამდე: {distanceMiles.toLocaleString()} mi
+                          </span>
+                        )}
                         <span className="text-[11px] text-muted-foreground">
                           ფასი მოიცავს ტრანსპორტირებას, მომსახურებისა და საბროკერო საფასურს, საბაჟო და სხვა გადასახადები წარმოდგენილია დაახლოებით.
                         </span>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1 text-sm space-y-4">
+
+                    <CardContent
+                      className={cn(
+                        'flex-1 text-sm space-y-4',
+                        (isLoading || isRecalculating) && 'animate-pulse',
+                      )}
+                    >
                       {isLoading && (
                         <div className="space-y-2" aria-busy="true">
                           <Skeleton className="h-4 w-3/4" />
@@ -534,7 +892,7 @@ const VehicleDetailsPage = () => {
                         </div>
                       )}
 
-                      {!sortedQuotes.length && (
+                      {!isLoading && !sortedQuotes.length && (
                         <div className="space-y-3 text-xs">
                           <p className="text-muted-foreground">
                             ამ ეტაპზე ავტომობილის იმპორტის შეთავაზებები არ არის ნაპოვნი. სცადეთ გადათვლა ან მოგვიანებით დაბრუნება, ან მოიძიეთ სხვა ავტომობილი იმპორტისთვის.
@@ -564,14 +922,8 @@ const VehicleDetailsPage = () => {
                         </div>
                       )}
 
-                      {sortedQuotes.length > 0 && (
+                      {!isLoading && sortedQuotes.length > 0 && (
                         <div className="space-y-4">
-                          {isQuotesMock && (
-                            <p className="text-[10px] text-muted-foreground">
-                              *ამ ეტაპზე გამოყენებულია დემო-გამოთვლები (mock მონაცემები). რეალური API შეთავაზებები ჯერ არ არის ჩართული.
-                            </p>
-                          )}
-
                           {bestQuote && (
                             <div
                               className={cn(
@@ -580,9 +932,11 @@ const VehicleDetailsPage = () => {
                               )}
                             >
                               <div>
-                                <div className="text-[11px] text-muted-foreground mb-1">საუკეთესო სრული ფასი იმპორტზე</div>
+                                <div className="text-[11px] text-muted-foreground mb-1">
+                                  საუკეთესო სრული ფასი იმპორტზე
+                                </div>
                                 <div className="text-sm font-semibold">
-                                  ${bestQuote.total_price.toLocaleString()} USD
+                                  {formatMoney(bestQuote.total_price) ?? '—'}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground mt-1">
                                   კომპანია: {bestQuote.company_name} — სრული მომსახურება აშშ-დან საქართველოს პორტამდე.
@@ -601,9 +955,10 @@ const VehicleDetailsPage = () => {
                             <div className="mt-1 flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300">
                               <Icon icon="mdi:piggy-bank" className="h-4 w-4" />
                               <span>
-                                შენ შეიძლება დაზოგო დაახლოებით
-                                {' '}
-                                <span className="font-semibold">${savingsAmount.toLocaleString()} USD</span>
+                                შენ შეიძლება დაზოგო დაახლოებით{' '}
+                                <span className="font-semibold">
+                                  ${savingsAmount.toLocaleString()} USD
+                                </span>
                               </span>
                             </div>
                           )}
@@ -674,126 +1029,125 @@ const VehicleDetailsPage = () => {
                                           )}
                                           role="listitem"
                                         >
-                                    {isSelected && (
-                                      <span className="absolute right-2 top-2 rounded-full bg-primary/10 px-2 py-[2px] text-[10px] font-medium text-primary">
-                                        არჩეულია
-                                      </span>
-                                    )}
-                                      <div className="space-y-1">
-                                        <div className="font-medium text-xs">{quote.company_name}</div>
-                                        {companyMeta && (
-                                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                            <Icon icon="mdi:star" className="h-3 w-3 text-amber-400" />
-                                            <span>{companyMeta.rating.toFixed(1)}</span>
-                                            <span>({companyMeta.reviewCount} შეფასება)</span>
-                                          </div>
-                                        )}
-                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                          <span>
-                                            სრული ფასი იმპორტზე: ${quote.total_price.toLocaleString()} USD
-                                          </span>
-                                          {isDiscounted && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
-                                              <Icon icon="mdi:tag" className="h-3 w-3" />
-                                              ფასდაკლება
+                                          {isSelected && (
+                                            <span className="absolute right-2 top-2 rounded-full bg-primary/10 px-2 py-[2px] text-[10px] font-medium text-primary">
+                                              არჩეულია
                                             </span>
                                           )}
-                                        </div>
-                                        {quote.delivery_time_days != null && (
-                                          <div className="text-[11px] text-muted-foreground">
-                                            მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
-                                          </div>
-                                        )}
-                                        <div className="flex flex-wrap gap-1 pt-1">
-                                          {/* Trust badges: vary by VIP level / index */}
-                                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
-                                            <Icon icon="mdi:shield-check" className="h-3 w-3" />
-                                            სანდო პარტნიორი
-                                          </span>
-                                          {(vipLabel?.includes('Diamond') || vipLabel?.includes('Gold')) && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2 py-[2px] text-[10px] font-medium">
-                                              <Icon icon="mdi:lock-check" className="h-3 w-3" />
-                                              დაცული გადახდა
-                                            </span>
-                                          )}
-                                          {vipLabel?.includes('Diamond') && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 px-2 py-[2px] text-[10px] font-medium">
-                                              <Icon icon="mdi:file-check" className="h-3 w-3" />
-                                              დოკუმენტები სრულად
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesDocuments ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesDocuments ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>დოკუმენტები</span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesTransport ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesTransport ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>ტრანსპორტირება</span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesCustoms ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesCustoms ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>საბაჟო</span>
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col items-end gap-2">
-                                        {vipLabel && <VipBadge label={vipLabel} />}
-                                        <div className="flex flex-col items-end gap-1">
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            className={cn(
-                                              'h-7 px-2 text-[10px] flex items-center gap-1',
-                                              isActiveBreakdown && 'border-primary text-primary',
+                                          <div className="space-y-1">
+                                            <div className="font-medium text-xs">{quote.company_name}</div>
+                                            {companyMeta && (
+                                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Icon icon="mdi:star" className="h-3 w-3 text-amber-400" />
+                                                <span>{companyMeta.rating.toFixed(1)}</span>
+                                                <span>({companyMeta.reviewCount} შეფასება)</span>
+                                              </div>
                                             )}
-                                            onClick={() => setActiveBreakdownQuote(quote)}
-                                            aria-pressed={isActiveBreakdown}
-                                            aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
-                                          >
-                                            <Icon icon="mdi:receipt-text" className="h-3 w-3" />
-                                            გამოყავი საფასური
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
-                                            onClick={() => handleSelectQuote(quote)}
-                                            aria-pressed={isSelected}
-                                            aria-label="აირჩიე ეს შეთავაზება"
-                                          >
-                                            {isSelected && (
-                                              <Icon
-                                                icon="mdi:check-circle"
-                                                className="h-3 w-3 transition-opacity duration-200"
-                                              />
+                                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                              <span>
+                                                სრული ფასი იმპორტზე: {formatMoney(quote.total_price) ?? '—'}
+                                              </span>
+                                              {isDiscounted && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <Icon icon="mdi:tag" className="h-3 w-3" />
+                                                  ფასდაკლება
+                                                </span>
+                                              )}
+                                            </div>
+                                            {quote.delivery_time_days != null && (
+                                              <div className="text-[11px] text-muted-foreground">
+                                                მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
+                                              </div>
                                             )}
-                                            <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
-                                          </Button>
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                <Icon icon="mdi:shield-check" className="h-3 w-3" />
+                                                სანდო პარტნიორი
+                                              </span>
+                                              {(vipLabel?.includes('Diamond') || vipLabel?.includes('Gold')) && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <Icon icon="mdi:lock-check" className="h-3 w-3" />
+                                                  დაცული გადახდა
+                                                </span>
+                                              )}
+                                              {vipLabel?.includes('Diamond') && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <Icon icon="mdi:file-check" className="h-3 w-3" />
+                                                  დოკუმენტები სრულად
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesDocuments ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesDocuments ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>დოკუმენტები</span>
+                                              </span>
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesTransport ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesTransport ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>ტრანსპორტირება</span>
+                                              </span>
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesCustoms ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesCustoms ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>საბაჟო</span>
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-end gap-2">
+                                            {vipLabel && <VipBadge label={vipLabel} />}
+                                            <div className="flex flex-col items-end gap-1">
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className={cn(
+                                                  'h-7 px-2 text-[10px] flex items-center gap-1',
+                                                  isActiveBreakdown && 'border-primary text-primary',
+                                                )}
+                                                onClick={() => setActiveBreakdownQuote(quote)}
+                                                aria-pressed={isActiveBreakdown}
+                                                aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
+                                              >
+                                                <Icon icon="mdi:receipt-text" className="h-3 w-3" />
+                                                გამოყავი საფასური
+                                              </Button>
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
+                                                onClick={() => handleSelectQuote(quote)}
+                                                aria-pressed={isSelected}
+                                                aria-label="აირჩიე ეს შეთავაზება"
+                                              >
+                                                {isSelected && (
+                                                  <Icon
+                                                    icon="mdi:check-circle"
+                                                    className="h-3 w-3 transition-opacity duration-200"
+                                                  />
+                                                )}
+                                                <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
+                                              </Button>
+                                            </div>
+                                          </div>
                                         </div>
-                                      </div>
-                                    </div>
-                                  </motion.div>
+                                      </motion.div>
                                     )
                                   })}
                                 </>
@@ -839,116 +1193,115 @@ const VehicleDetailsPage = () => {
                                               (vipLabel.includes('Diamond')
                                                 ? 'border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.5)]'
                                                 : vipLabel.includes('Gold')
-                                                  ? 'border-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.5)]'
+                                                  ? 'border-amber-400/70 shadow-[0_0_0_1px_rgба(251,191,36,0.5)]'
                                                   : 'border-slate-300/70'),
                                             isSelected &&
                                               'border-primary shadow-[0_0_0_1px_rgba(16,185,129,0.6)]',
                                           )}
                                           role="listitem"
                                         >
-                                      <div className="space-y-1">
-                                        <div className="font-medium text-xs">{quote.company_name}</div>
-                                        {companyMeta && (
-                                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                            <Icon icon="mdi:star" className="h-3 w-3 text-amber-400" />
-                                            <span>{companyMeta.rating.toFixed(1)}</span>
-                                            <span>({companyMeta.reviewCount} შეფასება)</span>
-                                          </div>
-                                        )}
-                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                          <span>
-                                            სრული ფასი იმპორტზე: ${quote.total_price.toLocaleString()} USD
-                                          </span>
-                                          {isDiscounted && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
-                                              <Icon icon="mdi:tag" className="h-3 w-3" />
-                                              ფასდაკლება
-                                            </span>
-                                          )}
-                                        </div>
-                                        {quote.delivery_time_days != null && (
-                                          <div className="text-[11px] text-muted-foreground">
-                                            მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
-                                          </div>
-                                        )}
-                                        <div className="flex flex-wrap gap-1 pt-1">
-                                          {/* Trust badges: vary by VIP level / index */}
-                                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
-                                            <Icon icon="mdi:shield-check" className="h-3 w-3" />
-                                            სანდო პარტნიორი
-                                          </span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesDocuments ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesDocuments ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>დოკუმენტები</span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesTransport ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesTransport ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>ტრანსპორტირება</span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <Icon
-                                              icon={includesCustoms ? 'mdi:check-bold' : 'mdi:close-thick'}
-                                              className={cn(
-                                                'h-3 w-3',
-                                                includesCustoms ? 'text-emerald-500' : 'text-slate-400',
-                                              )}
-                                            />
-                                            <span>საბაჟო</span>
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col items-end gap-2">
-                                        {vipLabel && <VipBadge label={vipLabel} />}
-                                        <div className="flex flex-col items-end gap-1">
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            className={cn(
-                                              'h-7 px-2 text-[10px] flex items-center gap-1',
-                                              isActiveBreakdown && 'border-primary text-primary',
+                                          <div className="space-y-1">
+                                            <div className="font-medium text-xs">{quote.company_name}</div>
+                                            {companyMeta && (
+                                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Icon icon="mdi:star" className="h-3 w-3 text-amber-400" />
+                                                <span>{companyMeta.rating.toFixed(1)}</span>
+                                                <span>({companyMeta.reviewCount} შეფასება)</span>
+                                              </div>
                                             )}
-                                            onClick={() => setActiveBreakdownQuote(quote)}
-                                            aria-pressed={isActiveBreakdown}
-                                            aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
-                                          >
-                                            <Icon icon="mdi:receipt-text" className="h-3 w-3" />
-                                            გამოყავი საფასური
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
-                                            onClick={() => handleSelectQuote(quote)}
-                                            aria-pressed={isSelected}
-                                            aria-label="აირჩიე ეს შეთავაზება"
-                                          >
-                                            {isSelected && (
-                                              <Icon
-                                                icon="mdi:check-circle"
-                                                className="h-3 w-3 transition-opacity duration-200"
-                                              />
+                                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                              <span>
+                                                სრული ფასი იმპორტზე: ${quote.total_price.toLocaleString()} USD
+                                              </span>
+                                              {isDiscounted && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <Icon icon="mdi:tag" className="h-3 w-3" />
+                                                  ფასდაკლება
+                                                </span>
+                                              )}
+                                            </div>
+                                            {quote.delivery_time_days != null && (
+                                              <div className="text-[11px] text-muted-foreground">
+                                                მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
+                                              </div>
                                             )}
-                                            <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
-                                          </Button>
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                <Icon icon="mdi:shield-check" className="h-3 w-3" />
+                                                სანდო პარტნიორი
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesDocuments ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesDocuments ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>დოკუმენტები</span>
+                                              </span>
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesTransport ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesTransport ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>ტრანსპორტირება</span>
+                                              </span>
+                                              <span className="inline-flex items-center gap-1">
+                                                <Icon
+                                                  icon={includesCustoms ? 'mdi:check-bold' : 'mdi:close-thick'}
+                                                  className={cn(
+                                                    'h-3 w-3',
+                                                    includesCustoms ? 'text-emerald-500' : 'text-slate-400',
+                                                  )}
+                                                />
+                                                <span>საბაჟო</span>
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-end gap-2">
+                                            {vipLabel && <VipBadge label={vipLabel} />}
+                                            <div className="flex flex-col items-end gap-1">
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className={cn(
+                                                  'h-7 px-2 text-[10px] flex items-center gap-1',
+                                                  isActiveBreakdown && 'border-primary text-primary',
+                                                )}
+                                                onClick={() => setActiveBreakdownQuote(quote)}
+                                                aria-pressed={isActiveBreakdown}
+                                                aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
+                                              >
+                                                <Icon icon="mdi:receipt-text" className="h-3 w-3" />
+                                                გამოყავი საფასური
+                                              </Button>
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
+                                                onClick={() => handleSelectQuote(quote)}
+                                                aria-pressed={isSelected}
+                                                aria-label="აირჩიე ეს შეთავაზება"
+                                              >
+                                                {isSelected && (
+                                                  <Icon
+                                                    icon="mdi:check-circle"
+                                                    className="h-3 w-3 transition-opacity duration-200"
+                                                  />
+                                                )}
+                                                <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
+                                              </Button>
+                                            </div>
+                                          </div>
                                         </div>
-                                      </div>
-                                    </div>
-                                  </motion.div>
+                                      </motion.div>
                                     )
                                   })}
                                 </>
@@ -996,7 +1349,7 @@ const VehicleDetailsPage = () => {
                   </Card>
                 </div>
               )}
-              {!isLoading && !error && !vehicle && (
+              {!isInitialLoading && !error && !vehicle && (
                 <div className="text-center text-sm text-muted-foreground py-8">
                   ავტომობილი ვერ მოიძებნა. სცადეთ კიდევ ერთხელ ან დაბრუნდით ძიებაზე.
                 </div>

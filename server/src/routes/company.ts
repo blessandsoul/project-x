@@ -537,17 +537,18 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    const result = await controller.calculateQuotesForVehicle(id, currency);
+    request.log.info(`Calculating quotes for vehicle ${id} at ${new Date().toISOString()} with currency ${currency}`);
 
+    const result = await controller.calculateQuotesForVehicle(id, currency);
     return reply.code(201).send(result);
   });
 
   /**
    * GET /vehicles/:vehicleId/cheapest-quotes
    *
-   * Compute and return the cheapest quotes for a single vehicle across
-   * all companies without persisting them to the database. Intended for
-   * vehicle details pages where only the best offers are needed.
+   * Calculate quotes for the given vehicle across
+   * all companies without persisting them to the database.
+   * Intended for vehicle details pages where only the best offers are needed.
    */
   fastify.get('/vehicles/:vehicleId/cheapest-quotes', {
     schema: {

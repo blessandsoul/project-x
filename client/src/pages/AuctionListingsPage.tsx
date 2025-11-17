@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header/index.tsx';
@@ -13,9 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
-import { useVehicleSearchQuotes } from '@/hooks/useVehicleSearchQuotes';
 import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
-import { fetchVehiclePhotos } from '@/api/vehicles';
+import { fetchVehiclePhotos, searchVehicles } from '@/api/vehicles';
+import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
 
 type AuctionHouse = 'all' | 'Copart' | 'IAAI' | 'Manheim';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
@@ -85,67 +85,91 @@ const AuctionListingsPage = () => {
     photos: string[];
   } | null>(null);
   const [backendGalleryIndex, setBackendGalleryIndex] = useState(0);
+  const [searchValidationError, setSearchValidationError] = useState<string | null>(null);
 
-  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const [backendData, setBackendData] = useState<SearchVehiclesResponse | null>(null);
+  const [isBackendLoading, setIsBackendLoading] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
+  const [appliedFilters, setAppliedFilters] = useState<
+    (VehiclesSearchFilters & { page: number; limit: number }) | null
+  >(null);
+  const [appliedPage, setAppliedPage] = useState(1);
 
-  const searchFilters = useMemo(
-    () => {
-      const quickFilters = parseSearchQueryToFilters(trimmedQuery);
+  const buildFiltersFromDraft = (pageOverride?: number): VehiclesSearchFilters & { page: number; limit: number } => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    const quickFilters = parseSearchQueryToFilters(trimmed);
 
-      const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
-      const hasMinMileage = typeof minMileage === 'number' && !Number.isNaN(minMileage);
+    const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
+    const hasMinMileage = typeof minMileage === 'number' && !Number.isNaN(minMileage);
 
-      const baseFilters: Record<string, unknown> = {
-        ...quickFilters,
-        mileage_to: maxMileage[0],
-        price_from: priceRange[0],
-        price_to: priceRange[1],
-        fuel_type: fuelType === 'all' ? undefined : fuelType,
-        category: category === 'all' ? undefined : category,
-        drive: drive === 'all' ? undefined : drive,
-        limit,
-        offset: (page - 1) * limit,
-      };
+    const pageToUse = pageOverride ?? 1;
 
-      if (hasExactYear) {
-        baseFilters.year = exactYear;
-      } else {
-        baseFilters.year_from = yearRange[0];
-        baseFilters.year_to = yearRange[1];
-      }
-
-      if (hasMinMileage) {
-        baseFilters.mileage_from = minMileage;
-      }
-
-      return baseFilters;
-    },
-    [
-      trimmedQuery,
-      yearRange,
-      maxMileage,
-      priceRange,
-      exactYear,
-      minMileage,
-      fuelType,
-      category,
-      drive,
+    const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
+      ...quickFilters,
+      mileage_to: maxMileage[0],
+      price_from: priceRange[0],
+      price_to: priceRange[1],
+      fuel_type: fuelType === 'all' ? undefined : fuelType,
+      category: category === 'all' ? undefined : category,
+      drive: drive === 'all' ? undefined : drive,
       limit,
-      page,
-    ],
-  );
+      page: pageToUse,
+    };
 
-  const {
-    data: backendData,
-    isLoading: isBackendLoading,
-    error: backendError,
-    refetch: refetchBackend,
-  } = useVehicleSearchQuotes({
-    filters: searchFilters,
-  });
+    if (hasExactYear) {
+      baseFilters.year = exactYear;
+    } else {
+      baseFilters.year_from = yearRange[0];
+      baseFilters.year_to = yearRange[1];
+    }
+
+    if (hasMinMileage) {
+      baseFilters.mileage_from = minMileage as number;
+    }
+
+    return baseFilters;
+  };
+
+  useEffect(() => {
+    if (appliedFilters) {
+      return;
+    }
+
+    const initialFilters = buildFiltersFromDraft(1);
+    setAppliedFilters(initialFilters);
+    setAppliedPage(1);
+  }, []);
+
+  useEffect(() => {
+    if (!appliedFilters) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsBackendLoading(true);
+    setBackendError(null);
+
+    searchVehicles(appliedFilters)
+      .then((result) => {
+        if (!isMounted) return;
+        setBackendData(result);
+      })
+      .catch((error: Error) => {
+        if (!isMounted) return;
+        setBackendError(error.message || 'Failed to load vehicles');
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsBackendLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [appliedFilters]);
 
   const backendVehicleIds = useMemo(
-    () => (backendData ? backendData.items.map((item) => item.vehicle_id) : []),
+    () => (backendData ? backendData.items.map((item) => item.vehicle_id ?? item.id) : []),
     [backendData],
   );
 
@@ -168,12 +192,20 @@ const AuctionListingsPage = () => {
     });
   }, [backendData, auctionFilter]);
 
+  useEffect(() => {
+    if (!backendData && !isBackendLoading && !backendError) {
+      return;
+    }
+  }, [appliedFilters, isBackendLoading, backendError, backendData, filteredBackendItems]);
+
   const handleOpenBackendGallery = async (
     item: BackendItem,
     fallbackPhotoUrl: string,
   ) => {
+    const vehicleKey = item.vehicle_id ?? item.id;
+
     setBackendGallery({
-      id: item.vehicle_id,
+      id: vehicleKey,
       title: `${item.year} ${item.make} ${item.model}`,
       yardName: item.yard_name ?? null,
       saleState: item.source ?? null,
@@ -190,7 +222,7 @@ const AuctionListingsPage = () => {
     setBackendGalleryIndex(0);
 
     try {
-      const photos = await fetchVehiclePhotos(item.vehicle_id);
+      const photos = await fetchVehiclePhotos(vehicleKey);
       const urls = Array.isArray(photos)
         ? photos
             .map((photo) => (photo.url || photo.thumb_url_middle || photo.thumb_url) ?? '')
@@ -216,7 +248,7 @@ const AuctionListingsPage = () => {
         role="main"
         aria-label="აქტიური აუქციონები"
       >
-        <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8 space-y-6">
+        <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-4">
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold">აქტიური აუქციონები</h1>
             <p className="text-muted-foreground">
@@ -236,9 +268,20 @@ const AuctionListingsPage = () => {
                   <Input
                     placeholder="მაგ: BMW, Camry, F-150"
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSearchQuery(value);
+
+                      const trimmed = value.trim();
+                      if (trimmed.length === 0 || trimmed.length >= 4) {
+                        setSearchValidationError(null);
+                      }
+                    }}
                     className="h-9"
                   />
+                  {searchValidationError && (
+                    <span className="text-[10px] text-destructive block mt-0.5">{searchValidationError}</span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <span className="text-xs text-muted-foreground">დალაგება</span>
@@ -484,7 +527,7 @@ const AuctionListingsPage = () => {
                 </div>
               </div>
 
-              <div className="hidden md:flex md:items-center md:justify-end">
+              <div className="hidden md:flex md:items-center md:justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -505,9 +548,32 @@ const AuctionListingsPage = () => {
                     setBuyNowOnly(false);
                     setSearchQuery('');
                     setSortBy('relevance');
+                    setAppliedFilters(null);
+                    setAppliedPage(1);
+                    setBackendData(null);
+                    setBackendError(null);
+                    setSearchValidationError(null);
                   }}
                 >
                   ფილტრების განულება
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    const trimmed = searchQuery.trim();
+                    if (trimmed.length > 0 && trimmed.length < 4) {
+                      setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                      return;
+                    }
+
+                    const filters = buildFiltersFromDraft(1);
+                    setPage(1);
+                    setAppliedPage(1);
+                    setAppliedFilters(filters);
+                  }}
+                >
+                  ძებნა
                 </Button>
               </div>
             </CardContent>
@@ -527,7 +593,7 @@ const AuctionListingsPage = () => {
           </div>
 
           {/* Backend-powered results only */}
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3 mt-2">
             <h2 className="text-sm font-semibold">რეალური შედეგები (Vehicles + Quotes API)</h2>
             {isBackendLoading && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
@@ -553,15 +619,20 @@ const AuctionListingsPage = () => {
                       {backendError}
                     </span>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-3 text-[11px]"
-                    onClick={() => refetchBackend()}
-                  >
-                    თავიდან ცდა
-                  </Button>
+                  {appliedFilters && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-[11px]"
+                      onClick={() => {
+                        // перезапуск последнего поиска
+                        setAppliedFilters({ ...appliedFilters });
+                      }}
+                    >
+                      თავიდან ცდა
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -609,7 +680,7 @@ const AuctionListingsPage = () => {
               <>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>
-                    გვერდი {page} / {backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit))}
+                    გვერდი {appliedPage} / {backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit))}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -617,8 +688,14 @@ const AuctionListingsPage = () => {
                       size="sm"
                       variant="outline"
                       className="h-7 px-2 text-[11px]"
-                      disabled={page <= 1}
-                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      disabled={!appliedFilters || appliedPage <= 1}
+                      onClick={() => {
+                        if (!appliedFilters || appliedPage <= 1) return;
+                        const nextPage = appliedPage - 1;
+                        setPage(nextPage);
+                        setAppliedPage(nextPage);
+                        setAppliedFilters({ ...appliedFilters, page: nextPage });
+                      }}
                     >
                       წინა
                     </Button>
@@ -628,53 +705,63 @@ const AuctionListingsPage = () => {
                       variant="outline"
                       className="h-7 px-2 text-[11px]"
                       disabled={
-                        page >=
-                        (backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit)))
-                      }
-                      onClick={() =>
-                        setPage((prev) =>
-                          prev >=
+                        !appliedFilters ||
+                        !backendData ||
+                        appliedPage >=
                           (backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit)))
-                            ? prev
-                            : prev + 1,
-                        )
                       }
+                      onClick={() => {
+                        if (!appliedFilters || !backendData) return;
+                        const maxPage = backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit));
+                        const nextPage = appliedPage >= maxPage ? appliedPage : appliedPage + 1;
+                        if (nextPage === appliedPage) return;
+                        setPage(nextPage);
+                        setAppliedPage(nextPage);
+                        setAppliedFilters({ ...appliedFilters, page: nextPage });
+                      }}
                     >
                       შემდეგი
                     </Button>
                   </div>
                 </div>
                 <div
-                  className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                  className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
                   aria-label="რეალური ლოტების შედეგები"
                 >
                   {filteredBackendItems.map((item) => {
-                  const photoUrls = photosByVehicleId[item.vehicle_id] || [];
-                  const mainPhotoUrl = photoUrls[0] ?? '/cars/1.webp';
-                  const averagePrice = Math.round(
-                    item.quotes.reduce((sum, quote) => sum + quote.total_price, 0) /
-                      item.quotes.length,
-                  );
+                  const vehicleKey = item.vehicle_id ?? item.id;
+                  const extraPhotoUrls = photosByVehicleId[vehicleKey] || [];
+                  const mainPhotoUrl =
+                    item.primary_photo_url || item.primary_thumb_url || extraPhotoUrls[0] || '/cars/1.webp';
+                  const priceRaw =
+                    typeof item.calc_price === 'number'
+                      ? item.calc_price
+                      : typeof item.retail_value === 'number'
+                        ? item.retail_value
+                        : Number(item.retail_value ?? 0);
+                  const displayPrice = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
 
                   return (
-                    <Card key={`${item.vehicle_id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
+                    <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
                       <button
                         type="button"
-                        className="relative h-40 w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
+                        className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
                         onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
                       >
-                        <img
-                          src={mainPhotoUrl}
-                          alt={`${item.year} ${item.make} ${item.model}`}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
+                        <div className="relative w-full h-40">
+                          <img
+                            src={mainPhotoUrl}
+                            alt={`${item.year} ${item.make} ${item.model}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
                       </button>
-                      {photoUrls.length > 1 && (
-                        <div className="flex items-center gap-1 px-2 pt-2 pb-1 overflow-x-auto">
-                          {photoUrls.slice(0, 5).map((thumbUrl, index) => (
+                      {extraPhotoUrls.length > 1 && (
+                        <div className="flex items-center gap-1 px-2 pt-0.5 pb-1 overflow-x-auto">
+                          {extraPhotoUrls.slice(0, 3).map((thumbUrl, index) => (
                             <button
-                              key={`${item.vehicle_id}-thumb-${index}`}
+                              key={`${item.id}-thumb-${index}`}
                               type="button"
                               className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-sm border border-border hover:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/60"
                               onClick={() => handleOpenBackendGallery(item, thumbUrl)}
@@ -710,7 +797,12 @@ const AuctionListingsPage = () => {
                             </div>
                             <div>
                               <span className="block text-[10px] text-muted-foreground">დისტანცია</span>
-                              <span>{item.distance_miles.toLocaleString()} mi</span>
+                              <span>
+                                {item.distance_miles != null
+                                  ? item.distance_miles.toLocaleString()
+                                  : 'N/A'}{' '}
+                                mi
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -718,7 +810,7 @@ const AuctionListingsPage = () => {
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                             <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
                             <span className="font-medium">
-                              ${averagePrice.toLocaleString()}
+                              ${displayPrice.toLocaleString()}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -726,11 +818,12 @@ const AuctionListingsPage = () => {
                               variant="default"
                               size="sm"
                               className="h-8 px-3 text-xs"
-                              onClick={() =>
-                                navigate(`/vehicle/${item.vehicle_id}`, {
+                              onClick={() => {
+                                const vehicleKey = item.vehicle_id ?? item.id;
+                                navigate(`/vehicle/${vehicleKey}`, {
                                   state: { scrollToOffers: true },
-                                })
-                              }
+                                });
+                              }}
                             >
                               ღირებულების გათვლა
                             </Button>
@@ -738,7 +831,10 @@ const AuctionListingsPage = () => {
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 text-xs"
-                              onClick={() => navigate(`/vehicle/${item.vehicle_id}`)}
+                              onClick={() => {
+                                const vehicleKey = item.vehicle_id ?? item.id;
+                                navigate(`/vehicle/${vehicleKey}`);
+                              }}
                             >
                               დეტალურად ნახვა
                             </Button>
@@ -793,11 +889,13 @@ const AuctionListingsPage = () => {
                   <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-2/3 bg-background flex flex-col items-center justify-center">
                       <div className="w-full flex items-center justify-center p-3">
-                        <img
-                          src={backendGallery.photos[backendGalleryIndex] ?? backendGallery.photos[0]}
-                          alt={backendGallery.title}
-                          className="w-full max-h-[420px] object-contain"
-                        />
+                        <div className="relative w-full max-w-[520px] aspect-square">
+                          <img
+                            src={backendGallery.photos[backendGalleryIndex] ?? backendGallery.photos[0]}
+                            alt={backendGallery.title}
+                            className="absolute inset-0 h-full w-full object-contain"
+                          />
+                        </div>
                       </div>
                       {backendGallery.photos.length > 1 && (
                         <div className="flex flex-wrap items-center justify-center gap-2 px-3 pb-3 w-full">

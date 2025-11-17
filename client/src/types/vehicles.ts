@@ -90,3 +90,23 @@ export interface VehiclesSearchFilters {
   limit?: number
   offset?: number
 }
+
+export interface VehicleSearchItem extends VehicleDetails {
+  mileage: number | null
+  fuel_type?: string | null
+  category?: string | null
+  drive?: string | null
+  distance_miles?: number | null
+  primary_photo_url: string | null
+  primary_thumb_url: string | null
+  vehicle_id?: number
+  quotes?: VehicleQuote[]
+}
+
+export interface SearchVehiclesResponse {
+  items: VehicleSearchItem[]
+  total: number
+  limit: number
+  page: number
+  totalPages: number
+}

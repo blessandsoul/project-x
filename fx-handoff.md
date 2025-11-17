@@ -73,3 +73,4 @@ Summary:
 Status: Headers now provide consistent, fully clickable navigation across desktop and mobile, aligned with existing routing.
 
 VC-009: Rebranded the UI to TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy.
+VC-010: Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes.
