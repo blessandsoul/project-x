@@ -29,7 +29,7 @@ export class VehicleModel extends BaseModel {
    */
   async findById(id: number): Promise<Vehicle | null> {
     const rows = await this.executeQuery(
-      'SELECT id, brand_name, model_name, brand_name AS make, model_name AS model, year, mileage, yard_name, source, retail_value, calc_price FROM vehicles WHERE id = ? LIMIT 1',
+      'SELECT id, brand_name, model_name, brand_name AS make, model_name AS model, year, mileage, vin, yard_name, source, retail_value, calc_price FROM vehicles WHERE id = ? LIMIT 1',
       [id],
     );
 
