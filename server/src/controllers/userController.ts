@@ -11,6 +11,10 @@ import { ValidationError, AuthenticationError, NotFoundError, ConflictError } fr
  * registration, profile management, and user administration.
  * Acts as an intermediary between routes and data models.
  */
+const BCRYPT_SALT_ROUNDS = process.env.BCRYPT_SALT_ROUNDS
+  ? parseInt(process.env.BCRYPT_SALT_ROUNDS, 10)
+  : 12;
+
 export class UserController {
   private fastify: FastifyInstance;
   private userModel: UserModel;
@@ -47,7 +51,7 @@ export class UserController {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     // Create user
     const user = await this.userModel.create({
@@ -163,7 +167,7 @@ export class UserController {
     // Hash password if provided
     let passwordHash = password;
     if (password) {
-      passwordHash = await bcrypt.hash(password, 12);
+      passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
     }
 
     const updateData: UserUpdate = {};

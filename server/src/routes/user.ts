@@ -3,6 +3,12 @@ import { UserController } from '../controllers/userController.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
 import { ValidationError, AuthenticationError, NotFoundError, ConflictError, AuthorizationError } from '../types/errors.js';
 
+const loginRateLimitMax = process.env.RATE_LIMIT_USER_LOGIN_MAX
+  ? parseInt(process.env.RATE_LIMIT_USER_LOGIN_MAX, 10)
+  : 5;
+
+const loginRateLimitWindow = process.env.RATE_LIMIT_USER_LOGIN_WINDOW || '5 minutes';
+
 /**
  * User Routes
  *
@@ -69,6 +75,12 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           identifier: { type: 'string', description: 'Email or username' },
           password: { type: 'string' },
         },
+      },
+    },
+    config: {
+      rateLimit: {
+        max: loginRateLimitMax,
+        timeWindow: loginRateLimitWindow,
       },
     },
   }, async (request, reply) => {
