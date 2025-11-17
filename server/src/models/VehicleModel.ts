@@ -29,7 +29,7 @@ export class VehicleModel extends BaseModel {
    */
   async findById(id: number): Promise<Vehicle | null> {
     const rows = await this.executeQuery(
-      'SELECT id, brand_name, model_name, brand_name AS make, model_name AS model, year, mileage, yard_name, source, retail_value, calc_price FROM vehicles WHERE id = ? LIMIT 1',
+      'SELECT * FROM vehicles WHERE id = ? LIMIT 1',
       [id],
     );
 
@@ -37,7 +37,18 @@ export class VehicleModel extends BaseModel {
       return null;
     }
 
-    return rows[0] as Vehicle;
+    const row: any = rows[0];
+
+    // Preserve legacy make/model aliases expected by existing code by
+    // mapping them from brand_name/model_name on the vehicles table.
+    if (row && row.brand_name && !row.make) {
+      row.make = row.brand_name;
+    }
+    if (row && row.model_name && !row.model) {
+      row.model = row.model_name;
+    }
+
+    return row as Vehicle;
   }
 
   async findAll(limit: number = 100, offset: number = 0): Promise<Vehicle[]> {
