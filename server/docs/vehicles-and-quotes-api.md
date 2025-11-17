@@ -97,9 +97,58 @@ Each item includes (based on current `findAll`):
 - `source`
 - `retail_value`
 
+This endpoint is intentionally minimal and does **not** include photos. Use `/vehicles/search` or `/vehicles/:id/photos`/`/vehicles/:id/full` when you need images.
+
 **Errors:**
 
 - Standard error wrapper via global error handler (validation errors are unlikely on this endpoint).
+
+---
+
+### GET `/vehicles/search`
+
+**Description:**
+
+Search vehicles by filters suitable for frontend search UI. Supports make/model/year range, price/mileage range, fuel type, category, drive, and pagination. Returns a paginated list with basic vehicle info and a single thumbnail per vehicle.
+
+**Method:** `GET`
+
+**Query params:**
+
+- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 123,
+      "brand_name": "Toyota",
+      "model_name": "Corolla",
+      "make": "Toyota",
+      "model": "Corolla",
+      "year": 2018,
+      "mileage": 85000,
+      "yard_name": "Dallas, TX",
+      "source": "copart",
+      "retail_value": 20000,
+      "calc_price": 7300,
+      "fuel_type": "Gasoline",
+      "category": "Sedan",
+      "drive": "FWD",
+      "primary_photo_url": "https://.../full.jpg", // first full-size photo or null
+      "primary_thumb_url": "https://.../thumb_min.jpg" // first thumbnail, ideal for lists
+    }
+  ],
+  "total": 1234,
+  "limit": 20,
+  "page": 1,
+  "totalPages": 62
+}
+```
+
+> **UI hint:** Use `primary_thumb_url` for catalog/list thumbnails, and `primary_photo_url` when you need a larger image preview.
 
 ---
 
@@ -236,6 +285,13 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
 
 - Currently no body fields are required; path param is enough.
 
+#### Validation rules
+
+| Field       | Location | Required | Type   | Constraints                                 |
+| ----------- | -------- | -------- | ------ | ------------------------------------------- |
+| `vehicleId` | path     | yes      | number | Integer, `>= 1`                             |
+| `currency`  | query    | no       | string | 3-letter code; backend supports `usd`/`gel` |
+
 **Processing steps:**
 
 1. Load vehicle via `VehicleModel.findById(vehicleId)`.
@@ -293,6 +349,74 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
 
 ---
 
+### GET `/vehicles/:vehicleId/quotes`
+
+**Description:**
+Return quotes for a single vehicle.
+
+**Method:** `GET`
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID.
+
+**Query params (optional):**
+
+- `currency` – `"usd"` (default) or `"gel"`. Controls the currency of returned
+  `total_price` values and `breakdown.total_price`.
+
+#### Validation rules
+
+| Field       | Location | Required | Type   | Constraints                                 |
+| ----------- | -------- | -------- | ------ | ------------------------------------------- |
+| `vehicleId` | path     | yes      | number | Integer, `>= 1`                             |
+| `currency`  | query    | no       | string | 3-letter code; backend supports `usd`/`gel` |
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "vehicle_id": 123,
+  "make": "Toyota",
+  "model": "Corolla",
+  "year": 2018,
+  "mileage": 85000,
+  "yard_name": "Dallas, TX",
+  "source": "copart",
+  "distance_miles": 7800,
+  "quotes": [
+    {
+      "company_name": "ACME Shipping",
+      "total_price": 12345.67, // vehicle + shipping + insurance, in requested currency
+      "delivery_time_days": 35, // optional per-company override
+      "breakdown": {
+        "base_price": 500,
+        "distance_miles": 7800,
+        "price_per_mile": 0.5,
+        "mileage_cost": 3900,
+        "customs_fee": 300,
+        "service_fee": 200,
+        "broker_fee": 150,
+        "retail_value": 20000,
+        "insurance_rate": 0.01,
+        "insurance_fee": 200,
+        "shipping_total": 5050,
+        "calc_price": 7300,
+        "total_price": 12350,
+        "formula_source": "default" // or "final_formula"
+      }
+    }
+  ]
+}
+```
+
+**Error responses:**
+
+- `404 Not Found` — vehicle not found.
+- `400 Bad Request` — invalid `vehicleId` path parameter.
+
+---
+
 ## Search Quotes API (Vehicles + Quotes, Not Persisted)
 
 ### POST `/vehicles/search-quotes`
@@ -309,31 +433,62 @@ Used for search/list screens.
 Vehicle filters:
 
 - `make` (string) – partial match on `brand_name`.
+  - Validation: 2–100 characters.
 - `model` (string) – partial match on `model_name`.
+  - Validation: 2–100 characters.
 - `year` (number) – exact match on `year`.
 - `year_from` (number) – `year >= year_from`.
 - `year_to` (number) – `year <= year_to`.
+  - Validation: year-related fields are expected to be reasonable model years (roughly 1950–2100).
 - `mileage_from` (number) – `mileage >= mileage_from`.
 - `mileage_to` (number) – `mileage <= mileage_to`.
+  - Validation: mileage bounds must be non-negative numbers.
 - `fuel_type` (string) – partial match on `(engine_fuel OR engine_fuel_rus)`.
+  - Validation: 1–50 characters.
 - `category` (string) – partial match on `vehicle_type`.
+  - Validation: 1–50 characters.
 - `drive` (string) – partial match on `drive` (e.g. `"4WD"`).
+  - Validation: 1–50 characters.
 
 Quote-level filters:
 
-- `price_from` (number) – minimum **total quote price** (vehicle + shipping).
-- `price_to` (number) – maximum **total quote price**.
+- `price_from` (number) – minimum **total quote price** (vehicle + shipping). Must be >= 0.
+- `price_to` (number) – maximum **total quote price**. Must be >= 0.
 
 Pagination:
 
 - `limit` (number, default 20, max 50) – vehicles per page.
+  - Validation: integer >= 1 and <= 50.
 - `offset` (number, default 0) – number of vehicles to skip.
+  - Validation: integer >= 0.
 
 Currency:
 
 - `currency` (string, optional) – `"usd"` (default) or `"gel"`. When set to `"gel"`,
   all quote `total_price` values and `breakdown.total_price` are converted using the
   latest stored USD->GEL exchange rate.
+
+#### Validation rules
+
+| Field          | Required | Type   | Constraints                              |
+| -------------- | -------- | ------ | ---------------------------------------- |
+| `make`         | no       | string | 2–100 characters                         |
+| `model`        | no       | string | 2–100 characters                         |
+| `year`         | no       | number | Reasonable model year (≈1950–2100)       |
+| `year_from`    | no       | number | `>= 1950`, `<= 2100`                     |
+| `year_to`      | no       | number | `>= 1950`, `<= 2100`                     |
+| `mileage_from` | no       | number | `>= 0`                                   |
+| `mileage_to`   | no       | number | `>= 0`                                   |
+| `fuel_type`    | no       | string | 1–50 characters                          |
+| `category`     | no       | string | 1–50 characters                          |
+| `drive`        | no       | string | 1–50 characters                          |
+| `price_from`   | no       | number | `>= 0`                                   |
+| `price_to`     | no       | number | `>= 0`                                   |
+| `limit`        | no       | number | Integer, `1 <= limit <= 50` (default 20) |
+| `offset`       | no       | number | Integer, `offset >= 0` (default 0)       |
+| `currency`     | no       | string | `"usd"` (default) or `"gel"`             |
+
+> **Important:** At least one search filter field (`make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, or `drive`) **must** be provided. An entirely empty request body (only pagination/currency or nothing at all) is rejected with `400 Bad Request`.
 
 **Filter behavior:**
 
@@ -388,7 +543,109 @@ Currency:
   - No vehicles found for the given filters.
   - No companies configured for quote calculation.
   - Distance cannot be determined for the yard.
-- `400 Bad Request` — if the request body contains invalid types (e.g., non-numeric `limit`).
+- `400 Bad Request` — if the request body contains invalid types (e.g., non-numeric `limit`) **or** when no search filters are provided (empty body).
+
+---
+
+## Compare Vehicles API
+
+### POST `/vehicles/compare`
+
+**Description:**
+
+Compare quotes for a fixed list of vehicles. The client provides a small
+array of vehicle IDs (e.g. from favorites or a search result), and the
+backend computes quotes for each and returns a comparison-friendly
+structure in a single response.
+
+**Method:** `POST`
+
+**Request body:**
+
+```jsonc
+{
+  "vehicle_ids": [123, 456, 789], // required, 1–5 numeric IDs
+  "quotes_per_vehicle": 3, // optional, small positive integer, default 3
+  "currency": "gel" // optional, "usd" (default) or "gel"
+}
+```
+
+Constraints:
+
+- `vehicle_ids` must be a non-empty array of positive numeric IDs.
+- Duplicate IDs are ignored; each vehicle appears at most once in the
+  response.
+- After de-duplication, at most **5** vehicles may be compared in a
+  single call. Sending more than 5 results in a validation error.
+- `quotes_per_vehicle` is treated as a small positive integer (>= 1). Very large values are not allowed by the backend and may be capped/validated.
+
+#### Validation rules
+
+| Field                | Required | Type     | Constraints                                          |
+| -------------------- | -------- | -------- | ---------------------------------------------------- |
+| `vehicle_ids`        | yes      | number[] | Non-empty array of positive numeric IDs (1–5 unique) |
+| `quotes_per_vehicle` | no       | number   | Integer, `>= 1`, small (backend caps large values)   |
+| `currency`           | no       | string   | `"usd"` (default) or `"gel"`                         |
+
+**Processing steps:**
+
+1. Validate `vehicle_ids` array (non-empty, max 5 after de-duplication).
+2. For each unique `vehicle_id`:
+   - Load the vehicle via `VehicleModel.findById`.
+   - Compute quotes for the vehicle using `ShippingQuoteService` and the
+     configured set of companies (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
+   - Sort quotes by `total_price` ascending.
+   - Convert totals to the requested `currency` (`usd` or `gel`).
+   - Keep only the best `quotes_per_vehicle` quotes per vehicle.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "currency": "GEL",
+  "vehicles": [
+    {
+      "vehicle_id": 123,
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2018,
+      "mileage": 95000,
+      "yard_name": "Dallas, TX",
+      "source": "copart",
+      "distance_miles": 7800,
+      "quotes": [
+        {
+          "company_name": "ACME Shipping",
+          "total_price": 13000,
+          "delivery_time_days": 35,
+          "breakdown": {
+            /* same structure as other quote breakdowns, in requested currency */
+          }
+        },
+        {
+          "company_name": "FastLine",
+          "total_price": 13200,
+          "delivery_time_days": 30,
+          "breakdown": {
+            /* ... */
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` (`VALIDATION_ERROR`) when:
+  - `vehicle_ids` is missing or empty.
+  - Any `vehicle_id` is not a valid positive number.
+  - More than 5 unique `vehicle_ids` are provided.
+- `404 Not Found` (`NOT_FOUND_ERROR`) if any referenced vehicle does not
+  exist.
+- `422 Unprocessable Entity` (`ValidationError`) if no companies are
+  configured for quote calculation.
 
 ---
 

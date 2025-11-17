@@ -98,16 +98,17 @@ export class UserController {
       throw new AuthenticationError('Invalid credentials');
     }
 
-    // Generate token
+    // Generate token (include role for authorization checks)
     const token = this.fastify.generateToken({
       userId: user.id,
       email: user.email,
       username: user.username,
+      role: user.role,
     });
 
     return {
       token,
-      user: { id: user.id, email: user.email, username: user.username },
+      user: { id: user.id, email: user.email, username: user.username, role: user.role },
     };
   }
 
@@ -194,17 +195,28 @@ export class UserController {
   }
 
   /**
-   * Retrieve paginated list of all users
+   * Retrieve paginated list of users with optional filters
    *
-   * Admin utility method for listing users with pagination support.
-   * Returns users ordered by creation date (newest first).
+   * Admin utility method for listing users with pagination support and basic
+   * search filters for admin panels.
    *
    * @param limit - Maximum number of users to return (default: 10)
    * @param offset - Number of users to skip for pagination (default: 0)
+   * @param filters - Optional filters: email/username LIKE search, role, blocked flag, company_id
    * @returns Array of user objects without sensitive data
    */
-  async getAllUsers(limit: number = 10, offset: number = 0): Promise<User[]> {
-    return this.userModel.findAll(limit, offset);
+  async getAllUsers(
+    limit: number = 10,
+    offset: number = 0,
+    filters?: {
+      email?: string;
+      username?: string;
+      role?: 'user' | 'dealer' | 'company' | 'admin';
+      is_blocked?: boolean;
+      company_id?: number;
+    }
+  ): Promise<User[]> {
+    return this.userModel.findAll(limit, offset, filters);
   }
 
   /**
@@ -217,4 +229,48 @@ export class UserController {
   async getUserCount(): Promise<number> {
     return this.userModel.count();
   }
+
+	  /**
+	   * Get total count of users matching optional filters.
+	   *
+	   * Useful for paginated admin lists when combined with getAllUsers.
+	   */
+	  async getUserCountWithFilters(filters?: {
+	    email?: string;
+	    username?: string;
+	    role?: 'user' | 'dealer' | 'company' | 'admin';
+	    is_blocked?: boolean;
+	    company_id?: number;
+	  }): Promise<number> {
+	    return this.userModel.countWithFilters(filters);
+	  }
+
+	  /**
+	   * Admin: retrieve user by ID
+	   */
+	  async getUserByIdAdmin(userId: number): Promise<User> {
+	    const user = await this.userModel.findById(userId);
+	    if (!user) {
+	      throw new NotFoundError('User');
+	    }
+	    return user;
+	  }
+
+	  /**
+	   * Admin: update core user fields (role, dealer/company links, onboarding, blocked flag).
+	   */
+	  async updateUserAdmin(userId: number, updates: Pick<UserUpdate, 'role' | 'dealer_slug' | 'company_id' | 'onboarding_ends_at' | 'is_blocked'>): Promise<User> {
+	    const updated = await this.userModel.update(userId, updates);
+	    if (!updated) {
+	      throw new NotFoundError('User');
+	    }
+	    return updated;
+	  }
+
+	  /**
+	   * Admin: block or unblock a user account.
+	   */
+	  async setUserBlocked(userId: number, isBlocked: boolean): Promise<User> {
+	    return this.updateUserAdmin(userId, { is_blocked: isBlocked });
+	  }
 }

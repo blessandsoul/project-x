@@ -10,6 +10,112 @@ Main components:
 
 ---
 
+### GET `/companies/search`
+
+**Description:**
+
+Search companies with filters, pagination and sorting. This endpoint is intended for frontend company listings (search results, explore screens, etc.).
+
+**Method:** `GET`
+
+**Query params:**
+
+- `limit` (optional, number) – page size, default 20, max 100.
+- `offset` (optional, number) – number of companies to skip, default 0.
+- `search` (optional, string) – case‑insensitive search on company `name`.
+  - When provided, must be **at least 4 characters** long.
+  - Shorter non‑empty values cause `400 Bad Request` with:
+    - `error: "SEARCH_TOO_SHORT"`.
+- `min_rating` (optional, number) – minimum average rating.
+- `min_base_price` (optional, number) – minimum `base_price`.
+- `max_base_price` (optional, number) – maximum `base_price`.
+- `max_total_fee` (optional, number) – maximum total fixed shipping fee, implemented as a filter on `cheapest_score` (see below).
+- `country` (optional, string) – exact match on `country` code/value.
+- `city` (optional, string) – exact match on `city`.
+- `is_vip` (optional, boolean: `true`/`false`) – filter VIP companies.
+- `onboarding_free` (optional, boolean: `true`/`false`) – filter companies with free onboarding.
+- `order_by` (optional, string) – sort field:
+  - `"rating"` – weighted rating (see below).
+  - `"cheapest"` – cheapest companies first, based on `cheapest_score`.
+  - `"name"` – alphabetical by name.
+  - `"newest"` – newest companies first (by `created_at`).
+- `order_direction` (optional, string) – `"asc"` or `"desc"` for supported sort modes.
+
+**Sorting details:**
+
+- When `order_by = "cheapest"`:
+  - Default is **cheapest first** (`cheapest_score ASC`) when no `order_direction` is provided.
+  - `order_direction=desc` inverts this (most expensive first).
+- When `order_by = "rating"`:
+
+  - Uses a **weighted rating** that considers both rating and review count:
+
+    ```sql
+    ORDER BY (rating * LEAST(review_count, 20)) DESC, rating DESC
+    ```
+
+  - `review_count` is the number of reviews per company from `company_reviews`.
+  - This means a company with many reviews and a 4.9 rating will rank above a company with a single 5.0 review.
+
+- When `order_by` is not provided but `search` is provided:
+  - The same **weighted rating** order is used by default.
+- When neither `order_by` nor `search` is provided:
+  - Default order is `created_at DESC` (newest first).
+
+**`cheapest_score` background:**
+
+- `cheapest_score` is a precomputed numeric column on `companies` used purely for fast filtering/sorting.
+- It is calculated in the backend whenever company pricing changes:
+
+  ```text
+  cheapest_score = base_price + customs_fee + service_fee + broker_fee
+  ```
+
+- The search API uses `cheapest_score` for:
+  - `max_total_fee` filter.
+  - `order_by=cheapest` sorting.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 10,
+      "name": "ACME Shipping",
+      "logo": "https://...",
+      "base_price": 500,
+      "price_per_mile": 0.5,
+      "customs_fee": 300,
+      "service_fee": 200,
+      "broker_fee": 150,
+      "final_formula": null,
+      "description": "Fast shipping to Poti",
+      "phone_number": "+995...",
+      "rating": 4.9,
+      "country": "GE",
+      "city": "Tbilisi",
+      "is_vip": true,
+      "is_onboarding_free": true,
+      "cheapest_score": 1150,
+      "created_at": "2025-11-16T00:00:00.000Z",
+      "updated_at": "2025-11-16T00:00:00.000Z",
+      "reviewCount": 42
+    }
+  ],
+  "total": 120,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – when `search` is present but shorter than 4 characters.
+- Standard error handling for internal errors via the global error handler.
+
+---
+
 ## Data Model: Company
 
 **Table:** `companies`
@@ -18,15 +124,15 @@ Key columns used by the API:
 
 - `id` (number) – primary key.
 - `name` (string) – company name.
-- `logo` (string or null) – logo URL.
-- `base_price` (DECIMAL/string) – fixed base component of shipping price.
-- `price_per_mile` (DECIMAL/string) – cost per mile.
-- `customs_fee` (DECIMAL/string) – customs-related fee.
-- `service_fee` (DECIMAL/string) – service/handling fee.
-- `broker_fee` (DECIMAL/string) – brokerage fee.
+- `logo` (string or null) – logo URL. Must be a valid HTTP(S) URL.
+- `base_price` (DECIMAL/string) – fixed base component of shipping price. Non-negative.
+- `price_per_mile` (DECIMAL/string) – cost per mile. Non-negative.
+- `customs_fee` (DECIMAL/string) – customs-related fee. Non-negative.
+- `service_fee` (DECIMAL/string) – service/handling fee. Non-negative.
+- `broker_fee` (DECIMAL/string) – brokerage fee. Non-negative.
 - `final_formula` (JSON or null) – optional per-company overrides of the default pricing formula.
-- `description` (string or null) – human description.
-- `phone_number` (string or null) – contact phone.
+- `description` (string or null) – human description. Up to ~2000 characters.
+- `phone_number` (string or null) – contact phone. Basic validation enforces phone-like characters only (digits, spaces, `+`, `-`, parentheses) and a length between 7 and 20 characters.
 - `created_at`, `updated_at` – timestamps.
 
 `CompanyModel` also manages:
@@ -67,6 +173,8 @@ Each company object includes at least:
 - `final_formula`
 - `description`
 - `phone_number`
+- `rating` – numeric average rating (0–5) derived from reviews.
+- `reviewCount` – total number of reviews for this company.
 - `created_at`
 - `updated_at`
 
@@ -91,13 +199,15 @@ Return one company by ID, including its related social links and quotes.
 
 **Response 200 JSON:**
 
-- All company fields from above.
+- All company fields from above (including `rating` and `reviewCount`).
 - `social_links`: array of social link objects `{ id, company_id, url, created_at, updated_at }`.
-- `quotes`: array of `CompanyQuote` objects (see Quotes API doc if needed).
+
+Quotes are no longer embedded directly in this response; use the
+paginated quotes endpoint instead (see below).
 
 **Error responses:**
 
-- `400 Bad Request` – invalid `id` (non-numeric or <= 0).
+- `400 Bad Request` – invalid `id`.
 - `404 Not Found` – company does not exist.
 
 ---
@@ -113,13 +223,13 @@ Create a new company with pricing configuration. Companies are required before a
 
 ```jsonc
 {
-  "name": "ACME Shipping", // required
-  "logo": "https://...", // optional
-  "base_price": 500, // required, number
-  "price_per_mile": 0.5, // required, number
-  "customs_fee": 300, // required, number
-  "service_fee": 200, // required, number
-  "broker_fee": 150, // required, number
+  "name": "ACME Shipping", // required, 1–255 chars
+  "logo": "https://...", // optional, must be a valid HTTP(S) URL
+  "base_price": 500, // required, number >= 0
+  "price_per_mile": 0.5, // required, number >= 0
+  "customs_fee": 300, // required, number >= 0
+  "service_fee": 200, // required, number >= 0
+  "broker_fee": 150, // required, number >= 0
   "final_formula": {
     // optional, overrides default formula
     "base_price": 600, // optional override
@@ -129,10 +239,25 @@ Create a new company with pricing configuration. Companies are required before a
     "broker_fee": 160,
     "delivery_time_days": 35
   },
-  "description": "Fast shipping to Poti", // optional
-  "phone_number": "+995..." // optional
+  "description": "Fast shipping to Poti", // optional, up to 2000 chars
+  "phone_number": "+995..." // optional, 7–20 chars, phone-style string
 }
 ```
+
+#### Validation rules
+
+| Field            | Required | Type           | Constraints                                                 |
+| ---------------- | -------- | -------------- | ----------------------------------------------------------- |
+| `name`           | yes      | string         | 1–255 characters                                            |
+| `logo`           | no       | string \| null | HTTP(S) URL, max 500 characters                             |
+| `base_price`     | yes      | number         | `>= 0`                                                      |
+| `price_per_mile` | yes      | number         | `>= 0`                                                      |
+| `customs_fee`    | yes      | number         | `>= 0`                                                      |
+| `service_fee`    | yes      | number         | `>= 0`                                                      |
+| `broker_fee`     | yes      | number         | `>= 0`                                                      |
+| `final_formula`  | no       | object \| null | Optional JSON overrides; when present must be a JSON object |
+| `description`    | no       | string \| null | Max 2000 characters                                         |
+| `phone_number`   | no       | string \| null | 7–20 characters, digits/spaces/`+`/`-`/`(` `)` only         |
 
 **Default pricing formula (when `final_formula` is not used):**
 
@@ -264,9 +389,15 @@ Create a social link for a company.
 
 ```jsonc
 {
-  "url": "https://facebook.com/acme"
+  "url": "https://facebook.com/acme" // required, HTTP(S) URL, max length ~500
 }
 ```
+
+#### Validation rules
+
+| Field | Required | Type   | Constraints                   |
+| ----- | -------- | ------ | ----------------------------- |
+| `url` | yes      | string | HTTP(S) URL, 5–500 characters |
 
 **Response 201 JSON:**
 
@@ -294,9 +425,15 @@ Update an existing social link.
 
 ```jsonc
 {
-  "url": "https://instagram.com/acme"
+  "url": "https://instagram.com/acme" // optional, HTTP(S) URL, max length ~500
 }
 ```
+
+#### Validation rules
+
+| Field | Required | Type   | Constraints                   |
+| ----- | -------- | ------ | ----------------------------- |
+| `url` | no       | string | HTTP(S) URL, 5–500 characters |
 
 **Response 200 JSON:**
 
@@ -331,40 +468,108 @@ Delete a social link.
 
 ---
 
-## How Company Pricing Interacts with Quotes
+## Company Reviews API (Summary)
 
-The **Companies & Pricing API** doesn’t compute quotes by itself, but its data is consumed by `ShippingQuoteService` when you call quote endpoints.
+Reviews are user-generated and stored in `company_reviews`. They are not
+embedded in the company object; instead, they are exposed via a
+paginated endpoint.
 
-Key points:
+### GET `/companies/:companyId/reviews`
 
-- `base_price`, `price_per_mile`, `customs_fee`, `service_fee`, `broker_fee` are all required to compute shipping.
-- `final_formula` is optional JSON that can override these per company without changing code.
-- When quote endpoints run:
-  - They pull `Company` objects via `CompanyModel.findAll(...)`.
-  - For each company and vehicle, `ShippingQuoteService`:
-    - Normalizes all price fields to numbers.
-    - Applies `final_formula` overrides if present.
-    - Computes `total_price` including vehicle `calc_price` and insurance based on `retail_value`.
+**Description:**
 
-This means you can:
+Return a paginated list of reviews for a company.
 
-- Use the Companies API to:
-  - Add new shippers.
-  - Tweak their pricing.
-  - Override formulas via JSON.
-- Without any additional code changes in the quote engine.
+**Query params:**
+
+- `limit` (optional, number) – page size, default 10, max 50.
+- `offset` (optional, number) – number of reviews to skip, default 0.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 1,
+      "company_id": 10,
+      "user_id": 5,
+      "rating": 5,
+      "comment": "Great experience", // at least 10 characters when provided
+      "created_at": "2025-11-16T00:00:00.000Z",
+      "updated_at": "2025-11-16T00:00:00.000Z"
+    }
+  ],
+  "total": 123,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+Use the `rating` and `reviewCount` fields on `/companies` and
+`/companies/:id` for aggregated information, and this endpoint for
+actual review content.
+
+#### Validation rules (create/update)
+
+For the corresponding write endpoints:
+
+- **POST** `/companies/:companyId/reviews`
+- **PUT** `/companies/:companyId/reviews/:reviewId`
+
+| Field     | Required (POST) | Required (PUT) | Type           | Constraints                    |
+| --------- | --------------- | -------------- | -------------- | ------------------------------ |
+| `rating`  | yes             | no             | number         | `1 <= rating <= 5`             |
+| `comment` | no              | no             | string \| null | If present: 10–2000 characters |
 
 ---
 
-## Typical Flows
+## Company Quotes API (Summary)
 
-### 1. Onboarding a New Company
+Quotes for a company (across vehicles) are exposed via a dedicated,
+paginated endpoint. They are not embedded into `/companies/:id`.
 
-1. Call `POST /companies` with base prices and fees.
-2. Optionally call `POST /companies/:companyId/social-links` to attach social URLs.
-3. Once created, the company will automatically be included in:
-   - `POST /vehicles/:vehicleId/calculate-quotes`.
-   - `POST /vehicles/search-quotes` (limited by `SEARCH_QUOTES_COMPANY_LIMIT`).
+### GET `/companies/:companyId/quotes`
+
+**Description:**
+
+Fetch a paginated list of quotes for a specific company across all
+vehicles.
+
+**Query params:**
+
+- `limit` (optional, number) – page size, default 20, max 100.
+- `offset` (optional, number) – number of quotes to skip, default 0.
+- `currency` (optional, string) – `"usd"` (default) or `"gel"`. When
+  `"gel"`, `total_price` and `breakdown.total_price` are converted
+  using the latest FX rate.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 1,
+      "company_id": 10,
+      "vehicle_id": 123,
+      "total_price": 12345.67,
+      "breakdown": {
+        /* pricing breakdown object */
+      },
+      "delivery_time_days": 35,
+      "created_at": "2025-11-16T00:00:00.000Z"
+    }
+  ],
+  "total": 200,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+This endpoint is intended for admin/reporting views or company detail
+tabs that need to list many quotes, while keeping the main
+`/companies/:id` response small.
 
 ### 2. Adjusting Pricing
 

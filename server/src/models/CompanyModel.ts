@@ -33,8 +33,14 @@ export class CompanyModel extends BaseModel {
       phone_number = null,
     } = companyData;
 
+    const cheapestScore =
+      (base_price ?? 0) +
+      (customs_fee ?? 0) +
+      (service_fee ?? 0) +
+      (broker_fee ?? 0);
+
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
         name,
         logo,
@@ -43,6 +49,7 @@ export class CompanyModel extends BaseModel {
         customs_fee,
         service_fee,
         broker_fee,
+        cheapestScore,
         final_formula ? JSON.stringify(final_formula) : null,
         description,
         phone_number,
@@ -59,7 +66,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, rating, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -82,7 +89,7 @@ export class CompanyModel extends BaseModel {
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
     const rows = await this.executeQuery(
-      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, rating, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset],
     );
 
@@ -148,6 +155,7 @@ export class CompanyModel extends BaseModel {
       return this.findById(id);
     }
 
+    fields.push('cheapest_score = COALESCE(base_price, 0) + COALESCE(customs_fee, 0) + COALESCE(service_fee, 0) + COALESCE(broker_fee, 0)');
     fields.push('updated_at = NOW()');
     values.push(id);
 
@@ -326,14 +334,6 @@ export class CompanyModel extends BaseModel {
     const fields: string[] = [];
     const values: any[] = [];
 
-    if (updates.total_price !== undefined) {
-      fields.push('total_price = ?');
-      values.push(updates.total_price);
-    }
-    if (updates.breakdown !== undefined) {
-      fields.push('breakdown = ?');
-      values.push(updates.breakdown ? JSON.stringify(updates.breakdown) : null);
-    }
     if (updates.delivery_time_days !== undefined) {
       fields.push('delivery_time_days = ?');
       values.push(updates.delivery_time_days);
@@ -384,5 +384,149 @@ export class CompanyModel extends BaseModel {
       [id],
     );
     return (result as any).affectedRows > 0;
+  }
+
+  async search(params: {
+    limit?: number | undefined;
+    offset?: number | undefined;
+    minRating?: number | undefined;
+    minBasePrice?: number | undefined;
+    maxBasePrice?: number | undefined;
+    maxTotalFee?: number | undefined;
+    country?: string | undefined;
+    city?: string | undefined;
+    isVip?: boolean | undefined;
+    isOnboardingFree?: boolean | undefined;
+    search?: string | undefined;
+    orderBy?: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
+    orderDirection?: 'asc' | 'desc' | undefined;
+  }): Promise<{ items: Company[]; total: number }> {
+    const {
+      limit = 20,
+      offset = 0,
+      minRating,
+      minBasePrice,
+      maxBasePrice,
+      maxTotalFee,
+      country,
+      city,
+      isVip,
+      isOnboardingFree,
+      search,
+      orderBy,
+      orderDirection,
+    } = params;
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+
+    if (typeof minRating === 'number' && Number.isFinite(minRating)) {
+      whereClauses.push('c.rating >= ?');
+      queryParams.push(minRating);
+    }
+    if (typeof minBasePrice === 'number' && Number.isFinite(minBasePrice)) {
+      whereClauses.push('c.base_price >= ?');
+      queryParams.push(minBasePrice);
+    }
+    if (typeof maxBasePrice === 'number' && Number.isFinite(maxBasePrice)) {
+      whereClauses.push('c.base_price <= ?');
+      queryParams.push(maxBasePrice);
+    }
+    if (typeof maxTotalFee === 'number' && Number.isFinite(maxTotalFee)) {
+      whereClauses.push('c.cheapest_score <= ?');
+      queryParams.push(maxTotalFee);
+    }
+    if (typeof country === 'string' && country.trim().length > 0) {
+      whereClauses.push('c.country = ?');
+      queryParams.push(country.trim());
+    }
+    if (typeof city === 'string' && city.trim().length > 0) {
+      whereClauses.push('c.city = ?');
+      queryParams.push(city.trim());
+    }
+    if (typeof isVip === 'boolean') {
+      whereClauses.push('c.is_vip = ?');
+      queryParams.push(isVip ? 1 : 0);
+    }
+    if (typeof isOnboardingFree === 'boolean') {
+      whereClauses.push('c.is_onboarding_free = ?');
+      queryParams.push(isOnboardingFree ? 1 : 0);
+    }
+    if (typeof search === 'string' && search.trim().length > 0) {
+      whereClauses.push('c.name LIKE ?');
+      queryParams.push(`%${search.trim()}%`);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    let orderSql = 'ORDER BY created_at DESC';
+    const dir = orderDirection && orderDirection.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    const weightedRatingOrder = 'ORDER BY (c.rating * LEAST(IFNULL(r.review_count, 0), 20)) DESC, c.rating DESC';
+
+    switch (orderBy) {
+      case 'rating': {
+        orderSql = weightedRatingOrder;
+        break;
+      }
+      case 'cheapest': {
+        const cheapestDir = orderDirection
+          ? dir
+          : 'ASC';
+        orderSql = `ORDER BY cheapest_score ${cheapestDir}`;
+        break;
+      }
+      case 'name': {
+        orderSql = `ORDER BY name ${dir}`;
+        break;
+      }
+      case 'newest': {
+        orderSql = `ORDER BY created_at ${dir}`;
+        break;
+      }
+      default: {
+        if (search && search.trim().length > 0) {
+          orderSql = weightedRatingOrder;
+        }
+        break;
+      }
+    }
+
+    const countRows = await this.executeQuery(
+      `SELECT COUNT(*) AS cnt FROM companies c ${whereSql}`,
+      queryParams,
+    );
+    const total = countRows.length ? (countRows[0] as { cnt: number }).cnt : 0;
+
+    if (total === 0) {
+      return { items: [], total: 0 };
+    }
+
+    const rows = await this.executeQuery(
+      `SELECT c.id, c.name, c.logo, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.phone_number, c.rating, c.country, c.city, c.is_vip, c.is_onboarding_free, c.cheapest_score, c.created_at, c.updated_at
+       FROM companies c
+       LEFT JOIN (
+         SELECT company_id, COUNT(*) AS review_count
+         FROM company_reviews
+         GROUP BY company_id
+       ) r ON r.company_id = c.id
+       ${whereSql} ${orderSql} LIMIT ? OFFSET ?`,
+      [...queryParams, safeLimit, safeOffset],
+    );
+
+    for (const row of rows) {
+      if (row.final_formula) {
+        try {
+          row.final_formula = JSON.parse(row.final_formula as string);
+        } catch {
+          // ignore parse error
+        }
+      }
+    }
+
+    return { items: rows as Company[], total };
   }
 }

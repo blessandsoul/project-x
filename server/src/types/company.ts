@@ -98,8 +98,8 @@ export interface CompanyQuoteCreate {
 }
 
 export interface CompanyQuoteUpdate {
-  total_price?: number;
-  breakdown?: any | null;
+  // Only non-derived fields should be editable via updates.
+  // total_price and breakdown are always computed by backend logic.
   delivery_time_days?: number | null;
 }
 

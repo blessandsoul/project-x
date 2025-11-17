@@ -3,6 +3,7 @@ import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { JWTPayload, AuthUser } from '../types/user.js';
 import { AuthenticationError } from '../types/errors.js';
+import { UserModel } from '../models/UserModel.js';
 
 /**
  * Authentication Plugin
@@ -70,7 +71,9 @@ const authPlugin = fp(async (fastify) => {
    * @param reply - Fastify reply object
    * @throws Sends 401 response if authentication fails
    */
-  fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+  const userModel = new UserModel(fastify);
+
+	  fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const altHeader = (request.headers as Record<string, string | string[] | undefined>)['x-access-token'];
@@ -93,11 +96,21 @@ const authPlugin = fp(async (fastify) => {
 
       const decoded = verifyToken(token);
 
-      // Add user to request object
+	      // Load the latest user record to enforce is_blocked and role from DB.
+	      const dbUser = await userModel.findById(decoded.userId);
+	      if (!dbUser) {
+	        throw new AuthenticationError('User not found');
+	      }
+	      if (dbUser.is_blocked) {
+	        throw new AuthenticationError('Account is blocked');
+	      }
+
+      // Add user to request object (including role for authorization checks).
       request.user = {
-        id: decoded.userId,
-        email: decoded.email,
-        username: decoded.username,
+        id: dbUser.id,
+        email: dbUser.email,
+        username: dbUser.username,
+        role: dbUser.role,
       };
 
     } catch (error) {

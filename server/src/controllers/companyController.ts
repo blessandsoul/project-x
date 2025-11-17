@@ -13,7 +13,9 @@ import {
 import { Vehicle } from '../types/vehicle.js';
 import { CompanyModel } from '../models/CompanyModel.js';
 import { VehicleModel } from '../models/VehicleModel.js';
-import { ValidationError, NotFoundError } from '../types/errors.js';
+import { CompanyReviewModel } from '../models/CompanyReviewModel.js';
+import { ValidationError, NotFoundError, AuthorizationError } from '../types/errors.js';
+import { CompanyReview, CompanyReviewCreate, CompanyReviewUpdate } from '../types/companyReview.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
 import { FxRateService } from '../services/FxRateService.js';
 
@@ -47,6 +49,7 @@ export class CompanyController {
   private fastify: FastifyInstance;
   private companyModel: CompanyModel;
   private vehicleModel: VehicleModel;
+  private companyReviewModel: CompanyReviewModel;
   private shippingQuoteService: ShippingQuoteService;
   private fxRateService: FxRateService;
 
@@ -54,6 +57,7 @@ export class CompanyController {
     this.fastify = fastify;
     this.companyModel = new CompanyModel(fastify);
     this.vehicleModel = new VehicleModel(fastify);
+    this.companyReviewModel = new CompanyReviewModel(fastify);
     this.shippingQuoteService = new ShippingQuoteService(fastify);
     this.fxRateService = new FxRateService(fastify);
   }
@@ -66,16 +70,103 @@ export class CompanyController {
     return this.companyModel.create(data);
   }
 
-  async getCompanyById(id: number): Promise<CompanyWithRelations> {
-    const company = await this.companyModel.getWithRelations(id);
-    if (!company) {
+  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number }> {
+    const withRelations = await this.companyModel.getWithRelations(id);
+    if (!withRelations) {
       throw new NotFoundError('Company');
     }
-    return company;
+
+    const { social_links, quotes: _quotes, ...company } = withRelations;
+    const agg = await this.companyReviewModel.getAggregatedRating(id);
+
+    return {
+      ...(company as Company),
+      social_links,
+      // rating on the company row is already maintained by
+      // updateCompanyRating; reviewCount is derived from the
+      // aggregation so the frontend can show "X reviews".
+      reviewCount: agg.count,
+    };
   }
 
-  async getCompanies(limit: number = 100, offset: number = 0): Promise<Company[]> {
-    return this.companyModel.findAll(limit, offset);
+  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number }>> {
+    const companies = await this.companyModel.findAll(limit, offset);
+    if (!companies.length) {
+      return [];
+    }
+
+    const ids = companies.map((c) => c.id);
+    const counts = await this.companyReviewModel.countByCompanyIds(ids);
+
+    return companies.map((c) => ({
+      ...c,
+      reviewCount: counts[c.id] ?? 0,
+    }));
+  }
+
+  async searchCompanies(params: {
+    limit?: number | undefined;
+    offset?: number | undefined;
+    minRating?: number | undefined;
+    minBasePrice?: number | undefined;
+    maxBasePrice?: number | undefined;
+    maxTotalFee?: number | undefined;
+    country?: string | undefined;
+    city?: string | undefined;
+    isVip?: boolean | undefined;
+    isOnboardingFree?: boolean | undefined;
+    search?: string | undefined;
+    orderBy?: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
+    orderDirection?: 'asc' | 'desc' | undefined;
+  }): Promise<{ items: Array<Company & { reviewCount: number }>; total: number; limit: number; offset: number }> {
+    const {
+      limit = 20,
+      offset = 0,
+      minRating,
+      minBasePrice,
+      maxBasePrice,
+      maxTotalFee,
+      country,
+      city,
+      isVip,
+      isOnboardingFree,
+      search,
+      orderBy,
+      orderDirection,
+    } = params;
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const { items, total } = await this.companyModel.search({
+      limit: safeLimit,
+      offset: safeOffset,
+      minRating,
+      minBasePrice,
+      maxBasePrice,
+      maxTotalFee,
+      country,
+      city,
+      isVip,
+      isOnboardingFree,
+      search,
+      orderBy,
+      orderDirection,
+    });
+
+    if (!items.length) {
+      return { items: [], total, limit: safeLimit, offset: safeOffset };
+    }
+
+    const ids = items.map((c) => c.id);
+    const counts = await this.companyReviewModel.countByCompanyIds(ids);
+
+    const withCounts = items.map((c) => ({
+      ...c,
+      reviewCount: counts[c.id] ?? 0,
+    }));
+
+    return { items: withCounts, total, limit: safeLimit, offset: safeOffset };
   }
 
   async updateCompany(id: number, updates: CompanyUpdate): Promise<Company> {
@@ -136,6 +227,109 @@ export class CompanyController {
   }
 
   // ---------------------------------------------------------------------------
+  // Reviews (user-generated, dependent on company_id)
+  // ---------------------------------------------------------------------------
+
+  async getCompanyReviewsPaginated(companyId: number, limit: number = 10, offset: number = 0): Promise<{
+    items: CompanyReview[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 50 ? limit : 10;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const [items, total] = await Promise.all([
+      this.companyReviewModel.getByCompanyId(companyId, safeLimit, safeOffset),
+      this.companyReviewModel.countByCompanyId(companyId),
+    ]);
+
+    return { items, total, limit: safeLimit, offset: safeOffset };
+  }
+
+  async createCompanyReview(companyId: number, userId: number, payload: { rating: number; comment?: string | null }): Promise<CompanyReview> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const { rating, comment = null } = payload;
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      throw new ValidationError('Rating must be a number between 1 and 5');
+    }
+
+    const createData: CompanyReviewCreate = {
+      company_id: companyId,
+      user_id: userId,
+      rating,
+      comment,
+    };
+
+    const created = await this.companyReviewModel.create(createData);
+    await this.companyReviewModel.updateCompanyRating(companyId);
+    return created;
+  }
+
+  async updateCompanyReview(companyId: number, reviewId: number, userId: number, updates: CompanyReviewUpdate): Promise<CompanyReview> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const existing = await this.companyReviewModel.getById(reviewId);
+    if (!existing || existing.company_id !== companyId) {
+      throw new NotFoundError('Review');
+    }
+
+    if (existing.user_id !== userId) {
+      throw new AuthorizationError('You can only modify your own reviews');
+    }
+
+    if (updates.rating !== undefined) {
+      const r = updates.rating;
+      if (!Number.isFinite(r) || r < 1 || r > 5) {
+        throw new ValidationError('Rating must be a number between 1 and 5');
+      }
+    }
+
+    const updated = await this.companyReviewModel.update(reviewId, updates);
+    if (!updated) {
+      throw new NotFoundError('Review');
+    }
+
+    await this.companyReviewModel.updateCompanyRating(companyId);
+    return updated;
+  }
+
+  async deleteCompanyReview(companyId: number, reviewId: number, userId: number): Promise<void> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const existing = await this.companyReviewModel.getById(reviewId);
+    if (!existing || existing.company_id !== companyId) {
+      throw new NotFoundError('Review');
+    }
+
+    if (existing.user_id !== userId) {
+      throw new AuthorizationError('You can only delete your own reviews');
+    }
+
+    const deleted = await this.companyReviewModel.delete(reviewId);
+    if (!deleted) {
+      throw new NotFoundError('Review');
+    }
+
+    await this.companyReviewModel.updateCompanyRating(companyId);
+  }
+
+  // ---------------------------------------------------------------------------
   // Quotes (auto-calculated per vehicle & company)
   // ---------------------------------------------------------------------------
   private normalizeCurrencyCode(rawCurrency?: string): 'USD' | 'GEL' {
@@ -180,6 +374,69 @@ export class CompanyController {
         breakdown,
       };
     });
+  }
+
+  async getCompanyQuotesPaginated(companyId: number, limit: number = 20, offset: number = 0, currency?: string): Promise<{
+    items: CompanyQuote[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
+    const allQuotes = await this.companyModel.getQuotesByCompanyId(companyId);
+    const total = allQuotes.length;
+
+    const pageSlice = allQuotes.slice(safeOffset, safeOffset + safeLimit);
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    if (normalizedCurrency === 'USD') {
+      return {
+        items: pageSlice,
+        total,
+        limit: safeLimit,
+        offset: safeOffset,
+      };
+    }
+
+    const rate = await this.fxRateService.getLatestUsdGelRate();
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      throw new ValidationError('Exchange rate for USD->GEL is not available');
+    }
+
+    const convertedItems = pageSlice.map((q) => {
+      const converted: CompanyQuote = {
+        ...q,
+        total_price: q.total_price * rate,
+      };
+
+      if (converted.breakdown && typeof converted.breakdown === 'object') {
+        try {
+          const breakdown: any = converted.breakdown;
+          if (typeof breakdown.total_price === 'number') {
+            breakdown.total_price = breakdown.total_price * rate;
+          }
+          converted.breakdown = breakdown;
+        } catch {
+          // ignore breakdown conversion errors
+        }
+      }
+
+      return converted;
+    });
+
+    return {
+      items: convertedItems,
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+    };
   }
   private async ensureVehicleExists(vehicleId: number): Promise<void> {
     const exists = await this.vehicleModel.existsById(vehicleId);
@@ -386,6 +643,144 @@ export class CompanyController {
     return { items, total, limit: safeLimit, offset: safeOffset, page, totalPages };
   }
 
+  /**
+   * Compare quotes for a fixed list of vehicles.
+   *
+   * This method is intended for "compare vehicles" flows where the
+   * client already knows a small set of vehicle IDs (e.g. from
+   * favorites or a search result) and wants to see quotes for each in
+   * a single response.
+   */
+  async compareVehicles(
+    vehicleIds: number[],
+    quotesPerVehicle: number = 3,
+    currency?: string,
+  ): Promise<{
+    currency: 'USD' | 'GEL';
+    vehicles: Array<{
+      vehicle_id: number;
+      make: string;
+      model: string;
+      year: number;
+      mileage: number | null;
+      yard_name: string;
+      source: string;
+      distance_miles: number;
+      quotes: CalculatedQuoteResponse[];
+    }>;
+  }> {
+    if (!Array.isArray(vehicleIds) || vehicleIds.length === 0) {
+      throw new ValidationError('vehicle_ids array is required');
+    }
+
+    // De-duplicate vehicle IDs while preserving the original order so
+    // that clients can safely send arrays that may contain
+    // duplicates (e.g. from UI selections) without receiving
+    // duplicate entries in the response.
+    const uniqueIds: number[] = [];
+    const seen = new Set<number>();
+    for (const rawId of vehicleIds) {
+      const id = rawId;
+      if (!seen.has(id)) {
+        seen.add(id);
+        uniqueIds.push(id);
+      }
+    }
+
+    if (!uniqueIds.length) {
+      throw new ValidationError('vehicle_ids array is required');
+    }
+
+    if (uniqueIds.length > 5) {
+      throw new ValidationError('You can compare at most 5 vehicles at a time');
+    }
+
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+
+    // For comparison flows we expect a small number of vehicles, but we
+    // still reuse the same company limiting logic as search flows so
+    // that performance characteristics remain predictable.
+    const rawCompanyLimit = process.env.SEARCH_QUOTES_COMPANY_LIMIT;
+    let companyLimit = Number(rawCompanyLimit ?? 10);
+    if (!Number.isFinite(companyLimit) || companyLimit <= 0) {
+      companyLimit = 10;
+    }
+    if (companyLimit > 1000) {
+      companyLimit = 1000;
+    }
+
+    const companies = await this.companyModel.findAll(companyLimit, 0);
+    if (!companies.length) {
+      throw new ValidationError('No companies configured for quote calculation');
+    }
+
+    const vehicles: Vehicle[] = [];
+    for (const id of uniqueIds) {
+      if (!Number.isFinite(id) || id <= 0) {
+        throw new ValidationError('Invalid vehicle id in vehicle_ids array');
+      }
+      const vehicle = await this.vehicleModel.findById(id);
+      if (!vehicle) {
+        throw new NotFoundError('Vehicle');
+      }
+      vehicles.push(vehicle);
+    }
+
+    const results: Array<{
+      vehicle_id: number;
+      make: string;
+      model: string;
+      year: number;
+      mileage: number | null;
+      yard_name: string;
+      source: string;
+      distance_miles: number;
+      quotes: CalculatedQuoteResponse[];
+    }> = [];
+
+    // Normalize quotesPerVehicle to a safe positive integer.
+    let quotesLimit = Number(quotesPerVehicle);
+    if (!Number.isFinite(quotesLimit) || quotesLimit <= 0) {
+      quotesLimit = 3;
+    }
+
+    for (const vehicle of vehicles) {
+      const { distanceMiles, quotes: computedQuotes } =
+        await this.shippingQuoteService.computeQuotesForVehicle(vehicle, companies);
+
+      let quotes: CalculatedQuoteResponse[] = computedQuotes.map((cq) => ({
+        company_name: cq.companyName,
+        total_price: cq.totalPrice,
+        delivery_time_days: cq.deliveryTimeDays,
+        breakdown: cq.breakdown,
+      }));
+
+      quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+
+      // Sort by total_price ascending and limit to quotesPerVehicle so
+      // the response remains small and focused on the best options.
+      quotes.sort((a, b) => a.total_price - b.total_price);
+      const limitedQuotes = quotes.slice(0, quotesLimit);
+
+      results.push({
+        vehicle_id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        mileage: (vehicle as any).mileage ?? null,
+        yard_name: vehicle.yard_name,
+        source: vehicle.source,
+        distance_miles: distanceMiles,
+        quotes: limitedQuotes,
+      });
+    }
+
+    return {
+      currency: normalizedCurrency,
+      vehicles: results,
+    };
+  }
+
   async getQuotesByVehicle(vehicleId: number, currency?: string): Promise<CompanyQuote[]> {
     // Validate vehicle exists to avoid leaking orphaned records
     await this.ensureVehicleExists(vehicleId);
@@ -462,16 +857,34 @@ export class CompanyController {
     });
   }
 
-  async createQuoteAdmin(data: CompanyQuoteCreate): Promise<CompanyQuote> {
-    // Admin-only operation: both company_id and vehicle_id must be valid
+  async createQuoteAdmin(data: Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>): Promise<CompanyQuote> {
+    // Admin-only operation: both company_id and vehicle_id must be valid.
     const company = await this.companyModel.findById(data.company_id);
     if (!company) {
       throw new NotFoundError('Company');
     }
 
-    await this.ensureVehicleExists(data.vehicle_id);
+    const vehicle: Vehicle | null = await this.vehicleModel.findById(data.vehicle_id);
+    if (!vehicle) {
+      throw new NotFoundError('Vehicle');
+    }
 
-    return this.companyModel.createQuote(data);
+    // Reuse the same pricing logic as automatic quote calculation.
+    const { quotes: computedQuotes } = await this.shippingQuoteService.computeQuotesForVehicle(vehicle, [company]);
+    const [cq] = computedQuotes;
+    if (!cq) {
+      throw new ValidationError('Unable to compute quote for the given company and vehicle');
+    }
+
+    const quoteCreate: CompanyQuoteCreate = {
+      company_id: data.company_id,
+      vehicle_id: data.vehicle_id,
+      total_price: cq.totalPrice,
+      breakdown: cq.breakdown,
+      delivery_time_days: cq.deliveryTimeDays,
+    };
+
+    return this.companyModel.createQuote(quoteCreate);
   }
 
   async updateQuote(id: number, updates: CompanyQuoteUpdate): Promise<CompanyQuote> {
