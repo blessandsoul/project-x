@@ -46,12 +46,19 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           email: { type: 'string', format: 'email' },
           username: { type: 'string', minLength: 3, maxLength: 50 },
           password: { type: 'string', minLength: 6 },
+          role: { type: 'string', enum: ['user', 'company'], description: 'Optional. Defaults to "user".' },
+          companyName: { type: 'string', minLength: 1, maxLength: 255, description: 'Required when role = "company".' },
+          companyPhone: { type: 'string', minLength: 3, maxLength: 255, description: 'Optional contact phone for the company.' },
+          basePrice: { type: 'number', minimum: 0, description: 'Optional base price that can be set later in dashboard.' },
+          pricePerMile: { type: 'number', minimum: 0, description: 'Optional price per mile that can be set later in dashboard.' },
+          customsFee: { type: 'number', minimum: 0, description: 'Optional customs fee that can be set later in dashboard.' },
+          serviceFee: { type: 'number', minimum: 0, description: 'Optional service fee that can be set later in dashboard.' },
+          brokerFee: { type: 'number', minimum: 0, description: 'Optional broker fee that can be set later in dashboard.' },
         },
       },
     },
   }, async (request, reply) => {
-    const userData: UserCreate = request.body as UserCreate;
-    const result = await userController.register(userData);
+    const result = await userController.register(request.body as any);
 
     reply.code(201).send(result);
   });
