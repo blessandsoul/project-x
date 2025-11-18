@@ -277,4 +277,18 @@ export class LeadModel extends BaseModel {
 
     return rows[0] as any;
   }
+
+  async markLeadCompanyViewed(companyId: number, leadCompanyId: number): Promise<void> {
+    await this.executeCommand(
+      'UPDATE lead_companies SET viewed_at = NOW() WHERE company_id = ? AND id = ? AND viewed_at IS NULL',
+      [companyId, leadCompanyId],
+    );
+  }
+
+  async markLeadCompanyResponded(companyId: number, leadCompanyId: number): Promise<void> {
+    await this.executeCommand(
+      'UPDATE lead_companies SET responded_at = NOW() WHERE company_id = ? AND id = ? AND responded_at IS NULL',
+      [companyId, leadCompanyId],
+    );
+  }
 }

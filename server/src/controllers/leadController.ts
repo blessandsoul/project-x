@@ -248,6 +248,9 @@ export class LeadController {
       throw new NotFoundError('LeadCompany');
     }
 
+    // Mark as viewed when company opens the lead details
+    await this.leadModel.markLeadCompanyViewed(user.company_id, leadCompanyId);
+
     let auctionSources: string[] | null = null;
     if (row.auction_sources) {
       try {
@@ -314,6 +317,9 @@ export class LeadController {
       estimatedDurationDays: data.estimatedDurationDays ?? null,
       comment: data.comment ?? null,
     });
+
+    // Mark responded_at when first offer is submitted for this leadCompany
+    await this.leadModel.markLeadCompanyResponded(user.company_id, leadCompanyId);
 
     return {
       offerId: offer.id,
