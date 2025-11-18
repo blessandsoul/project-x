@@ -24,11 +24,14 @@ const catalogRoutes: FastifyPluginAsync = async (fastify) => {
 
       const search = q?.trim();
 
-      // Read from local catalog first. If empty, trigger a sync for this
-      // vehicle type so subsequent calls use the DB.
+      // Read from local catalog first. If the catalog appears incomplete for
+      // this vehicle type (e.g. only a handful of makes), trigger a sync so
+      // subsequent calls use a fully populated DB. This avoids being stuck
+      // with a partial dataset when the first sync was interrupted.
       let makes = await catalogModel.getMakes(vehicleType as VehicleType, search);
 
-      if (!makes.length) {
+      const MIN_MAKES_THRESHOLD = 100; // heuristic; VPIC returns 200+ for cars
+      if (makes.length < MIN_MAKES_THRESHOLD) {
         await catalogModel.syncVehicleType(vehicleType as VehicleType);
         makes = await catalogModel.getMakes(vehicleType as VehicleType, search);
       }

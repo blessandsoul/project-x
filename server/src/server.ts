@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import fastifyCookie from '@fastify/cookie';
+import fastifySensible from '@fastify/sensible';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import cron from 'node-cron';
 import { databasePlugin } from './config/database.js';
 import { auctionApiPlugin } from './config/auctionApi.js';
@@ -31,14 +36,82 @@ import { CatalogModel } from './models/CatalogModel.js';
  * - JWT_SECRET: Required for authentication
  * - DATABASE_URL: Required for database connection
  */
+const isProd = process.env.NODE_ENV === 'production';
+const logLevel = process.env.LOG_LEVEL || (isProd ? 'info' : 'debug');
+
 const fastify = Fastify({
-  logger: true,
-});
+  logger: isProd
+    ? {
+        level: logLevel,
+      }
+    : {
+        level: logLevel,
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'HH:MM:ss.l',
+            singleLine: false,
+          },
+        },
+      },
+  // Protect against excessively large request bodies (basic DoS mitigation)
+  bodyLimit: 1024 * 1024, // 1 MiB
+}).withTypeProvider<ZodTypeProvider>();
+
+// ---------------------------------------------------------------------------
+// Security-related configuration derived from environment variables
+// ---------------------------------------------------------------------------
+
+const rawCorsOrigins = process.env.CORS_ALLOWED_ORIGINS || '';
+const allowedOrigins = rawCorsOrigins
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
+const allowCorsCredentials = process.env.CORS_ALLOW_CREDENTIALS === 'true';
+
+const globalRateLimitMax = process.env.RATE_LIMIT_MAX
+  ? parseInt(process.env.RATE_LIMIT_MAX, 10)
+  : 100;
+
+const globalRateLimitWindow = process.env.RATE_LIMIT_TIME_WINDOW || '1 minute';
 
 // Register plugins
+await fastify.register(helmet);
+
 await fastify.register(cors, {
-  origin: true,
-  credentials: true,
+  // Allow only explicitly configured origins in production; allow all in development
+  origin: (origin, cb) => {
+    // Allow non-browser clients (no Origin header)
+    if (!origin) {
+      cb(null, true);
+      return;
+    }
+
+    if (allowedOrigins.length === 0) {
+      // Fallback: allow any origin only when explicit origins are not configured
+      cb(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      cb(null, true);
+      return;
+    }
+
+    cb(new Error('Origin not allowed by CORS'), false);
+  },
+  credentials: allowCorsCredentials,
+});
+
+await fastify.register(fastifyCookie);
+await fastify.register(fastifySensible);
+
+await fastify.register(rateLimit, {
+  max: globalRateLimitMax,
+  timeWindow: globalRateLimitWindow,
+  allowList: [],
 });
 await fastify.register(databasePlugin);
 await fastify.register(authPlugin);
