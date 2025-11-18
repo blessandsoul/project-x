@@ -5,20 +5,25 @@
 This document provides comprehensive API documentation for the user management endpoints. All endpoints use JSON for request/response bodies and follow RESTful conventions.
 
 ### Base URL
+
 ```
 http://localhost:3000
 ```
 
 ### Authentication
+
 Protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <jwt_token>
 ```
 
 ### Response Format
+
 All responses follow a consistent structure:
 
 **Success Response:**
+
 ```json
 {
   "data": { ... },
@@ -27,6 +32,7 @@ All responses follow a consistent structure:
 ```
 
 **Error Response:**
+
 ```json
 {
   "error": {
@@ -37,6 +43,51 @@ All responses follow a consistent structure:
 }
 ```
 
+## Conventions
+
+### Pagination
+
+Many list endpoints in the wider API surface (companies, reviews, quotes, some admin lists) use a shared pagination contract.
+
+**Query params:**
+
+- `limit` (optional, integer) – page size.
+- `offset` (optional, integer) – number of records to skip.
+
+**Response shape:**
+
+```jsonc
+{
+  "items": [
+    /* ... */
+  ],
+  "total": 123,
+  "limit": 20,
+  "offset": 0,
+  "page": 1,
+  "totalPages": 7
+}
+```
+
+Check the domain-specific docs (e.g. `server/docs/companies-api.md`) to see which endpoints implement this contract.
+
+### Idempotent writes
+
+Some write endpoints support **idempotent operations** via the `Idempotency-Key` header:
+
+- `Idempotency-Key` (optional, string) – client-generated unique key per logical operation.
+
+Server behavior:
+
+- The first successful request for a given `(user_id, route, Idempotency-Key, request body)` is executed normally and its response is stored.
+- Subsequent identical requests (same key + same body) return the stored response without repeating side effects.
+- If the same key is reused with a different request body, the server returns a 4xx error indicating a key/body mismatch.
+
+Currently, idempotency is enabled on:
+
+- `POST /companies/:companyId/reviews`
+- `POST /quotes` (admin-only)
+
 ## Endpoints
 
 ### 1. User Registration
@@ -46,6 +97,7 @@ All responses follow a consistent structure:
 Register a new user account with email, username, and password validation.
 
 #### Request Body
+
 ```json
 {
   "email": "user@example.com",
@@ -55,6 +107,7 @@ Register a new user account with email, username, and password validation.
 ```
 
 #### Request Body Schema
+
 ```json
 {
   "type": "object",
@@ -81,6 +134,7 @@ Register a new user account with email, username, and password validation.
 ```
 
 #### Success Response (201)
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -95,6 +149,7 @@ Register a new user account with email, username, and password validation.
 #### Error Responses
 
 **400 - Validation Error** (Invalid email format, password too short, etc.)
+
 ```json
 {
   "error": {
@@ -106,6 +161,7 @@ Register a new user account with email, username, and password validation.
 ```
 
 **409 - Conflict Error** (Email or username already exists)
+
 ```json
 {
   "error": {
@@ -125,6 +181,7 @@ Register a new user account with email, username, and password validation.
 Authenticate user with email/username and password to receive JWT token.
 
 #### Request Body
+
 ```json
 {
   "identifier": "user@example.com",
@@ -133,6 +190,7 @@ Authenticate user with email/username and password to receive JWT token.
 ```
 
 #### Request Body Schema
+
 ```json
 {
   "type": "object",
@@ -151,6 +209,7 @@ Authenticate user with email/username and password to receive JWT token.
 ```
 
 #### Success Response (200)
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -165,6 +224,7 @@ Authenticate user with email/username and password to receive JWT token.
 #### Error Responses
 
 **400 - Validation Error** (Invalid identifier format, missing password)
+
 ```json
 {
   "error": {
@@ -176,6 +236,7 @@ Authenticate user with email/username and password to receive JWT token.
 ```
 
 **401 - Authentication Error** (Invalid credentials)
+
 ```json
 {
   "error": {
@@ -195,11 +256,13 @@ Authenticate user with email/username and password to receive JWT token.
 Retrieve the authenticated user's profile information.
 
 #### Headers
+
 ```
 Authorization: Bearer <jwt_token>
 ```
 
 #### Success Response (200)
+
 ```json
 {
   "id": 1,
@@ -213,6 +276,7 @@ Authorization: Bearer <jwt_token>
 #### Error Responses
 
 **401 - Authentication Error** (Missing or invalid token)
+
 ```json
 {
   "error": {
@@ -224,6 +288,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **404 - Not Found Error** (User account deleted)
+
 ```json
 {
   "error": {
@@ -243,11 +308,13 @@ Authorization: Bearer <jwt_token>
 Update the authenticated user's profile information. All fields are optional.
 
 #### Headers
+
 ```
 Authorization: Bearer <jwt_token>
 ```
 
 #### Request Body
+
 ```json
 {
   "email": "newemail@example.com",
@@ -257,6 +324,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 #### Request Body Schema
+
 ```json
 {
   "type": "object",
@@ -282,6 +350,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 #### Success Response (200)
+
 ```json
 {
   "id": 1,
@@ -295,6 +364,7 @@ Authorization: Bearer <jwt_token>
 #### Error Responses
 
 **400 - Validation Error** (Invalid email format, password too short, etc.)
+
 ```json
 {
   "error": {
@@ -306,6 +376,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **401 - Authentication Error** (Missing or invalid token)
+
 ```json
 {
   "error": {
@@ -317,6 +388,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **404 - Not Found Error** (User account deleted)
+
 ```json
 {
   "error": {
@@ -328,6 +400,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **409 - Conflict Error** (Email or username already taken)
+
 ```json
 {
   "error": {
@@ -347,11 +420,13 @@ Authorization: Bearer <jwt_token>
 Permanently delete the authenticated user's account. This action cannot be undone.
 
 #### Headers
+
 ```
 Authorization: Bearer <jwt_token>
 ```
 
 #### Success Response (200)
+
 ```json
 {
   "message": "Account deleted successfully"
@@ -361,6 +436,7 @@ Authorization: Bearer <jwt_token>
 #### Error Responses
 
 **401 - Authentication Error** (Missing or invalid token)
+
 ```json
 {
   "error": {
@@ -372,6 +448,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **404 - Not Found Error** (User account already deleted)
+
 ```json
 {
   "error": {
@@ -384,55 +461,44 @@ Authorization: Bearer <jwt_token>
 
 ## Error Codes Reference
 
-| Error Code | HTTP Status | Description |
-|------------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Invalid input data or format |
-| `AUTHENTICATION_ERROR` | 401 | Invalid or missing credentials |
-| `AUTHORIZATION_ERROR` | 403 | Insufficient permissions |
-| `NOT_FOUND_ERROR` | 404 | Resource not found |
-| `CONFLICT_ERROR` | 409 | Resource conflict (duplicate data) |
-| `DATABASE_ERROR` | 500 | Database operation failed |
-| `INTERNAL_ERROR` | 500 | Internal server error |
-
-## Authentication Flow
-
-1. **Register** user account → Receive JWT token
-2. **Login** with credentials → Receive JWT token
-3. **Include token** in Authorization header for protected requests
-4. **Token expires** → Login again to get new token
-
-## Data Types
-
-### User Object
-```typescript
-interface User {
-  id: number;
-  email: string;
-  username: string;
-  created_at: string; // ISO 8601 date
-  updated_at: string; // ISO 8601 date
-}
-```
-
-### Auth Response
-```typescript
-interface AuthResponse {
-  token: string; // JWT token
-  user: {
-    id: number;
-    email: string;
-    username: string;
-  };
-}
-```
+| Error Code             | HTTP Status | Description                        |
+| ---------------------- | ----------- | ---------------------------------- |
+| `VALIDATION_ERROR`     | 400         | Invalid input data or format       |
+| `AUTHENTICATION_ERROR` | 401         | Invalid or missing credentials     |
+| `AUTHORIZATION_ERROR`  | 403         | Insufficient permissions           |
+| `NOT_FOUND_ERROR`      | 404         | Resource not found                 |
+| `CONFLICT_ERROR`       | 409         | Resource conflict (duplicate data) |
+| `DATABASE_ERROR`       | 500         | Database operation failed          |
+| `INTERNAL_ERROR`       | 500         | Internal server error              |
 
 ## Rate Limiting
 
-Rate limiting is planned for implementation using `@fastify/rate-limit` plugin. Current endpoints do not have rate limiting configured.
+Rate limiting is enforced using the `@fastify/rate-limit` plugin. Some endpoints have per-route limits in addition to any global limits.
+
+Examples:
+
+- **User login**
+
+  - `POST /login`
+  - Limited by configuration (`RATE_LIMIT_USER_LOGIN_MAX`, `RATE_LIMIT_USER_LOGIN_WINDOW`).
+
+- **VIN decoding**
+
+  - `POST /api/vin/decode` – strict per-IP rate limit (e.g. 10 requests per minute).
+  - `GET /api/vin/health` – looser limit for monitoring (e.g. 30 requests per minute).
+
+- **Quote calculation**
+  - `POST /vehicles/:vehicleId/calculate-quotes`
+  - `GET /vehicles/:vehicleId/cheapest-quotes`
+  - `POST /vehicles/search-quotes`
+  - `POST /vehicles/compare`
+
+If a rate limit is exceeded, the API responds with `429 Too Many Requests` and a structured error body consistent with the global error format.
 
 ## Testing Examples
 
 ### Registration
+
 ```bash
 curl -X POST http://localhost:3000/register \
   -H "Content-Type: application/json" \
@@ -440,6 +506,7 @@ curl -X POST http://localhost:3000/register \
 ```
 
 ### Login
+
 ```bash
 curl -X POST http://localhost:3000/login \
   -H "Content-Type: application/json" \
@@ -447,12 +514,14 @@ curl -X POST http://localhost:3000/login \
 ```
 
 ### Get Profile (with token)
+
 ```bash
 curl -X GET http://localhost:3000/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Update Profile (with token)
+
 ```bash
 curl -X PUT http://localhost:3000/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -461,6 +530,7 @@ curl -X PUT http://localhost:3000/profile \
 ```
 
 ### Delete Account (with token)
+
 ```bash
 curl -X DELETE http://localhost:3000/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"

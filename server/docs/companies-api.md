@@ -10,6 +10,37 @@ Main components:
 
 ---
 
+### Standard pagination
+
+Many list endpoints in this API use the same pagination contract.
+
+**Query params:**
+
+- `limit` (optional, integer) – page size.
+  - Default: endpoint-specific (usually `20`).
+  - Maximum: endpoint-specific (usually `100`).
+- `offset` (optional, integer) – number of records to skip.
+  - Default: `0`.
+
+**Response shape:**
+
+```jsonc
+{
+  "items": [
+    /* array of resources */
+  ],
+  "total": 123, // total matching records
+  "limit": 20, // effective limit used by the server
+  "offset": 0, // effective offset used by the server
+  "page": 1, // floor(offset / limit) + 1
+  "totalPages": 7 // max(1, ceil(total / limit))
+}
+```
+
+Unless stated otherwise, `limit` and `offset` that are out of bounds are clamped to safe defaults.
+
+---
+
 ### GET `/companies/search`
 
 **Description:**
@@ -77,6 +108,8 @@ Search companies with filters, pagination and sorting. This endpoint is intended
 
 **Response 200 JSON:**
 
+Uses **Standard pagination** (see above). Each item is a company object extended with `reviewCount`.
+
 ```jsonc
 {
   "items": [
@@ -105,7 +138,9 @@ Search companies with filters, pagination and sorting. This endpoint is intended
   ],
   "total": 120,
   "limit": 20,
-  "offset": 0
+  "offset": 0,
+  "page": 1,
+  "totalPages": 6
 }
 ```
 
@@ -487,6 +522,8 @@ Return a paginated list of reviews for a company.
 
 **Response 200 JSON:**
 
+Uses **Standard pagination**. `items` is an array of review objects.
+
 ```jsonc
 {
   "items": [
@@ -502,7 +539,9 @@ Return a paginated list of reviews for a company.
   ],
   "total": 123,
   "limit": 10,
-  "offset": 0
+  "offset": 0,
+  "page": 1,
+  "totalPages": 13
 }
 ```
 
@@ -546,6 +585,8 @@ vehicles.
 
 **Response 200 JSON:**
 
+Uses **Standard pagination**. `items` is an array of stored company quote objects.
+
 ```jsonc
 {
   "items": [
@@ -563,7 +604,9 @@ vehicles.
   ],
   "total": 200,
   "limit": 20,
-  "offset": 0
+  "offset": 0,
+  "page": 1,
+  "totalPages": 10
 }
 ```
 

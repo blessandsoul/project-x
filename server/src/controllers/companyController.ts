@@ -18,6 +18,8 @@ import { ValidationError, NotFoundError, AuthorizationError } from '../types/err
 import { CompanyReview, CompanyReviewCreate, CompanyReviewUpdate } from '../types/companyReview.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
 import { FxRateService } from '../services/FxRateService.js';
+import { withTransaction } from '../utils/transactions.js';
+import type { PoolConnection } from 'mysql2/promise';
 
 interface CalculatedQuoteResponse {
   company_name: string;
@@ -270,9 +272,39 @@ export class CompanyController {
       comment,
     };
 
-    const created = await this.companyReviewModel.create(createData);
-    await this.companyReviewModel.updateCompanyRating(companyId);
-    return created;
+    return withTransaction(this.fastify, async (conn: PoolConnection) => {
+      // Insert review
+      const insertResult = await conn.execute(
+        'INSERT INTO company_reviews (company_id, user_id, rating, comment, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
+        [createData.company_id, createData.user_id, createData.rating, createData.comment],
+      );
+
+      const insertInfo = insertResult[0] as any;
+      const reviewId = insertInfo.insertId as number;
+
+      const [reviewRows] = await conn.execute(
+        'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE id = ?',
+        [reviewId],
+      );
+      const typedReviewRows = reviewRows as CompanyReview[];
+      const created = typedReviewRows[0];
+      if (!created) {
+        throw new Error('Failed to load created review');
+      }
+
+      // Recalculate and update company rating
+      const [aggRows] = await conn.execute(
+        'SELECT AVG(rating) AS rating, COUNT(*) AS count FROM company_reviews WHERE company_id = ?',
+        [companyId],
+      );
+
+      const agg = (aggRows as Array<{ rating: number | null; count: number }>)?.[0];
+      const newRating = agg && agg.rating != null ? agg.rating : 0;
+
+      await conn.execute('UPDATE companies SET rating = ? WHERE id = ?', [newRating, companyId]);
+
+      return created;
+    });
   }
 
   async updateCompanyReview(companyId: number, reviewId: number, userId: number, updates: CompanyReviewUpdate): Promise<CompanyReview> {
@@ -297,13 +329,49 @@ export class CompanyController {
       }
     }
 
-    const updated = await this.companyReviewModel.update(reviewId, updates);
-    if (!updated) {
-      throw new NotFoundError('Review');
-    }
+    return withTransaction(this.fastify, async (conn: PoolConnection) => {
+      const fields: string[] = [];
+      const values: any[] = [];
 
-    await this.companyReviewModel.updateCompanyRating(companyId);
-    return updated;
+      if (updates.rating !== undefined) {
+        fields.push('rating = ?');
+        values.push(updates.rating);
+      }
+      if (updates.comment !== undefined) {
+        fields.push('comment = ?');
+        values.push(updates.comment);
+      }
+
+      if (fields.length) {
+        fields.push('updated_at = NOW()');
+        values.push(reviewId);
+        await conn.execute(
+          `UPDATE company_reviews SET ${fields.join(', ')} WHERE id = ?`,
+          values,
+        );
+      }
+
+      const [reviewRows] = await conn.execute(
+        'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE id = ?',
+        [reviewId],
+      );
+      const typedReviewRows = reviewRows as CompanyReview[];
+      const updated = typedReviewRows[0];
+      if (!updated) {
+        throw new NotFoundError('Review');
+      }
+
+      const [aggRows] = await conn.execute(
+        'SELECT AVG(rating) AS rating, COUNT(*) AS count FROM company_reviews WHERE company_id = ?',
+        [companyId],
+      );
+      const agg = (aggRows as Array<{ rating: number | null; count: number }>)?.[0];
+      const newRating = agg && agg.rating != null ? agg.rating : 0;
+
+      await conn.execute('UPDATE companies SET rating = ? WHERE id = ?', [newRating, companyId]);
+
+      return updated;
+    });
   }
 
   async deleteCompanyReview(companyId: number, reviewId: number, userId: number): Promise<void> {
@@ -321,12 +389,25 @@ export class CompanyController {
       throw new AuthorizationError('You can only delete your own reviews');
     }
 
-    const deleted = await this.companyReviewModel.delete(reviewId);
-    if (!deleted) {
-      throw new NotFoundError('Review');
-    }
+    await withTransaction(this.fastify, async (conn: PoolConnection) => {
+      const [deleteResult] = await conn.execute(
+        'DELETE FROM company_reviews WHERE id = ?',
+        [reviewId],
+      );
+      const info = deleteResult as any;
+      if (!info.affectedRows) {
+        throw new NotFoundError('Review');
+      }
 
-    await this.companyReviewModel.updateCompanyRating(companyId);
+      const [aggRows] = await conn.execute(
+        'SELECT AVG(rating) AS rating, COUNT(*) AS count FROM company_reviews WHERE company_id = ?',
+        [companyId],
+      );
+      const agg = (aggRows as Array<{ rating: number | null; count: number }>)?.[0];
+      const newRating = agg && agg.rating != null ? agg.rating : 0;
+
+      await conn.execute('UPDATE companies SET rating = ? WHERE id = ?', [newRating, companyId]);
+    });
   }
 
   // ---------------------------------------------------------------------------

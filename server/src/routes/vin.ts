@@ -39,7 +39,13 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
       }
-    }
+    },
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
   }, async (request, reply) => {
     const { vin } = request.body as { vin: string };
 
@@ -62,7 +68,14 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
    * Response: Service health status
    * Status: 200 (OK) with health information
    */
-  fastify.get('/api/vin/health', async (request, reply) => {
+  fastify.get('/api/vin/health', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request, reply) => {
     const healthStatus = await vinController.getServiceHealth();
 
     return reply.send({

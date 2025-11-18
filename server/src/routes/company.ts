@@ -8,6 +8,8 @@ import {
   CompanyQuoteUpdate,
 } from '../types/company.js';
 import { ValidationError, AuthorizationError } from '../types/errors.js';
+import { parsePagination, buildPaginatedResult } from '../utils/pagination.js';
+import { withIdempotency } from '../utils/idempotency.js';
 
 /**
  * Company, Social Links, and Quotes Routes
@@ -109,9 +111,17 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       typedOrderDirection = undefined;
     }
 
+    const { limit: safeLimit, offset: safeOffset } = parsePagination(
+      {
+        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      },
+      { limit: 20, maxLimit: 100 },
+    );
+
     const params = {
-      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-      offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      limit: safeLimit,
+      offset: safeOffset,
       minRating: typeof min_rating === 'string' ? Number(min_rating) : undefined,
       minBasePrice: typeof min_base_price === 'string' ? Number(min_base_price) : undefined,
       maxBasePrice: typeof max_base_price === 'string' ? Number(max_base_price) : undefined,
@@ -125,8 +135,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       orderDirection: typedOrderDirection,
     };
 
-    const result = await controller.searchCompanies(params);
-    return reply.send(result);
+    const { items, total, limit: effectiveLimit, offset: effectiveOffset } = await controller.searchCompanies(params);
+
+    return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
 
   /**
@@ -391,11 +402,18 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
     const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
 
-    const safeLimit = Number.isFinite(parsedLimit) ? parsedLimit : 10;
-    const safeOffset = Number.isFinite(parsedOffset) ? parsedOffset : 0;
+    const { limit: safeLimit, offset: safeOffset } = parsePagination(
+      {
+        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      },
+      { limit: 10, maxLimit: 50 },
+    );
 
-    const result = await controller.getCompanyReviewsPaginated(id, safeLimit, safeOffset);
-    return reply.send(result);
+    const { items, total, limit: effectiveLimit, offset: effectiveOffset } =
+      await controller.getCompanyReviewsPaginated(id, safeLimit, safeOffset);
+
+    return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
 
   /**
@@ -423,13 +441,35 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Invalid company id');
     }
 
-    if (!request.user || typeof request.user.id !== 'number') {
+    const currentUser = request.user as { id: number; role?: string } | undefined;
+
+    if (!currentUser || typeof currentUser.id !== 'number') {
       throw new ValidationError('Authenticated user is required to create reviews');
     }
 
     const body = request.body as { rating: number; comment?: string | null };
-    const created = await controller.createCompanyReview(id, request.user.id, body);
-    return reply.code(201).send(created);
+    const keyHeader = request.headers['idempotency-key'];
+
+    if (!keyHeader || typeof keyHeader !== 'string') {
+      const created = await controller.createCompanyReview(id, currentUser.id, body);
+      return reply.code(201).send(created);
+    }
+
+    const { statusCode, body: responseBody } = await withIdempotency(
+      fastify,
+      {
+        key: keyHeader,
+        userId: currentUser.id,
+        route: 'POST /companies/:companyId/reviews',
+      },
+      request.body,
+      async () => {
+        const created = await controller.createCompanyReview(id, currentUser.id, body);
+        return { statusCode: 201, body: created };
+      },
+    );
+
+    return reply.code(statusCode).send(responseBody);
   });
 
   /**
@@ -807,14 +847,27 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/companies/:companyId/quotes', async (request, reply) => {
     const { companyId } = request.params as { companyId: string };
-    const { currency } = request.query as { currency?: string };
+    const { currency, limit, offset } = request.query as { currency?: string; limit?: string; offset?: string };
     const id = parseInt(companyId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid company id');
     }
 
-    const quotes = await controller.getQuotesByCompany(id, currency);
-    return reply.send(quotes);
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
+    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+
+    const { limit: safeLimit, offset: safeOffset } = parsePagination(
+      {
+        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      },
+      { limit: 20, maxLimit: 100 },
+    );
+
+    const { items, total, limit: effectiveLimit, offset: effectiveOffset } =
+      await controller.getCompanyQuotesPaginated(id, safeLimit, safeOffset, currency);
+
+    return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
 
   /**
@@ -845,8 +898,28 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const payload = request.body as Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>;
-    const created = await controller.createQuoteAdmin(payload);
-    return reply.code(201).send(created);
+    const keyHeader = request.headers['idempotency-key'];
+
+    if (!keyHeader || typeof keyHeader !== 'string') {
+      const created = await controller.createQuoteAdmin(payload);
+      return reply.code(201).send(created);
+    }
+
+    const { statusCode, body } = await withIdempotency(
+      fastify,
+      {
+        key: keyHeader,
+        userId: request.user.id,
+        route: 'POST /quotes',
+      },
+      request.body,
+      async () => {
+        const created = await controller.createQuoteAdmin(payload);
+        return { statusCode: 201, body: created };
+      },
+    );
+
+    return reply.code(statusCode).send(body);
   });
 
   /**
