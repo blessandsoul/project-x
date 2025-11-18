@@ -209,10 +209,8 @@ export const mockUser = {
 
 export const mockNavigationItems = [
   { id: 'home', label: '\u10db\u10d7\u10d0\u10d5\u10d0\u10e0\u10d8', href: '/' },
-  { id: 'search', label: '\u10eb\u10d8\u10d4\u10d1\u10d0', href: '/search' },
   { id: 'catalog', label: '\u10d9\u10d0\u10e2\u10d0\u10da\u10dd\u10d2\u10d8', href: '/catalog' },
   { id: 'dashboard', label: '\u10d3\u10d0\u10e4\u10d0', href: '/dashboard' },
-  { id: 'logisticsRadar', label: '\u10da\u10dd\u10d2\u10d8\u10e1\u10e2\u10d8\u10d9\u10d8\u10e1 \u10e0\u10d0\u10d3\u10d0\u10e0\u10d8', href: '/logistics-radar' },
   { id: 'auctionListings', label: '\u10d0\u10e5\u10e2\u10d8\u10e3\u10e0\u10d8 \u10d0\u10e3\u10e5\u10ea\u10d8\u10dd\u10dc\u10d4\u10d1\u10d8', href: '/auction-listings' },
   { id: 'carfax', label: 'VIN \u10e8\u10d4\u10db\u10dd\u10ec\u10db\u10d4\u10d1\u10d0', href: '/vin' }
 ];

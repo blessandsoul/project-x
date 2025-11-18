@@ -67,7 +67,7 @@ export function PriceCalculatorSection() {
       priceRange: [minBudget, maxBudget],
     })
 
-    navigate('/search')
+    navigate('/catalog')
   }
 
   const defaultSectionMotionProps = {

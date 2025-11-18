@@ -124,11 +124,13 @@ const CompanyProfilePage = () => {
             </Button>
 
             <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-8">
-              <img
-                src={company.logo}
-                alt={company.name}
-                className="w-24 h-24 rounded-xl object-cover mb-4 lg:mb-0"
-              />
+              {company.logo && (
+                <img
+                  src={company.logo}
+                  alt={company.name}
+                  className="w-24 h-24 rounded-xl object-cover mb-4 lg:mb-0"
+                />
+              )}
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h1 className="text-3xl font-bold">{company.name}</h1>
@@ -289,11 +291,13 @@ const CompanyProfilePage = () => {
                           key={car.id}
                           className="flex gap-3 rounded-lg border bg-muted/40 p-3"
                         >
-                          <img
-                            src={car.imageUrl}
-                            alt={`${car.make} ${car.model}`}
-                            className="h-16 w-24 rounded-md object-cover"
-                          />
+                          {car.imageUrl && (
+                            <img
+                              src={car.imageUrl}
+                              alt={`${car.make} ${car.model}`}
+                              className="h-16 w-24 rounded-md object-cover"
+                            />
+                          )}
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-sm font-semibold">

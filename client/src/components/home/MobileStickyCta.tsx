@@ -57,8 +57,8 @@ export function MobileStickyCta() {
               size="sm"
               className="flex-1"
               onClick={() => {
-                trackStickyCtaClick('search')
-                navigate('/search')
+                trackStickyCtaClick('catalog')
+                navigate('/catalog')
               }}
               aria-label="ძიება კომპანიების მიხედვით"
               motionVariant="scale"

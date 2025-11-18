@@ -11,12 +11,20 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
 import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { fetchVehiclePhotos, searchVehicles } from '@/api/vehicles';
+import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
+import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalog';
 import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
 
 type AuctionHouse = 'all' | 'Copart' | 'IAAI' | 'Manheim';
@@ -77,8 +85,12 @@ const AuctionListingsPage = () => {
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
-  const [selectedMake, setSelectedMake] = useState<string>('all');
-  const [selectedModel, setSelectedModel] = useState<string>('all');
+  const [selectedMakeId, setSelectedMakeId] = useState<string>('all');
+  const [selectedModelId, setSelectedModelId] = useState<string>('all');
+  const [catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
+  const [catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
+  const [isLoadingMakes, setIsLoadingMakes] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [searchKind, setSearchKind] = useState<'all' | 'car' | 'moto' | 'van'>('all');
   const [companySearch, setCompanySearch] = useState('');
   const [companyVipOnly, setCompanyVipOnly] = useState(false);
@@ -137,6 +149,148 @@ const AuctionListingsPage = () => {
     return base.trim().toLowerCase();
   }, [companies, selectedCompanyId, companySearch]);
 
+  const vehicleCatalogType: VehicleCatalogType = useMemo(() => {
+    if (searchKind === 'moto') {
+      return 'motorcycle';
+    }
+
+    return 'car';
+  }, [searchKind]);
+
+  const selectedMakeName = useMemo(() => {
+    if (selectedMakeId === 'all') {
+      return undefined;
+    }
+
+    const matchedMake = catalogMakes.find((make) => String(make.makeId) === selectedMakeId);
+    return matchedMake?.name;
+  }, [selectedMakeId, catalogMakes]);
+
+  const selectedModelName = useMemo(() => {
+    if (selectedModelId === 'all') {
+      return undefined;
+    }
+
+    const matchedModel = catalogModels.find((model) => String(model.modelId) === selectedModelId);
+    return matchedModel?.name;
+  }, [selectedModelId, catalogModels]);
+
+  const activeFilterLabels = useMemo(
+    () => {
+      const labels: { id: string; label: string }[] = [];
+
+      if (auctionFilter !== 'all') {
+        labels.push({ id: 'auction', label: `აუქციონი: ${auctionFilter}` });
+      }
+
+      if (fuelType !== 'all') {
+        labels.push({ id: 'fuel', label: `საწვავი: ${fuelType}` });
+      }
+
+      if (buyNowOnly) {
+        labels.push({ id: 'buyNow', label: 'მხოლოდ Buy Now' });
+      }
+
+      if (showVinCodes) {
+        labels.push({ id: 'vin', label: 'VIN კოდების ჩვენება' });
+      }
+
+      if (selectedMakeName) {
+        labels.push({ id: 'make', label: `მარკა: ${selectedMakeName}` });
+      }
+
+      if (selectedModelName) {
+        labels.push({ id: 'model', label: `მოდელი: ${selectedModelName}` });
+      }
+
+      if (companyFilterTerm) {
+        labels.push({ id: 'company', label: `კომპანია: ${companyFilterTerm}` });
+      }
+
+      const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
+      if (hasExactYear) {
+        labels.push({ id: 'yearExact', label: `წელი: ${exactYear}` });
+      } else {
+        labels.push({ id: 'yearRange', label: `წელი: ${yearRange[0]}-${yearRange[1]}` });
+      }
+
+      labels.push({ id: 'price', label: `ფასი: $${priceRange[0]}-$${priceRange[1]}` });
+
+      return labels;
+    },
+    [
+      auctionFilter,
+      fuelType,
+      buyNowOnly,
+      showVinCodes,
+      selectedMakeName,
+      selectedModelName,
+      companyFilterTerm,
+      exactYear,
+      yearRange,
+      priceRange,
+    ],
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setIsLoadingMakes(true);
+
+    fetchCatalogMakes(vehicleCatalogType)
+      .then((items) => {
+        if (!isMounted) return;
+        setCatalogMakes(items);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setCatalogMakes([]);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsLoadingMakes(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [vehicleCatalogType]);
+
+  useEffect(() => {
+    if (selectedMakeId === 'all') {
+      setCatalogModels([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const parsedMakeId = Number.parseInt(selectedMakeId, 10);
+    if (!Number.isFinite(parsedMakeId) || parsedMakeId <= 0) {
+      setCatalogModels([]);
+      return;
+    }
+
+    setIsLoadingModels(true);
+
+    fetchCatalogModels(parsedMakeId, vehicleCatalogType)
+      .then((items) => {
+        if (!isMounted) return;
+        setCatalogModels(items);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setCatalogModels([]);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsLoadingModels(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedMakeId, vehicleCatalogType]);
+
   const buildFiltersFromDraft = (pageOverride?: number): VehiclesSearchFilters & { page: number; limit: number } => {
     const trimmed = searchQuery.trim().toLowerCase();
     const quickFilters = parseSearchQueryToFilters(trimmed);
@@ -146,8 +300,8 @@ const AuctionListingsPage = () => {
 
     const pageToUse = pageOverride ?? 1;
 
-    const overrideMake = selectedMake === 'all' ? undefined : selectedMake;
-    const overrideModel = selectedModel === 'all' ? undefined : selectedModel;
+    const overrideMake = selectedMakeName;
+    const overrideModel = selectedModelName;
 
     let kindCategory: string | undefined;
     if (searchKind === 'car') {
@@ -311,18 +465,368 @@ const AuctionListingsPage = () => {
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold">აქტიური აუქციონები</h1>
             <p className="text-muted-foreground">
-              ნახეთ დემო-ლისტინგები Copart, IAAI და Manheim აუქციონებიდან და გამოიყენეთ სწრაფი ფილტრები
+              ნახეთ დემო-ლისტინგები COPART, IAAI და Manheim აუქციონებიდან და გამოიყენეთ სწრაფი ფილტრები
               თქვენთვის საინტერესო ლოტების საპოვნელად.
             </p>
           </div>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">სწრაფი ფილტრები</CardTitle>
-            </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,2fr)] items-start">
-                {/* Company search block */}
-                <div className="space-y-3">
+              {/* Hero search: type + query + actions */}
+              <section
+                role="search"
+                aria-label="ძირითადი ძებნა"
+                className="flex flex-col gap-2 md:flex-row md:items-end md:gap-3"
+              >
+                <div className="space-y-1 w-full md:w-40">
+                  <span className="text-xs text-muted-foreground">რა სახის ტრანსპორტი?</span>
+                  <Select
+                    value={searchKind}
+                    onValueChange={(value) => {
+                      const nextKind = value as typeof searchKind;
+                      setSearchKind(nextKind);
+                      setSelectedMakeId('all');
+                      setSelectedModelId('all');
+                      setCatalogModels([]);
+                    }}
+                  >
+                    <SelectTrigger className="h-9">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:car" className="h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="ყველა" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="car">მანქანები</SelectItem>
+                      <SelectItem value="moto">მოტოციკლები</SelectItem>
+                      <SelectItem value="van">მიკროავტობუსები</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1 flex-1">
+                  <span className="text-xs text-muted-foreground">ძებნა (მარკა, მოდელი ან VIN)</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="მაგ: BMW X5, Camry 2018, JTMBFREV7JD123456"
+                      value={searchQuery}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setSearchQuery(value);
+
+                        const trimmed = value.trim();
+                        if (trimmed.length === 0 || trimmed.length >= 4) {
+                          setSearchValidationError(null);
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          const trimmed = searchQuery.trim();
+                          if (trimmed.length > 0 && trimmed.length < 4) {
+                            setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                            return;
+                          }
+
+                          const filters = buildFiltersFromDraft(1);
+                          setPage(1);
+                          setAppliedPage(1);
+                          setAppliedFilters(filters);
+                        }
+                      }}
+                      className="h-9 flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label="დამატებითი ფილტრები"
+                      onClick={() => setIsAdvancedFiltersOpen(true)}
+                    >
+                      <Icon icon="mdi:tune" className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {searchValidationError && (
+                    <span className="text-[10px] text-destructive block mt-0.5">{searchValidationError}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 md:flex-col md:items-stretch md:w-auto">
+                  <div className="flex items-stretch">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white rounded-r-none px-4"
+                      onClick={() => {
+                        const trimmed = searchQuery.trim();
+                        if (trimmed.length > 0 && trimmed.length < 4) {
+                          setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                          return;
+                        }
+
+                        const filters = buildFiltersFromDraft(1);
+                        setPage(1);
+                        setAppliedPage(1);
+                        setAppliedFilters(filters);
+                      }}
+                    >
+                      ძებნა
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="bg-orange-500 hover:bg-orange-600 text-white border-l border-orange-600 rounded-l-none px-2"
+                          aria-label="ფილტრები"
+                        >
+                          <Icon icon="mdi:chevron-down" className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedMakeId('all');
+                            setSelectedModelId('all');
+                            setCatalogModels([]);
+                            setYearRange([2010, 2024]);
+                            setPriceRange([500, 30000]);
+                            setAuctionFilter('all');
+                            setFuelType('all');
+                            setShowVinCodes(false);
+                            setBuyNowOnly(false);
+                            setSortBy('relevance');
+                            setSearchQuery('');
+                            setExactYear('');
+                            setMinMileage('');
+                            setCategory('all');
+                            setDrive('all');
+                            setLimit(20);
+                            setPage(1);
+                            setAppliedFilters(null);
+                            setAppliedPage(1);
+                            setBackendData(null);
+                            setBackendError(null);
+                            setSearchValidationError(null);
+                          }}
+                        >
+                          <Icon icon="mdi:filter-remove" className="mr-2 h-4 w-4" />
+                          ფილტრების განულება
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </section>
+
+              {/* Quick filters row: make/model, year, price, auction, fuel, VIN, Buy now */}
+              <section
+                aria-label="სწრაფი ფილტრები"
+                className="flex flex-wrap items-center gap-1 text-xs"
+              >
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">მარკა</span>
+                  <Select
+                    value={selectedMakeId}
+                    onValueChange={(value) => {
+                      setSelectedMakeId(value);
+                      setSelectedModelId('all');
+                      setCatalogModels([]);
+                    }}
+                    disabled={isLoadingMakes}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:car-info" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue placeholder="აირჩიეთ მარკა" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      {catalogMakes.map((make) => (
+                        <SelectItem key={make.makeId} value={String(make.makeId)}>
+                          {make.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">მოდელი</span>
+                  <Select
+                    value={selectedModelId}
+                    onValueChange={(value) => setSelectedModelId(value)}
+                    disabled={selectedMakeId === 'all' || isLoadingModels}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:car-info" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue
+                          placeholder={
+                            selectedMakeId !== 'all' ? 'აირჩიეთ მოდელი' : 'ჯერ აირჩიეთ მარკა'
+                          }
+                        />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      {catalogModels.map((model) => (
+                        <SelectItem key={model.modelId} value={String(model.modelId)}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">წელი</span>
+                  <Select
+                    value="all"
+                    onValueChange={(value) => {
+                      if (value === 'all') {
+                        setYearRange([2010, 2024]);
+                      } else if (value === '2015+') {
+                        setYearRange([2015, yearRange[1]]);
+                      } else if (value === '2018+') {
+                        setYearRange([2018, yearRange[1]]);
+                      } else if (value === '2020+') {
+                        setYearRange([2020, yearRange[1]]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:calendar-range" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue placeholder={`ძ. ${yearRange[0]} - ${yearRange[1]}`} />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="2015+">2015+</SelectItem>
+                      <SelectItem value="2018+">2018+</SelectItem>
+                      <SelectItem value="2020+">2020+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">ფასი</span>
+                  <Select
+                    value="all"
+                    onValueChange={(value) => {
+                      if (value === 'all') {
+                        setPriceRange([500, 30000]);
+                      } else if (value === 'to10000') {
+                        setPriceRange([500, 10000]);
+                      } else if (value === '10-20') {
+                        setPriceRange([10000, 20000]);
+                      } else if (value === '20+') {
+                        setPriceRange([20000, 30000]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:currency-usd" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue placeholder={`$${priceRange[0]} - $${priceRange[1]}`} />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="to10000">მდე $10 000</SelectItem>
+                      <SelectItem value="10-20">$10 000 - $20 000</SelectItem>
+                      <SelectItem value="20+">$20 000+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">აუქციონი</span>
+                  <Select
+                    value={auctionFilter}
+                    onValueChange={(value) => setAuctionFilter(value as AuctionHouse)}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:gavel" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue placeholder="ყველა" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="Copart">COPART</SelectItem>
+                      <SelectItem value="IAAI">IAAI</SelectItem>
+                      <SelectItem value="Manheim">Manheim</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">საწვავი</span>
+                  <Select
+                    value={fuelType}
+                    onValueChange={(value) => setFuelType(value)}
+                  >
+                    <SelectTrigger className="h-8">
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:gas-station" className="h-3.5 w-3.5 text-muted-foreground" />
+                        <SelectValue placeholder="ყველა" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="gas">ბენზინი</SelectItem>
+                      <SelectItem value="diesel">დიზელი</SelectItem>
+                      <SelectItem value="hybrid">ჰიბრიდი</SelectItem>
+                      <SelectItem value="electric">ელექტრო</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3 ml-auto">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="buy-now-only"
+                      checked={buyNowOnly}
+                      onCheckedChange={(checked) => setBuyNowOnly(!!checked)}
+                    />
+                    <label htmlFor="buy-now-only" className="cursor-pointer">
+                      მხოლოდ Buy Now ლოტები
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="vin-only"
+                      checked={showVinCodes}
+                      onCheckedChange={(checked) => setShowVinCodes(!!checked)}
+                    />
+                    <label htmlFor="vin-only" className="cursor-pointer">
+                      VIN კოდების ჩვენება
+                    </label>
+                  </div>
+                </div>
+              </section>
+            </CardContent>
+          </Card>
+
+          <Sheet open={isAdvancedFiltersOpen} onOpenChange={setIsAdvancedFiltersOpen}>
+            <SheetContent side="right" aria-label="დამატებითი ფილტრები">
+              <SheetHeader>
+                <SheetTitle>დამატებითი ფილტრები</SheetTitle>
+              </SheetHeader>
+              <motion.div
+                className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 mt-2 text-sm"
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                {/* Company and brand/model filters */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm">კომპანია / იმპორტიორი</h3>
                   <div className="space-y-1">
                     <span className="text-xs text-muted-foreground">კომპანიით ძიება</span>
                     <Input
@@ -332,7 +836,7 @@ const AuctionListingsPage = () => {
                         setCompanySearch(event.target.value);
                         setSelectedCompanyId(null);
                       }}
-                      className="h-9"
+                      className="h-9 text-xs"
                     />
                   </div>
 
@@ -375,351 +879,61 @@ const AuctionListingsPage = () => {
                   )}
                 </div>
 
-                {/* Vehicle filters block */}
-                <div className="space-y-3">
-                  {/* Row 1: type + search + make + model */}
-                  <div className="grid gap-2 md:grid-cols-12 items-end">
-                    <div className="space-y-1 md:col-span-2">
-                      <span className="text-xs text-muted-foreground">რა სახის ტრანსპორტი?</span>
-                      <Select
-                        value={searchKind}
-                        onValueChange={(value) => setSearchKind(value as typeof searchKind)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="car">მანქანები</SelectItem>
-                          <SelectItem value="moto">მოტოციკლები</SelectItem>
-                          <SelectItem value="van">მიკროავტობუსები</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1 md:col-span-4">
-                      <span className="text-xs text-muted-foreground">ძებნა (მარკა, მოდელი ან VIN)</span>
-                      <Input
-                        placeholder="მაგ: BMW X5, Camry 2018, JTMBFREV7JD123456"
-                        value={searchQuery}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          setSearchQuery(value);
-
-                          const trimmed = value.trim();
-                          if (trimmed.length === 0 || trimmed.length >= 4) {
-                            setSearchValidationError(null);
-                          }
-                        }}
-                        className="h-9"
-                      />
-                      {searchValidationError && (
-                        <span className="text-[10px] text-destructive block mt-0.5">{searchValidationError}</span>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm">ბრენდი და მოდელი</h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-1">
                       <span className="text-xs text-muted-foreground">მარკა</span>
                       <Select
-                        value={selectedMake}
+                        value={selectedMakeId}
                         onValueChange={(value) => {
-                          setSelectedMake(value);
-                          setSelectedModel('all');
+                          setSelectedMakeId(value);
+                          setSelectedModelId('all');
+                          setCatalogModels([]);
                         }}
+                        disabled={isLoadingMakes}
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-9 text-xs">
                           <SelectValue placeholder="აირჩიეთ მარკა" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="BMW">BMW</SelectItem>
-                          <SelectItem value="Mercedes-Benz">Mercedes-Benz</SelectItem>
-                          <SelectItem value="Toyota">Toyota</SelectItem>
-                          <SelectItem value="Honda">Honda</SelectItem>
-                          <SelectItem value="Ford">Ford</SelectItem>
-                          <SelectItem value="Lexus">Lexus</SelectItem>
-                          <SelectItem value="Audi">Audi</SelectItem>
+                          {catalogMakes.map((make) => (
+                            <SelectItem key={make.makeId} value={String(make.makeId)}>
+                              {make.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
-                      <span className="text-xs text-muted-foreground">მოდელი</span>
-                      <Select
-                        value={selectedModel}
-                        onValueChange={(value) => setSelectedModel(value)}
-                        disabled={selectedMake === 'all'}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={selectedMake !== 'all' ? 'აირჩიეთ მოდელი' : 'ჯერ აირჩიეთ მარკა'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          {selectedMake === 'BMW' && (
-                            <>
-                              <SelectItem value="3 Series">3 Series</SelectItem>
-                              <SelectItem value="5 Series">5 Series</SelectItem>
-                              <SelectItem value="X5">X5</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Mercedes-Benz' && (
-                            <>
-                              <SelectItem value="C-Class">C-Class</SelectItem>
-                              <SelectItem value="E-Class">E-Class</SelectItem>
-                              <SelectItem value="GLC">GLC</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Toyota' && (
-                            <>
-                              <SelectItem value="Camry">Camry</SelectItem>
-                              <SelectItem value="Corolla">Corolla</SelectItem>
-                              <SelectItem value="RAV4">RAV4</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Honda' && (
-                            <>
-                              <SelectItem value="Accord">Accord</SelectItem>
-                              <SelectItem value="Civic">Civic</SelectItem>
-                              <SelectItem value="CR-V">CR-V</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Ford' && (
-                            <>
-                              <SelectItem value="F-150">F-150</SelectItem>
-                              <SelectItem value="Mustang">Mustang</SelectItem>
-                              <SelectItem value="Explorer">Explorer</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Lexus' && (
-                            <>
-                              <SelectItem value="RX">RX</SelectItem>
-                              <SelectItem value="ES">ES</SelectItem>
-                              <SelectItem value="NX">NX</SelectItem>
-                            </>
-                          )}
-                          {selectedMake === 'Audi' && (
-                            <>
-                              <SelectItem value="A4">A4</SelectItem>
-                              <SelectItem value="A6">A6</SelectItem>
-                              <SelectItem value="Q5">Q5</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Row 2: year, price, auction, fuel, VIN */}
-                  <div className="grid gap-2 md:grid-cols-12 items-end">
-                    <div className="space-y-1 md:col-span-3">
-                      <span className="text-xs text-muted-foreground">წელი</span>
-                      <Select
-                        value="all"
-                        onValueChange={(value) => {
-                          if (value === 'all') {
-                            setYearRange([2010, 2024]);
-                          } else if (value === '2015+') {
-                            setYearRange([2015, yearRange[1]]);
-                          } else if (value === '2018+') {
-                            setYearRange([2018, yearRange[1]]);
-                          } else if (value === '2020+') {
-                            setYearRange([2020, yearRange[1]]);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={`ძ. ${yearRange[0]} - ${yearRange[1]}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="2015+">2015+</SelectItem>
-                          <SelectItem value="2018+">2018+</SelectItem>
-                          <SelectItem value="2020+">2020+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
-                      <span className="text-xs text-muted-foreground">ფასი</span>
-                      <Select
-                        value="all"
-                        onValueChange={(value) => {
-                          if (value === 'all') {
-                            setPriceRange([500, 30000]);
-                          } else if (value === 'to10000') {
-                            setPriceRange([500, 10000]);
-                          } else if (value === '10-20') {
-                            setPriceRange([10000, 20000]);
-                          } else if (value === '20+') {
-                            setPriceRange([20000, 30000]);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={`$${priceRange[0]} - $${priceRange[1]}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="to10000">მდე $10 000</SelectItem>
-                          <SelectItem value="10-20">$10 000 - $20 000</SelectItem>
-                          <SelectItem value="20+">$20 000+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
-                      <span className="text-xs text-muted-foreground">აუქციონი</span>
-                      <Select
-                        value={auctionFilter}
-                        onValueChange={(value) => setAuctionFilter(value as AuctionHouse)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="Copart">Copart</SelectItem>
-                          <SelectItem value="IAAI">IAAI</SelectItem>
-                          <SelectItem value="Manheim">Manheim</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
-                      <span className="text-xs text-muted-foreground">საწვავი</span>
-                      <Select
-                        value={fuelType}
-                        onValueChange={(value) => setFuelType(value)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="gas">ბენზინი</SelectItem>
-                          <SelectItem value="diesel">დიზელი</SelectItem>
-                          <SelectItem value="hybrid">ჰიბრიდი</SelectItem>
-                          <SelectItem value="electric">ელექტრო</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center gap-2 md:col-span-3">
-                      <Checkbox
-                        id="vin-only"
-                        checked={showVinCodes}
-                        onCheckedChange={(checked) => setShowVinCodes(!!checked)}
-                      />
-                      <label htmlFor="vin-only" className="text-xs">
-                        VIN კოდების ჩვენება
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Row 3: Buy now, sort, buttons */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs pt-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="buy-now-only"
-                        checked={buyNowOnly}
-                        onCheckedChange={(checked) => setBuyNowOnly(!!checked)}
-                      />
-                      <label htmlFor="buy-now-only" className="cursor-pointer">
-                        მხოლოდ Buy Now ლოტები
-                      </label>
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground block">დალაგება</span>
+                      <span className="text-xs text-muted-foreground">მოდელი</span>
                       <Select
-                        value={sortBy}
-                        onValueChange={(value) => setSortBy(value as SortOption)}
+                        value={selectedModelId}
+                        onValueChange={(value) => setSelectedModelId(value)}
+                        disabled={selectedMakeId === 'all' || isLoadingModels}
                       >
-                        <SelectTrigger className="h-8 w-[180px]">
-                          <SelectValue placeholder="დალაგება" />
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue
+                            placeholder={
+                              selectedMakeId !== 'all' ? 'აირჩიეთ მოდელი' : 'ჯერ აირჩიეთ მარკა'
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="relevance">რელევანტურობით</SelectItem>
-                          <SelectItem value="price-low">ფასი (დაბალი)</SelectItem>
-                          <SelectItem value="price-high">ფასი (მაღალი)</SelectItem>
-                          <SelectItem value="year-new">წელი (ახალი)</SelectItem>
-                          <SelectItem value="year-old">წელი (ძველი)</SelectItem>
+                          <SelectItem value="all">ყველა</SelectItem>
+                          {catalogModels.map((model) => (
+                            <SelectItem key={model.modelId} value={String(model.modelId)}>
+                              {model.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="flex items-center gap-2 ml-auto mt-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMake('all');
-                          setSelectedModel('all');
-                          setYearRange([2010, 2024]);
-                          setPriceRange([500, 30000]);
-                          setAuctionFilter('all');
-                          setFuelType('all');
-                          setShowVinCodes(false);
-                          setBuyNowOnly(false);
-                          setSortBy('relevance');
-                          setSearchQuery('');
-                          setExactYear('');
-                          setMinMileage('');
-                          setCategory('all');
-                          setDrive('all');
-                          setLimit(20);
-                          setPage(1);
-                          setAppliedFilters(null);
-                          setAppliedPage(1);
-                          setBackendData(null);
-                          setBackendError(null);
-                          setSearchValidationError(null);
-                        }}
-                      >
-                        ფილტრების განულება
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAdvancedFiltersOpen(true)}
-                      >
-                        <Icon icon="mdi:tune" className="mr-1 h-4 w-4" />
-                        დამატებითი ფილტრები
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-5"
-                        onClick={() => {
-                          const trimmed = searchQuery.trim();
-                          if (trimmed.length > 0 && trimmed.length < 4) {
-                            setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
-                            return;
-                          }
-
-                          const filters = buildFiltersFromDraft(1);
-                          setPage(1);
-                          setAppliedPage(1);
-                          setAppliedFilters(filters);
-                        }}
-                      >
-                        ძებნა
-                      </Button>
-                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Sheet open={isAdvancedFiltersOpen} onOpenChange={setIsAdvancedFiltersOpen}>
-            <SheetContent side="right" aria-label="დამატებითი ფილტრები">
-              <SheetHeader>
-                <SheetTitle>დამატებითი ფილტრები</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 mt-2 text-sm">
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm">ინფორმაცია ავტომობილზე</h3>
                   <div className="space-y-2">
@@ -875,7 +1089,7 @@ const AuctionListingsPage = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               <SheetFooter>
                 <div className="flex w-full items-center justify-between gap-2">
@@ -933,22 +1147,109 @@ const AuctionListingsPage = () => {
             </SheetContent>
           </Sheet>
 
-          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between text-xs text-muted-foreground">
-            <span>
-              {!isBackendLoading && !backendError && backendData
-                ? `ნაჩვენებია ${filteredBackendItems.length} ლოტი ${backendData.total}-დან (რეალური API)`
-                : 'იტვირთება რეალური აუქციონის მონაცემები...'}
-            </span>
-            <span>
-              {isBackendLoading && 'იტვირთება...'}
-              {!isBackendLoading && backendError && backendError}
-              {!isBackendLoading && !backendError && backendData && `ნაპოვნი მანქანები: ${backendData.total}`}
-            </span>
+          <div
+            className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-xs text-muted-foreground"
+            aria-live="polite"
+          >
+            <div className="flex flex-col gap-0.5">
+              <span>
+                {isBackendLoading && 'იტვირთება რეალური აუქციონის მონაცემები...'}
+                {!isBackendLoading && backendError && backendError}
+                {!isBackendLoading && !backendError && backendData && (
+                  backendData.total > 0
+                    ? `ნაჩვენებია ${filteredBackendItems.length} ლოტი ${backendData.total}-დან (რეალური API)`
+                    : 'ამ ფილტრებით ვერ მოიძებნა მანქანები'
+                )}
+              </span>
+              {!isBackendLoading && !backendError && backendData && backendData.total > 0 && (
+                <span className="text-[11px] text-muted-foreground">
+                  ნაპოვნი მანქანები: {backendData.total}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1 md:justify-end">
+              {activeFilterLabels.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="focus:outline-none"
+                  onClick={() => {
+                    switch (item.id) {
+                      case 'auction':
+                        setAuctionFilter('all');
+                        break;
+                      case 'fuel':
+                        setFuelType('all');
+                        break;
+                      case 'buyNow':
+                        setBuyNowOnly(false);
+                        break;
+                      case 'vin':
+                        setShowVinCodes(false);
+                        break;
+                      case 'make':
+                        setSelectedMakeId('all');
+                        setSelectedModelId('all');
+                        setCatalogModels([]);
+                        break;
+                      case 'model':
+                        setSelectedModelId('all');
+                        break;
+                      case 'company':
+                        setCompanySearch('');
+                        setSelectedCompanyId(null);
+                        break;
+                      case 'yearExact':
+                        setExactYear('');
+                        break;
+                      case 'yearRange':
+                        setYearRange([2010, 2024]);
+                        break;
+                      case 'price':
+                        setPriceRange([500, 30000]);
+                        break;
+                      default:
+                        break;
+                    }
+
+                    const filters = buildFiltersFromDraft(1);
+                    setPage(1);
+                    setAppliedPage(1);
+                    setAppliedFilters(filters);
+                  }}
+                >
+                  <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                    {item.label}
+                  </Badge>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Backend-powered results only */}
           <div className="space-y-3 mt-2">
-            <h2 className="text-sm font-semibold">რეალური შედეგები (Vehicles + Quotes API)</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">რეალური შედეგები (Vehicles + Quotes API)</h2>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span className="hidden sm:inline">დალაგება:</span>
+                <Select
+                  value={sortBy}
+                  onValueChange={(value) => setSortBy(value as SortOption)}
+                >
+                  <SelectTrigger className="h-8 w-[150px]">
+                    <SelectValue placeholder="დალაგება" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">რელევანტურობით</SelectItem>
+                    <SelectItem value="price-low">ფასი (დაბალი)</SelectItem>
+                    <SelectItem value="price-high">ფასი (მაღალი)</SelectItem>
+                    <SelectItem value="year-new">წელი (ახალი)</SelectItem>
+                    <SelectItem value="year-old">წელი (ძველი)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {isBackendLoading && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
                 {Array.from({ length: 6 }).map((_, index) => (
@@ -1161,10 +1462,15 @@ const AuctionListingsPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
-                            <span className="font-medium">
-                              ${displayPrice.toLocaleString()}
+                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
+                              <span className="font-medium">
+                                ${displayPrice.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">
+                              ფასი მანქანის აუქციონზე (без доставки და მომსახურების)
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

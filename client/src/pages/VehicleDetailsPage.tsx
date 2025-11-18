@@ -200,6 +200,22 @@ const VehicleDetailsPage = () => {
     return diff > 0 ? diff : null
   }, [sortedQuotes])
 
+  const getShippingPriceColorClass = (
+    quote: VehicleQuote,
+    referenceBestQuote: VehicleQuote | null,
+    isDiscounted: boolean,
+  ): string => {
+    if (referenceBestQuote && quote.company_name === referenceBestQuote.company_name) {
+      return 'text-emerald-600'
+    }
+
+    if (isDiscounted) {
+      return 'text-amber-600'
+    }
+
+    return 'text-red-600'
+  }
+
   const getVipLabelForIndex = (index: number): string | null => {
     if (index === 0) return 'Diamond VIP'
     if (index === 1) return 'Gold VIP'
@@ -370,6 +386,30 @@ const VehicleDetailsPage = () => {
     return `${numeric.toLocaleString()} km`
   }
 
+  const formatAuctionSource = (value: string | null | undefined): string | null => {
+    if (!value) return null
+
+    const trimmed = value.trim()
+    const lower = trimmed.toLowerCase()
+
+    if (lower === 'copart') return 'COPART'
+    if (lower === 'iaai') return 'IAAI'
+
+    return trimmed
+  }
+
+  const formatMilesToKilometers = (value: number | null | undefined): string | null => {
+    if (value == null) return null
+
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return null
+
+    const kilometers = numeric * 1.60934
+    const rounded = Math.round(kilometers)
+
+    return `${rounded.toLocaleString()} km`
+  }
+
   const formatDateTime = (
     dateValue: string | null | undefined,
     timeValue?: string | null | undefined,
@@ -432,14 +472,21 @@ const VehicleDetailsPage = () => {
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-[2px] text-[11px] text-muted-foreground">
                       <Icon icon="mdi:warehouse" className="h-3 w-3" />
-                      {vehicle.source}
+                      {formatAuctionSource(vehicle.source) ?? vehicle.source}
                     </span>
                   </div>
                 )}
                 {vehicle && (
-                  <Badge variant="outline" className="text-xs">
-                    ID: {vehicle.id}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-0.5 text-xs">
+                    {formatMoney(vehicle.calc_price) && (
+                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/5 px-2 py-[2px]">
+                        <Icon icon="mdi:currency-usd" className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="font-semibold text-sm">
+                          {formatMoney(vehicle.calc_price)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -854,11 +901,11 @@ const VehicleDetailsPage = () => {
                         </span>
                         {distanceMiles != null && (
                           <span className="text-[11px] text-muted-foreground">
-                            დისტანცია ფოთამდე: {distanceMiles.toLocaleString()} mi
+                            დისტანცია ფოთამდე: {formatMilesToKilometers(distanceMiles) ?? `${distanceMiles.toLocaleString()} mi`}
                           </span>
                         )}
                         <span className="text-[11px] text-muted-foreground">
-                          ფასი მოიცავს ტრანსპორტირებას, მომსახურებისა და საბროკერო საფასურს, საბაჟო და სხვა გადასახადები წარმოდგენილია დაახლოებით.
+                          სრული ფასი მოიცავს ფასი მანქანის, ტრანსპორტირებას, მომსახურებისა და საბროკერო საფასურს, საბაჟო და სხვა გადასახადები წარმოდგენილია დაახლოებით.
                         </span>
                       </CardTitle>
                     </CardHeader>
@@ -898,7 +945,7 @@ const VehicleDetailsPage = () => {
                               size="sm"
                               variant="ghost"
                               className="h-8 px-3 text-xs flex items-center gap-1"
-                              onClick={() => navigate('/search')}
+                              onClick={() => navigate('/catalog')}
                             >
                               <Icon icon="mdi:magnify" className="h-4 w-4" />
                               მოძებნე სხვა ავტომობილი
@@ -918,10 +965,13 @@ const VehicleDetailsPage = () => {
                             >
                               <div>
                                 <div className="text-[11px] text-muted-foreground mb-1">
-                                  საუკეთესო სრული ფასი იმპორტზე
+                                  საუკეთესო ტრანსპორტირების ფასი
                                 </div>
                                 <div className="text-sm font-semibold">
-                                  {formatMoney(bestQuote.total_price) ?? '—'}
+                                  {formatMoney(bestQuote.breakdown?.shipping_total ?? null) ?? '—'}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  ტრანსპორტირება აშშ-დან საქართველოს პორტამდე (სხვა მომსახურება ცალკე ითვლება)
                                 </div>
                                 <div className="mt-1 text-sm font-semibold text-foreground">
                                   {bestQuote.company_name}
@@ -1100,7 +1150,7 @@ const VehicleDetailsPage = () => {
                                             )}
                                             <div className="space-y-0.5">
                                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span>სრული ფასი იმპორტზე</span>
+                                                <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
                                                 {isDiscounted && (
                                                   <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -1121,11 +1171,17 @@ const VehicleDetailsPage = () => {
                                                   </Tooltip>
                                                 )}
                                               </div>
-                                              <div className="text-sm font-bold text-foreground">
-                                                {formatMoney(quote.total_price) ?? '—'}
-                                              </div>
-                                              <div className="text-[11px] text-muted-foreground">
-                                                სრული ფასი იმპორტზე
+                                              <div
+                                                className={cn(
+                                                  'text-sm font-bold',
+                                                  getShippingPriceColorClass(
+                                                    quote,
+                                                    bestQuote,
+                                                    isDiscounted,
+                                                  ),
+                                                )}
+                                              >
+                                                {formatMoney(quote.breakdown?.shipping_total ?? null) ?? '—'}
                                               </div>
                                             </div>
                                             {quote.delivery_time_days != null && (
@@ -1335,16 +1391,25 @@ const VehicleDetailsPage = () => {
                                             )}
                                             <div className="space-y-0.5">
                                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span>სრული ფასი იმპორტზე</span>
+                                                <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
                                                 {isDiscounted && (
-                                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <span className="inline-flex itemsორცნер gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
                                                     <Icon icon="mdi:tag" className="h-3 w-3" />
                                                     ფასდაკლება
                                                   </span>
                                                 )}
                                               </div>
-                                              <div className="text-sm font-semibold text-foreground">
-                                                {formatMoney(quote.total_price) ?? '—'}
+                                              <div
+                                                className={cn(
+                                                  'text-sm font-bold',
+                                                  getShippingPriceColorClass(
+                                                    quote,
+                                                    bestQuote,
+                                                    isDiscounted,
+                                                  ),
+                                                )}
+                                              >
+                                                {formatMoney(quote.breakdown?.shipping_total ?? null) ?? '—'}
                                               </div>
                                             </div>
                                             {quote.delivery_time_days != null && (
@@ -1688,7 +1753,7 @@ const VehicleDetailsPage = () => {
                   className="h-8 px-3 text-[11px] flex items-center gap-1"
                   onClick={() => {
                     closeSuccessModal()
-                    navigate('/search')
+                    navigate('/catalog')
                   }}
                 >
                   <Icon icon="mdi:open-in-new" className="h-4 w-4" />

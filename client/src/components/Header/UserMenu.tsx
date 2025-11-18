@@ -30,7 +30,6 @@ const t = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUppe
 
 const userMenuNavigationItems = [
   { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'header.dashboard', href: '/dashboard' },
-  { id: 'search', icon: 'mdi:magnify', labelKey: 'header.search', href: '/search' },
   { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'header.catalog', href: '/catalog' },
 ];
 

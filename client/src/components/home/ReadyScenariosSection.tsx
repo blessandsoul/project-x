@@ -85,7 +85,7 @@ export function ReadyScenariosSection() {
         })
       }
 
-      navigate('/search')
+      navigate('/catalog')
     },
     [navigate, updateFilters],
   )

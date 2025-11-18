@@ -29,6 +29,20 @@ The application provides:
 - A backend API for user management and VIN decoding, ready to be connected to a real database and production infrastructure.
 - Clear separation between frontend and backend so each can be developed and deployed independently.
 
+### Who this platform is for
+
+- **Car buyers in Georgia** who want to import a vehicle from the USA but are unsure which intermediary to trust and how much the total process will really cost.
+- **Small and mid-size car import companies** that want to present transparent pricing and win trust by showing clear, comparable offers instead of manual Excel quotes and Telegram messages.
+- **Product and engineering teams** who need a realistic, end-to-end example of an aggregator platform (frontend + backend + pricing logic) for learning, prototyping, or internal tools.
+
+### Problems it solves
+
+- **No single place to compare importers.** Today people jump between separate sites, Facebook groups, and Telegram chats; TrustedImporters.Ge aggregates companies and normalizes their pricing model.
+- **Hard to understand the real total cost.** The platform brings together auction price, shipping, customs, service and broker fees into a single quote so users see an end-to-end estimate in USD or GEL.
+- **Lack of transparency and trust.** Ratings, reviews, VIP badges and clear fee breakdowns help distinguish serious, reliable companies from one-person operations with no history.
+- **Confusing vehicle and VIN data.** Integrated VIN decoding and auction vehicle search turn raw VIN codes and lot numbers into structured, human-readable data.
+- **Slow, manual communication.** Instead of waiting for a manager to “calculate and call back”, users can quickly shortlist companies and vehicles, save favorites, and come back later with preserved filters.
+
 ## Key Features
 
 - **Company search & catalog** – Filter import companies by geography, services, price range, rating, and VIP status.

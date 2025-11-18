@@ -114,8 +114,8 @@ export function HeroSection({ stats }: HeroSectionProps) {
               <Button
                 size="lg"
                 onClick={() => {
-                  trackHeroCtaClick('search')
-                  navigate('/search')
+                  trackHeroCtaClick('catalog')
+                  navigate('/catalog')
                 }}
                 motionVariant="scale"
               >

@@ -91,7 +91,7 @@ export function AudienceSegmentationSection() {
         })
       }
 
-      navigate('/search')
+      navigate('/catalog')
     },
     [navigate, updateFilters],
   )

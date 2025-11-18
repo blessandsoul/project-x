@@ -88,7 +88,7 @@ const Content: React.FC<ContentProps> = ({ content, loading }) => {
               {content.description}
             </p>
             <div className="flex justify-center gap-4 pt-4">
-              <Button onClick={() => navigate('/search')}>
+              <Button onClick={() => navigate('/catalog')}>
                 <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" />
                 {t('content.find_companies')}
               </Button>
@@ -125,7 +125,7 @@ const Content: React.FC<ContentProps> = ({ content, loading }) => {
                 <p className="text-muted-foreground mb-4">
                   {t('content.join_thousands')}
                 </p>
-                <Button size="lg" onClick={() => navigate('/search')}>
+                <Button size="lg" onClick={() => navigate('/catalog')}>
                   <Icon icon="mdi:car" className="mr-2 h-5 w-5" />
                   {t('content.start_import')}
                 </Button>

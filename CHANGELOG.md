@@ -21,6 +21,7 @@
 - Shared search filter context, skeleton loading on company search/catalog pages, and favorites integration across search, catalog, profile, and dashboard
 - Recently viewed tracking, mock car data and imported cars section in company profiles, client-side pagination in catalog, and basic tests for company search/catalog pages
 - Home QuickSearch integrated with shared SearchContext, persisted search filters in localStorage, contact sheet on company profile, accessibility tweaks for search/catalog results, active filter badges, and dashboard tests for favorites and recently viewed
- - Improved main Header and SiteHeader clickability and added a mobile navigation sheet for small screens
- - Rebranded the platform as TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy
- - Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes
+- Improved main Header and SiteHeader clickability and added a mobile navigation sheet for small screens
+- Rebranded the platform as TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy
+- Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes
+- Expanded root README.md overview with target audience and key business problems the platform solves

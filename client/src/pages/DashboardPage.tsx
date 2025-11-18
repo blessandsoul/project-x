@@ -58,7 +58,7 @@ export default function DashboardPage() {
       priceRange: nextPriceRange,
     })
 
-    navigate('/search')
+    navigate('/catalog')
   }
 
   const recommendedCompanies = useMemo(

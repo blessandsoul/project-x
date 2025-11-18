@@ -48,7 +48,7 @@ Key columns used by the current APIs:
 - `model_name` (string) – model, also exposed as `model`
 - `year` (number) – model year
 - `yard_name` (string) – auction yard name (used for distance)
-- `source` (string) – source (e.g. Copart/IAAI)
+- `source` (string) – source (e.g. COPART/IAAI)
 - `mileage` (number or null) – odometer reading
 - `retail_value` (number or string) – used in insurance calculation
 - `calc_price` (number or string) – vehicle price from auction

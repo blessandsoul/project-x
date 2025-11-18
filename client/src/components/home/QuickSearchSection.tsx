@@ -80,9 +80,8 @@ export function QuickSearchSection() {
   }
 
   const handleSearch = () => {
-    // TODO-FX: Пробросить фильтры в /search через query или контекст.
     applyQuickFiltersToSearchContext(filters)
-    navigate('/search')
+    navigate('/catalog')
   }
 
   const handleReset = () => {
@@ -104,7 +103,7 @@ export function QuickSearchSection() {
     }
     persistFilters(next)
     applyQuickFiltersToSearchContext(next)
-    navigate('/search')
+    navigate('/catalog')
   }
 
   return (

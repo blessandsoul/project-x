@@ -46,7 +46,7 @@ const data = {
     },
     {
       title: "Lifecycle",
-      url: "/search",
+      url: "/catalog",
       icon: ListIcon,
     },
     {
@@ -126,7 +126,7 @@ const data = {
     },
     {
       title: "Search",
-      url: "/search",
+      url: "/catalog",
       icon: SearchIcon,
     },
   ],

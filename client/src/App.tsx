@@ -3,12 +3,10 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import HomePage from './pages/HomePage.tsx'
 import DashboardPage from './pages/DashboardPage'
-import CompanySearchPage from './pages/CompanySearchPage'
 import CompanyCatalogPage from './pages/CompanyCatalogPage'
 import CompanyProfilePage from './pages/CompanyProfilePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import LogisticsRadarPage from './pages/LogisticsRadarPage'
 import AuctionListingsPage from './pages/AuctionListingsPage'
 import CarfaxPage from './pages/CarfaxPage'
 import ProfilePage from './pages/ProfilePage'
@@ -84,10 +82,6 @@ function AppRoutes() {
             )}
           />
           <Route
-            path="/search"
-            element={renderWithTransition(<CompanySearchPage />)}
-          />
-          <Route
             path="/catalog"
             element={renderWithTransition(<CompanyCatalogPage />)}
           />
@@ -110,10 +104,6 @@ function AppRoutes() {
                 <ProfilePage />
               </RequireAuth>,
             )}
-          />
-          <Route
-            path="/logistics-radar"
-            element={renderWithTransition(<LogisticsRadarPage />)}
           />
           <Route
             path="/auction-listings"
