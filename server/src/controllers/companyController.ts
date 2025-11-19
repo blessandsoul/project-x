@@ -22,6 +22,7 @@ import { withTransaction } from '../utils/transactions.js';
 import type { PoolConnection } from 'mysql2/promise';
 
 interface CalculatedQuoteResponse {
+  company_id: number;
   company_name: string;
   total_price: number;
   delivery_time_days: number | null;
@@ -574,6 +575,7 @@ export class CompanyController {
       const created = await this.companyModel.createQuote(quoteCreate);
 
       quotes.push({
+        company_id: cq.companyId,
         company_name: cq.companyName,
         total_price: created.total_price,
         delivery_time_days: created.delivery_time_days,
@@ -697,6 +699,7 @@ export class CompanyController {
       }
 
       let quotes: CalculatedQuoteResponse[] = filteredComputedQuotes.map((cq) => ({
+        company_id: cq.companyId,
         company_name: cq.companyName,
         total_price: cq.totalPrice,
         delivery_time_days: cq.deliveryTimeDays,
@@ -830,6 +833,7 @@ export class CompanyController {
         await this.shippingQuoteService.computeQuotesForVehicle(vehicle, companies);
 
       let quotes: CalculatedQuoteResponse[] = computedQuotes.map((cq) => ({
+        company_id: cq.companyId,
         company_name: cq.companyName,
         total_price: cq.totalPrice,
         delivery_time_days: cq.deliveryTimeDays,
