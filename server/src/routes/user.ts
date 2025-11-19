@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController } from '../controllers/userController.js';
+import { UserCompanyActivityModel } from '../models/UserCompanyActivityModel.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
 import { ValidationError, AuthenticationError, NotFoundError, ConflictError, AuthorizationError } from '../types/errors.js';
 
@@ -24,6 +25,7 @@ const loginRateLimitWindow = process.env.RATE_LIMIT_USER_LOGIN_WINDOW || '5 minu
  */
 const userRoutes: FastifyPluginAsync = async (fastify) => {
   const userController = new UserController(fastify);
+  const userCompanyActivityModel = new UserCompanyActivityModel(fastify);
 
   // TODO: Add rate limiting using @fastify/rate-limit plugin for better Fastify integration
 
@@ -150,6 +152,88 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     const updatedUser = await userController.updateProfile(request.user.id, updates);
 
     reply.send(updatedUser);
+  });
+
+  // ---------------------------------------------------------------------------
+  // User favorites (companies) and recently viewed companies
+  // ---------------------------------------------------------------------------
+
+  fastify.get('/user/favorites', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const items = await userCompanyActivityModel.listFavoriteCompanies(request.user.id);
+    return reply.send({ items });
+  });
+
+  fastify.post('/user/favorites/:companyId', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const { companyId } = request.params as { companyId: string };
+    const id = Number.parseInt(companyId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+
+    await userCompanyActivityModel.addFavoriteCompany(request.user.id, id);
+    return reply.code(201).send({ success: true });
+  });
+
+  fastify.delete('/user/favorites/:companyId', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const { companyId } = request.params as { companyId: string };
+    const id = Number.parseInt(companyId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+
+    await userCompanyActivityModel.removeFavoriteCompany(request.user.id, id);
+    return reply.code(204).send();
+  });
+
+  fastify.get('/user/recent-companies', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const { limit } = request.query as { limit?: string };
+    const rawLimit = limit ? Number.parseInt(limit, 10) : 20;
+    const safeLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+
+    const items = await userCompanyActivityModel.listRecentCompanies(request.user.id, safeLimit);
+    return reply.send({ items });
+  });
+
+  fastify.post('/user/recent-companies', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const body = request.body as { company_id?: number } | undefined;
+    const companyId = body && typeof body.company_id === 'number' ? body.company_id : NaN;
+
+    if (!Number.isFinite(companyId) || companyId <= 0) {
+      throw new ValidationError('Invalid company_id');
+    }
+
+    await userCompanyActivityModel.addRecentCompany(request.user.id, companyId);
+    return reply.code(201).send({ success: true });
   });
 
 	  // ---------------------------------------------------------------------------
