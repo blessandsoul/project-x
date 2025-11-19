@@ -538,4 +538,13 @@ export class CompanyModel extends BaseModel {
 
     return { items: rows as Company[], total };
   }
+
+  async findGeneralLeadCompanyIds(): Promise<number[]> {
+    const rows = await this.executeQuery(
+      'SELECT id FROM companies WHERE receives_general_leads = 1',
+      [],
+    );
+
+    return rows.map((row: { id: number }) => row.id);
+  }
 }

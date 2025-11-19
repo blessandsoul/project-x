@@ -13,6 +13,11 @@ export interface Lead {
   color: string | null;
   message: string | null;
   priority: 'price' | 'speed' | 'premium_service' | null;
+  desired_budget_text: string | null;
+  desired_vehicle_type: string | null;
+  auction_text: string | null;
+  terms_accepted: 0 | 1;
+  source: 'quotes' | 'general_form';
   status: 'NEW' | 'MATCHED' | 'CLOSED' | 'CANCELLED';
   created_at: Date;
   updated_at: Date;
@@ -26,6 +31,13 @@ export interface LeadCreateFromQuotesInput {
   message?: string | null | undefined;
   priority?: 'price' | 'speed' | 'premium_service' | null | undefined;
   userId?: number | null | undefined;
+  budgetUsdMin?: number | null | undefined;
+  budgetUsdMax?: number | null | undefined;
+  desiredDurationDays?: number | null | undefined;
+  maxAcceptableDurationDays?: number | null | undefined;
+  damageTolerance?: 'minimal' | 'moderate' | 'any' | null | undefined;
+  serviceExtras?: string[] | null | undefined;
+  preferredContactChannel?: 'whatsapp' | 'telegram' | 'phone' | 'email' | null | undefined;
 }
 
 export interface UserLeadSummary {

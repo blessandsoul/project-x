@@ -25,6 +25,25 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
             type: 'string',
             enum: ['price', 'speed', 'premium_service'],
           },
+          budgetUsdMin: { type: 'number', nullable: true },
+          budgetUsdMax: { type: 'number', nullable: true },
+          desiredDurationDays: { type: 'integer', minimum: 1, nullable: true },
+          maxAcceptableDurationDays: { type: 'integer', minimum: 1, nullable: true },
+          damageTolerance: {
+            type: 'string',
+            enum: ['minimal', 'moderate', 'any'],
+            nullable: true,
+          },
+          serviceExtras: {
+            type: 'array',
+            nullable: true,
+            items: { type: 'string', minLength: 1, maxLength: 100 },
+          },
+          preferredContactChannel: {
+            type: 'string',
+            enum: ['whatsapp', 'telegram', 'phone', 'email'],
+            nullable: true,
+          },
         },
       },
     },
@@ -36,6 +55,13 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
       contact: string;
       message?: string;
       priority?: 'price' | 'speed' | 'premium_service';
+      budgetUsdMin?: number | null;
+      budgetUsdMax?: number | null;
+      desiredDurationDays?: number | null;
+      maxAcceptableDurationDays?: number | null;
+      damageTolerance?: 'minimal' | 'moderate' | 'any' | null;
+      serviceExtras?: string[] | null;
+      preferredContactChannel?: 'whatsapp' | 'telegram' | 'phone' | 'email' | null;
     };
 
     const userId = request.user ? request.user.id : null;
@@ -51,7 +77,69 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
       contact: body.contact,
       message: body.message,
       priority: body.priority,
+      budgetUsdMin: body.budgetUsdMin ?? null,
+      budgetUsdMax: body.budgetUsdMax ?? null,
+      desiredDurationDays: body.desiredDurationDays ?? null,
+      maxAcceptableDurationDays: body.maxAcceptableDurationDays ?? null,
+      damageTolerance: body.damageTolerance ?? null,
+      serviceExtras: body.serviceExtras ?? null,
+      preferredContactChannel: body.preferredContactChannel ?? null,
       userId,
+    });
+
+    return reply.code(201).send(result);
+  });
+
+  fastify.post('/leads/general', {
+    preHandler: fastify.authenticate,
+    schema: {
+      body: {
+        type: 'object',
+        required: ['name', 'phone', 'terms'],
+        properties: {
+          name: { type: 'string', minLength: 1, maxLength: 255 },
+          phone: { type: 'string', minLength: 3, maxLength: 255 },
+          desiredBudget: { type: 'string', minLength: 0, maxLength: 255 },
+          desiredVehicleType: { type: 'string', minLength: 0, maxLength: 255 },
+          auction: { type: 'string', minLength: 0, maxLength: 255 },
+          comment: { type: 'string', minLength: 0, maxLength: 2000 },
+          priority: {
+            type: 'string',
+            enum: ['price', 'speed', 'premium_service'],
+          },
+          terms: { type: 'boolean' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!request.user) {
+      throw new AuthenticationError('Unauthorized');
+    }
+
+    const body = request.body as {
+      name: string;
+      phone: string;
+      desiredBudget?: string | null;
+      desiredVehicleType?: string | null;
+      auction?: string | null;
+      comment?: string | null;
+      priority?: 'price' | 'speed' | 'premium_service' | null;
+      terms: boolean;
+    };
+
+    if (!body.terms) {
+      throw new ValidationError('Terms must be accepted');
+    }
+
+    const result = await leadController.createGeneralLead({
+      userId: request.user.id,
+      name: body.name,
+      phone: body.phone,
+      desiredBudgetText: body.desiredBudget ?? null,
+      desiredVehicleType: body.desiredVehicleType ?? null,
+      auctionText: body.auction ?? null,
+      comment: body.comment ?? null,
+      priority: body.priority ?? null,
     });
 
     return reply.code(201).send(result);

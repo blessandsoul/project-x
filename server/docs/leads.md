@@ -24,7 +24,14 @@ Creates a new lead for the authenticated user and invites selected companies to 
   "name": "John Doe",
   "contact": "+995 555 000000",
   "message": "Please contact me tomorrow morning",
-  "priority": "price"
+  "priority": "price",
+  "budgetUsdMin": 8000,
+  "budgetUsdMax": 10000,
+  "desiredDurationDays": 14,
+  "maxAcceptableDurationDays": 21,
+  "damageTolerance": "minimal",
+  "serviceExtras": ["full_customs", "photo_report"],
+  "preferredContactChannel": "whatsapp"
 }
 ```
 
@@ -38,6 +45,20 @@ Creates a new lead for the authenticated user and invites selected companies to 
 - `message` (string, optional)
 - `priority` (string, optional)
   - One of: `"price" | "speed" | "premium_service"`.
+- `budgetUsdMin` (number, optional, nullable)
+  - Minimum desired total budget in USD (car + delivery + customs + service).
+- `budgetUsdMax` (number, optional, nullable)
+  - Maximum desired total budget in USD.
+- `desiredDurationDays` (integer, optional, nullable)
+  - Ideal delivery time in days.
+- `maxAcceptableDurationDays` (integer, optional, nullable)
+  - Hard limit for delivery time the user is still OK with.
+- `damageTolerance` (string, optional, nullable)
+  - One of: `"minimal" | "moderate" | "any"`.
+- `serviceExtras` (string[], optional, nullable)
+  - Requested extra services (e.g. `full_customs`, `photo_report`, `doc_support`).
+- `preferredContactChannel` (string, optional, nullable)
+  - One of: `"whatsapp" | "telegram" | "phone" | "email"`.
 
 ### Response `201 Created`
 
@@ -192,7 +213,19 @@ Returns leads where the authenticated user’s `company_id` is invited via `lead
       "budgetUsdMax": null,
       "carType": "SUV",
       "auctionSources": ["copart"],
-      "priority": "price"
+      "priority": "price",
+      "source": "quotes",
+      "desiredBudgetText": null,
+      "desiredVehicleTypeText": null,
+      "auctionText": null,
+      "comment": null
+    },
+    "vehicle": {
+      "id": 555,
+      "title": "2019 Toyota Camry SE",
+      "year": 2019,
+      "mainImageUrl": "https://.../camry.jpg",
+      "auctionLotUrl": "https://.../auction-lot"
     }
   }
 ]
@@ -225,6 +258,13 @@ Returns leads where the authenticated user’s `company_id` is invited via `lead
     "auctionSources": ["copart"],
     "message": "Please contact me tomorrow morning",
     "priority": "price"
+  },
+  "vehicle": {
+    "id": 555,
+    "title": "2019 Toyota Camry SE",
+    "year": 2019,
+    "mainImageUrl": "https://.../camry.jpg",
+    "auctionLotUrl": "https://.../auction-lot"
   }
 }
 ```
@@ -297,3 +337,92 @@ The user will later see this offer through `/user/leads/:leadId/offers` and may 
 - `POST /company/leads/:leadCompanyId/offers`
   - Auth: company JWT (user with `role = 'company'` and valid `company_id`).
   - Only accesses rows where `lead_companies.company_id` matches the company.
+
+---
+
+## 5. General Leads (Homepage Form)
+
+In addition to leads tied to a specific vehicle, the API also supports **general leads** created from a simple homepage form.
+
+### 5.1 Create General Lead
+
+**POST** `/leads/general`
+
+- **Auth**: Required (user JWT)
+- **Use case**: User has a general request (budget + type + auction) and wants companies to find suitable vehicles.
+
+#### Request Body
+
+```json
+{
+  "name": "John Doe",
+  "phone": "+995 5XX XX XX XX",
+  "desiredBudget": "1000-1500",
+  "desiredVehicleType": "SUV",
+  "auction": "IAAI",
+  "comment": "Want mid-size SUV with low mileage",
+  "priority": "price",
+  "terms": true
+}
+```
+
+- `name` (string, required)
+- `phone` (string, required)
+- `desiredBudget` (string, optional)
+  - Free-form budget text, e.g. `"1000-1500"`.
+- `desiredVehicleType` (string, optional)
+- `auction` (string, optional)
+- `comment` (string, optional)
+- `priority` (string, optional)
+  - One of: `"price" | "speed" | "premium_service"`.
+- `terms` (boolean, required)
+  - Must be `true`. Otherwise the API returns a validation error.
+
+#### Response `201 Created`
+
+```json
+{
+  "leadId": 456,
+  "invitedCompanyIds": [5, 9, 11],
+  "estimatedResponseTimeHours": 24
+}
+```
+
+Behavior:
+
+- A row is created in `leads` with:
+  - `source = 'general_form'`.
+  - `desired_budget_text`, `desired_vehicle_type`, `auction_text` populated.
+  - `terms_accepted = 1`.
+- Rows are created in `lead_companies` for all companies configured with `receives_general_leads = 1`.
+
+On the company side, these general leads appear in `/company/leads` with:
+
+- `leadSummary.source = "general_form"`.
+- `leadSummary.desiredBudgetText`, `leadSummary.desiredVehicleTypeText`, `leadSummary.auctionText` filled.
+- `vehicle` usually `null` (no specific vehicle attached).
+
+---
+
+## 6. Company Lead Status Semantics
+
+The `lead_companies.status` field is exposed via `/company/leads` and `/company/leads/:leadCompanyId` and uses the following values:
+
+- `NEW`
+  - Company has been invited, no offer submitted yet.
+- `OFFER_SENT`
+  - Company submitted at least one ACTIVE offer for this invitation.
+- `WON`
+  - User selected this company's offer for the lead.
+- `LOST`
+  - User selected another company's offer for the same lead.
+- `EXPIRED`
+  - Invitation expired before any offer was accepted.
+
+When the user calls `POST /user/leads/:leadId/select-offer`:
+
+- The selected offer is marked `status = 'SELECTED'` in `lead_offers`.
+- All other offers for the same lead are marked `status = 'REJECTED'`.
+- `lead_companies.status` is updated as follows:
+  - `WON` for the winning `leadCompanyId` (linked to the selected offer).
+  - `LOST` for all other companies on that `leadId` where status was `NEW` or `OFFER_SENT`.
