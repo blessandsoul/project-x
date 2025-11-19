@@ -34,5 +34,22 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "copyright": "All rights reserved."
+  },
+  "dashboard": {
+    "company": {
+      "leads_bubble": {
+        "title": "New client requests",
+        "subtitle": "Requests from users for specific vehicles",
+        "empty": "You have no new client requests right now.",
+        "status_new": "New",
+        "status_offer_sent": "Offer sent",
+        "status_won": "Won",
+        "status_lost": "Lost",
+        "status_expired": "Expired",
+        "badge_priority_price": "Priority: price",
+        "badge_priority_speed": "Priority: speed",
+        "badge_priority_premium_service": "Priority: premium service"
+      }
+    }
   }
 }

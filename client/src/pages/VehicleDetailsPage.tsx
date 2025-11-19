@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import Header from '@/components/Header/index.tsx'
 import Footer from '@/components/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { mockCompanies, mockFooterLinks, mockNavigationItems, mockRecentCases } from '@/mocks/_mockData'
+import * as mockData from '@/mocks/_mockData'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
+import { useAuth } from '@/hooks/useAuth'
 import type { VehicleQuote } from '@/types/vehicles'
 import { VipBadge } from '@/components/company/VipBadge'
 import QuoteBreakdownReceipt from '@/components/vehicle/QuoteBreakdownReceipt'
 import { cn } from '@/lib/utils'
+import { createLeadFromQuotes } from '@/api/leads'
 
 type QuoteWithVipMeta = { quote: VehicleQuote; index: number; vipLabel: string | null }
 
+const LEAD_STATE_STORAGE_PREFIX = 'vehicle_lead_state_'
+
 const VehicleDetailsPage = () => {
+  const { mockCompanies, mockFooterLinks, mockNavigationItems, mockRecentCases } = mockData as any
   const navigate = useNavigate()
   const location = useLocation()
-  const params = useParams<{ id: string }>()
+  const { isAuthenticated } = useAuth()
+  const params = useParams<{ id: string }> ()
   const offersRef = useRef<HTMLDivElement | null>(null)
   const breakdownCloseTimeoutRef = useRef<number | null>(null)
   const orderCloseTimeoutRef = useRef<number | null>(null)
@@ -40,11 +45,23 @@ const VehicleDetailsPage = () => {
   const [orderName, setOrderName] = useState('')
   const [orderPhone, setOrderPhone] = useState('')
   const [orderComment, setOrderComment] = useState('')
+  const [leadPriority, setLeadPriority] = useState<'price'>('price')
   const [showOnlyPremium, setShowOnlyPremium] = useState(false)
   const [showOnlyStandard, setShowOnlyStandard] = useState(false)
   const [onlyHighRating, setOnlyHighRating] = useState(false)
   const [onlyFastDelivery, setOnlyFastDelivery] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
+  const [selectedCompanyNames, setSelectedCompanyNames] = useState<string[]>([])
+  const [hasUnlockedExtraCompanies, setHasUnlockedExtraCompanies] = useState(false)
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false)
+  const [supportLikeChecked, setSupportLikeChecked] = useState(false)
+  const [supportReviewChecked, setSupportReviewChecked] = useState(false)
+  const [supportReviewText, setSupportReviewText] = useState('')
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
+  const [isLeadRulesModalOpen, setIsLeadRulesModalOpen] = useState(false)
+  const [isLeadSubmitting, setIsLeadSubmitting] = useState(false)
+  const [leadError, setLeadError] = useState<string | null>(null)
+  const [isSupportUnlockSubmitting, setIsSupportUnlockSubmitting] = useState(false)
   const vehicleId = useMemo(() => {
     if (!params.id) return null
     const parsed = Number(params.id)
@@ -55,6 +72,8 @@ const VehicleDetailsPage = () => {
     useVehicleDetails(vehicleId)
 
   const isInitialLoading = isLoading && !vehicle
+
+  const prefersReducedMotion = useReducedMotion()
 
   const THUMBS_PER_PAGE = 3
 
@@ -67,6 +86,59 @@ const VehicleDetailsPage = () => {
 
   const thumbStartIndex = clampedThumbPage * THUMBS_PER_PAGE
   const visibleThumbs = photos.slice(thumbStartIndex, thumbStartIndex + THUMBS_PER_PAGE)
+
+  useEffect(() => {
+    if (!vehicleId) return
+
+    try {
+      const raw = window.localStorage.getItem(`${LEAD_STATE_STORAGE_PREFIX}${vehicleId}`)
+      if (!raw) return
+
+      const parsed = JSON.parse(raw) as {
+        selectedCompanyNames?: string[]
+        orderName?: string
+        orderPhone?: string
+        orderComment?: string
+      } | null
+
+      if (!parsed) return
+
+      if (Array.isArray(parsed.selectedCompanyNames)) {
+        setSelectedCompanyNames(parsed.selectedCompanyNames)
+      }
+      if (typeof parsed.orderName === 'string') {
+        setOrderName(parsed.orderName)
+      }
+      if (typeof parsed.orderPhone === 'string') {
+        setOrderPhone(parsed.orderPhone)
+      }
+      if (typeof parsed.orderComment === 'string') {
+        setOrderComment(parsed.orderComment)
+      }
+    } catch {
+      // ignore corrupted storage
+    }
+  }, [vehicleId])
+
+  useEffect(() => {
+    if (!vehicleId) return
+
+    const payload = {
+      selectedCompanyNames,
+      orderName,
+      orderPhone,
+      orderComment,
+    }
+
+    try {
+      window.localStorage.setItem(
+        `${LEAD_STATE_STORAGE_PREFIX}${vehicleId}`,
+        JSON.stringify(payload),
+      )
+    } catch {
+      // ignore storage write errors
+    }
+  }, [vehicleId, selectedCompanyNames, orderName, orderPhone, orderComment])
 
   useEffect(() => {
     setActivePhotoIndex(0)
@@ -206,6 +278,113 @@ const VehicleDetailsPage = () => {
     return diff > 0 ? diff : null
   }, [sortedQuotes])
 
+  const maxSelectableCompanies = hasUnlockedExtraCompanies ? 5 : 3
+
+  const toggleSelectedCompany = (companyName: string) => {
+    setSelectedCompanyNames((prev) => {
+      const exists = prev.includes(companyName)
+      if (exists) {
+        return prev.filter((name) => name !== companyName)
+      }
+
+      if (prev.length >= maxSelectableCompanies) {
+        if (!hasUnlockedExtraCompanies) {
+          setIsSupportModalOpen(true)
+        }
+
+        return prev
+      }
+
+      const next = [...prev, companyName]
+
+      if (!isAuthenticated && next.length === 2) {
+        setIsLeadRulesModalOpen(true)
+      }
+
+      return next
+    })
+  }
+
+  const handleSubmitLead = async (event: any) => {
+    event.preventDefault()
+
+    if (!vehicleId) {
+      setLeadError('ავტომობილის იდენტიფიკატორი ვერ მოიძებნა.')
+      return
+    }
+
+    if (!orderName.trim() || !orderPhone.trim()) {
+      setLeadError('გთხოვთ შეავსოთ სახელი და ტელეფონის ნომერი.')
+      return
+    }
+
+    if (selectedCompanyNames.length === 0) {
+      setLeadError('აირჩიეთ მინიმუმ ერთი კომპანია საერთო მოთხოვნისთვის.')
+      return
+    }
+
+    const selectedCompanyIds = selectedCompanyNames
+      .map((name) => {
+        const companyMeta = mockCompanies.find((company: any) => company.name === name)
+        if (!companyMeta) return null
+
+        const parsedId = Number(companyMeta.id)
+        return Number.isFinite(parsedId) ? parsedId : null
+      })
+      .filter((id): id is number => id != null)
+
+    if (selectedCompanyIds.length === 0) {
+      setLeadError('ვერ მოხერხდა არჩეული კომპანიების იდენტიფიკაცია.')
+      return
+    }
+
+    setIsLeadSubmitting(true)
+    setLeadError(null)
+
+    try {
+      await createLeadFromQuotes({
+        vehicleId,
+        company_ids: selectedCompanyIds,
+        name: orderName.trim(),
+        contact: orderPhone.trim(),
+        message: orderComment.trim(),
+        priority: leadPriority,
+      })
+
+      setIsLeadModalOpen(false)
+      setSelectedCompanyNames([])
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'ვერ მოხერხდა მოთხოვნის გაგზავნა. სცადეთ კიდევ ერთხელ.'
+      setLeadError(message)
+    } finally {
+      setIsLeadSubmitting(false)
+    }
+  }
+
+  const handleContinueClick = () => {
+    if (selectedCompanyNames.length === 0) {
+      return
+    }
+
+    setIsLeadModalOpen(true)
+  }
+
+  const handleSendClick = () => {
+    if (selectedCompanyNames.length === 0 || isLeadSubmitting) {
+      return
+    }
+
+    if (isAuthenticated) {
+      handleContinueClick()
+      return
+    }
+
+    setIsLeadRulesModalOpen(true)
+  }
+
   const getShippingPriceColorClass = (
     quote: VehicleQuote,
     referenceBestQuote: VehicleQuote | null,
@@ -238,30 +417,10 @@ const VehicleDetailsPage = () => {
     target.push({ quote, index, vipLabel })
   })
 
-  const openOrderPopupForQuote = (quote: VehicleQuote) => {
-    setSelectedQuote(quote)
-    setIsOrderPopupOpen(true)
-  }
-
-  const updateUrlWithSelectedCompany = (quote: VehicleQuote) => {
-    const searchParams = new URLSearchParams(location.search)
-    searchParams.set('company', quote.company_name)
-
-    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true })
-  }
-
-  const handleSelectQuote = (quote: VehicleQuote) => {
-    updateUrlWithSelectedCompany(quote)
-    if (activeBreakdownQuote) {
-      closeBreakdownPopup()
-      window.setTimeout(() => {
-        openOrderPopupForQuote(quote)
-      }, 220)
-      return
-    }
-
-    openOrderPopupForQuote(quote)
-  }
+  // const openOrderPopupForQuote = (quote: VehicleQuote) => {
+  //   setSelectedQuote(quote)
+  //   setIsOrderPopupOpen(true)
+  // }
 
   const handleSubmitOrder = (event: React.FormEvent) => {
     event.preventDefault()
@@ -474,7 +633,7 @@ const VehicleDetailsPage = () => {
   }
 
   const handleOpenCompanyPage = (quote: VehicleQuote) => {
-    const companyMeta = mockCompanies.find((company) => company.name === quote.company_name)
+    const companyMeta = mockCompanies.find((company: any) => company.name === quote.company_name)
 
     if (companyMeta && 'slug' in companyMeta && companyMeta.slug) {
       navigate(`/companies/${String((companyMeta as any).slug)}`)
@@ -492,25 +651,263 @@ const VehicleDetailsPage = () => {
       />
       <main className="flex-1" role="main" aria-label="ავტომობილის დეტალები">
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8">
+          {isSupportModalOpen && (
+            <div
+              className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label="აირჩიე მეტი კომპანია მხარდაჭერისთვის"
+              onClick={() => setIsSupportModalOpen(false)}
+            >
+              <div
+                className="relative w-full max-w-md rounded-lg bg-background p-4 shadow-lg"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
+                  onClick={() => setIsSupportModalOpen(false)}
+                  aria-label="დახურე მხარდაჭერის ფანჯარა"
+                >
+                  <Icon icon="mdi:close" className="h-4 w-4" />
+                </button>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="text-base font-semibold mb-1">გახსენი არჩევანი 5 კომპანიამდე</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      დაალაიქე ჩვენი პროექტი სოციალურ ქსელებში და დაწერე მოკლე შეფასება, რათა ერთდროულად რამდენიმე კომპანიას გაუგზავნო მოთხოვნა.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    <a
+                      href="https://www.instagram.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-1 hover:bg-muted transition-colors"
+                    >
+                      <Icon icon="mdi:instagram" className="h-3 w-3" />
+                      Instagram
+                    </a>
+                    <a
+                      href="https://www.facebook.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-1 hover:bg-muted transition-colors"
+                    >
+                      <Icon icon="mdi:facebook" className="h-3 w-3" />
+                      Facebook
+                    </a>
+                    <a
+                      href="https://www.youtube.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-1 hover:bg-muted transition-colors"
+                    >
+                      <Icon icon="mdi:youtube" className="h-3 w-3" />
+                      YouTube
+                    </a>
+                  </div>
+                  <div className="space-y-2 text-[11px]">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={supportLikeChecked}
+                        onChange={(event) => setSupportLikeChecked(event.target.checked)}
+                      />
+                      <span>მე დავუჭირე მხარი პროექტს სოციალურ ქსელებში</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={supportReviewChecked}
+                        onChange={(event) => setSupportReviewChecked(event.target.checked)}
+                      />
+                      <span>მზად ვარ გავუზიარო მოკლე შეფასება</span>
+                    </label>
+                    <div className="space-y-1">
+                      <div className="text-[11px] font-medium">შენი მოკლე შეფასება</div>
+                      <textarea
+                        className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[72px]"
+                        value={supportReviewText}
+                        onChange={(event) => setSupportReviewText(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3 text-[11px]"
+                      onClick={() => setIsSupportModalOpen(false)}
+                      disabled={isSupportUnlockSubmitting}
+                    >
+                      გაუქმება
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 px-3 text-[11px]"
+                      disabled={
+                        isSupportUnlockSubmitting ||
+                        !supportLikeChecked ||
+                        !supportReviewChecked ||
+                        !supportReviewText.trim()
+                      }
+                      onClick={() => {
+                        if (!supportLikeChecked || !supportReviewChecked || !supportReviewText.trim()) {
+                          return
+                        }
+                        setIsSupportUnlockSubmitting(true)
+                        setHasUnlockedExtraCompanies(true)
+                        setIsSupportModalOpen(false)
+                        setIsSupportUnlockSubmitting(false)
+                      }}
+                    >
+                      გახსენი არჩევანი 5 კომპანიამდე
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-4">
             <Card>
               <CardContent className="space-y-6">
-              <div className="flex items-center justify-between gap-3">
-                {vehicle && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-base md:text-lg font-semibold">
-                      {vehicle.year} {vehicle.make} {vehicle.model}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-[2px] text-[11px] text-muted-foreground">
-                      <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                      {vehicle.yard_name}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-[2px] text-[11px] text-muted-foreground">
-                      <Icon icon="mdi:warehouse" className="h-3 w-3" />
-                      {formatAuctionSource(vehicle.source) ?? vehicle.source}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between gap-3">
+                  {vehicle && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-base md:text-lg font-semibold">
+                        {vehicle.year} {vehicle.make} {vehicle.model}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-[2px] text-[11px] text-muted-foreground">
+                        <Icon icon="mdi:map-marker" className="h-3 w-3" />
+                        {vehicle.yard_name}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-[2px] text-[11px] text-muted-foreground">
+                        <Icon icon="mdi:warehouse" className="h-3 w-3" />
+                        {formatAuctionSource(vehicle.source) ?? vehicle.source}
+                      </span>
+                    </div>
+                  )}
+
+                  <AnimatePresence>
+                    {isLeadModalOpen && (
+                      <motion.div
+                        initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={prefersReducedMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: 8 }}
+                        transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="საერთო მოთხოვნა რამდენიმე კომპანიაზე"
+                        onClick={() => setIsLeadModalOpen(false)}
+                      >
+                        <div
+                          className="relative w-full max-w-md rounded-lg bg-background p-4 shadow-lg"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
+                            onClick={() => setIsLeadModalOpen(false)}
+                            aria-label="დახურე საერთო მოთხოვნის ფანჯარა"
+                          >
+                            <Icon icon="mdi:close" className="h-4 w-4" />
+                          </button>
+                          <div className="space-y-3 text-sm">
+                            <div>
+                              <div className="text-base font-semibold mb-1">საერთო მოთხოვნა რამდენიმე კომპანიაზე</div>
+                              <div className="text-[11px] text-muted-foreground">
+                                არჩეული კომპანიები: {selectedCompanyNames.join(', ')}
+                              </div>
+                            </div>
+                            {leadError && (
+                              <div className="text-[11px] text-destructive">{leadError}</div>
+                            )}
+                            <form className="space-y-3 mt-2" onSubmit={handleSubmitLead}>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium" htmlFor="lead-name">
+                                  სახელი
+                                </label>
+                                <input
+                                  id="lead-name"
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                  value={orderName}
+                                  onChange={(event) => setOrderName(event.target.value)}
+                                  disabled={isLeadSubmitting}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium" htmlFor="lead-phone">
+                                  ტელეფონი
+                                </label>
+                                <input
+                                  id="lead-phone"
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                  value={orderPhone}
+                                  onChange={(event) => setOrderPhone(event.target.value)}
+                                  disabled={isLeadSubmitting}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium" htmlFor="lead-comment">
+                                  კომენტარი / დამატებითი სურვილები
+                                </label>
+                                <textarea
+                                  id="lead-comment"
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[72px]"
+                                  value={orderComment}
+                                  onChange={(event) => setOrderComment(event.target.value)}
+                                  disabled={isLeadSubmitting}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium" htmlFor="lead-priority">
+                                  პრიორიტეტი
+                                </label>
+                                <select
+                                  id="lead-priority"
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                  value={leadPriority}
+                                  onChange={(event) => setLeadPriority(event.target.value as 'price')}
+                                  disabled={isLeadSubmitting}
+                                >
+                                  <option value="price">ფასი</option>
+                                </select>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-3 text-[11px]"
+                                  onClick={() => setIsLeadModalOpen(false)}
+                                  disabled={isLeadSubmitting}
+                                >
+                                  გაგზავნა
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  className="h-8 px-3 text-[11px] flex items-center gap-1"
+                                  disabled={isLeadSubmitting}
+                                >
+                                  <Icon
+                                    icon={isLeadSubmitting ? 'mdi:loading' : 'mdi:send-circle'}
+                                    className={cn('h-4 w-4', isLeadSubmitting && 'animate-spin')}
+                                  />
+                                  გაგზავნა მოთხოვნა
+                                </Button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
                 {vehicle && (
                   <div className="flex flex-col items-end gap-0.5 text-xs">
                     {formatMoney(vehicle.calc_price) && (
@@ -523,53 +920,50 @@ const VehicleDetailsPage = () => {
                     )}
                   </div>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              {isInitialLoading && (
-                <div className="grid gap-6 md:grid-cols-3" aria-busy="true">
-                  <div className="md:col-span-2 space-y-4">
-                    <div className="space-y-2">
-                      <Skeleton className="h-6 w-2/3" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                    <Skeleton className="h-72 w-full" />
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-20 w-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-14 w-full" />
-                      <Skeleton className="h-14 w-full" />
-                    </div>
+            {isInitialLoading && (
+              <div className="grid gap-6 md:grid-cols-3" aria-busy="true">
+                <div className="md:col-span-2 space-y-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-2/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
                   </div>
                 </div>
-              )}
+                <div className="space-y-4">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-20 w-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-14 w-full" />
+                  </div>
+                </div>
+              </div>
+            )}
 
-              {!isInitialLoading && error && (
-                <Card className="border-destructive/40 bg-destructive/5">
-                  <CardContent className="py-4 flex items-center justify-between gap-3 text-sm">
-                    <span className="text-destructive">{error}</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={recalculate}
-                      className="h-8 px-3 text-xs"
-                    >
-                      თავიდან ცდა
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {!isInitialLoading && !error && vehicle && (
+            {!isInitialLoading && error && (
+              <Card className="border-destructive/40 bg-destructive/5">
+                <CardContent className="py-4 flex items-center justify-between gap-3 text-sm">
+                  <span className="text-destructive">{error}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={recalculate}
+                    className="h-8 px-3 text-xs"
+                  >
+                    თავიდან ცდა
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {!isInitialLoading && !error && vehicle && (
                 <div className="grid gap-6 md:grid-cols-5">
                   <Card className="md:col-span-2 flex flex-col">
                     <CardContent className="flex-1 flex flex-col gap-4">
@@ -1107,7 +1501,7 @@ const VehicleDetailsPage = () => {
                                   </div>
                                   {premiumQuotes.map(({ quote, vipLabel }) => {
                                     const companyMeta = mockCompanies.find(
-                                      (company) => company.name === quote.company_name,
+                                      (company: any) => company.name === quote.company_name,
                                     )
 
                                     const passesRating =
@@ -1131,6 +1525,7 @@ const VehicleDetailsPage = () => {
                                       activeBreakdownQuote?.company_name === quote.company_name
                                     const isSelected =
                                       selectedQuote?.company_name === quote.company_name
+                                    const isInLeadSelection = selectedCompanyNames.includes(quote.company_name)
 
                                     if (!passesRating || !passesFastDelivery) {
                                       return null
@@ -1326,21 +1721,30 @@ const VehicleDetailsPage = () => {
                                               <Button
                                                 type="button"
                                                 size="sm"
+                                                variant={isInLeadSelection ? 'default' : 'outline'}
                                                 className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
                                                 onClick={(event) => {
                                                   event.stopPropagation()
-                                                  handleSelectQuote(quote)
+                                                  toggleSelectedCompany(quote.company_name)
                                                 }}
-                                                aria-pressed={isSelected}
-                                                aria-label="აირჩიე ეს შეთავაზება"
+                                                aria-pressed={isInLeadSelection}
+                                                aria-label="აირჩიე ეს შეთავაზება ან მოხსენი არჩევანი"
                                               >
-                                                {isSelected && (
-                                                  <Icon
-                                                    icon="mdi:check-circle"
-                                                    className="h-3 w-3 transition-opacity duration-200"
-                                                  />
-                                                )}
-                                                <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
+                                                <Icon
+                                                  icon={
+                                                    isInLeadSelection
+                                                      ? 'mdi:checkbox-marked-circle-outline'
+                                                      : 'mdi:checkbox-blank-circle-outline'
+                                                  }
+                                                  className="h-3 w-3"
+                                                />
+                                                <span>
+                                                  {isInLeadSelection
+                                                    ? selectedCompanyNames.length === 1
+                                                      ? 'არჩეულია'
+                                                      : 'არჩეულია საერთო მოთხოვნისთვის'
+                                                    : 'არჩევა'}
+                                                </span>
                                               </Button>
                                             </div>
                                           </div>
@@ -1359,7 +1763,7 @@ const VehicleDetailsPage = () => {
                                   </div>
                                   {standardQuotes.map(({ quote, vipLabel }) => {
                                     const companyMeta = mockCompanies.find(
-                                      (company) => company.name === quote.company_name,
+                                      (company: any) => company.name === quote.company_name,
                                     )
 
                                     const passesRating =
@@ -1374,10 +1778,15 @@ const VehicleDetailsPage = () => {
                                     const includesTransport = (quote.breakdown.shipping_total ?? 0) > 0
                                     const includesCustoms = (quote.breakdown.customs_fee ?? 0) > 0
 
+                                    if (!passesRating) {
+                                      return null
+                                    }
+
                                     const isActiveBreakdown =
                                       activeBreakdownQuote?.company_name === quote.company_name
                                     const isSelected =
                                       selectedQuote?.company_name === quote.company_name
+                                    const isInLeadSelection = selectedCompanyNames.includes(quote.company_name)
 
                                     return (
                                       <motion.div
@@ -1394,7 +1803,7 @@ const VehicleDetailsPage = () => {
                                               (vipLabel.includes('Diamond')
                                                 ? 'border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.5)]'
                                                 : vipLabel.includes('Gold')
-                                                  ? 'border-amber-400/70 shadow-[0_0_0_1px_rgба(251,191,36,0.5)]'
+                                                  ? 'border-amber-400/70 shadow-[0_0_0_1px_rgβα(251,191,36,0.5)]'
                                                   : 'border-slate-300/70'),
                                             isSelected &&
                                               'border-primary shadow-[0_0_0_1px_rgba(16,185,129,0.6)]',
@@ -1428,7 +1837,7 @@ const VehicleDetailsPage = () => {
                                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                                                 <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
                                                 {isDiscounted && (
-                                                  <span className="inline-flex itemsორცნер gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
+                                                  <span className="inline-flex itemsორცნერ gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
                                                     <Icon icon="mdi:tag" className="h-3 w-3" />
                                                     ფასდაკლება
                                                   </span>
@@ -1512,18 +1921,27 @@ const VehicleDetailsPage = () => {
                                               <Button
                                                 type="button"
                                                 size="sm"
-                                                className="h-7 px-2 text-[10px] flex items-center gap-1 transition-all duration-200"
-                                                onClick={() => handleSelectQuote(quote)}
-                                                aria-pressed={isSelected}
-                                                aria-label="აირჩიე ეს შეთავაზება"
+                                                variant={isInLeadSelection ? 'default' : 'outline'}
+                                                className="h-7 px-2 text-[10px] flex items-center gap-1"
+                                                onClick={() => toggleSelectedCompany(quote.company_name)}
+                                                aria-pressed={isInLeadSelection}
+                                                aria-label="დამატება საერთო მოთხოვნაში ამ კომპანიისთვის"
                                               >
-                                                {isSelected && (
-                                                  <Icon
-                                                    icon="mdi:check-circle"
-                                                    className="h-3 w-3 transition-opacity duration-200"
-                                                  />
-                                                )}
-                                                <span>{isSelected ? 'არჩეულია' : 'არჩევა'}</span>
+                                                <Icon
+                                                  icon={
+                                                    isInLeadSelection
+                                                      ? 'mdi:checkbox-marked-circle-outline'
+                                                      : 'mdi:checkbox-blank-circle-outline'
+                                                  }
+                                                  className="h-3 w-3"
+                                                />
+                                                <span>
+                                                  {isInLeadSelection
+                                                    ? selectedCompanyNames.length === 1
+                                                      ? 'არჩეულია'
+                                                      : 'არჩეულია საერთო მოთხოვნისთვის'
+                                                    : 'არჩევა'}
+                                                </span>
                                               </Button>
                                             </div>
                                           </div>
@@ -1537,7 +1955,7 @@ const VehicleDetailsPage = () => {
                           </div>
 
                           {mockRecentCases.length > 0 && (
-                            <div className="mt-3 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground space-y-1">
+                            <div className="mt-3 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs mt-4">
                               <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-foreground/70">
                                 <Icon icon="mdi:clock-check" className="h-3 w-3" />
                                 <span>ბოლო წარმატებული იმპორტის მაგალითები</span>
@@ -1563,7 +1981,7 @@ const VehicleDetailsPage = () => {
                               type="button"
                               size="sm"
                               variant="ghost"
-                              className="h-8 px-3 text-[11px] flex items-center gap-1"
+                              className="h-8 px-3 text-[11px]"
                               onClick={() => navigate('/auction-listings')}
                             >
                               <Icon icon="mdi:car-search" className="h-4 w-4" />
@@ -1581,8 +1999,7 @@ const VehicleDetailsPage = () => {
                   ავტომობილი ვერ მოიძებნა. სცადეთ კიდევ ერთხელ ან დაბრუნდით ძიებაზე.
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-xs mt-4">
             <div>
               <div className="font-medium text-sm">გაგრძელე მუშაობა შეთავაზებებთან</div>
@@ -1614,10 +2031,35 @@ const VehicleDetailsPage = () => {
               </Button>
             </div>
           </div>
-          </div>
         </div>
       </main>
       <Footer footerLinks={mockFooterLinks} />
+
+      <AnimatePresence>
+        {sortedQuotes.length > 0 && selectedCompanyNames.length > 0 && (
+          <motion.div
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: 8 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 pointer-events-none"
+          >
+            <div className="shadow-lg rounded-full bg-background/95 border border-border/60 px-3 py-1.5 flex items-center gap-2 pointer-events-auto">
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 px-3 text-xs flex items-center gap-1"
+                onClick={handleSendClick}
+                aria-label="გაგზავნა მოთხოვნის გაგზავნა არჩეული კომპანიებისთვის"
+                disabled={selectedCompanyNames.length === 0 || isLeadSubmitting}
+              >
+                <Icon icon="mdi:arrow-right-circle" className="h-4 w-4" />
+                გაგზავნა
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isOrderPopupOpen && selectedQuote && (
         <div

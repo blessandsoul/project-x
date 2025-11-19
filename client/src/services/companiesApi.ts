@@ -290,3 +290,26 @@ export async function fetchCompanyReviewsFromApi(
 
   return raw
 }
+
+export type LeadFromQuotesPayload = {
+  vehicleId: number
+  selectedCompanyIds: number[]
+  name: string
+  contact: string
+  message: string
+  priority: 'price'
+}
+
+export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/leads/from-quotes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`)
+  }
+}

@@ -15,13 +15,13 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { SectionCards } from '@/components/section-cards'
 import { DealerDashboardSections } from '@/components/dashboard/DealerDashboardSections'
-import { CompanyDashboardSections } from '@/components/dashboard/CompanyDashboardSections'
+import { CompanyDashboardSections, type CompanyLeadBubble } from '@/components/dashboard/CompanyDashboardSections'
 import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { mockCompanies, mockNavigationItems } from '@/mocks/_mockData'
+import { mockCompanies, mockNavigationItems, mockCars } from '@/mocks/_mockData'
 import type { UserRole } from '@/mocks/_mockData'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
@@ -286,6 +286,49 @@ export default function DashboardPage() {
     [],
   )
 
+  const companyLeads: CompanyLeadBubble[] = useMemo(
+    () => {
+      const cars = mockCars.slice(0, 5)
+
+      return cars.map((car, index) => {
+        const company = mockCompanies.find((item) => item.id === car.companyId)
+
+        const baseTitle = `${car.year} ${car.make} ${car.model}`
+        const status: CompanyLeadBubble['status'] =
+          index === 0 ? 'NEW' : index === 1 ? 'OFFER_SENT' : index === 2 ? 'WON' : index === 3 ? 'LOST' : 'EXPIRED'
+
+        const priority: CompanyLeadBubble['priority'] =
+          index % 3 === 0 ? 'price' : index % 3 === 1 ? 'speed' : 'premium_service'
+
+        const now = new Date()
+        const invitedAt = new Date(now.getTime() - index * 60 * 60 * 1000).toISOString()
+        const expiresAt = new Date(now.getTime() + (24 - index * 3) * 60 * 60 * 1000).toISOString()
+
+        return {
+          id: `lead-company-${car.id}`,
+          leadId: index + 1,
+          status,
+          invitedAt,
+          expiresAt,
+          priority,
+          vehicle: {
+            id: car.id,
+            title: baseTitle,
+            year: car.year,
+            imageUrl: car.imageUrl,
+          },
+          summary: {
+            budgetUsdMin: 8000 + index * 500,
+            budgetUsdMax: 12000 + index * 1000,
+            desiredDurationDays: 14,
+            maxAcceptableDurationDays: 21,
+          },
+        }
+      })
+    },
+    [],
+  )
+
   const companyDealerActivityByState = useMemo(
     () => {
       const byState = new Map<string, number>()
@@ -505,6 +548,7 @@ export default function DashboardPage() {
     if (role === 'company') {
       return (
         <CompanyDashboardSections
+          companyLeads={companyLeads}
           companyNetworkStats={companyNetworkStats}
           companyDealerActivityByState={companyDealerActivityByState}
           companyBrandHealth={companyBrandHealth}

@@ -26,3 +26,5 @@
 - Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes
 - Expanded root README.md overview with target audience and key business problems the platform solves
 - Added AuthDrawer component with tabbed login/register forms and wired the main Header sign-in button to open the authentication drawer instead of navigating to a standalone auth page
+- Improved Vite dev server configuration (host/port/polling) for more reliable HMR in the client React app
+- Added a Vite HMR fallback in client/src/main.tsx to force full-page reloads on module updates when React Fast Refresh is disabled by external shims

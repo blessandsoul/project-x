@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -104,7 +104,29 @@ type CompanyGoal = {
   progressPercent: number
 }
 
+export type CompanyLeadBubble = {
+  id: string
+  leadId: number
+  status: 'NEW' | 'OFFER_SENT' | 'WON' | 'LOST' | 'EXPIRED'
+  invitedAt: string
+  expiresAt: string | null
+  priority: 'price' | 'speed' | 'premium_service' | null
+  vehicle: {
+    id: string | number
+    title: string
+    year: number
+    imageUrl: string
+  }
+  summary: {
+    budgetUsdMin: number | null
+    budgetUsdMax: number | null
+    desiredDurationDays: number | null
+    maxAcceptableDurationDays: number | null
+  }
+}
+
 type CompanyDashboardSectionsProps = {
+  companyLeads: CompanyLeadBubble[]
   companyNetworkStats: CompanyNetworkStats
   companyDealerActivityByState: CompanyDealerActivityItem[]
   companyBrandHealth: CompanyBrandHealth
@@ -119,6 +141,7 @@ type CompanyDashboardSectionsProps = {
 }
 
 export function CompanyDashboardSections({
+  companyLeads,
   companyNetworkStats,
   companyDealerActivityByState,
   companyBrandHealth,
@@ -137,10 +160,132 @@ export function CompanyDashboardSections({
 
   const animatedAvgReplyMinutes = useAnimatedValue(companyServiceQuality.avgReplyMinutes)
   const animatedHandledPercent = useAnimatedValue(companyServiceQuality.handledPercent)
+
+  const newLeadsCount = useMemo(
+    () => companyLeads.filter((lead) => lead.status === 'NEW').length,
+    [companyLeads],
+  )
+
+  const t = (key: string): string => {
+    const translations: Record<string, string> = {
+      'dashboard.company.leads_bubble.title': 'New client requests',
+      'dashboard.company.leads_bubble.subtitle': 'Requests from users for specific vehicles',
+      'dashboard.company.leads_bubble.empty': 'You have no new client requests right now.',
+      'dashboard.company.leads_bubble.status_new': 'New',
+      'dashboard.company.leads_bubble.status_offer_sent': 'Offer sent',
+      'dashboard.company.leads_bubble.status_won': 'Won',
+      'dashboard.company.leads_bubble.status_lost': 'Lost',
+      'dashboard.company.leads_bubble.status_expired': 'Expired',
+    }
+
+    return translations[key] ?? key
+  }
   return (
     <>
       <motion.div
         {...getSectionMotionProps(0)}
+        role="region"
+        aria-label="Company incoming leads"
+      >
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Icon icon="mdi:inbox-arrow-down" className="h-5 w-5" />
+                {t('dashboard.company.leads_bubble.title')}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {t('dashboard.company.leads_bubble.subtitle')}
+              </p>
+            </div>
+            {newLeadsCount > 0 && (
+              <div
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                aria-live="polite"
+              >
+                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>{newLeadsCount}</span>
+                <span>NEW</span>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+            {companyLeads.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t('dashboard.company.leads_bubble.empty')}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {companyLeads.slice(0, 5).map((lead) => {
+                  const isNew = lead.status === 'NEW'
+
+                  const statusLabelMap: Record<CompanyLeadBubble['status'], string> = {
+                    NEW: t('dashboard.company.leads_bubble.status_new'),
+                    OFFER_SENT: t('dashboard.company.leads_bubble.status_offer_sent'),
+                    WON: t('dashboard.company.leads_bubble.status_won'),
+                    LOST: t('dashboard.company.leads_bubble.status_lost'),
+                    EXPIRED: t('dashboard.company.leads_bubble.status_expired'),
+                  }
+
+                  const statusLabel = statusLabelMap[lead.status]
+
+                  return (
+                    <motion.button
+                      key={lead.id}
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      whileHover={{ y: -2 }}
+                      animate={
+                        isNew
+                          ? { scale: [1, 1.04, 1] }
+                          : { scale: 1 }
+                      }
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-10 w-10 overflow-hidden rounded-full border bg-muted">
+                          <img
+                            src={lead.vehicle.imageUrl}
+                            alt={lead.vehicle.title}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="line-clamp-1 font-medium">{lead.vehicle.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {lead.summary.budgetUsdMin && lead.summary.budgetUsdMax
+                              ? `$${lead.summary.budgetUsdMin.toLocaleString()} - $${lead.summary.budgetUsdMax.toLocaleString()}`
+                              : 'Budget not specified'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                          data-status={lead.status}
+                        >
+                          <span className="mr-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
+                          {statusLabel}
+                        </span>
+                        {lead.priority && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {lead.priority === 'price' && 'Priority: price'}
+                            {lead.priority === 'speed' && 'Priority: speed'}
+                            {lead.priority === 'premium_service' && 'Priority: premium service'}
+                          </span>
+                        )}
+                      </div>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+      <motion.div
+        {...getSectionMotionProps(1)}
         role="region"
         aria-label="Company network statistics and dealer activity"
       >
@@ -219,7 +364,7 @@ export function CompanyDashboardSections({
       </motion.div>
 
       <motion.div
-        {...getSectionMotionProps(1)}
+        {...getSectionMotionProps(2)}
         role="region"
         aria-label="Company service quality and marketing campaigns"
       >
@@ -281,7 +426,7 @@ export function CompanyDashboardSections({
       </motion.div>
 
       <motion.div
-        {...getSectionMotionProps(2)}
+        {...getSectionMotionProps(3)}
         role="region"
         aria-label="Company audience segments and competitors"
       >
@@ -350,7 +495,7 @@ export function CompanyDashboardSections({
       </motion.div>
 
       <motion.div
-        {...getSectionMotionProps(3)}
+        {...getSectionMotionProps(4)}
         role="region"
         aria-label="Company risks, alerts and network actions"
       >
@@ -405,7 +550,7 @@ export function CompanyDashboardSections({
       </motion.div>
 
       <motion.div
-        {...getSectionMotionProps(4)}
+        {...getSectionMotionProps(5)}
         role="region"
         aria-label="Company goals and progress"
       >

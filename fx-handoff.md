@@ -77,3 +77,6 @@ VC-010: Integrated /vehicle/:id page with backend vehicles API using GET /vehicl
 VC-011: Expanded the root README.md overview with clear description of what TrustedImporters.Ge is, who it is for, and which problems it solves.
 
 VC-012: Added AuthDrawer component with tabbed login/register forms and integrated it into the main Header sign-in button to open an in-place authentication drawer instead of navigating to a dedicated page.
+
+VC-013: Updated client/vite.config.ts to configure Vite dev server host/port and enable file polling for more reliable HMR during development.
+VC-014: Added a Vite HMR fallback in client/src/main.tsx using import.meta.hot.accept to force full page reloads on module updates when React Fast Refresh is disabled by external React DevTools shims.
