@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { FastifyInstance } from 'fastify';
 import { User, UserCreate, UserUpdate, UserLogin, AuthResponse } from '../types/user.js';
 import { UserModel } from '../models/UserModel.js';
+import { CompanyModel } from '../models/CompanyModel.js';
 import { ValidationError, AuthenticationError, NotFoundError, ConflictError } from '../types/errors.js';
 
 /**
@@ -18,10 +19,12 @@ const BCRYPT_SALT_ROUNDS = process.env.BCRYPT_SALT_ROUNDS
 export class UserController {
   private fastify: FastifyInstance;
   private userModel: UserModel;
+  private companyModel: CompanyModel;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.userModel = new UserModel(fastify);
+    this.companyModel = new CompanyModel(fastify);
   }
 
   /**
@@ -35,8 +38,30 @@ export class UserController {
    * @returns Authentication response with JWT token and user info
    * @throws Error if email or username already exists
    */
-  async register(userData: UserCreate): Promise<AuthResponse> {
-    const { email, username, password } = userData;
+  async register(
+    userData: UserCreate & {
+      companyName?: string;
+      companyPhone?: string;
+      basePrice?: number;
+      pricePerMile?: number;
+      customsFee?: number;
+      serviceFee?: number;
+      brokerFee?: number;
+    },
+  ): Promise<AuthResponse> {
+    const {
+      email,
+      username,
+      password,
+      role,
+      companyName,
+      companyPhone,
+      basePrice,
+      pricePerMile,
+      customsFee,
+      serviceFee,
+      brokerFee,
+    } = userData;
 
     // Check if user already exists
     const emailExists = await this.userModel.emailExists(email);
@@ -53,13 +78,45 @@ export class UserController {
     // Hash password
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
+    // Determine role (public registration is allowed only for 'user' or 'company')
+    let finalRole: UserCreate['role'] = 'user';
+    if (role) {
+      if (role !== 'user' && role !== 'company') {
+        throw new ValidationError('Invalid role for public registration');
+      }
+      finalRole = role;
+    }
+
+    let finalCompanyId: number | null = null;
+    if (finalRole === 'company') {
+      // Validate required company fields
+      if (!companyName || typeof companyName !== 'string' || companyName.trim().length === 0) {
+        throw new ValidationError('companyName is required when role = "company"');
+      }
+
+      const createdCompany = await this.companyModel.create({
+        name: companyName.trim(),
+        logo: null,
+        ...(typeof basePrice === 'number' ? { base_price: basePrice } : {}),
+        ...(typeof pricePerMile === 'number' ? { price_per_mile: pricePerMile } : {}),
+        ...(typeof customsFee === 'number' ? { customs_fee: customsFee } : {}),
+        ...(typeof serviceFee === 'number' ? { service_fee: serviceFee } : {}),
+        ...(typeof brokerFee === 'number' ? { broker_fee: brokerFee } : {}),
+        final_formula: null,
+        description: null,
+        phone_number: companyPhone ?? null,
+      });
+
+      finalCompanyId = createdCompany.id;
+    }
+
     // Create user
     const user = await this.userModel.create({
       email,
       username,
       password: passwordHash,
-      // role, dealer_slug, company_id, onboarding_ends_at can be
-      // extended here later if registration needs to support them.
+      role: finalRole,
+      company_id: finalCompanyId,
     });
 
     // Generate token

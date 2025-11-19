@@ -26,11 +26,11 @@ export interface CompanyCreate {
   name: string;
   slug?: string; // if omitted, will be auto-generated from name
   logo?: string | null;
-  base_price: number;
-  price_per_mile: number;
-  customs_fee: number;
-  service_fee: number;
-  broker_fee: number;
+  base_price?: number;
+  price_per_mile?: number;
+  customs_fee?: number;
+  service_fee?: number;
+  broker_fee?: number;
   final_formula?: any | null;
   description?: string | null;
   country?: string | null;

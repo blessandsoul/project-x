@@ -22,16 +22,24 @@ export class CompanyModel extends BaseModel {
   async create(companyData: CompanyCreate): Promise<Company> {
     const {
       name,
+      slug,
       logo = null,
-      base_price,
-      price_per_mile,
-      customs_fee,
-      service_fee,
-      broker_fee,
+      base_price = 0,
+      price_per_mile = 0,
+      customs_fee = 0,
+      service_fee = 0,
+      broker_fee = 0,
       final_formula = null,
       description = null,
       phone_number = null,
     } = companyData;
+
+    const baseSlug = (slug ?? name)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const computedSlug = baseSlug || `company-${Date.now()}`;
 
     const cheapestScore =
       (base_price ?? 0) +
@@ -40,9 +48,10 @@ export class CompanyModel extends BaseModel {
       (broker_fee ?? 0);
 
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (name, slug, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
         name,
+        computedSlug,
         logo,
         base_price,
         price_per_mile,
