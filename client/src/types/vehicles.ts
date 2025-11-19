@@ -13,6 +13,45 @@ export interface VehicleSummary {
 export interface VehicleDetails extends VehicleSummary {
   calc_price: number | string | null
   mileage?: number | null
+  vin?: string | null
+  engine_volume?: number | string | null
+  engine_fuel?: string | null
+  transmission?: string | null
+  drive?: string | null
+  color?: string | null
+  status?: string | null
+  damage_main_damages?: string | null
+  damage_secondary_damages?: string | null
+  has_keys_readable?: string | null
+  has_keys?: boolean | null
+  run_and_drive?: string | null
+  airbags?: string | null
+  odometer_brand?: string | null
+  cylinders?: string | null
+  equipment?: string | null
+  city?: string | null
+  sale_title_state?: string | null
+  source_lot_id?: string | null
+  salvage_id?: string | null
+  repair_cost?: number | string | null
+  final_bid?: number | string | null
+  buy_it_now_price?: number | string | null
+  seller?: string | null
+  seller_type?: string | null
+  sale_title_type?: string | null
+  title?: string | null
+  document?: string | null
+  sold_at_date?: string | null
+  sold_at?: string | null
+  sold_at_time?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  vehicle_type?: string | null
+  vehicle_type_key?: string | null
+  state?: string | null
+  city_slug?: string | null
+  is_new?: boolean | null
+  iaai_360_view?: string | null
 }
 
 export interface VehiclePhoto {
