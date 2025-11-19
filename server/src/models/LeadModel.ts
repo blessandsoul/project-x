@@ -16,6 +16,17 @@ export interface LeadCreateData {
   color: string | null;
   message: string | null;
   priority: 'price' | 'speed' | 'premium_service' | null;
+  desiredBudgetText?: string | null;
+  desiredVehicleType?: string | null;
+  auctionText?: string | null;
+  termsAccepted?: boolean;
+  source?: 'quotes' | 'general_form';
+  desiredDurationDays?: number | null;
+  maxAcceptableDurationDays?: number | null;
+  damageTolerance?: 'minimal' | 'moderate' | 'any' | null;
+  serviceExtras?: string[] | null;
+  preferredContactChannel?: 'whatsapp' | 'telegram' | 'phone' | 'email' | null;
+  vehicleId?: number | null;
 }
 
 export class LeadModel extends BaseModel {
@@ -38,11 +49,23 @@ export class LeadModel extends BaseModel {
       color,
       message,
       priority,
+      desiredBudgetText = null,
+      desiredVehicleType = null,
+      auctionText = null,
+      termsAccepted = false,
+      source = 'quotes',
+      desiredDurationDays = null,
+      maxAcceptableDurationDays = null,
+      damageTolerance = null,
+      serviceExtras = null,
+      preferredContactChannel = null,
+      vehicleId = null,
     } = data;
 
     const result = await this.executeCommand(
       `INSERT INTO leads (
         user_id,
+        vehicle_id,
         name,
         contact,
         budget_usd_min,
@@ -55,12 +78,23 @@ export class LeadModel extends BaseModel {
         color,
         message,
         priority,
+        desired_duration_days,
+        max_acceptable_duration_days,
+        damage_tolerance,
+        service_extras,
+        preferred_contact_channel,
+        desired_budget_text,
+        desired_vehicle_type,
+        auction_text,
+        terms_accepted,
+        source,
         status,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', NOW(), NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', NOW(), NOW())`,
       [
         userId,
+        vehicleId,
         name,
         contact,
         budgetUsdMin,
@@ -73,12 +107,22 @@ export class LeadModel extends BaseModel {
         color,
         message,
         priority ?? null,
+        desiredDurationDays,
+        maxAcceptableDurationDays,
+        damageTolerance,
+        serviceExtras ? JSON.stringify(serviceExtras) : null,
+        preferredContactChannel,
+        desiredBudgetText,
+        desiredVehicleType,
+        auctionText,
+        termsAccepted ? 1 : 0,
+        source,
       ],
     );
 
     const id = (result as any).insertId as number;
     const rows = await this.executeQuery(
-      'SELECT id, user_id, name, contact, budget_usd_min, budget_usd_max, car_type, auction_sources, brand, model, year_from, color, message, priority, status, created_at, updated_at FROM leads WHERE id = ? LIMIT 1',
+      'SELECT id, user_id, vehicle_id, name, contact, budget_usd_min, budget_usd_max, car_type, auction_sources, brand, model, year_from, color, message, priority, desired_duration_days, max_acceptable_duration_days, damage_tolerance, service_extras, preferred_contact_channel, desired_budget_text, desired_vehicle_type, auction_text, terms_accepted, source, status, created_at, updated_at FROM leads WHERE id = ? LIMIT 1',
       [id],
     );
     const row = rows[0];
@@ -211,6 +255,16 @@ export class LeadModel extends BaseModel {
       car_type: string | null;
       auction_sources: string | null;
       priority: string | null;
+      source: 'quotes' | 'general_form';
+      desired_budget_text: string | null;
+      desired_vehicle_type: string | null;
+      auction_text: string | null;
+      vehicle_id: number | null;
+      vehicle_title: string | null;
+      vehicle_year: number | null;
+      vehicle_main_image_url: string | null;
+      vehicle_auction_lot_url: string | null;
+      message: string | null;
     }>
   > {
     const rows = await this.executeQuery(
@@ -224,9 +278,26 @@ export class LeadModel extends BaseModel {
         l.budget_usd_max,
         l.car_type,
         l.auction_sources,
-        l.priority
+        l.priority,
+        l.source,
+        l.desired_budget_text,
+        l.desired_vehicle_type,
+        l.auction_text,
+        l.message,
+        l.vehicle_id,
+        CONCAT(v.brand_name, ' ', v.model_name) AS vehicle_title,
+        v.year AS vehicle_year,
+        (
+          SELECT vp.url
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = v.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS vehicle_main_image_url,
+        v.link AS vehicle_auction_lot_url
       FROM lead_companies lc
       JOIN leads l ON l.id = lc.lead_id
+      LEFT JOIN vehicles v ON v.id = l.vehicle_id
       WHERE lc.company_id = ?
       ORDER BY lc.invited_at DESC`,
       [companyId],
@@ -248,6 +319,11 @@ export class LeadModel extends BaseModel {
         auction_sources: string | null;
         message: string | null;
         priority: string | null;
+        vehicle_id: number | null;
+        vehicle_title: string | null;
+        vehicle_year: number | null;
+        vehicle_main_image_url: string | null;
+        vehicle_auction_lot_url: string | null;
       }
     | null
   > {
@@ -263,9 +339,21 @@ export class LeadModel extends BaseModel {
         l.car_type,
         l.auction_sources,
         l.message,
-        l.priority
+        l.priority,
+        l.vehicle_id,
+        CONCAT(v.brand_name, ' ', v.model_name) AS vehicle_title,
+        v.year AS vehicle_year,
+        (
+          SELECT vp.url
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = v.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS vehicle_main_image_url,
+        v.link AS vehicle_auction_lot_url
       FROM lead_companies lc
       JOIN leads l ON l.id = lc.lead_id
+      LEFT JOIN vehicles v ON v.id = l.vehicle_id
       WHERE lc.company_id = ? AND lc.id = ?
       LIMIT 1`,
       [companyId, leadCompanyId],
@@ -289,6 +377,27 @@ export class LeadModel extends BaseModel {
     await this.executeCommand(
       'UPDATE lead_companies SET responded_at = NOW() WHERE company_id = ? AND id = ? AND responded_at IS NULL',
       [companyId, leadCompanyId],
+    );
+  }
+
+  async markLeadCompanyOfferSent(companyId: number, leadCompanyId: number): Promise<void> {
+    await this.executeCommand(
+      'UPDATE lead_companies SET status = "OFFER_SENT" WHERE company_id = ? AND id = ? AND status = "NEW"',
+      [companyId, leadCompanyId],
+    );
+  }
+
+  async markLeadCompanyWon(leadCompanyId: number): Promise<void> {
+    await this.executeCommand(
+      'UPDATE lead_companies SET status = "WON" WHERE id = ?',
+      [leadCompanyId],
+    );
+  }
+
+  async markOtherLeadCompaniesLost(leadId: number, winningLeadCompanyId: number): Promise<void> {
+    await this.executeCommand(
+      'UPDATE lead_companies SET status = "LOST" WHERE lead_id = ? AND id != ? AND status IN ("NEW", "OFFER_SENT")',
+      [leadId, winningLeadCompanyId],
     );
   }
 }

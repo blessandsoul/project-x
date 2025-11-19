@@ -27,7 +27,22 @@ export class LeadController {
     invitedCompanyIds: number[];
     estimatedResponseTimeHours: number;
   }> {
-    const { vehicleId, selectedCompanyIds, name, contact, message, priority, userId = null } = input;
+    const {
+      vehicleId,
+      selectedCompanyIds,
+      name,
+      contact,
+      message,
+      priority,
+      budgetUsdMin = null,
+      budgetUsdMax = null,
+      desiredDurationDays = null,
+      maxAcceptableDurationDays = null,
+      damageTolerance = null,
+      serviceExtras = null,
+      preferredContactChannel = null,
+      userId = null,
+    } = input;
 
     if (!selectedCompanyIds || selectedCompanyIds.length === 0) {
       throw new ValidationError('At least one company must be selected');
@@ -49,8 +64,8 @@ export class LeadController {
     }
 
     // Derive some lead fields from the vehicle context
-    const budgetUsdMin: number | null = null;
-    const budgetUsdMax: number | null = null;
+    const budgetUsdMinValue: number | null = budgetUsdMin;
+    const budgetUsdMaxValue: number | null = budgetUsdMax;
     const carType: string | null = (vehicle as any).category ?? null;
     const auctionSources: string[] | null = (vehicle as any).source ? [(vehicle as any).source] : null;
     const brand: string | null = vehicle.make ?? null;
@@ -74,6 +89,12 @@ export class LeadController {
       color,
       message: message ?? null,
       priority: priorityValue,
+      desiredDurationDays,
+      maxAcceptableDurationDays,
+      damageTolerance,
+      serviceExtras,
+      preferredContactChannel,
+      vehicleId,
     });
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -82,6 +103,68 @@ export class LeadController {
     return {
       leadId: lead.id,
       invitedCompanyIds: uniqueCompanyIds,
+      estimatedResponseTimeHours: 24,
+    };
+  }
+
+  async createGeneralLead(input: {
+    userId: number;
+    name: string;
+    phone: string;
+    desiredBudgetText?: string | null;
+    desiredVehicleType?: string | null;
+    auctionText?: string | null;
+    comment?: string | null;
+    priority?: 'price' | 'speed' | 'premium_service' | null;
+  }): Promise<{
+    leadId: number;
+    invitedCompanyIds: number[];
+    estimatedResponseTimeHours: number;
+  }> {
+    const {
+      userId,
+      name,
+      phone,
+      desiredBudgetText = null,
+      desiredVehicleType = null,
+      auctionText = null,
+      comment = null,
+      priority = null,
+    } = input;
+
+    const generalLeadCompanyIds = await this.companyModel.findGeneralLeadCompanyIds();
+
+    if (!generalLeadCompanyIds.length) {
+      throw new ValidationError('No companies are configured to receive general leads');
+    }
+
+    const lead = await this.leadModel.createLead({
+      userId,
+      name,
+      contact: phone,
+      budgetUsdMin: null,
+      budgetUsdMax: null,
+      carType: desiredVehicleType ?? null,
+      auctionSources: null,
+      brand: null,
+      model: null,
+      yearFrom: null,
+      color: null,
+      message: comment ?? null,
+      priority: priority ?? null,
+      desiredBudgetText,
+      desiredVehicleType,
+      auctionText,
+      termsAccepted: true,
+      source: 'general_form',
+    });
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.leadModel.createLeadCompanies(lead.id, generalLeadCompanyIds, expiresAt);
+
+    return {
+      leadId: lead.id,
+      invitedCompanyIds: generalLeadCompanyIds,
       estimatedResponseTimeHours: 24,
     };
   }
@@ -161,6 +244,11 @@ export class LeadController {
     await this.leadOfferModel.markSelectedAndOthersRejected(leadId, offerId);
     await this.leadModel.markLeadClosed(leadId);
 
+    // Update company invitation statuses: winner vs losers
+    const winningLeadCompanyId = found.lead_company_id;
+    await this.leadModel.markLeadCompanyWon(winningLeadCompanyId);
+    await this.leadModel.markOtherLeadCompaniesLost(leadId, winningLeadCompanyId);
+
     return {
       leadId,
       selectedOfferId: offerId,
@@ -180,7 +268,19 @@ export class LeadController {
         carType: string | null;
         auctionSources: string[] | null;
         priority: string | null;
+        source: 'quotes' | 'general_form';
+        desiredBudgetText?: string | null;
+        desiredVehicleTypeText?: string | null;
+        auctionText?: string | null;
+        comment?: string | null;
       };
+      vehicle: {
+        id: number | null;
+        title: string | null;
+        year: number | null;
+        mainImageUrl: string | null;
+        auctionLotUrl: string | null;
+      } | null;
     }>
   > {
     const user = await this.userModel.findById(userId);
@@ -203,6 +303,8 @@ export class LeadController {
         }
       }
 
+      const hasVehicle = row.vehicle_id != null;
+
       return {
         leadCompanyId: row.lead_company_id,
         leadId: row.lead_id,
@@ -215,7 +317,21 @@ export class LeadController {
           carType: row.car_type,
           auctionSources,
           priority: row.priority,
+          source: row.source,
+          desiredBudgetText: row.desired_budget_text ?? null,
+          desiredVehicleTypeText: row.desired_vehicle_type ?? null,
+          auctionText: row.auction_text ?? null,
+          comment: row.message ?? null,
         },
+        vehicle: hasVehicle
+          ? {
+              id: row.vehicle_id,
+              title: row.vehicle_title ?? null,
+              year: row.vehicle_year ?? null,
+              mainImageUrl: row.vehicle_main_image_url ?? null,
+              auctionLotUrl: row.vehicle_auction_lot_url ?? null,
+            }
+          : null,
       };
     });
   }
@@ -234,6 +350,13 @@ export class LeadController {
       message: string | null;
       priority: string | null;
     };
+    vehicle: {
+      id: number | null;
+      title: string | null;
+      year: number | null;
+      mainImageUrl: string | null;
+      auctionLotUrl: string | null;
+    } | null;
   }> {
     const user = await this.userModel.findById(userId);
     if (!user) {
@@ -260,6 +383,8 @@ export class LeadController {
       }
     }
 
+    const hasVehicle = row.vehicle_id != null;
+
     return {
       leadCompanyId: row.lead_company_id,
       leadId: row.lead_id,
@@ -274,6 +399,15 @@ export class LeadController {
         message: row.message,
         priority: row.priority,
       },
+      vehicle: hasVehicle
+        ? {
+            id: row.vehicle_id,
+            title: row.vehicle_title ?? null,
+            year: row.vehicle_year ?? null,
+            mainImageUrl: row.vehicle_main_image_url ?? null,
+            auctionLotUrl: row.vehicle_auction_lot_url ?? null,
+          }
+        : null,
     };
   }
 
@@ -320,6 +454,7 @@ export class LeadController {
 
     // Mark responded_at when first offer is submitted for this leadCompany
     await this.leadModel.markLeadCompanyResponded(user.company_id, leadCompanyId);
+    await this.leadModel.markLeadCompanyOfferSent(user.company_id, leadCompanyId);
 
     return {
       offerId: offer.id,
