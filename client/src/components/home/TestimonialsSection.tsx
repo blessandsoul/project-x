@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { EmptyState } from '@/components/company/EmptyState'
-import { mockCompanies } from '@/mocks/_mockData'
+import { useCompaniesData } from '@/hooks/useCompaniesData'
+import { fetchCompanyReviewsFromApi, type ApiCompanyReview } from '@/services/companiesApi'
 
 interface Testimonial {
   id: string
@@ -18,19 +19,69 @@ interface Testimonial {
 
 export function TestimonialsSection() {
   const [tickerIndex, setTickerIndex] = useState(0)
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const testimonials = useMemo<Testimonial[]>(() => {
-    const all = mockCompanies.flatMap((company) =>
-      company.reviews.map((review) => ({
-        id: review.id,
-        userName: review.userName,
-        rating: review.rating,
-        comment: review.comment,
-        companyName: company.name,
-      })),
-    )
-    return all.slice(0, 6)
-  }, [])
+  const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
+
+  const featuredCompany = useMemo(() => {
+    if (!companies || companies.length === 0) return null
+
+    const withReviews = companies.filter((company) => company.reviewCount && company.reviewCount > 0)
+    if (withReviews.length > 0) {
+      return withReviews[0]
+    }
+
+    return companies[0]
+  }, [companies])
+
+  useEffect(() => {
+    if (!featuredCompany || companiesError) {
+      return
+    }
+
+    let isCancelled = false
+
+    const loadReviews = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetchCompanyReviewsFromApi(featuredCompany.id, {
+          limit: 6,
+          offset: 0,
+        })
+
+        if (isCancelled) return
+
+        const mapped: Testimonial[] = response.items.map((review: ApiCompanyReview) => ({
+          id: String(review.id),
+          userName: `User #${review.user_id}`,
+          rating: review.rating,
+          comment: review.comment ?? '',
+          companyName: featuredCompany.name,
+        }))
+
+        setTestimonials(mapped.slice(0, 6))
+      } catch (err) {
+        if (!isCancelled) {
+          setError('Failed to load reviews')
+          setTestimonials([])
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadReviews()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [featuredCompany, companiesError])
 
   const shouldReduceMotion = useReducedMotion()
 
@@ -60,7 +111,17 @@ export function TestimonialsSection() {
     }
   }
 
-  if (testimonials.length === 0) return null
+  if ((isCompaniesLoading || isLoading) && !error && !companiesError) {
+    return null
+  }
+
+  if (error || companiesError) {
+    return null
+  }
+
+  if (!featuredCompany || testimonials.length === 0) {
+    return null
+  }
 
   return (
     <section

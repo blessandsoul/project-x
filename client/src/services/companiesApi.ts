@@ -2,6 +2,25 @@ import type { Company } from '@/mocks/_mockData'
 
 const API_BASE_URL = 'http://localhost:3000'
 
+export type ApiCompanyReview = {
+  id: number
+  company_id: number
+  user_id: number
+  rating: number
+  comment: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type CompanyReviewsResponse = {
+  items: ApiCompanyReview[]
+  total: number
+  limit: number
+  offset: number
+  page: number
+  totalPages: number
+}
+
 export type ApiCompany = {
   id: number
   name: string
@@ -224,4 +243,50 @@ export async function fetchCompanyByIdFromApi(id: string | number): Promise<Comp
     })
     throw error
   }
+}
+
+export type CompanyReviewsParams = {
+  limit?: number
+  offset?: number
+}
+
+export async function fetchCompanyReviewsFromApi(
+  companyId: string | number,
+  params: CompanyReviewsParams = {},
+): Promise<{ items: ApiCompanyReview[]; total: number; limit: number; offset: number; page: number; totalPages: number }> {
+  const searchParams = new URLSearchParams()
+
+  if (typeof params.limit === 'number') {
+    searchParams.set('limit', String(params.limit))
+  }
+
+  if (typeof params.offset === 'number') {
+    searchParams.set('offset', String(params.offset))
+  }
+
+  const queryString = searchParams.toString()
+  const url = queryString
+    ? `${API_BASE_URL}/companies/${companyId}/reviews?${queryString}`
+    : `${API_BASE_URL}/companies/${companyId}/reviews`
+
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`)
+  }
+
+  const raw = (await response.json()) as CompanyReviewsResponse
+
+  if (!Array.isArray(raw.items)) {
+    return {
+      items: [],
+      total: 0,
+      limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? 0,
+      offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
+      page: typeof raw.page === 'number' ? raw.page : 1,
+      totalPages: typeof raw.totalPages === 'number' ? raw.totalPages : 0,
+    }
+  }
+
+  return raw
 }

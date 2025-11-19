@@ -49,7 +49,7 @@ export const HomePageContent = () => {
     <main className="flex-1" role="main" aria-labelledby="home-hero-heading">
       <div className="container mx-auto px-2 sm:px-4 lg:px-6">
         {/* Hero & lead capture */}
-        <HeroSection stats={stats} />
+        <HeroSection stats={stats} companies={companies} />
         <LeadCaptureSection />
 
         {/* Block 1: Find a company */}
@@ -70,12 +70,19 @@ export const HomePageContent = () => {
           </h2>
         </div>
         <HowItWorksSection />
-        <FeaturedCompaniesSection />
+        <FeaturedCompaniesSection
+          companies={companies}
+          isLoading={isCompaniesLoading}
+        />
         <BrandLogosSection />
         <BenefitsSection />
         <TrustSection />
         <Suspense fallback={null}>
-          <CompanyCompareSectionLazy />
+          <CompanyCompareSectionLazy
+            companies={companies}
+            isLoading={isCompaniesLoading}
+            error={companiesError}
+          />
         </Suspense>
 
         {/* Block 3: Stories & learning */}
@@ -107,7 +114,7 @@ export const HomePageContent = () => {
             <EmptyState
               icon="mdi:alert-circle-outline"
               title="დაფიქსირდა პრობლემა კომპანიის მონაცემებთან"
-              description="ვაჩვენებთ დემო მონაცემებს, სანამ რეალური კომპანიების სია ვერ იტვირთება. სცადეთ მოგვიანებით ან გადადით კატალოგში სრულადი სიის სანახავად."
+              description="ვაჩვენებთ დროებით მონაცემებს, სანამ რეალური კომპანიების სია ვერ იტვირთება. სცადეთ მოგვიანებით ან გადადით კატალოგში სრულადი სიის სანახავად."
               action={null}
             />
           </Card>
@@ -117,7 +124,7 @@ export const HomePageContent = () => {
             <EmptyState
               icon="mdi:magnify-remove"
               title="კომპანიები ჯერ არ არის დამატებული"
-              description="მალე აქ გამოჩნდება ვერიფიცირებული იმპორტის კომპანიები. ამ ეტაპზე შეგიძლიათ გაიცნოთ პლატფორმის შესაძლებლობები და მზადება რეალური данныхთვის."
+              description="მალე აქ გამოჩნდება ვერიფიცირებული იმპორტის კომპანიები. ამ ეტაპზე შეგიძლიათ გაიცნოთ პლატფორმის შესაძლებლობები და მომავალი ინტეგრაცია რეალურ მონაცემებთან."
               action={null}
             />
           </Card>

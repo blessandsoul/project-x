@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
+import AuthDrawer from '@/components/AuthDrawer';
 import UserMenu from './UserMenu';
 
 interface User {
@@ -46,8 +48,8 @@ const NAV_MESSAGES: Record<string, string> = {
 const t = (key: string): string => HEADER_MESSAGES[key] ?? NAV_MESSAGES[key] ?? key;
 
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true }) => {
-  const navigate = useNavigate();
   const { user: authUser, isAuthenticated, logout } = useAuth();
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   let storedUser: User | null = null;
 
   if (typeof window !== 'undefined') {
@@ -87,8 +89,9 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <Icon icon="mdi:home" className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline-block">
-              {t('header.brand')}
+            <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
+              <span className="font-bold">Trusted</span>{' '}
+              <span className="font-normal">Importers.Ge</span>
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -124,7 +127,12 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
               </SheetTrigger>
               <SheetContent side="left" className="flex flex-col gap-4 p-4 md:hidden">
                 <SheetHeader>
-                  <SheetTitle>{t('header.brand')}</SheetTitle>
+                  <SheetTitle>
+                    <span className="font-logo-bebas text-2xl tracking-wide">
+                      <span className="font-bold">Trusted</span>{' '}
+                      <span className="font-normal">Importers.Ge</span>
+                    </span>
+                  </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col space-y-3">
                   {navigationItems.map((item: NavigationItem) => (
@@ -153,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => navigate('/login')}
+                onClick={() => setIsAuthOpen(true)}
                 aria-label={t('header.sign_in')}
               >
                 <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
@@ -163,6 +171,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
           </nav>
         </div>
       </div>
+      <AuthDrawer open={isAuthOpen} onOpenChange={setIsAuthOpen} />
     </header>
   );
 };

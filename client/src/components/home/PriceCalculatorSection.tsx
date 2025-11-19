@@ -151,7 +151,8 @@ export function PriceCalculatorSection() {
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                   <span>
-                    გათვლა მოიცავს მომსახურების საფასურს და საბაჟო გადასახადებს (დემო რეჟიმი).
+                    გათვლა მოიცავს მომსახურების საფასურს და საბაჟო გადასახადებს და არის
+                    საგარანტიოდ მიახლოებითი.
                   </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -170,8 +171,8 @@ export function PriceCalculatorSection() {
                     <TooltipContent sideOffset={4}>
                       <p>
                         მომავალში გადასახდელი თანხა ნაწილებად დაიბლოკება და სრულად გადაეცემა
-                        იმპორტიორს მხოლოდ იმპორტის დადასტურების შემდეგ. ახლა ეს არის დემო
-                        ინფორმაცია.
+                        იმპორტიორს მხოლოდ იმპორტის დადასტურების შემდეგ. მოცემული ინფო
+                        გამოიყენეთ მხოლოდ საჩვენებელი გათვლისთვის.
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -180,7 +181,7 @@ export function PriceCalculatorSection() {
                   {formatUsd(totalRange[0])} – {formatUsd(totalRange[1])}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ეს არის დემო გათვლა. რეალური ღირებულება შეიძლება იცვლებოდეს კომპანიების,
+                  ეს არის სავარაუდო გათვლა. რეალური ღირებულება შეიძლება იცვლებოდეს კომპანიების,
                   კონკრეტული აუქციონის და საბაჟო პირობების მიხედვით.
                 </p>
                 <Button

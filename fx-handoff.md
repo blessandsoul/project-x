@@ -75,3 +75,5 @@ Status: Headers now provide consistent, fully clickable navigation across deskto
 VC-009: Rebranded the UI to TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy.
 VC-010: Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes.
 VC-011: Expanded the root README.md overview with clear description of what TrustedImporters.Ge is, who it is for, and which problems it solves.
+
+VC-012: Added AuthDrawer component with tabbed login/register forms and integrated it into the main Header sign-in button to open an in-place authentication drawer instead of navigating to a dedicated page.

@@ -56,8 +56,8 @@ const CarfaxPage = () => {
           <div className="flex flex-col gap-2 w-full max-w-2xl mx-auto">
             <h1 className="text-3xl font-bold">VIN შემოწმება</h1>
             <p className="text-muted-foreground">
-              შეიყვანეთ VIN კოდი და მიიღეთ დემო-ანგარიში ავტომობილის ისტორიის შესახებ. შედეგები არის
-              მხოლოდ საცდელი და არ წარმოადგენს რეალურ VIN შემოწმების შედეგს.
+              შეიყვანეთ VIN კოდი და მიიღეთ საცდელი ანგარიში ავტომóbილის ისტორიის შესახებ. შედეგები არის
+              მხოლოდ საინფორმაციო და არ წარმოადგენს რეალურ VIN შემოწმების შედეგს.
             </p>
           </div>
 
@@ -119,7 +119,7 @@ const CarfaxPage = () => {
             <Card className="border-dashed border-muted w-full max-w-2xl mx-auto">
               <CardContent className="py-6 flex items-center gap-3 text-sm text-muted-foreground">
                 <Icon icon="mdi:information-outline" className="h-5 w-5" />
-                <span>შეიყვანეთ VIN კოდი, რომ ნახოთ დემო-ანგარიში ავტომობილის ისტორიის შესახებ.</span>
+                <span>შეიყვანეთ VIN კოდი, რომ ნახოთ საცდელი ანგარიში ავტომóbილის ისტორიის შესახებ.</span>
               </CardContent>
             </Card>
           )}
@@ -256,8 +256,9 @@ const CarfaxPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs text-muted-foreground">
                   <p>
-                    ეს გვერდი ამ ეტაპზე იყენებს დემო-მონაცემებს და არ არის დაკავშირებული რეალურ VIN შემოწმების სერვისთან. შედეგები
-                    გამოიყენეთ მხოლოდ ვიზუალიზაციისა და დიზაინის შესაფასებლად.
+                    ეს გვერდი ამ ეტაპზე იყენებს სატესტო მონაცემებს და არ არის დაკავშირებული რეალურ VIN
+                    შემოწმების სერვისთან. შედეგები გამოიყენეთ მხოლოდ ვიზუალიზაციისა და დიზაინის
+                    შესაფასებლად.
                   </p>
                   <p>
                     რეალური ისტორიის მისაღებად საჭიროა ინტეგრაცია ოფიციალურ VIN სერვისთან და მოქმედი API გასაღები.

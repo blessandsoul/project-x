@@ -20,7 +20,7 @@ export function FinalCTASection() {
 
   return (
     <section
-      className="bg-primary/5"
+      className="bg-white"
       aria-labelledby="home-final-cta-heading"
     >
       <div className="container mx-auto py-10 md:py-14">

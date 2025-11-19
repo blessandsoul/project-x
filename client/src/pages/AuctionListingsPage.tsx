@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
@@ -32,7 +32,7 @@ type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
 type DamageType = 'all' | 'front' | 'rear' | 'side';
 type SortOption = 'relevance' | 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
-// NOTE: mockCars-based auction listings were used for demo purposes earlier.
+// NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via useVehicleSearchQuotes.
 
 const getDeliveryRangeToPoti = (state: string): { min: number; max: number } => {
@@ -67,8 +67,75 @@ const parseSearchQueryToFilters = (query: string): { make?: string; model?: stri
   };
 };
 
+type DraftFiltersInput = {
+  searchQuery: string;
+  exactYear: number | '';
+  minMileage: number | '';
+  maxMileage: number[];
+  priceRange: number[];
+  yearRange: number[];
+  fuelType: string;
+  category: string;
+  drive: string;
+  limit: number;
+  page: number;
+  searchKind: 'all' | 'car' | 'moto' | 'van';
+  selectedMakeName?: string;
+  selectedModelName?: string;
+};
+
+const buildFiltersFromDraftState = (
+  input: DraftFiltersInput,
+): VehiclesSearchFilters & { page: number; limit: number } => {
+  const trimmed = input.searchQuery.trim().toLowerCase();
+  const quickFilters = parseSearchQueryToFilters(trimmed);
+
+  const hasExactYear = typeof input.exactYear === 'number' && !Number.isNaN(input.exactYear);
+  const hasMinMileage = typeof input.minMileage === 'number' && !Number.isNaN(input.minMileage);
+
+  let kindCategory: string | undefined;
+  if (input.searchKind === 'car') {
+    kindCategory = 'car';
+  } else if (input.searchKind === 'moto') {
+    kindCategory = 'motorcycle';
+  } else if (input.searchKind === 'van') {
+    kindCategory = 'van';
+  }
+
+  const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
+    ...quickFilters,
+    make: input.selectedMakeName ?? quickFilters.make,
+    model: input.selectedModelName ?? quickFilters.model,
+    mileage_to: input.maxMileage[0],
+    price_from: input.priceRange[0],
+    price_to: input.priceRange[1],
+    fuel_type: input.fuelType === 'all' ? undefined : input.fuelType,
+    category: input.category === 'all' ? kindCategory : input.category,
+    drive: input.drive === 'all' ? undefined : input.drive,
+    limit: input.limit,
+    page: input.page,
+  };
+
+  if (hasExactYear) {
+    baseFilters.year = input.exactYear as number;
+  } else {
+    const fromYear = Math.min(input.yearRange[0], input.yearRange[1]);
+    const toYear = Math.max(input.yearRange[0], input.yearRange[1]);
+    baseFilters.year_from = fromYear;
+    baseFilters.year_to = toYear;
+  }
+
+  if (hasMinMileage) {
+    const fromMileage = Math.min(input.minMileage as number, input.maxMileage[0]);
+    baseFilters.mileage_from = fromMileage;
+  }
+
+  return baseFilters;
+};
+
 const AuctionListingsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>('all');
   const [statusFilter, setStatusFilter] = useState<LotStatus>('all');
   const [damageFilter, setDamageFilter] = useState<DamageType>('all');
@@ -149,6 +216,22 @@ const AuctionListingsPage = () => {
     return base.trim().toLowerCase();
   }, [companies, selectedCompanyId, companySearch]);
 
+  const getSelectedCompanyNameForLink = (): string | null => {
+    if (selectedCompanyId && companies && companies.length > 0) {
+      const matched = companies.find((company) => company.id === selectedCompanyId);
+      if (matched?.name) {
+        return matched.name;
+      }
+    }
+
+    const trimmed = companySearch.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+
+    return null;
+  };
+
   const vehicleCatalogType: VehicleCatalogType = useMemo(() => {
     if (searchKind === 'moto') {
       return 'motorcycle';
@@ -174,6 +257,146 @@ const AuctionListingsPage = () => {
     const matchedModel = catalogModels.find((model) => String(model.modelId) === selectedModelId);
     return matchedModel?.name;
   }, [selectedModelId, catalogModels]);
+
+  const updateUrlFromState = (options?: { page?: number; limit?: number; replace?: boolean }) => {
+    const searchParams = new URLSearchParams(location.search);
+
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length > 0) {
+      searchParams.set('q', trimmedQuery);
+    } else {
+      searchParams.delete('q');
+    }
+
+    if (searchKind && searchKind !== 'all') {
+      searchParams.set('kind', searchKind);
+    } else {
+      searchParams.delete('kind');
+    }
+
+    if (auctionFilter && auctionFilter !== 'all') {
+      searchParams.set('auction', auctionFilter);
+    } else {
+      searchParams.delete('auction');
+    }
+
+    if (fuelType && fuelType !== 'all') {
+      searchParams.set('fuel', fuelType);
+    } else {
+      searchParams.delete('fuel');
+    }
+
+    if (category && category !== 'all') {
+      searchParams.set('category', category);
+    } else {
+      searchParams.delete('category');
+    }
+
+    if (drive && drive !== 'all') {
+      searchParams.set('drive', drive);
+    } else {
+      searchParams.delete('drive');
+    }
+
+    const [yearFrom, yearTo] = yearRange;
+    if (yearFrom !== 2010 || yearTo !== 2024) {
+      searchParams.set('yearFrom', String(yearFrom));
+      searchParams.set('yearTo', String(yearTo));
+    } else {
+      searchParams.delete('yearFrom');
+      searchParams.delete('yearTo');
+    }
+
+    if (typeof exactYear === 'number' && !Number.isNaN(exactYear)) {
+      searchParams.set('yearExact', String(exactYear));
+    } else {
+      searchParams.delete('yearExact');
+    }
+
+    if (maxMileage[0] !== 200000) {
+      searchParams.set('maxMileage', String(maxMileage[0]));
+    } else {
+      searchParams.delete('maxMileage');
+    }
+
+    if (typeof minMileage === 'number' && !Number.isNaN(minMileage)) {
+      searchParams.set('minMileage', String(minMileage));
+    } else {
+      searchParams.delete('minMileage');
+    }
+
+    if (priceRange[0] !== 500) {
+      searchParams.set('priceMin', String(priceRange[0]));
+    } else {
+      searchParams.delete('priceMin');
+    }
+
+    if (priceRange[1] !== 30000) {
+      searchParams.set('priceMax', String(priceRange[1]));
+    } else {
+      searchParams.delete('priceMax');
+    }
+
+    if (companySearch.trim().length > 0) {
+      searchParams.set('company', companySearch.trim());
+    } else {
+      searchParams.delete('company');
+    }
+
+    if (companyVipOnly) {
+      searchParams.set('vipOnly', '1');
+    } else {
+      searchParams.delete('vipOnly');
+    }
+
+    if (selectedCompanyId) {
+      searchParams.set('companyId', selectedCompanyId);
+    } else {
+      searchParams.delete('companyId');
+    }
+
+    if (buyNowOnly) {
+      searchParams.set('buyNow', '1');
+    } else {
+      searchParams.delete('buyNow');
+    }
+
+    if (showVinCodes) {
+      searchParams.set('vin', '1');
+    } else {
+      searchParams.delete('vin');
+    }
+
+    if (sortBy && sortBy !== 'relevance') {
+      searchParams.set('sort', sortBy);
+    } else {
+      searchParams.delete('sort');
+    }
+
+    const effectiveLimit = options?.limit ?? limit;
+    if (effectiveLimit !== 20) {
+      searchParams.set('limit', String(effectiveLimit));
+    } else {
+      searchParams.delete('limit');
+    }
+
+    const effectivePage = options?.page ?? appliedPage ?? 1;
+    if (effectivePage > 1) {
+      searchParams.set('page', String(effectivePage));
+    } else {
+      searchParams.delete('page');
+    }
+
+    const searchString = searchParams.toString();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: searchString.length > 0 ? `?${searchString}` : '',
+      },
+      { replace: options?.replace ?? true },
+    );
+  };
 
   const activeFilterLabels = useMemo(
     () => {
@@ -231,6 +454,246 @@ const AuctionListingsPage = () => {
       priceRange,
     ],
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    let nextSearchQuery = searchQuery;
+    const qParam = params.get('q');
+    if (qParam !== null) {
+      nextSearchQuery = qParam;
+    }
+
+    let nextSearchKind: typeof searchKind = searchKind;
+    const kindParam = params.get('kind');
+    if (kindParam === 'all' || kindParam === 'car' || kindParam === 'moto' || kindParam === 'van') {
+      nextSearchKind = kindParam;
+    }
+
+    let nextAuctionFilter: AuctionHouse = auctionFilter;
+    const auctionParam = params.get('auction');
+    if (auctionParam === 'all' || auctionParam === 'Copart' || auctionParam === 'IAAI' || auctionParam === 'Manheim') {
+      nextAuctionFilter = auctionParam as AuctionHouse;
+    }
+
+    let nextFuelType = fuelType;
+    const fuelParam = params.get('fuel');
+    if (fuelParam && ['all', 'gas', 'diesel', 'hybrid', 'electric'].includes(fuelParam)) {
+      nextFuelType = fuelParam;
+    }
+
+    let nextCategory = category;
+    const categoryParam = params.get('category');
+    if (categoryParam && ['all', 'suv', 'sedan', 'coupe', 'hatchback', 'pickup'].includes(categoryParam)) {
+      nextCategory = categoryParam;
+    }
+
+    let nextDrive = drive;
+    const driveParam = params.get('drive');
+    if (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) {
+      nextDrive = driveParam;
+    }
+
+    let nextYearRange = yearRange;
+    const yearFromParam = params.get('yearFrom');
+    const yearToParam = params.get('yearTo');
+    if (yearFromParam && yearToParam) {
+      const from = Number(yearFromParam);
+      const to = Number(yearToParam);
+      if (Number.isFinite(from) && Number.isFinite(to)) {
+        nextYearRange = [from, to];
+      }
+    }
+
+    let nextExactYear = exactYear;
+    const yearExactParam = params.get('yearExact');
+    if (yearExactParam !== null && yearExactParam !== '') {
+      const parsed = Number(yearExactParam);
+      if (!Number.isNaN(parsed)) {
+        nextExactYear = parsed;
+      }
+    }
+
+    let nextMaxMileage = maxMileage;
+    const maxMileageParam = params.get('maxMileage');
+    if (maxMileageParam !== null) {
+      const parsed = Number(maxMileageParam);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        nextMaxMileage = [parsed];
+      }
+    }
+
+    let nextMinMileage = minMileage;
+    const minMileageParam = params.get('minMileage');
+    if (minMileageParam !== null && minMileageParam !== '') {
+      const parsed = Number(minMileageParam);
+      if (!Number.isNaN(parsed)) {
+        nextMinMileage = parsed;
+      }
+    }
+
+    let nextPriceRange = priceRange;
+    const priceMinParam = params.get('priceMin');
+    const priceMaxParam = params.get('priceMax');
+    if (priceMinParam && priceMaxParam) {
+      const min = Number(priceMinParam);
+      const max = Number(priceMaxParam);
+      if (Number.isFinite(min) && Number.isFinite(max)) {
+        nextPriceRange = [min, max];
+      }
+    }
+
+    let nextSortBy: SortOption = sortBy;
+    const sortParam = params.get('sort') as SortOption | null;
+    if (sortParam && ['relevance', 'price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) {
+      nextSortBy = sortParam;
+    }
+
+    let nextLimit = limit;
+    const limitParam = params.get('limit');
+    if (limitParam !== null) {
+      const parsed = Number(limitParam);
+      if ([10, 20, 30, 50].includes(parsed)) {
+        nextLimit = parsed;
+      }
+    }
+
+    let nextPage = 1;
+    const pageParam = params.get('page');
+    if (pageParam !== null) {
+      const parsed = Number(pageParam);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        nextPage = parsed;
+      }
+    }
+
+    let nextCompanySearch = companySearch;
+    const companyParam = params.get('company');
+    if (companyParam !== null) {
+      nextCompanySearch = companyParam;
+    }
+
+    let nextCompanyVipOnly = companyVipOnly;
+    const vipOnlyParam = params.get('vipOnly');
+    if (vipOnlyParam !== null) {
+      nextCompanyVipOnly = vipOnlyParam === '1' || vipOnlyParam === 'true';
+    }
+
+    let nextSelectedCompanyId: string | null = selectedCompanyId;
+    const companyIdParam = params.get('companyId');
+    if (companyIdParam !== null && companyIdParam !== '') {
+      nextSelectedCompanyId = companyIdParam;
+    }
+
+    const filters = buildFiltersFromDraftState({
+      searchQuery: nextSearchQuery,
+      exactYear: nextExactYear,
+      minMileage: nextMinMileage,
+      maxMileage: nextMaxMileage,
+      priceRange: nextPriceRange,
+      yearRange: nextYearRange,
+      fuelType: nextFuelType,
+      category: nextCategory,
+      drive: nextDrive,
+      limit: nextLimit,
+      page: nextPage,
+      searchKind: nextSearchKind,
+      selectedMakeName,
+      selectedModelName,
+    });
+
+    if (nextSearchQuery !== searchQuery) {
+      setSearchQuery(nextSearchQuery);
+    }
+
+    if (nextSearchKind !== searchKind) {
+      setSearchKind(nextSearchKind);
+    }
+
+    if (nextAuctionFilter !== auctionFilter) {
+      setAuctionFilter(nextAuctionFilter);
+    }
+
+    if (nextFuelType !== fuelType) {
+      setFuelType(nextFuelType);
+    }
+
+    if (nextCategory !== category) {
+      setCategory(nextCategory);
+    }
+
+    if (nextDrive !== drive) {
+      setDrive(nextDrive);
+    }
+
+    if (nextYearRange !== yearRange) {
+      setYearRange(nextYearRange);
+    }
+
+    if (nextExactYear !== exactYear) {
+      setExactYear(nextExactYear);
+    }
+
+    if (nextMaxMileage !== maxMileage) {
+      setMaxMileage(nextMaxMileage);
+    }
+
+    if (nextMinMileage !== minMileage) {
+      setMinMileage(nextMinMileage);
+    }
+
+    if (nextPriceRange !== priceRange) {
+      setPriceRange(nextPriceRange);
+    }
+
+    if (nextSortBy !== sortBy) {
+      setSortBy(nextSortBy);
+    }
+
+    if (nextLimit !== limit) {
+      setLimit(nextLimit);
+    }
+
+    if (nextCompanySearch !== companySearch) {
+      setCompanySearch(nextCompanySearch);
+    }
+
+    if (nextCompanyVipOnly !== companyVipOnly) {
+      setCompanyVipOnly(nextCompanyVipOnly);
+    }
+
+    if (nextSelectedCompanyId !== selectedCompanyId) {
+      setSelectedCompanyId(nextSelectedCompanyId);
+    }
+
+    if (nextPage !== page) {
+      setPage(nextPage);
+    }
+
+    setAppliedFilters(filters);
+    setAppliedPage(filters.page);
+  }, [
+    location.search,
+    searchQuery,
+    searchKind,
+    auctionFilter,
+    fuelType,
+    category,
+    drive,
+    yearRange,
+    exactYear,
+    maxMileage,
+    minMileage,
+    priceRange,
+    sortBy,
+    limit,
+    companySearch,
+    companyVipOnly,
+    selectedCompanyId,
+    page,
+    selectedMakeName,
+    selectedModelName,
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -291,67 +754,7 @@ const AuctionListingsPage = () => {
     };
   }, [selectedMakeId, vehicleCatalogType]);
 
-  const buildFiltersFromDraft = (pageOverride?: number): VehiclesSearchFilters & { page: number; limit: number } => {
-    const trimmed = searchQuery.trim().toLowerCase();
-    const quickFilters = parseSearchQueryToFilters(trimmed);
-
-    const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
-    const hasMinMileage = typeof minMileage === 'number' && !Number.isNaN(minMileage);
-
-    const pageToUse = pageOverride ?? 1;
-
-    const overrideMake = selectedMakeName;
-    const overrideModel = selectedModelName;
-
-    let kindCategory: string | undefined;
-    if (searchKind === 'car') {
-      kindCategory = 'car';
-    } else if (searchKind === 'moto') {
-      kindCategory = 'motorcycle';
-    } else if (searchKind === 'van') {
-      kindCategory = 'van';
-    }
-
-    const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
-      ...quickFilters,
-      make: overrideMake ?? quickFilters.make,
-      model: overrideModel ?? quickFilters.model,
-      mileage_to: maxMileage[0],
-      price_from: priceRange[0],
-      price_to: priceRange[1],
-      fuel_type: fuelType === 'all' ? undefined : fuelType,
-      category: category === 'all' ? kindCategory : category,
-      drive: drive === 'all' ? undefined : drive,
-      limit,
-      page: pageToUse,
-    };
-
-    if (hasExactYear) {
-      baseFilters.year = exactYear;
-    } else {
-      const fromYear = Math.min(yearRange[0], yearRange[1]);
-      const toYear = Math.max(yearRange[0], yearRange[1]);
-      baseFilters.year_from = fromYear;
-      baseFilters.year_to = toYear;
-    }
-
-    if (hasMinMileage) {
-      const fromMileage = Math.min(minMileage as number, maxMileage[0]);
-      baseFilters.mileage_from = fromMileage;
-    }
-
-    return baseFilters;
-  };
-
-  useEffect(() => {
-    if (appliedFilters) {
-      return;
-    }
-
-    const initialFilters = buildFiltersFromDraft(1);
-    setAppliedFilters(initialFilters);
-    setAppliedPage(1);
-  }, []);
+  
 
   useEffect(() => {
     if (!appliedFilters) {
@@ -465,8 +868,8 @@ const AuctionListingsPage = () => {
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold">აქტიური აუქციონები</h1>
             <p className="text-muted-foreground">
-              ნახეთ დემო-ლისტინგები COPART, IAAI და Manheim აუქციონებიდან და გამოიყენეთ სწრაფი ფილტრები
-              თქვენთვის საინტერესო ლოტების საპოვნელად.
+              ნახეთ სასაჩვენო ლისტინგები COPART, IAAI და Manheim აუქციონებიდან და გამოიყენეთ სწრაფი
+              ფილტრები თქვენთვის საინტერესო ლოტების საპოვნელად.
             </p>
           </div>
           <Card>
@@ -527,10 +930,9 @@ const AuctionListingsPage = () => {
                             return;
                           }
 
-                          const filters = buildFiltersFromDraft(1);
                           setPage(1);
                           setAppliedPage(1);
-                          setAppliedFilters(filters);
+                          updateUrlFromState({ page: 1, replace: false });
                         }
                       }}
                       className="h-9 flex-1"
@@ -564,10 +966,9 @@ const AuctionListingsPage = () => {
                           return;
                         }
 
-                        const filters = buildFiltersFromDraft(1);
                         setPage(1);
                         setAppliedPage(1);
-                        setAppliedFilters(filters);
+                        updateUrlFromState({ page: 1, replace: false });
                       }}
                     >
                       ძებნა
@@ -608,6 +1009,7 @@ const AuctionListingsPage = () => {
                             setBackendData(null);
                             setBackendError(null);
                             setSearchValidationError(null);
+                            updateUrlFromState({ page: 1, limit: 20, replace: false });
                           }}
                         >
                           <Icon icon="mdi:filter-remove" className="mr-2 h-4 w-4" />
@@ -1119,6 +1521,7 @@ const AuctionListingsPage = () => {
                       setBackendData(null);
                       setBackendError(null);
                       setSearchValidationError(null);
+                      updateUrlFromState({ page: 1, limit: 20, replace: false });
                     }}
                   >
                     ფილტრების განულება
@@ -1133,10 +1536,9 @@ const AuctionListingsPage = () => {
                         return;
                       }
 
-                      const filters = buildFiltersFromDraft(1);
                       setPage(1);
                       setAppliedPage(1);
-                      setAppliedFilters(filters);
+                      updateUrlFromState({ page: 1, replace: false });
                       setIsAdvancedFiltersOpen(false);
                     }}
                   >
@@ -1212,11 +1614,9 @@ const AuctionListingsPage = () => {
                       default:
                         break;
                     }
-
-                    const filters = buildFiltersFromDraft(1);
                     setPage(1);
                     setAppliedPage(1);
-                    setAppliedFilters(filters);
+                    updateUrlFromState({ page: 1, replace: false });
                   }}
                 >
                   <Badge variant="outline" className="text-[10px] px-2 py-0.5">
@@ -1323,6 +1723,7 @@ const AuctionListingsPage = () => {
                       setBuyNowOnly(false)
                       setSearchQuery('')
                       setSortBy('relevance')
+                      updateUrlFromState({ page: 1, limit: 20, replace: false })
                     }}
                   >
                     ფილტრების განულება
@@ -1349,7 +1750,7 @@ const AuctionListingsPage = () => {
                         const nextPage = appliedPage - 1;
                         setPage(nextPage);
                         setAppliedPage(nextPage);
-                        setAppliedFilters({ ...appliedFilters, page: nextPage });
+                        updateUrlFromState({ page: nextPage, replace: false });
                       }}
                     >
                       წინა
@@ -1372,7 +1773,7 @@ const AuctionListingsPage = () => {
                         if (nextPage === appliedPage) return;
                         setPage(nextPage);
                         setAppliedPage(nextPage);
-                        setAppliedFilters({ ...appliedFilters, page: nextPage });
+                        updateUrlFromState({ page: nextPage, replace: false });
                       }}
                     >
                       შემდეგი
@@ -1480,9 +1881,20 @@ const AuctionListingsPage = () => {
                               className="h-8 px-3 text-xs"
                               onClick={() => {
                                 const vehicleKey = item.vehicle_id ?? item.id;
-                                navigate(`/vehicle/${vehicleKey}`, {
-                                  state: { scrollToOffers: true },
-                                });
+                                const companyName = getSelectedCompanyNameForLink();
+                                const search = companyName
+                                  ? `?company=${encodeURIComponent(companyName)}`
+                                  : '';
+
+                                navigate(
+                                  {
+                                    pathname: `/vehicle/${vehicleKey}`,
+                                    search,
+                                  },
+                                  {
+                                    state: { scrollToOffers: true },
+                                  },
+                                );
                               }}
                             >
                               ღირებულების გათვლა
@@ -1493,7 +1905,15 @@ const AuctionListingsPage = () => {
                               className="h-8 px-3 text-xs"
                               onClick={() => {
                                 const vehicleKey = item.vehicle_id ?? item.id;
-                                navigate(`/vehicle/${vehicleKey}`);
+                                const companyName = getSelectedCompanyNameForLink();
+                                const search = companyName
+                                  ? `?company=${encodeURIComponent(companyName)}`
+                                  : '';
+
+                                navigate({
+                                  pathname: `/vehicle/${vehicleKey}`,
+                                  search,
+                                });
                               }}
                             >
                               დეტალურად ნახვა
@@ -1605,11 +2025,22 @@ const AuctionListingsPage = () => {
                             type="button"
                             size="sm"
                             className="h-7 px-2 text-[10px]"
-                            onClick={() =>
-                              navigate(`/vehicle/${backendGallery.id}`, {
-                                state: { scrollToOffers: true },
-                              })
-                            }
+                            onClick={() => {
+                              const companyName = getSelectedCompanyNameForLink();
+                              const search = companyName
+                                ? `?company=${encodeURIComponent(companyName)}`
+                                : '';
+
+                              navigate(
+                                {
+                                  pathname: `/vehicle/${backendGallery.id}`,
+                                  search,
+                                },
+                                {
+                                  state: { scrollToOffers: true },
+                                },
+                              );
+                            }}
                           >
                             ღირებულების გათვლა
                           </Button>
@@ -1618,7 +2049,17 @@ const AuctionListingsPage = () => {
                             variant="outline"
                             size="sm"
                             className="h-7 px-2 text-[10px]"
-                            onClick={() => navigate(`/vehicle/${backendGallery.id}`)}
+                            onClick={() => {
+                              const companyName = getSelectedCompanyNameForLink();
+                              const search = companyName
+                                ? `?company=${encodeURIComponent(companyName)}`
+                                : '';
+
+                              navigate({
+                                pathname: `/vehicle/${backendGallery.id}`,
+                                search,
+                              });
+                            }}
                           >
                             დეტალურად ნახვა
                           </Button>

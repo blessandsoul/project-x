@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
@@ -22,6 +22,7 @@ import { searchCompaniesFromApi } from '@/services/companiesApi';
 
 const CompanyCatalogPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { favorites, toggleFavorite } = useFavorites();
   const shouldReduceMotion = useReducedMotion();
 
@@ -56,8 +57,169 @@ const CompanyCatalogPage = () => {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    const qParam = params.get('q');
+    if (qParam !== null && qParam !== searchTerm) {
+      setSearchTerm(qParam);
+    }
+
+    const ratingParam = params.get('rating');
+    if (ratingParam !== null) {
+      const parsed = Number(ratingParam);
+      if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 5 && parsed !== minRating) {
+        setMinRating(parsed);
+      }
+    }
+
+    const priceMinParam = params.get('priceMin');
+    const priceMaxParam = params.get('priceMax');
+    if (priceMinParam !== null && priceMaxParam !== null) {
+      const parsedMin = Number(priceMinParam);
+      const parsedMax = Number(priceMaxParam);
+      if (Number.isFinite(parsedMin) && Number.isFinite(parsedMax)) {
+        const nextRange: [number, number] = [parsedMin, parsedMax];
+        if (nextRange[0] !== priceRange[0] || nextRange[1] !== priceRange[1]) {
+          setPriceRange(nextRange);
+        }
+      }
+    }
+
+    const cityParam = params.get('city');
+    if (cityParam !== null && cityParam !== city) {
+      setCity(cityParam);
+    }
+
+    const vipParam = params.get('vipOnly');
+    if (vipParam !== null) {
+      const nextVip = vipParam === '1' || vipParam === 'true';
+      if (nextVip !== isVipOnly) {
+        setIsVipOnly(nextVip);
+      }
+    }
+
+    const onboardingParam = params.get('onboardingFree');
+    if (onboardingParam !== null) {
+      const nextOnboarding = onboardingParam === '1' || onboardingParam === 'true';
+      if (nextOnboarding !== onboardingFree) {
+        setOnboardingFree(nextOnboarding);
+      }
+    }
+
+    const sortParam = params.get('sort');
+    if (
+      sortParam === 'rating' ||
+      sortParam === 'cheapest' ||
+      sortParam === 'name' ||
+      sortParam === 'newest'
+    ) {
+      if (sortParam !== sortBy) {
+        setSortBy(sortParam);
+      }
+    }
+
+    const pageParam = params.get('page');
+    if (pageParam !== null) {
+      const parsed = Number(pageParam);
+      if (Number.isInteger(parsed) && parsed > 0 && parsed !== page) {
+        setPage(parsed);
+      }
+    }
+  }, [
+    location.search,
+    searchTerm,
+    minRating,
+    priceRange,
+    city,
+    isVipOnly,
+    onboardingFree,
+    sortBy,
+    page,
+  ]);
+
+  useEffect(() => {
     setPage(1);
   }, [searchTerm, minRating, priceRange, city, isVipOnly, onboardingFree, sortBy]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    const trimmedSearch = searchTerm.trim();
+    if (trimmedSearch.length > 0) {
+      params.set('q', trimmedSearch);
+    } else {
+      params.delete('q');
+    }
+
+    if (minRating > 0) {
+      params.set('rating', String(minRating));
+    } else {
+      params.delete('rating');
+    }
+
+    if (priceRange[0] !== 1000) {
+      params.set('priceMin', String(priceRange[0]));
+    } else {
+      params.delete('priceMin');
+    }
+
+    if (priceRange[1] !== 10000) {
+      params.set('priceMax', String(priceRange[1]));
+    } else {
+      params.delete('priceMax');
+    }
+
+    if (city.trim().length > 0) {
+      params.set('city', city.trim());
+    } else {
+      params.delete('city');
+    }
+
+    if (isVipOnly) {
+      params.set('vipOnly', '1');
+    } else {
+      params.delete('vipOnly');
+    }
+
+    if (onboardingFree) {
+      params.set('onboardingFree', '1');
+    } else {
+      params.delete('onboardingFree');
+    }
+
+    if (sortBy !== 'newest') {
+      params.set('sort', sortBy);
+    } else {
+      params.delete('sort');
+    }
+
+    if (page > 1) {
+      params.set('page', String(page));
+    } else {
+      params.delete('page');
+    }
+
+    const search = params.toString();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: search ? `?${search}` : '',
+      },
+      { replace: true },
+    );
+  }, [
+    searchTerm,
+    minRating,
+    priceRange,
+    city,
+    isVipOnly,
+    onboardingFree,
+    sortBy,
+    page,
+    location.pathname,
+    navigate,
+  ]);
 
   useEffect(() => {
     const load = async () => {

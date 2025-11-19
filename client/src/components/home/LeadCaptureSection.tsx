@@ -1,16 +1,24 @@
 import { useReducer, useState, type FormEvent } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Icon } from '@iconify/react/dist/iconify.js'
 
 type LeadFormState = {
   name: string
   contact: string
   budget: string
+  carType: string
+  auctionSource: string
+  priority: string
+  brand: string
+  model: string
+  yearFrom: string
+  color: string
   message: string
   consent: boolean
 }
@@ -23,6 +31,13 @@ const initialState: LeadFormState = {
   name: '',
   contact: '',
   budget: '',
+  carType: '',
+  auctionSource: '',
+  priority: '',
+   brand: '',
+   model: '',
+   yearFrom: '',
+   color: '',
   message: '',
   consent: false,
 }
@@ -56,6 +71,7 @@ export function LeadCaptureSection() {
   const [state, dispatch] = useReducer(leadFormReducer, initialState)
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormState, string>>>({})
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   const defaultSectionMotionProps = {
     initial: { opacity: 0, y: 12 },
@@ -80,6 +96,18 @@ export function LeadCaptureSection() {
 
     if (!state.contact.trim()) {
       nextErrors.contact = 'გთხოვთ მიუთითოთ ტელეფონი ან Telegram'
+    }
+
+    if (!state.carType.trim()) {
+      nextErrors.carType = 'გთხოვთ აირჩიოთ ავტომობილის ტიპი'
+    }
+
+    if (!state.auctionSource.trim()) {
+      nextErrors.auctionSource = 'გთხოვთ მიუთითოთ სასურველი აუქციონი ან აირჩიეთ "არ აქვს მნიშვნელობა"'
+    }
+
+    if (!state.priority.trim()) {
+      nextErrors.priority = 'გთხოვთ მიუთითოთ რომელი კრიტერიუმი არის თქვენთვის მთავარი'
     }
 
     if (!state.consent) {
@@ -215,6 +243,73 @@ export function LeadCaptureSection() {
                   />
                 </div>
 
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      სასურველი ავტომობილის ტიპი
+                    </Label>
+                    <Select
+                      value={state.carType}
+                      onValueChange={(value) =>
+                        dispatch({ type: 'SET_FIELD', field: 'carType', value })
+                      }
+                    >
+                      <SelectTrigger
+                        size="sm"
+                        aria-invalid={Boolean(errors.carType)}
+                        aria-describedby={errors.carType ? 'lead-car-type-error' : undefined}
+                      >
+                        <SelectValue placeholder="აირჩიეთ ტიპი" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
+                        <SelectItem value="sedan">სედანი</SelectItem>
+                        <SelectItem value="suv">SUV / ქროსოვერი</SelectItem>
+                        <SelectItem value="hatchback">ჰეჩბეკი / კომპაქტი</SelectItem>
+                        <SelectItem value="premium">პრემიუმ სედანი / კუპე</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.carType ? (
+                      <p id="lead-car-type-error" className="text-xs text-destructive">
+                        {errors.carType}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      აუქციონი (წყარო)
+                    </Label>
+                    <Select
+                      value={state.auctionSource}
+                      onValueChange={(value) =>
+                        dispatch({ type: 'SET_FIELD', field: 'auctionSource', value })
+                      }
+                    >
+                      <SelectTrigger
+                        size="sm"
+                        aria-invalid={Boolean(errors.auctionSource)}
+                        aria-describedby={
+                          errors.auctionSource ? 'lead-auction-source-error' : undefined
+                        }
+                      >
+                        <SelectValue placeholder="აირჩიეთ ან გამოიყენეთ 'არ აქვს მნიშვნელობა'" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
+                        <SelectItem value="copart">Copart</SelectItem>
+                        <SelectItem value="iaai">IAAI</SelectItem>
+                        <SelectItem value="manheim">Manheim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.auctionSource ? (
+                      <p id="lead-auction-source-error" className="text-xs text-destructive">
+                        {errors.auctionSource}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <Label htmlFor="lead-message" className="text-xs text-muted-foreground">
                     დამატებითი ინფორმაცია (არასავალდებულო)
@@ -230,7 +325,155 @@ export function LeadCaptureSection() {
                   />
                 </div>
 
-                <div className="flex items-start gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    რომელი კრიტერიუმი არის თქვენთვის მთავარი?
+                  </Label>
+                  <Select
+                    value={state.priority}
+                    onValueChange={(value) =>
+                      dispatch({ type: 'SET_FIELD', field: 'priority', value })
+                    }
+                  >
+                    <SelectTrigger
+                      size="sm"
+                      aria-invalid={Boolean(errors.priority)}
+                      aria-describedby={errors.priority ? 'lead-priority-error' : undefined}
+                    >
+                      <SelectValue placeholder="აირჩიეთ პრიორიტეტი" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="price">მინიმალური საბოლოო ღირებულება</SelectItem>
+                      <SelectItem value="speed">ყველაზე სწრაფი ვადები</SelectItem>
+                      <SelectItem value="premium_service">პრემიუმ მომსახურება / უფრო მეტი მხარდაჭერა</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.priority ? (
+                    <p id="lead-priority-error" className="text-xs text-destructive">
+                      {errors.priority}
+                    </p>
+                  ) : null}
+                </div>
+
+                <motion.div
+                  className="space-y-2"
+                  layout
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                >
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                    onClick={() => setIsAdvancedOpen((prev) => !prev)}
+                  >
+                    {isAdvancedOpen
+                      ? 'დამალე დამატებითი დეტალები'
+                      : 'დამატებითი დეტალები: მარკა, მოდელი, წელი, ფერი'}
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isAdvancedOpen ? (
+                      <motion.div
+                        key="lead-advanced-block"
+                        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                        animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                        exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className="space-y-3 rounded-md border border-dashed border-muted p-3"
+                      >
+                      <p className="text-[11px] text-muted-foreground">
+                        მითითებული დეტალები დაეხმარება კომპანიებს უფრო სწრაფად და ზუსტად
+                        დაგიბრუნონ შეთავაზება.
+                      </p>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="lead-brand" className="text-xs text-muted-foreground">
+                            მარკა (არასავალდებულო)
+                          </Label>
+                          <Input
+                            id="lead-brand"
+                            name="brand"
+                            value={state.brand}
+                            onChange={(event) =>
+                              dispatch({
+                                type: 'SET_FIELD',
+                                field: 'brand',
+                                value: event.target.value,
+                              })
+                            }
+                            placeholder="მაგ: Toyota, BMW, Mercedes-Benz"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="lead-model" className="text-xs text-muted-foreground">
+                            მოდელი (არასავალდებულო)
+                          </Label>
+                          <Input
+                            id="lead-model"
+                            name="model"
+                            value={state.model}
+                            onChange={(event) =>
+                              dispatch({
+                                type: 'SET_FIELD',
+                                field: 'model',
+                                value: event.target.value,
+                              })
+                            }
+                            placeholder="მაგ: Camry, X5, C-Class"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="lead-year-from" className="text-xs text-muted-foreground">
+                            სასურველი გამოშვების წელი მინიმუმ (არასავალდებულო)
+                          </Label>
+                          <Input
+                            id="lead-year-from"
+                            name="yearFrom"
+                            type="number"
+                            min={1995}
+                            max={2100}
+                            value={state.yearFrom}
+                            onChange={(event) =>
+                              dispatch({
+                                type: 'SET_FIELD',
+                                field: 'yearFrom',
+                                value: event.target.value,
+                              })
+                            }
+                            placeholder="მაგ: 2015"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">
+                            სასურველი ფერი (არასავალდებულო)
+                          </Label>
+                          <Select
+                            value={state.color}
+                            onValueChange={(value) =>
+                              dispatch({ type: 'SET_FIELD', field: 'color', value })
+                            }
+                          >
+                            <SelectTrigger size="sm">
+                              <SelectValue placeholder="აირჩიეთ ფერი ან დატოვეთ ცარიელი" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
+                              <SelectItem value="white">თეთრი / ღია</SelectItem>
+                              <SelectItem value="black">შავი</SelectItem>
+                              <SelectItem value="grey">ვერცხლისფერი / ნაცრისფერი</SelectItem>
+                              <SelectItem value="blue">ლურჯი</SelectItem>
+                              <SelectItem value="red">წითელი / სპორტული ფერი</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </motion.div>
+
+                <motion.div className="flex items-start gap-2" layout transition={{ duration: 0.18, ease: 'easeOut' }}>
                   <Checkbox
                     id="lead-consent"
                     checked={state.consent}
@@ -251,9 +494,10 @@ export function LeadCaptureSection() {
                       </p>
                     ) : null}
                   </div>
-                </div>
+                </motion.div>
 
-                <Button
+                <motion.div layout transition={{ duration: 0.18, ease: 'easeOut' }}>
+                  <Button
                   type="submit"
                   className="w-full"
                   disabled={isSubmitting}
@@ -282,6 +526,7 @@ export function LeadCaptureSection() {
                     <span>განაცხადი მიღებულია, მალე დაგიკავშირდებით.</span>
                   </div>
                 ) : null}
+                </motion.div>
               </form>
             </CardContent>
           </Card>

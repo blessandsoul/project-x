@@ -8,7 +8,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { motion, useReducedMotion } from 'framer-motion'
 import { mockSearchFilters } from '@/mocks/_mockData'
-import { useCompanySearch } from '@/hooks/useCompanySearch'
 
 interface QuickFiltersState {
   geography?: string
@@ -40,7 +39,6 @@ function loadInitialFilters(): QuickFiltersState {
 
 export function QuickSearchSection() {
   const navigate = useNavigate()
-  const { updateFilters, resetFilters } = useCompanySearch()
   const [filters, setFilters] = useState<QuickFiltersState>(() => loadInitialFilters())
 
   const shouldReduceMotion = useReducedMotion()
@@ -68,20 +66,24 @@ export function QuickSearchSection() {
     }
   }
 
-  const applyQuickFiltersToSearchContext = (quick: QuickFiltersState) => {
-    const ratingNumber = Number.parseInt(quick.rating || '0', 10) || 0
+  const buildCatalogSearchParamsFromQuickFilters = (quick: QuickFiltersState): string => {
+    const params = new URLSearchParams()
 
-    updateFilters({
-      geography: quick.geography ? [quick.geography] : [],
-      services: quick.service ? [quick.service] : [],
-      rating: ratingNumber,
-      vipOnly: quick.vipOnly,
-    })
+    const ratingNumber = Number.parseInt(quick.rating || '0', 10) || 0
+    if (ratingNumber > 0) {
+      params.set('rating', String(ratingNumber))
+    }
+
+    if (quick.vipOnly) {
+      params.set('vipOnly', '1')
+    }
+
+    return params.toString()
   }
 
   const handleSearch = () => {
-    applyQuickFiltersToSearchContext(filters)
-    navigate('/catalog')
+    const search = buildCatalogSearchParamsFromQuickFilters(filters)
+    navigate(search ? `/catalog?${search}` : '/catalog')
   }
 
   const handleReset = () => {
@@ -93,7 +95,7 @@ export function QuickSearchSection() {
     }
 
     persistFilters(next)
-    resetFilters()
+    navigate('/catalog')
   }
 
   const applyPreset = (preset: Partial<QuickFiltersState>) => {
@@ -102,8 +104,8 @@ export function QuickSearchSection() {
       ...preset,
     }
     persistFilters(next)
-    applyQuickFiltersToSearchContext(next)
-    navigate('/catalog')
+    const search = buildCatalogSearchParamsFromQuickFilters(next)
+    navigate(search ? `/catalog?${search}` : '/catalog')
   }
 
   return (
@@ -112,11 +114,12 @@ export function QuickSearchSection() {
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="border-b bg-background"
       aria-labelledby="home-quick-search-heading"
+      role="search"
     >
       <div className="container mx-auto py-6 md:py-8">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 md:max-w-3xl">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Icon icon="mdi:tune-variant" className="h-5 w-5" aria-hidden="true" />
               </div>
@@ -124,17 +127,14 @@ export function QuickSearchSection() {
                 <CardTitle id="home-quick-search-heading" className="text-lg font-semibold">
                   სწრაფი ძიება კომპანიის მიხედვით
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  დააყენე ფილტრები ან აირჩიე მზად სცენარი და ნახე შედეგები რამდენიმე წამში.
-                </p>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 md:grid-cols-[3fr,2fr] md:items-start">
-              <div className="space-y-4 md:max-w-3xl">
-                <div className="flex flex-col gap-3 md:flex-row md:gap-2 md:items-end">
-                  <div className="space-y-1">
+            <div className="mt-3 grid gap-6 md:grid-cols-[3fr,2fr] md:items-start">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:flex-nowrap md:gap-3 md:items-end">
+                  <div className="space-y-1 md:flex-1">
                     <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-state">
                       შტატი აშშ-ში
                     </label>
@@ -144,7 +144,7 @@ export function QuickSearchSection() {
                         persistFilters({ ...filters, geography: value })
                       }
                     >
-                      <SelectTrigger id="quick-state" className="w-full md:w-44">
+                      <SelectTrigger id="quick-state" className="w-full">
                         <SelectValue placeholder="აირჩიეთ შტატი" />
                       </SelectTrigger>
                       <SelectContent>
@@ -167,7 +167,7 @@ export function QuickSearchSection() {
                         persistFilters({ ...filters, service: value })
                       }
                     >
-                      <SelectTrigger id="quick-service" className="w-full md:w-48">
+                      <SelectTrigger id="quick-service" className="w-full">
                         <SelectValue placeholder="აირჩიეთ მომსახურება" />
                       </SelectTrigger>
                       <SelectContent>
@@ -191,7 +191,7 @@ export function QuickSearchSection() {
                           persistFilters({ ...filters, rating: value })
                         }
                       >
-                        <SelectTrigger id="quick-rating" className="w-full md:w-32">
+                        <SelectTrigger id="quick-rating" className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -201,40 +201,41 @@ export function QuickSearchSection() {
                           <SelectItem value="5">5</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="quick-vip"
-                          checked={filters.vipOnly}
-                          onCheckedChange={(v) =>
-                            persistFilters({ ...filters, vipOnly: !!v })
-                          }
-                        />
-                        <label htmlFor="quick-vip" className="text-xs text-muted-foreground">
-                          მხოლოდ VIP კომპანიები
-                        </label>
+                      <div className="flex flex-col gap-1 md:gap-1.5 md:min-w-[210px]">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="quick-vip"
+                            checked={filters.vipOnly}
+                            onCheckedChange={(v) =>
+                              persistFilters({ ...filters, vipOnly: !!v })
+                            }
+                          />
+                          <label htmlFor="quick-vip" className="text-xs text-muted-foreground">
+                            მხოლოდ VIP კომპანიები
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-end justify-start md:ml-0">
+                  <div className="flex items-end justify-start gap-2 md:ml-0 md:self-stretch md:justify-end">
                     <Button
                       className="w-full md:w-auto md:px-5"
                       onClick={handleSearch}
                       motionVariant="scale"
                     >
                       <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" />
-                      ძებნა
+                      იპოვე სანდო კომპანიები
                     </Button>
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                      aria-label="ფილტრების გასუფთავება"
+                    >
+                      <Icon icon="mdi:close-circle-outline" className="h-4 w-4" aria-hidden="true" />
+                    </button>
                   </div>
-                </div>
-                <div className="mt-2 flex justify-start md:justify-end">
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                  >
-                    ფილტრების გასუფთავება
-                  </button>
                 </div>
               </div>
 
@@ -262,7 +263,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    SUV • California • VIP
+                    მაღალი რეიტინგი • კალიფორნია • VIP
                   </FilterTag>
                   <FilterTag
                     onClick={() =>
@@ -274,7 +275,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    Sedan • Florida • 3+
+                    ბიუჯეტური სედანი • ფლორიდა • 3+ ★
                   </FilterTag>
                   <FilterTag
                     onClick={() =>
@@ -286,7 +287,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    Premium • Georgia • 5★ • VIP
+                    პრემიუმ პაკეტი • ჯორჯია • 5★ • VIP
                   </FilterTag>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { useQuotesSearch } from '@/hooks/useQuotesSearch';
 const CompanyProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { favorites, toggleFavorite } = useFavorites();
   const { addRecentlyViewed } = useRecentlyViewed();
   const { companies, isLoading } = useCompaniesData();
@@ -40,6 +41,52 @@ const CompanyProfilePage = () => {
       addRecentlyViewed(company.id);
     }
   }, [company, addRecentlyViewed]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    const priceParam = params.get('price');
+    if (priceParam !== null) {
+      const parsed = Number(priceParam);
+      if (Number.isFinite(parsed) && parsed > 0 && parsed !== quotePrice) {
+        setQuotePrice(parsed);
+      }
+    }
+
+    const distanceParam = params.get('distance');
+    if (distanceParam !== null) {
+      const parsed = Number(distanceParam);
+      if (Number.isFinite(parsed) && parsed > 0 && parsed !== quoteDistance) {
+        setQuoteDistance(parsed);
+      }
+    }
+  }, [location.search, quotePrice, quoteDistance]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    if (quotePrice && quotePrice > 0) {
+      params.set('price', String(quotePrice));
+    } else {
+      params.delete('price');
+    }
+
+    if (quoteDistance && quoteDistance > 0) {
+      params.set('distance', String(quoteDistance));
+    } else {
+      params.delete('distance');
+    }
+
+    const search = params.toString();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: search ? `?${search}` : '',
+      },
+      { replace: true },
+    );
+  }, [quotePrice, quoteDistance, location.pathname, location.search, navigate]);
 
   const handleSubmitContact = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

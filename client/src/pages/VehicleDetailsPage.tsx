@@ -75,12 +75,20 @@ const VehicleDetailsPage = () => {
 
   useEffect(() => {
     if (!photos.length) return
-    setIsImageFading(true)
-    const timeout = window.setTimeout(() => {
-      setIsImageFading(false)
-    }, 200)
+
+    let timeout: number | null = null
+    const frameId = window.requestAnimationFrame(() => {
+      setIsImageFading(true)
+      timeout = window.setTimeout(() => {
+        setIsImageFading(false)
+      }, 200)
+    })
+
     return () => {
-      window.clearTimeout(timeout)
+      window.cancelAnimationFrame(frameId)
+      if (timeout != null) {
+        window.clearTimeout(timeout)
+      }
     }
   }, [activePhotoIndex, photos.length])
 
@@ -110,10 +118,9 @@ const VehicleDetailsPage = () => {
       breakdownCloseTimeoutRef.current = null
     }
 
-    setIsBreakdownEntering(false)
-
     breakdownCloseTimeoutRef.current = window.setTimeout(() => {
       setActiveBreakdownQuote(null)
+      setIsBreakdownEntering(false)
       breakdownCloseTimeoutRef.current = null
     }, 200)
   }
@@ -127,7 +134,6 @@ const VehicleDetailsPage = () => {
       }
     }
 
-    setIsBreakdownEntering(false)
     const frameId = window.requestAnimationFrame(() => {
       setIsBreakdownEntering(true)
     })
@@ -237,7 +243,15 @@ const VehicleDetailsPage = () => {
     setIsOrderPopupOpen(true)
   }
 
+  const updateUrlWithSelectedCompany = (quote: VehicleQuote) => {
+    const searchParams = new URLSearchParams(location.search)
+    searchParams.set('company', quote.company_name)
+
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true })
+  }
+
   const handleSelectQuote = (quote: VehicleQuote) => {
+    updateUrlWithSelectedCompany(quote)
     if (activeBreakdownQuote) {
       closeBreakdownPopup()
       window.setTimeout(() => {
@@ -309,11 +323,9 @@ const VehicleDetailsPage = () => {
 
   useEffect(() => {
     if (!isSuccessModalOpen) {
-      setIsSuccessEntering(false)
       return
     }
 
-    setIsSuccessEntering(false)
     const frameId = window.requestAnimationFrame(() => {
       setIsSuccessEntering(true)
     })
@@ -325,11 +337,9 @@ const VehicleDetailsPage = () => {
 
   useEffect(() => {
     if (!isOrderPopupOpen) {
-      setIsOrderPopupEntering(false)
       return
     }
 
-    setIsOrderPopupEntering(false)
     const frameId = window.requestAnimationFrame(() => {
       setIsOrderPopupEntering(true)
     })
@@ -366,6 +376,31 @@ const VehicleDetailsPage = () => {
       }
     }
   }, [isLoading, isRecalculating])
+
+  useEffect(() => {
+    if (!quotes.length) return
+    if (selectedQuote) return
+
+    const searchParams = new URLSearchParams(location.search)
+    const companyFromQuery = searchParams.get('company')
+
+    if (!companyFromQuery) return
+
+    const foundQuote = quotes.find((quote) => quote.company_name === companyFromQuery)
+
+    if (!foundQuote) return
+
+    let frameId: number | null = null
+    frameId = window.requestAnimationFrame(() => {
+      setSelectedQuote(foundQuote)
+    })
+
+    return () => {
+      if (frameId != null) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+  }, [location.search, quotes, selectedQuote])
 
   const formatMoney = (value: number | string | null | undefined): string | null => {
     if (value == null) return null

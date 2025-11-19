@@ -64,7 +64,10 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Icon icon="mdi:home" className="h-6 w-6" />
-              <span className="font-bold">{t('footer.brand')}</span>
+              <span className="font-logo-bebas text-xl tracking-wide">
+                <span className="font-bold">Trusted</span>{' '}
+                <span className="font-normal">Importers.Ge</span>
+              </span>
             </div>
             <p className="text-sm text-muted-foreground">
               {t('footer.description')}
@@ -149,7 +152,12 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
 
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} {t('footer.brand')}. {t('footer.copyright')}
+            © {currentYear}{' '}
+            <span className="font-logo-bebas inline-flex items-baseline gap-1">
+              <span className="font-bold">Trusted</span>{' '}
+              <span className="font-normal">Importers.Ge</span>
+            </span>{' '}
+            {t('footer.copyright')}
           </p>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <Link

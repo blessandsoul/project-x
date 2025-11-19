@@ -1,6 +1,6 @@
 # TrustedImporters.Ge – US Car Import Platform for Georgia
 
-A trusted platform for discovering and comparing car import companies that bring vehicles from the USA to Georgia.
+TrustedImporters.Ge is a full‑stack web platform that helps people in Georgia discover and compare trusted car import companies that bring vehicles from the USA.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ A trusted platform for discovering and comparing car import companies that bring
 
 ## Overview
 
-TrustedImporters.Ge is a full-stack demo platform that helps users in Georgia discover and compare car import services from the USA.
+TrustedImporters.Ge focuses on **trust, transparency, and comparability** for US‑to‑Georgia car imports.
 
 The application provides:
 
@@ -33,14 +33,14 @@ The application provides:
 
 - **Car buyers in Georgia** who want to import a vehicle from the USA but are unsure which intermediary to trust and how much the total process will really cost.
 - **Small and mid-size car import companies** that want to present transparent pricing and win trust by showing clear, comparable offers instead of manual Excel quotes and Telegram messages.
-- **Product and engineering teams** who need a realistic, end-to-end example of an aggregator platform (frontend + backend + pricing logic) for learning, prototyping, or internal tools.
+- **Product and engineering teams** who need a realistic, end‑to‑end example of an aggregator platform (frontend + backend + pricing logic) for learning, prototyping, or internal tools.
 
 ### Problems it solves
 
 - **No single place to compare importers.** Today people jump between separate sites, Facebook groups, and Telegram chats; TrustedImporters.Ge aggregates companies and normalizes their pricing model.
-- **Hard to understand the real total cost.** The platform brings together auction price, shipping, customs, service and broker fees into a single quote so users see an end-to-end estimate in USD or GEL.
-- **Lack of transparency and trust.** Ratings, reviews, VIP badges and clear fee breakdowns help distinguish serious, reliable companies from one-person operations with no history.
-- **Confusing vehicle and VIN data.** Integrated VIN decoding and auction vehicle search turn raw VIN codes and lot numbers into structured, human-readable data.
+- **Hard to understand the real total cost.** The platform brings together auction price, shipping, customs, service and broker fees into a single quote so users see an end‑to‑end estimate in USD or GEL.
+- **Lack of transparency and trust.** Ratings, reviews, VIP badges and clear fee breakdowns help distinguish serious, reliable companies from one‑person operations with no history.
+- **Confusing vehicle and VIN data.** Integrated VIN decoding and auction vehicle search turn raw VIN codes and lot numbers into structured, human‑readable data.
 - **Slow, manual communication.** Instead of waiting for a manager to “calculate and call back”, users can quickly shortlist companies and vehicles, save favorites, and come back later with preserved filters.
 
 ## Key Features
@@ -57,16 +57,16 @@ The application provides:
 ### Frontend
 
 - React + TypeScript + Vite
-- Tailwind CSS (v4) for styling
+- Tailwind CSS for styling
 - shadcn/ui and Radix primitives for reusable, accessible components
-- React Router for client-side routing
-- `@faker-js/faker` for realistic mock data
+- React Router for client‑side routing
+- `@faker-js/faker` for realistic mock data and demo content
 
 ### Backend
 
 - Fastify (Node.js) for the HTTP API
-- MySQL2 for database connectivity
-- JWT-based authentication for protected endpoints
+- MySQL2 for database connectivity (can be swapped for another SQL engine)
+- JWT‑based authentication for protected endpoints
 - VIN decoding service integrating the NHTSA VPIC API
 
 ### Tooling
@@ -107,8 +107,8 @@ Clone the repository and install dependencies for both client and server:
 
 ```bash
 # Clone the repository
-git clone <your-repo-url> projectx
-cd projectx
+git clone <your-repo-url> trustedimporters-ge
+cd trustedimporters-ge
 
 # Install client dependencies
 cd client
@@ -128,25 +128,13 @@ Use values that match your local or production setup.
 
 ### Running in Development
 
-From the repository root on Windows, you can use the helper script:
+From the repository root on Windows, you can use the helper script (recommended):
 
 ```bash
 start-dev.bat
 ```
 
-This script is intended to start both the client and the server in development mode.
-
-Alternatively, you can run client and server separately:
-
-```bash
-# Start the backend API
-cd server
-npm run dev
-
-# In a separate terminal, start the frontend
-cd client
-npm run dev
-```
+The script is intended to start both the client and the server in development mode.
 
 By default, the services run on:
 
@@ -158,7 +146,6 @@ By default, the services run on:
 This repository contains detailed API documentation in separate Markdown files.
 
 - **User API** – Authentication, registration, profile management, and account deletion.
-  - File: `USER_API_DOCUMENTATION.md`
 - **VIN API** – VIN decoding and service health checks.
   - File: `VIN_API_DOCUMENTATION.md`
 

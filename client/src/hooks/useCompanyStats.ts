@@ -17,7 +17,18 @@ export const useCompanyStats = (companies: Company[] = mockCompanies): CompanySt
     }
 
     const vip = companies.filter((c) => c.vipStatus).length
-    const avgRatingRaw = companies.reduce((sum, c) => sum + c.rating, 0) / total
+
+    const ratedCompanies = companies.filter(
+      (company) => typeof company.rating === 'number' && !Number.isNaN(company.rating),
+    )
+
+    const ratingsCount = ratedCompanies.length
+    const avgRatingRaw =
+      ratingsCount === 0
+        ? 0
+        : ratedCompanies.reduce((sum, company) => sum + (company.rating as number), 0) /
+            ratingsCount
+
     const avgRating = Math.round(avgRatingRaw * 10) / 10
 
     return { total, vip, avgRating }

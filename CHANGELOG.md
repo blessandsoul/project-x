@@ -25,3 +25,4 @@
 - Rebranded the platform as TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy
 - Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes
 - Expanded root README.md overview with target audience and key business problems the platform solves
+- Added AuthDrawer component with tabbed login/register forms and wired the main Header sign-in button to open the authentication drawer instead of navigating to a standalone auth page

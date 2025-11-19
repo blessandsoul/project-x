@@ -66,8 +66,9 @@ const Header = ({ user, navigationItems, onNavigate }) => {
         <div className="mr-4 hidden md:flex">
           <a className="mr-6 flex items-center space-x-2" href="/">
             <Icon icon="mdi:home" className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline-block">
-              {t('header.brand')}
+            <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
+              <span className="font-bold">Trusted</span>{' '}
+              <span className="font-normal">Importers.Ge</span>
             </span>
           </a>
           <nav className="flex items-center space-x-6 text-sm font-medium">

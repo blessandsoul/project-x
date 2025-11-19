@@ -14,8 +14,12 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { SectionCards } from '@/components/section-cards'
+import { DealerDashboardSections } from '@/components/dashboard/DealerDashboardSections'
+import { CompanyDashboardSections } from '@/components/dashboard/CompanyDashboardSections'
+import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { mockCompanies, mockNavigationItems } from '@/mocks/_mockData'
 import type { UserRole } from '@/mocks/_mockData'
@@ -39,6 +43,9 @@ export default function DashboardPage() {
   const [quickService, setQuickService] = useState<string>('')
   const [quickGeography, setQuickGeography] = useState<string>('')
   const [quickBudget, setQuickBudget] = useState<'low' | 'medium' | 'high' | ''>('')
+
+  const isDashboardLoading = false
+  const dashboardError: string | null = null
 
   const handleQuickSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -459,1107 +466,83 @@ export default function DashboardPage() {
     }
   }
 
+  const handleClearFavorites = () => {
+    if (
+      typeof window !== 'undefined' &&
+      window.confirm('ნამდვილად გსურთ რჩეული კომპანიების გასუფთავება?')
+    ) {
+      clearFavorites()
+    }
+  }
+
+  const handleClearRecentlyViewed = () => {
+    if (
+      typeof window !== 'undefined' &&
+      window.confirm('ნამდვილად გსურთ ბოლოს ნახული კომპანიების ისტორიის გასუფთავება?')
+    ) {
+      clearRecentlyViewed()
+    }
+  }
+
   const renderRoleSections = () => {
     if (role === 'dealer') {
       return (
-        <>
-          <motion.div {...getSectionMotionProps(0)}>
-            <div className="grid gap-4 md:grid-cols-3 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:account-group" className="h-5 w-5" />
-                    ლიდების პანელი
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs text-muted-foreground">ახალი დღეს</p>
-                      <p className="text-xl font-semibold">{dealerLeadsStats.todayNew}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">ახალი ამ კვირაში</p>
-                      <p className="text-xl font-semibold">{dealerLeadsStats.weekNew}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">მუშავდება</p>
-                      <p className="text-xl font-semibold">{dealerLeadsStats.inProgress}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">დახურული</p>
-                      <p className="text-xl font-semibold">{dealerLeadsStats.closed}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:chart-timeline-variant" className="h-5 w-5" />
-                    გაყიდვების ვორონკა
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">პროფილის ნახვები</span>
-                      <span className="font-medium">{dealerFunnelStats.profileViews}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">მოთხოვნები</span>
-                      <span className="font-medium">{dealerFunnelStats.requests}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">დადებული გარიგებები</span>
-                      <span className="font-medium">{dealerFunnelStats.deals}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:flash" className="h-5 w-5" />
-                    სწრაფი მოქმედებები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2 text-sm">
-                  <Button asChild className="justify-start gap-2" variant="outline">
-                    <Link to="/catalog">
-                      <Icon icon="mdi:plus-circle-outline" className="h-4 w-4" />
-                      ახალი შეთავაზების დამატება
-                    </Link>
-                  </Button>
-                  <Button asChild className="justify-start gap-2" variant="outline">
-                    <Link to="/dashboard">
-                      <Icon icon="mdi:bullhorn-outline" className="h-4 w-4" />
-                      აქციის გაშვება
-                    </Link>
-                  </Button>
-                  <Button asChild className="justify-start gap-2" variant="outline">
-                    <Link to="/catalog">
-                      <Icon icon="mdi:cash-sync" className="h-4 w-4" />
-                      ფასების განახლება
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(1)}>
-            <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:inbox-arrow-down" className="h-5 w-5" />
-                    ახალი კლიენტების მოთხოვნები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dealerRequests.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      ამ ეტაპზე არ გაქვთ ახალი მოთხოვნები.
-                    </p>
-                  ) : (
-                    <div className="space-y-2 text-sm">
-                      {dealerRequests.map((request) => (
-                        <div
-                          key={request.id}
-                          className="flex items-center justify-between rounded-md border px-3 py-2"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium line-clamp-1">{request.clientName}</span>
-                            <span className="text-xs text-muted-foreground line-clamp-1">
-                              {request.companyName}
-                            </span>
-                            <span className="text-xs text-muted-foreground">სტატუსი: {request.status}</span>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Button size="sm" variant="outline" className="flex items-center gap-1">
-                              <Icon icon="mdi:reply-outline" className="h-3 w-3" />
-                              პასუხის გაცემა
-                            </Button>
-                            <Button size="sm" variant="ghost" className="flex items-center gap-1">
-                              <Icon icon="mdi:check-circle-outline" className="h-3 w-3" />
-                              დამუშავებულია
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:bell-outline" className="h-5 w-5" />
-                    შეხსენებები ლიდებზე
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dealerLeadReminders.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      ამ დროისთვის არ გაქვთ კრიტიკული შეხსენებები.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {dealerLeadReminders.map((reminder) => (
-                        <li
-                          key={reminder.id}
-                          className="flex items-center gap-2 rounded-md border px-3 py-2"
-                        >
-                          <Icon icon="mdi:alert-outline" className="h-4 w-4 text-muted-foreground" />
-                          <span className="line-clamp-2">{reminder.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(2)}>
-            <div className="grid gap-4 md:grid-cols-2 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:star-circle-outline" className="h-5 w-5" />
-                    ტოპ შეთავაზებები / პოზიციები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dealerTopPromoted.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      ჯერ არ გაქვთ გამოკვეთილი ტოპ შეთავაზებები.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {dealerTopPromoted.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between rounded-md border px-3 py-2"
-                        >
-                          <span className="line-clamp-1">{item.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {item.responses} გამოხმაურება
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:star-outline" className="h-5 w-5" />
-                    კლიენტების შეფასებები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-3 flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold">{dealerReviewsSummary.averageRating}</span>
-                    <span className="text-xs text-muted-foreground">
-                      / 5 ({dealerReviewsSummary.totalReviews} შეფასება)
-                    </span>
-                  </div>
-                  {dealerReviewsSummary.latestReviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      ჯერ არ გაქვთ შეფასებები.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {dealerReviewsSummary.latestReviews.map((review) => (
-                        <li key={review.id} className="rounded-md border px-3 py-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium line-clamp-1">{review.userName}</span>
-                            <span className="flex items-center gap-1 text-xs">
-                              <Icon
-                                icon="mdi:star"
-                                className="h-3 w-3 text-yellow-400 fill-current"
-                              />
-                              {review.rating}
-                            </span>
-                          </div>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {review.comment}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="mt-3 flex justify-end">
-                    <Button size="sm" variant="outline" className="flex items-center gap-1">
-                      <Icon icon="mdi:comment-edit-outline" className="h-3 w-3" />
-                      შეფასებების მართვა
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(3)}>
-            <div className="grid gap-4 md:grid-cols-2 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:chart-areaspline" className="h-5 w-5" />
-                    ტრაფიკი დილერის პროფილზე
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">სულ ნახვები</span>
-                      <span className="font-medium">{dealerTrafficStats.totalViews}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">ძიების ბლოკიდან</span>
-                      <span className="font-medium">{dealerTrafficStats.fromSearch}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">კატალოგიდან</span>
-                      <span className="font-medium">{dealerTrafficStats.fromCatalog}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">აქციებიდან / შეთავაზებებიდან</span>
-                      <span className="font-medium">{dealerTrafficStats.fromOffers}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:checklist" className="h-5 w-5" />
-                    დღევანდელი ამოცანები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dealerTasksToday.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">დღევანდელი ამოცანები არ არის დამატებული.</p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {dealerTasksToday.map((task) => (
-                        <li
-                          key={task}
-                          className="flex items-center gap-2 rounded-md border px-3 py-2"
-                        >
-                          <Icon icon="mdi:checkbox-blank-circle-outline" className="h-3 w-3" />
-                          <span className="line-clamp-2">{task}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(4)}>
-            <Card className="mt-2">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:chart-box-outline" className="h-5 w-5" />
-                  შედარება წინა პერიოდთან
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">ლიდების რაოდენობა</p>
-                    <p className="text-lg font-semibold">
-                      {dealerComparisonStats.leadsDeltaPercent > 0 ? '+' : ''}
-                      {dealerComparisonStats.leadsDeltaPercent}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">კონვერსია გარიგებებში</p>
-                    <p className="text-lg font-semibold">
-                      {dealerComparisonStats.conversionDeltaPercent > 0 ? '+' : ''}
-                      {dealerComparisonStats.conversionDeltaPercent}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">საშ. მარჟა</p>
-                    <p className="text-lg font-semibold">
-                      {dealerComparisonStats.marginDeltaPercent > 0 ? '+' : ''}
-                      {dealerComparisonStats.marginDeltaPercent}%
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
+        <DealerDashboardSections
+          dealerLeadsStats={dealerLeadsStats}
+          dealerFunnelStats={dealerFunnelStats}
+          dealerRequests={dealerRequests}
+          dealerLeadReminders={dealerLeadReminders}
+          dealerTopPromoted={dealerTopPromoted}
+          dealerReviewsSummary={dealerReviewsSummary}
+          dealerTrafficStats={dealerTrafficStats}
+          dealerTasksToday={dealerTasksToday}
+          dealerComparisonStats={dealerComparisonStats}
+          getSectionMotionProps={getSectionMotionProps}
+        />
       )
     }
 
     if (role === 'company') {
       return (
-        <>
-          <motion.div {...getSectionMotionProps(0)}>
-            <div className="grid gap-4 md:grid-cols-3 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:office-building-outline" className="h-5 w-5" />
-                    ქსელის საერთო სტატისტიკა
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div>
-                      <p className="text-2xl font-semibold">{companyNetworkStats.totalProfileViews}</p>
-                      <p className="text-xs text-muted-foreground">პროფილის ნახვები</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-semibold">{companyNetworkStats.dealersCount}</p>
-                      <p className="text-xs text-muted-foreground">აქტიური დილერი</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-semibold">{companyNetworkStats.activeCompaniesCount}</p>
-                      <p className="text-xs text-muted-foreground">აქტიური კომპანია</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:map-marker-radius-outline" className="h-5 w-5" />
-                    დილერების აქტივობა შტატების მიხედვით
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {companyDealerActivityByState.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">აქტივობის მონაცემები ჯერ არ არის.</p>
-                  ) : (
-                    <ul className="space-y-1 text-sm">
-                      {companyDealerActivityByState.map((item) => (
-                        <li
-                          key={item.state}
-                          className="flex items-center justify-between rounded-md border px-3 py-1.5"
-                        >
-                          <span className="line-clamp-1">{item.state}</span>
-                          <span className="text-xs text-muted-foreground">{item.leads} ლიძე / აქტივობა</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:heart-pulse" className="h-5 w-5" />
-                    Brand health
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-semibold">{companyBrandHealth.averageRating}</p>
-                    <p className="text-xs text-muted-foreground">/ 5 ({companyBrandHealth.totalReviews} შეფასება)</p>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    ბრენდის საერთო აღქმა ყველა ქსელის დილერის მიხედვით.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(1)}>
-            <div className="grid gap-4 md:grid-cols-2 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:headset" className="h-5 w-5" />
-                    მომსახურების ხარისხი
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-xs text-muted-foreground">საშ. რეაგირების დრო</p>
-                      <p className="text-xl font-semibold">{companyServiceQuality.avgReplyMinutes} წთ</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">დამუშავებული მოთხოვნები</p>
-                      <p className="text-xl font-semibold">{companyServiceQuality.handledPercent}%</p>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    მონაცემა ილუსტრირებულია, შემდგომში ჩანაცვლდება რეალური API მონაცემებით.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:bullhorn-outline" className="h-5 w-5" />
-                    მარკეტინგული კამპანიები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {companyCampaigns.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">ამ დროისთვის აქტიური კამპანიები არ არის.</p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {companyCampaigns.map((campaign) => (
-                        <li
-                          key={campaign.id}
-                          className="rounded-md border px-3 py-2 flex flex-col gap-1"
-                        >
-                          <span className="font-medium line-clamp-1">{campaign.name}</span>
-                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                            <span>Impr: {campaign.impressions.toLocaleString()}</span>
-                            <span>Clicks: {campaign.clicks.toLocaleString()}</span>
-                            <span>Leads: {campaign.leads}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(2)}>
-            <div className="grid gap-4 md:grid-cols-2 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:account-group-outline" className="h-5 w-5" />
-                    აუდიტორიის სეგმენტები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {companyAudienceSegments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">სეგმენტაციის მონაცემები არ არის.</p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {companyAudienceSegments.map((segment) => (
-                        <li
-                          key={segment.id}
-                          className="flex items-center justify-between rounded-md border px-3 py-2"
-                        >
-                          <span className="line-clamp-2 mr-2">{segment.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {segment.sharePercent}%
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:shield-search-outline" className="h-5 w-5" />
-                    კონკურენტების მონიტორინგი
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {companyCompetitors.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">კონკურენტების მონაცემები არ არის.</p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {companyCompetitors.map((competitor) => (
-                        <li
-                          key={competitor.id}
-                          className="flex items-center justify-between rounded-md border px-3 py-2"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium line-clamp-1">{competitor.name}</span>
-                            <span className="text-xs text-muted-foreground">რეიტინგი: {competitor.rating}</span>
-                          </div>
-                          <span className="flex items-center gap-1 text-xs">
-                            <Icon
-                              icon={competitor.trend === 'up' ? 'mdi:trending-up' : 'mdi:trending-down'}
-                              className="h-3 w-3"
-                            />
-                            {competitor.trend === 'up' ? 'ზრდა' : 'კლება'}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(3)}>
-            <div className="grid gap-4 md:grid-cols-2 mt-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:alert-outline" className="h-5 w-5" />
-                    რისკები და ალერთები
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {companyAlerts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">ამ დროისთვის რისკები არაა გამოვლენილი.</p>
-                  ) : (
-                    <ul className="space-y-2 text-sm">
-                      {companyAlerts.map((alert) => (
-                        <li
-                          key={alert.id}
-                          className="flex items-center gap-2 rounded-md border px-3 py-2"
-                        >
-                          <Icon icon="mdi:alert-circle-outline" className="h-4 w-4 text-muted-foreground" />
-                          <span className="line-clamp-2">{alert.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Icon icon="mdi:account-cog-outline" className="h-5 w-5" />
-                    დილერული ქსელის მართვა
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                  {companyNetworkActions.map((action) => (
-                    <Button
-                      key={action.id}
-                      variant="outline"
-                      className="justify-start gap-2 text-sm"
-                    >
-                      <Icon icon={action.icon} className="h-4 w-4" />
-                      {action.label}
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-
-          <motion.div {...getSectionMotionProps(4)}>
-            <Card className="mt-2">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:target-account" className="h-5 w-5" />
-                  გეგმები და მიზნები
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {companyGoals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">ამ ეტაპზე მიზნები არ არის დაკონფიგურირებული.</p>
-                ) : (
-                  <ul className="space-y-3 text-sm">
-                    {companyGoals.map((goal) => (
-                      <li key={goal.id} className="space-y-1">
-                        <p className="line-clamp-2">{goal.label}</p>
-                        <div className="h-2 w-full rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-primary"
-                            style={{ width: `${goal.progressPercent}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground">{goal.progressPercent}%</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
+        <CompanyDashboardSections
+          companyNetworkStats={companyNetworkStats}
+          companyDealerActivityByState={companyDealerActivityByState}
+          companyBrandHealth={companyBrandHealth}
+          companyServiceQuality={companyServiceQuality}
+          companyCampaigns={companyCampaigns}
+          companyAudienceSegments={companyAudienceSegments}
+          companyCompetitors={companyCompetitors}
+          companyAlerts={companyAlerts}
+          companyNetworkActions={companyNetworkActions}
+          companyGoals={companyGoals}
+          getSectionMotionProps={getSectionMotionProps}
+        />
       )
     }
 
     return (
-      <>
-        <motion.div {...getSectionMotionProps(0)}>
-          <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] mt-2">
-            <Card>
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:magnify" className="h-5 w-5" />
-                  სწრაფი ძიება კომპანიების მიხედვით
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form className="grid gap-3 md:grid-cols-3" onSubmit={handleQuickSearchSubmit}>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-service">
-                      სერვისის კატეგორია
-                    </label>
-                    <select
-                      id="quick-service"
-                      className="h-9 rounded-md border bg-background px-2 text-sm"
-                      value={quickService}
-                      onChange={(event) => setQuickService(event.target.value)}
-                    >
-                      <option value="">არ აქვს მნიშვნელობა</option>
-                      {state.filters.services.map((service) => (
-                        <option key={service} value={service}>
-                          {service}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-geography">
-                      შტატი / რეგიონი
-                    </label>
-                    <select
-                      id="quick-geography"
-                      className="h-9 rounded-md border bg-background px-2 text-sm"
-                      value={quickGeography}
-                      onChange={(event) => setQuickGeography(event.target.value)}
-                    >
-                      <option value="">არ აქვს მნიშვნელობა</option>
-                      {state.filters.geography.map((location) => (
-                        <option key={location} value={location}>
-                          {location}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">ბიუჯეტი</span>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={quickBudget === 'low' ? 'default' : 'outline'}
-                        onClick={() => setQuickBudget('low')}
-                      >
-                        &lt; 4 000$
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={quickBudget === 'medium' ? 'default' : 'outline'}
-                        onClick={() => setQuickBudget('medium')}
-                      >
-                        4 000–8 000$
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={quickBudget === 'high' ? 'default' : 'outline'}
-                        onClick={() => setQuickBudget('high')}
-                      >
-                        &gt; 8 000$
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3 flex justify-end">
-                    <Button type="submit" className="flex items-center gap-2">
-                      <Icon icon="mdi:magnify" className="h-4 w-4" />
-                      კომპანიის მოძებნა
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:flash" className="h-5 w-5" />
-                  სწრაფი მოქმედებები
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <Button asChild className="justify-start gap-2" variant="outline">
-                  <Link to="/search">
-                    <Icon icon="mdi:magnify" className="h-4 w-4" />
-                    ახალი ძიების დაწყება
-                  </Link>
-                </Button>
-                <Button asChild className="justify-start gap-2" variant="outline">
-                  <Link to="/catalog">
-                    <Icon icon="mdi:send-circle-outline" className="h-4 w-4" />
-                    საერთო ბრიფის შევსება და გაგზავნა
-                  </Link>
-                </Button>
-                <Button asChild className="justify-start gap-2" variant="outline">
-                  <Link to="/dashboard">
-                    <Icon icon="mdi:message-text-outline" className="h-4 w-4" />
-                    გადავიდეთ თქვენს მოთხოვნებზე
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(1)}>
-          <Card className="mt-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:star-outline" className="h-5 w-5" />
-                რეკომენდებული კომპანიები თქვენთვის
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recommendedCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  ჯერჯერობით რეკომენდაციები არ არის. დაიწყეთ ძიება, რათა შევძლოთ უკეთესი შეთავაზებების ჩვენება.
-                </p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {recommendedCompanies.map((company) => (
-                    <Link
-                      key={company.id}
-                      to={`/company/${company.id}`}
-                      className="group block rounded-lg border bg-card p-3 hover:bg-accent transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={company.logo}
-                          alt={company.name}
-                          className="h-10 w-10 rounded-md object-cover"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium leading-tight line-clamp-2">
-                            {company.name}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Icon
-                                icon="mdi:star"
-                                className="h-3 w-3 text-yellow-400 fill-current"
-                              />
-                              {company.rating}
-                            </span>
-                            <span>• {company.location.city}</span>
-                          </div>
-                        </div>
-                        <Icon
-                          icon="mdi:chevron-right"
-                          className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform"
-                        />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(2)}>
-          <Card className="mt-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg font-semibold">რჩეული კომპანიები</CardTitle>
-              {favoriteCompanies.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFavorites}
-                  className="flex items-center gap-1 text-xs"
-                  motionVariant="scale"
-                >
-                  <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
-                  გასუფთავება
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {favoriteCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  ჯერ არ გაქვთ დამატებული რჩეული კომპანიები. გახსენით კატალოგი და შეინახეთ
-                  საინტერესო კომპანიები.
-                </p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {favoriteCompanies.map((company) => (
-                    <Link
-                      key={company.id}
-                      to={`/company/${company.id}`}
-                      className="group block rounded-lg border bg-card p-3 hover:bg-accent transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={company.logo}
-                          alt={company.name}
-                          className="h-10 w-10 rounded-md object-cover"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium leading-tight line-clamp-2">
-                            {company.name}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Icon
-                                icon="mdi:star"
-                                className="h-3 w-3 text-yellow-400 fill-current"
-                              />
-                              {company.rating}
-                            </span>
-                            <span>• {company.location.city}</span>
-                          </div>
-                        </div>
-                        <Icon
-                          icon="mdi:chevron-right"
-                          className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform"
-                        />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(3)}>
-          <Card className="mt-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg font-semibold">ბოლოს ნახული კომპანიები</CardTitle>
-              {recentlyViewedCompanies.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearRecentlyViewed}
-                  className="flex items-center gap-1 text-xs"
-                  motionVariant="scale"
-                >
-                  <Icon icon="mdi:history" className="h-4 w-4" />
-                  გასუფთავება
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {recentlyViewedCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  ჯერ არ გაქვთ ნანახი კომპანიების ისტორია ამ სესიაში. გახსენით რომელიმე კომპანიის გვერდი,
-                  რომ ნახოთ ისინი აქ.
-                </p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {recentlyViewedCompanies.map((company) => (
-                    <Link
-                      key={company.id}
-                      to={`/company/${company.id}`}
-                      className="group block rounded-lg border bg-card p-3 hover:bg-accent transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={company.logo}
-                          alt={company.name}
-                          className="h-10 w-10 rounded-md object-cover"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium leading-tight line-clamp-2">
-                            {company.name}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Icon
-                                icon="mdi:star"
-                                className="h-3 w-3 text-yellow-400 fill-current"
-                              />
-                              {company.rating}
-                            </span>
-                            <span>• {company.location.city}</span>
-                          </div>
-                        </div>
-                        <Icon
-                          icon="mdi:chevron-right"
-                          className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform"
-                        />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(4)}>
-          <div className="grid gap-4 md:grid-cols-2 mt-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:chart-line" className="h-5 w-5" />
-                  თქვენი აქტივობის სტატისტიკა
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-semibold">{activityStats.viewedCount}</p>
-                    <p className="text-xs text-muted-foreground">ნანახი კომპანია</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold">{activityStats.favoritesCount}</p>
-                    <p className="text-xs text-muted-foreground">რჩეული</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold">{activityStats.requestsCount}</p>
-                    <p className="text-xs text-muted-foreground">გაგზავნილი მოთხოვნა</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:clipboard-text-clock" className="h-5 w-5" />
-                  გახსნილი მოთხოვნები / ფასის კოტაციები
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {mockOpenRequests.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    ამ ეტაპზე არ გაქვთ გახსნილი მოთხოვნები. დაიწყეთ თანამშრომლობა კომპანიის გვერდიდან.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {mockOpenRequests.map((request) => (
-                      <div
-                        key={request.id}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium line-clamp-1">{request.companyName}</span>
-                          <span className="text-xs text-muted-foreground line-clamp-1">
-                            {request.status}
-                          </span>
-                        </div>
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Icon icon="mdi:message-text-outline" className="h-3 w-3" />
-                          დიალოგის გახსნა
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(5)}>
-          <div className="grid gap-4 md:grid-cols-2 mt-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:book-open-page-variant" className="h-5 w-5" />
-                  სასარგებლო სტატიები და გიდები
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {mockGuides.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    სტატიები მალე დაემატება.
-                  </p>
-                ) : (
-                  <ul className="space-y-2 text-sm">
-                    {mockGuides.map((guide) => (
-                      <li key={guide.id} className="flex items-center justify-between gap-2">
-                        <span className="line-clamp-2">{guide.title}</span>
-                        <Button size="sm" variant="link" className="px-0 text-xs">
-                          კითხვა
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="mdi:gift-open-outline" className="h-5 w-5" />
-                  სპეციალური შეთავაზებები
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {mockOffers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    ამ მომენტში აქტიური სპეციალური შეთავაზებები არ არის. დაბრუნდით მოგვიანებით.
-                  </p>
-                ) : (
-                  <ul className="space-y-2 text-sm">
-                    {mockOffers.map((offer) => (
-                      <li
-                        key={offer.id}
-                        className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium line-clamp-1">{offer.companyName}</span>
-                          <span className="text-xs text-muted-foreground line-clamp-2">
-                            {offer.description}
-                          </span>
-                        </div>
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Icon icon="mdi:eye-outline" className="h-3 w-3" />
-                          ნახვა
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        <motion.div {...getSectionMotionProps(6)}>
-          <Card className="mt-2">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:bell-outline" className="h-5 w-5" />
-                შეგახსენებთ
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {mockReminders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  ამ დროისთვის არ გაქვთ აქტიური შეხსენებები.
-                </p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {mockReminders.map((reminder) => (
-                    <li
-                      key={reminder.id}
-                      className="flex items-center gap-2 rounded-md border px-3 py-2"
-                    >
-                      <Icon icon="mdi:bell-outline" className="h-4 w-4 text-muted-foreground" />
-                      <span className="line-clamp-2">{reminder.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </>
+      <UserDashboardSections
+        recommendedCompanies={recommendedCompanies}
+        favoriteCompanies={favoriteCompanies}
+        recentlyViewedCompanies={recentlyViewedCompanies}
+        activityStats={activityStats}
+        mockOpenRequests={mockOpenRequests}
+        mockGuides={mockGuides}
+        mockOffers={mockOffers}
+        mockReminders={mockReminders}
+        quickService={quickService}
+        quickGeography={quickGeography}
+        quickBudget={quickBudget}
+        availableServices={state.filters.services}
+        availableGeography={state.filters.geography}
+        onQuickSearchSubmit={handleQuickSearchSubmit}
+        onQuickServiceChange={setQuickService}
+        onQuickGeographyChange={setQuickGeography}
+        onQuickBudgetChange={(value) => setQuickBudget(value)}
+        onClearFavorites={handleClearFavorites}
+        onClearRecentlyViewed={handleClearRecentlyViewed}
+        getSectionMotionProps={getSectionMotionProps}
+      />
     )
   }
 
@@ -1580,7 +563,10 @@ export default function DashboardPage() {
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
                     <Link to="/">
-                      TrustedImporters.Ge
+                      <span className="font-logo-bebas inline-flex items-baseline gap-1">
+                        <span className="font-bold">Trusted</span>{' '}
+                        <span className="font-normal">Importers.Ge</span>
+                      </span>
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -1591,70 +577,108 @@ export default function DashboardPage() {
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          {/* Dev: role switcher for quickly viewing different dashboards */}
-          <div className="border-b px-4 py-2 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-            <Button
-              variant={role === 'user' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                if (user) {
-                  updateUser({
-                    role: 'user',
-                    dealerSlug: null,
-                    companyId: null,
-                    companySlug: null,
-                  })
-                } else {
-                  setLocalRole('user')
-                }
-              }}
-            >
-              მომხმარებელი
-            </Button>
-            <Button
-              variant={role === 'dealer' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                if (user) {
-                  updateUser({
-                    role: 'dealer',
-                    companyId: null,
-                    companySlug: null,
-                  })
-                } else {
-                  setLocalRole('dealer')
-                }
-              }}
-            >
-              დილერი
-            </Button>
-            <Button
-              variant={role === 'company' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                if (user) {
-                  updateUser({
-                    role: 'company',
-                    companyId: '1',
-                    dealerSlug: null,
-                  })
-                } else {
-                  setLocalRole('company')
-                }
-              }}
-            >
-              კომპანია
-            </Button>
-          </div>
-          <div className="flex flex-1 flex-col gap-4 p-4">
-            <motion.div {...getSectionMotionProps(0)}>
-              <SectionCards role={role} />
-            </motion.div>
+          <main className="flex flex-1 flex-col" aria-label="Dashboard main content">
+            {/* Dev: role switcher for quickly viewing different dashboards */}
+            <div className="border-b px-4 py-2 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+              <Button
+                variant={role === 'user' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (user) {
+                    updateUser({
+                      role: 'user',
+                      dealerSlug: null,
+                      companyId: null,
+                      companySlug: null,
+                    })
+                  } else {
+                    setLocalRole('user')
+                  }
+                }}
+              >
+                მომხმარებელი
+              </Button>
+              <Button
+                variant={role === 'dealer' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (user) {
+                    updateUser({
+                      role: 'dealer',
+                      companyId: null,
+                      companySlug: null,
+                    })
+                  } else {
+                    setLocalRole('dealer')
+                  }
+                }}
+              >
+                დილერი
+              </Button>
+              <Button
+                variant={role === 'company' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (user) {
+                    updateUser({
+                      role: 'company',
+                      companyId: '1',
+                      dealerSlug: null,
+                    })
+                  } else {
+                    setLocalRole('company')
+                  }
+                }}
+              >
+                კომპანია
+              </Button>
+            </div>
+            {(() => {
+              if (dashboardError) {
+                return (
+                  <div className="flex flex-1 items-center justify-center p-4">
+                    <p className="text-sm text-red-500 text-center max-w-md">
+                      ვერ მოხერხდა დეშბორდის ჩატვირთვა. სცადეთ მოგვიანებით.
+                    </p>
+                  </div>
+                )
+              }
 
-            {renderRoleSections()}
-          </div>
-      </SidebarInset>
-    </SidebarProvider>
+              if (isDashboardLoading) {
+                return (
+                  <div
+                    className="flex flex-1 flex-col gap-4 p-4"
+                    aria-label="Dashboard loading"
+                  >
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Skeleton className="h-40 w-full rounded-lg" />
+                      <Skeleton className="h-40 w-full rounded-lg" />
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div
+                  className="flex flex-1 flex-col gap-4 p-4"
+                  aria-label="Dashboard sections"
+                >
+                  <motion.div {...getSectionMotionProps(0)}>
+                    <SectionCards role={role} />
+                  </motion.div>
+
+                  {renderRoleSections()}
+                </div>
+              )
+            })()}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   )
 }

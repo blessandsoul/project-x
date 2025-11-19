@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import HomePage from './pages/HomePage.tsx'
@@ -10,15 +10,24 @@ import RegisterPage from './pages/RegisterPage'
 import AuctionListingsPage from './pages/AuctionListingsPage'
 import CarfaxPage from './pages/CarfaxPage'
 import ProfilePage from './pages/ProfilePage'
+import OnboardingPage from './pages/OnboardingPage'
 import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
 import VehicleDetailsPage from './pages/VehicleDetailsPage'
 
 function ScrollToTop() {
   const location = useLocation()
   const shouldReduceMotion = useReducedMotion()
+  const isFirstRenderRef = useRef(true)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Первый рендер не скроллим, даём браузеру самому восстановить позицию
+    // (в том числе после F5 на главной). На последующих переходах скроллим вверх.
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
 
     window.scrollTo({
       top: 0,
@@ -102,6 +111,14 @@ function AppRoutes() {
             element={renderWithTransition(
               <RequireAuth>
                 <ProfilePage />
+              </RequireAuth>,
+            )}
+          />
+          <Route
+            path="/onboarding"
+            element={renderWithTransition(
+              <RequireAuth>
+                <OnboardingPage />
               </RequireAuth>,
             )}
           />
