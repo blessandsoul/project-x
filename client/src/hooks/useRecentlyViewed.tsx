@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useReducer, type ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface RecentlyViewedState {
@@ -72,9 +72,9 @@ export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
     }
   }, [storageKey, state.ids])
 
-  const addRecentlyViewed = (companyId: string) => {
+  const addRecentlyViewed = useCallback((companyId: string) => {
     dispatch({ type: 'ADD', payload: companyId })
-  }
+  }, [])
 
   const clearRecentlyViewed = () => {
     dispatch({ type: 'CLEAR' })

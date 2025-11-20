@@ -17,7 +17,8 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { useQuotesSearch } from '@/hooks/useQuotesSearch';
-import { fetchCompanyReviewsFromApi, type ApiCompanyReview } from '@/services/companiesApi';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchCompanyReviewsFromApi, createCompanyReviewFromApi, updateCompanyReviewFromApi, deleteCompanyReviewFromApi, type ApiCompanyReview } from '@/services/companiesApi';
 
 const CompanyProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,13 +42,25 @@ const CompanyProfilePage = () => {
   const [reviewsTotalPages, setReviewsTotalPages] = useState<number>(1);
   const [isReviewsLoading, setIsReviewsLoading] = useState<boolean>(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState<string | null>(null);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState<number>(5);
+  const [editComment, setEditComment] = useState('');
+  const [isUpdatingReview, setIsUpdatingReview] = useState(false);
+  const [isDeletingReview, setIsDeletingReview] = useState(false);
   const reviewsLimit = 5;
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (company) {
+    if (company?.id) {
       addRecentlyViewed(company.id);
     }
-  }, [company, addRecentlyViewed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [company?.id]);
 
   useEffect(() => {
     if (!company?.id) {
@@ -106,7 +119,7 @@ const CompanyProfilePage = () => {
     const priceParam = params.get('price');
     if (priceParam !== null) {
       const parsed = Number(priceParam);
-      if (Number.isFinite(parsed) && parsed > 0 && parsed !== quotePrice) {
+      if (Number.isFinite(parsed) && parsed > 0) {
         setQuotePrice(parsed);
       }
     }
@@ -114,11 +127,11 @@ const CompanyProfilePage = () => {
     const distanceParam = params.get('distance');
     if (distanceParam !== null) {
       const parsed = Number(distanceParam);
-      if (Number.isFinite(parsed) && parsed > 0 && parsed !== quoteDistance) {
+      if (Number.isFinite(parsed) && parsed > 0) {
         setQuoteDistance(parsed);
       }
     }
-  }, [location.search, quotePrice, quoteDistance]);
+  }, [location.search]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -167,6 +180,152 @@ const CompanyProfilePage = () => {
     } finally {
       setIsSubmittingContact(false);
     }
+  };
+
+  const handleSubmitReview = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!company || isSubmittingReview || reviewRating < 1 || reviewRating > 5) {
+      return;
+    }
+
+    if (reviewComment.trim() && reviewComment.trim().length < 10) {
+      setReviewSubmitError('შეფასება უნდა შეიცავდეს მინიმუმ 10 სიმბოლოს');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    setReviewSubmitError(null);
+
+    try {
+      await createCompanyReviewFromApi({
+        company_id: Number(company.id),
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+
+      // Reset form
+      setReviewRating(5);
+      setReviewComment('');
+      setIsReviewFormOpen(false);
+
+      // Refresh reviews
+      const response = await fetchCompanyReviewsFromApi(company.id, {
+        limit: reviewsLimit,
+        offset: (reviewsPage - 1) * reviewsLimit,
+      });
+
+      setReviews(Array.isArray(response.items) ? response.items : []);
+      setReviewsTotalPages(
+        typeof response.totalPages === 'number' && response.totalPages > 0
+          ? response.totalPages
+          : 1,
+      );
+    } catch (error) {
+      console.error('[CompanyProfilePage] Failed to submit review', {
+        companyId: company.id,
+        error,
+      });
+      setReviewSubmitError('შეფასების გაგზავნა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleStartEditReview = (review: ApiCompanyReview) => {
+    setEditingReviewId(String(review.id));
+    setEditRating(review.rating);
+    setEditComment(review.comment || '');
+  };
+
+  const handleCancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditRating(5);
+    setEditComment('');
+  };
+
+  const handleUpdateReview = async (reviewId: string) => {
+    if (!company || isUpdatingReview) {
+      return;
+    }
+
+    if (editComment.trim() && editComment.trim().length < 10) {
+      // Можно добавить ошибку валидации здесь
+      return;
+    }
+
+    setIsUpdatingReview(true);
+
+    try {
+      await updateCompanyReviewFromApi(company.id, reviewId, {
+        rating: editRating,
+        comment: editComment.trim() || null,
+      });
+
+      // Reset edit state
+      setEditingReviewId(null);
+      setEditRating(5);
+      setEditComment('');
+
+      // Refresh reviews
+      const response = await fetchCompanyReviewsFromApi(company.id, {
+        limit: reviewsLimit,
+        offset: (reviewsPage - 1) * reviewsLimit,
+      });
+
+      setReviews(Array.isArray(response.items) ? response.items : []);
+      setReviewsTotalPages(
+        typeof response.totalPages === 'number' && response.totalPages > 0
+          ? response.totalPages
+          : 1,
+      );
+    } catch (error) {
+      console.error('[CompanyProfilePage] Failed to update review', {
+        companyId: company.id,
+        reviewId,
+        error,
+      });
+      // Можно добавить показ ошибки пользователю
+    } finally {
+      setIsUpdatingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!company || isDeletingReview || !confirm('დარწმუნებული ხართ, რომ გსურთ შეფასების წაშლა?')) {
+      return;
+    }
+
+    setIsDeletingReview(true);
+
+    try {
+      await deleteCompanyReviewFromApi(company.id, reviewId);
+
+      // Refresh reviews
+      const response = await fetchCompanyReviewsFromApi(company.id, {
+        limit: reviewsLimit,
+        offset: (reviewsPage - 1) * reviewsLimit,
+      });
+
+      setReviews(Array.isArray(response.items) ? response.items : []);
+      setReviewsTotalPages(
+        typeof response.totalPages === 'number' && response.totalPages > 0
+          ? response.totalPages
+          : 1,
+      );
+    } catch (error) {
+      console.error('[CompanyProfilePage] Failed to delete review', {
+        companyId: company.id,
+        reviewId,
+        error,
+      });
+      // Можно добавить показ ошибки пользователю
+    } finally {
+      setIsDeletingReview(false);
+    }
+  };
+
+  const isReviewOwner = (review: ApiCompanyReview): boolean => {
+    return user ? Number(user.id) === review.user_id : false;
   };
 
   if (isLoading) {
@@ -429,10 +588,104 @@ const CompanyProfilePage = () => {
               {/* Reviews */}
               <Card>
                 <CardHeader>
-                  <CardTitle>შეფასებები ({company.reviewCount})</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>შეფასებები ({company.reviewCount})</CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsReviewFormOpen(!isReviewFormOpen)}
+                      className="flex items-center gap-2"
+                    >
+                      <Icon icon="mdi:plus" className="h-4 w-4" />
+                      დაწერე შეფასება
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {isReviewsLoading && (
+                  {/* Review Form */}
+                  {isReviewFormOpen && (
+                    <Card className="border-primary/20 bg-primary/5">
+                      <CardContent className="pt-6">
+                        <form className="space-y-4" onSubmit={handleSubmitReview}>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor="review-comment">თქვენი შეფასება</Label>
+                              <div className="flex items-center space-x-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    className="focus:outline-none focus:ring-2 focus:ring-primary rounded hover:scale-110 transition-transform"
+                                    onClick={() => setReviewRating(star)}
+                                    aria-label={`შეფასება ${star} ვარსკვლავი`}
+                                  >
+                                    <Icon
+                                      icon="mdi:star"
+                                      className={`h-5 w-5 ${
+                                        star <= reviewRating
+                                          ? 'text-warning fill-current'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                                <span className="ml-2 text-sm text-muted-foreground">
+                                  {reviewRating} / 5
+                                </span>
+                              </div>
+                            </div>
+                            <textarea
+                              id="review-comment"
+                              value={reviewComment}
+                              onChange={(event) => setReviewComment(event.target.value)}
+                              placeholder="გთხოვთ მოგვიყევით თქვენი გამოცდილების შესახებ..."
+                              className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              required
+                            />
+                          </div>
+
+                          {reviewSubmitError && (
+                            <p className="text-sm text-red-500">{reviewSubmitError}</p>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              type="submit"
+                              size="sm"
+                              disabled={isSubmittingReview}
+                              className="flex items-center gap-2"
+                            >
+                              {isSubmittingReview && (
+                                <Icon
+                                  icon="mdi:loading"
+                                  className="h-4 w-4 animate-spin"
+                                />
+                              )}
+                              გაგზავნა
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setIsReviewFormOpen(false);
+                                setReviewRating(5);
+                                setReviewComment('');
+                                setReviewSubmitError(null);
+                              }}
+                              disabled={isSubmittingReview}
+                            >
+                              გაუქმება
+                            </Button>
+                          </div>
+                        </form>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Reviews List */}
+                  <div className={`space-y-4 ${isReviewFormOpen ? 'mt-6' : ''}`}>
+                    {isReviewsLoading && (
                     <div className="space-y-3">
                       {[...Array(3)].map((_, index) => (
                         <div key={index} className="animate-pulse space-y-2">
@@ -462,7 +715,7 @@ const CompanyProfilePage = () => {
                   {!isReviewsLoading && !reviewsError && reviews.length > 0 && (
                     <div className="space-y-4">
                       {reviews.map((review) => (
-                        <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+                        <div key={`review-${review.id}-${review.created_at}`} className="border-b last:border-b-0 pb-4 last:pb-0">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                               <span className="font-medium">
@@ -480,14 +733,107 @@ const CompanyProfilePage = () => {
                                 ))}
                               </div>
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(review.created_at).toLocaleDateString()}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {isReviewOwner(review) && (
+                                <div className="flex items-center gap-1">
+                                  {editingReviewId === String(review.id) ? (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleUpdateReview(String(review.id))}
+                                        disabled={isUpdatingReview}
+                                        className="h-6 px-2 text-xs"
+                                      >
+                                        {isUpdatingReview && (
+                                          <Icon icon="mdi:loading" className="h-3 w-3 animate-spin mr-1" />
+                                        )}
+                                        შენახვა
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleCancelEditReview}
+                                        disabled={isUpdatingReview}
+                                        className="h-6 px-2 text-xs"
+                                      >
+                                        გაუქმება
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleStartEditReview(review)}
+                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                      >
+                                        <Icon icon="mdi:pencil" className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteReview(String(review.id))}
+                                        disabled={isDeletingReview}
+                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-red-500"
+                                      >
+                                        <Icon icon="mdi:delete" className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
-                          {review.comment && (
-                            <p className="text-sm text-muted-foreground">
-                              {review.comment}
-                            </p>
+                          {editingReviewId === String(review.id) ? (
+                            <div className="mt-3 space-y-3">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium">შეფასება</Label>
+                                <div className="flex items-center space-x-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      className="focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                                      onClick={() => setEditRating(star)}
+                                      aria-label={`შეფასება ${star} ვარსკვლავი`}
+                                    >
+                                      <Icon
+                                        icon="mdi:star"
+                                        className={`h-5 w-5 ${
+                                          star <= editRating
+                                            ? 'text-warning fill-current'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                  <span className="ml-2 text-sm text-muted-foreground">
+                                    {editRating} / 5
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor={`edit-comment-${review.id}`}>კომენტარი</Label>
+                                <textarea
+                                  id={`edit-comment-${review.id}`}
+                                  value={editComment}
+                                  onChange={(event) => setEditComment(event.target.value)}
+                                  placeholder="გთხოვთ მოგვიყევით თქვენი გამოცდილების შესახებ..."
+                                  className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            review.comment && (
+                              <p className="text-sm text-muted-foreground">
+                                {review.comment}
+                              </p>
+                            )
                           )}
                         </div>
                       ))}
@@ -519,6 +865,7 @@ const CompanyProfilePage = () => {
                       </Button>
                     </div>
                   )}
+                  </div>
                 </CardContent>
               </Card>
             </div>

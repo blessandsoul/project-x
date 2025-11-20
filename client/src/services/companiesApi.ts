@@ -1,5 +1,5 @@
 import axios, { type AxiosError } from 'axios'
-import { API_BASE_URL } from '@/lib/apiClient'
+import { API_BASE_URL, apiAuthorizedMutation, apiAuthorizedGet } from '@/lib/apiClient'
 import type { Company } from '@/mocks/_mockData'
 
 export type ApiCompanyReview = {
@@ -258,27 +258,28 @@ export async function fetchCompanyReviewsFromApi(
   }
 
   const queryString = searchParams.toString()
-  const url = queryString
-    ? `${API_BASE_URL}/companies/${companyId}/reviews?${queryString}`
-    : `${API_BASE_URL}/companies/${companyId}/reviews`
+  const path = queryString
+    ? `/companies/${companyId}/reviews?${queryString}`
+    : `/companies/${companyId}/reviews`
 
   try {
-    const response = await axios.get<CompanyReviewsResponse>(url)
+    const raw = await apiAuthorizedGet<{
+      items: ApiCompanyReview[]
+      total: number
+      limit: number
+      offset: number
+      page: number
+      totalPages: number
+    }>(path)
 
-    const raw = response.data
-
-    if (!Array.isArray(raw.items)) {
-      return {
-        items: [],
-        total: 0,
-        limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? 0,
-        offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
-        page: typeof raw.page === 'number' ? raw.page : 1,
-        totalPages: typeof raw.totalPages === 'number' ? raw.totalPages : 0,
-      }
+    return {
+      items: Array.isArray(raw.items) ? raw.items : [],
+      total: typeof raw.total === 'number' ? raw.total : 0,
+      limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? 10,
+      offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
+      page: typeof raw.page === 'number' ? raw.page : 1,
+      totalPages: typeof raw.totalPages === 'number' ? raw.totalPages : 0,
     }
-
-    return raw
   } catch (error) {
     console.error('[CompaniesAPI] Failed to fetch company reviews', {
       companyId,
@@ -289,6 +290,17 @@ export async function fetchCompanyReviewsFromApi(
   }
 }
 
+export type CreateCompanyReviewPayload = {
+  company_id: number
+  rating: number
+  comment?: string
+}
+
+export type UpdateCompanyReviewPayload = {
+  rating?: number
+  comment?: string | null
+}
+
 export type LeadFromQuotesPayload = {
   vehicleId: number
   selectedCompanyIds: number[]
@@ -296,6 +308,29 @@ export type LeadFromQuotesPayload = {
   contact: string
   message: string
   priority: 'price'
+}
+
+export async function createCompanyReviewFromApi(payload: CreateCompanyReviewPayload): Promise<ApiCompanyReview> {
+  const requestBody: { rating: number; comment?: string | null } = {
+    rating: payload.rating,
+  }
+
+  if (payload.comment && payload.comment.trim().length >= 10) {
+    requestBody.comment = payload.comment.trim()
+  }
+
+  const response = await apiAuthorizedMutation<ApiCompanyReview>(
+    'POST',
+    `/companies/${payload.company_id}/reviews`,
+    requestBody
+  )
+
+  console.log('[CompaniesAPI] Successfully created company review', {
+    reviewId: response.id,
+    companyId: payload.company_id,
+  })
+
+  return response
 }
 
 export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Promise<void> {
@@ -327,4 +362,48 @@ export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Prom
 
     throw error
   }
+}
+
+export async function updateCompanyReviewFromApi(
+  companyId: string | number,
+  reviewId: string | number,
+  payload: UpdateCompanyReviewPayload
+): Promise<ApiCompanyReview> {
+  const requestBody: { rating?: number; comment?: string | null } = {}
+
+  if (payload.rating !== undefined) {
+    requestBody.rating = payload.rating
+  }
+
+  if (payload.comment !== undefined) {
+    requestBody.comment = payload.comment
+  }
+
+  const response = await apiAuthorizedMutation<ApiCompanyReview>(
+    'PUT',
+    `/companies/${companyId}/reviews/${reviewId}`,
+    requestBody
+  )
+
+  console.log('[CompaniesAPI] Successfully updated company review', {
+    companyId,
+    reviewId,
+  })
+
+  return response
+}
+
+export async function deleteCompanyReviewFromApi(
+  companyId: string | number,
+  reviewId: string | number
+): Promise<void> {
+  await apiAuthorizedMutation<unknown>(
+    'DELETE',
+    `/companies/${companyId}/reviews/${reviewId}`
+  )
+
+  console.log('[CompaniesAPI] Successfully deleted company review', {
+    companyId,
+    reviewId,
+  })
 }

@@ -53,5 +53,15 @@
         "badge_priority_premium_service": "Priority: premium service"
       }
     }
+  },
+  "reviews": {
+    "write_review": "Write a review",
+    "rating_label": "Rating",
+    "comment_label": "Your review",
+    "comment_placeholder": "Please share your experience...",
+    "submit_button": "Submit",
+    "cancel_button": "Cancel",
+    "submit_error": "Failed to submit review. Please try again.",
+    "comment_required": "Please write a review"
   }
 }

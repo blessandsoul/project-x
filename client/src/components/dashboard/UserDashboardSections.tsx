@@ -165,12 +165,14 @@ export function UserDashboardSections({
                   const car = mockCars.find((mockCar) => mockCar.companyId === String(offer.companyId))
 
                   return (
-                    <motion.button
+                    <motion.div
                       key={offer.offerId}
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      className="flex w-full cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                       whileHover={{ y: -2 }}
                       transition={{ duration: 0.4, ease: 'easeOut' }}
+                      onClick={() => {
+                        // Handle click if needed
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         {car ? (
@@ -261,7 +263,7 @@ export function UserDashboardSections({
                           </Button>
                         </div>
                       </div>
-                    </motion.button>
+                    </motion.div>
                   )
                 })}
               </div>

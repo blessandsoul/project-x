@@ -486,133 +486,87 @@ const AuctionListingsPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
 
-    let nextSearchQuery = searchQuery;
-    const qParam = params.get('q');
-    if (qParam !== null) {
-      nextSearchQuery = qParam;
-    }
-
-    let nextSearchKind: typeof searchKind = searchKind;
+    // Parse all URL parameters into state values
+    const nextSearchQuery = params.get('q') || '';
     const kindParam = params.get('kind');
-    if (kindParam === 'all' || kindParam === 'car' || kindParam === 'moto' || kindParam === 'van') {
-      nextSearchKind = kindParam;
-    }
+    const nextSearchKind = (kindParam === 'all' || kindParam === 'car' || kindParam === 'moto' || kindParam === 'van') ? kindParam : 'all';
 
-    let nextAuctionFilter: AuctionHouse = auctionFilter;
     const auctionParam = params.get('auction');
-    if (auctionParam === 'all' || auctionParam === 'Copart' || auctionParam === 'IAAI' || auctionParam === 'Manheim') {
-      nextAuctionFilter = auctionParam as AuctionHouse;
-    }
+    const nextAuctionFilter = (auctionParam === 'all' || auctionParam === 'Copart' || auctionParam === 'IAAI' || auctionParam === 'Manheim') ? auctionParam as AuctionHouse : 'all';
 
-    let nextFuelType = fuelType;
     const fuelParam = params.get('fuel');
-    if (fuelParam && ['all', 'gas', 'diesel', 'hybrid', 'electric'].includes(fuelParam)) {
-      nextFuelType = fuelParam;
-    }
+    const nextFuelType = (fuelParam && ['all', 'gas', 'diesel', 'hybrid', 'electric'].includes(fuelParam)) ? fuelParam : 'all';
 
-    let nextCategory = category;
     const categoryParam = params.get('category');
-    if (categoryParam && ['all', 'suv', 'sedan', 'coupe', 'hatchback', 'pickup'].includes(categoryParam)) {
-      nextCategory = categoryParam;
-    }
+    const nextCategory = (categoryParam && ['all', 'suv', 'sedan', 'coupe', 'hatchback', 'pickup'].includes(categoryParam)) ? categoryParam : 'all';
 
-    let nextDrive = drive;
     const driveParam = params.get('drive');
-    if (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) {
-      nextDrive = driveParam;
-    }
+    const nextDrive = (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) ? driveParam : 'all';
 
-    let nextYearRange = yearRange;
+    // Year range
     const yearFromParam = params.get('yearFrom');
     const yearToParam = params.get('yearTo');
-    if (yearFromParam && yearToParam) {
+    const nextYearRange = (yearFromParam && yearToParam) ? (() => {
       const from = Number(yearFromParam);
       const to = Number(yearToParam);
-      if (Number.isFinite(from) && Number.isFinite(to)) {
-        nextYearRange = [from, to];
-      }
-    }
+      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [1990, new Date().getFullYear() + 1];
+    })() : [1990, new Date().getFullYear() + 1];
 
-    let nextExactYear = exactYear;
+    // Exact year
     const yearExactParam = params.get('yearExact');
-    if (yearExactParam !== null && yearExactParam !== '') {
+    const nextExactYear = (yearExactParam !== null && yearExactParam !== '') ? (() => {
       const parsed = Number(yearExactParam);
-      if (!Number.isNaN(parsed)) {
-        nextExactYear = parsed;
-      }
-    }
+      return Number.isNaN(parsed) ? '' : parsed;
+    })() : '';
 
-    let nextMaxMileage = maxMileage;
+    // Mileage
     const maxMileageParam = params.get('maxMileage');
-    if (maxMileageParam !== null) {
+    const nextMaxMileage = maxMileageParam ? (() => {
       const parsed = Number(maxMileageParam);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        nextMaxMileage = [parsed];
-      }
-    }
+      return (Number.isFinite(parsed) && parsed > 0) ? [parsed] : [200000];
+    })() : [200000];
 
-    let nextMinMileage = minMileage;
     const minMileageParam = params.get('minMileage');
-    if (minMileageParam !== null && minMileageParam !== '') {
+    const nextMinMileage = (minMileageParam !== null && minMileageParam !== '') ? (() => {
       const parsed = Number(minMileageParam);
-      if (!Number.isNaN(parsed)) {
-        nextMinMileage = parsed;
-      }
-    }
+      return Number.isNaN(parsed) ? '' : parsed;
+    })() : '';
 
-    let nextPriceRange = priceRange;
+    // Price range
     const priceMinParam = params.get('priceMin');
     const priceMaxParam = params.get('priceMax');
-    if (priceMinParam && priceMaxParam) {
+    const nextPriceRange = (priceMinParam && priceMaxParam) ? (() => {
       const min = Number(priceMinParam);
       const max = Number(priceMaxParam);
-      if (Number.isFinite(min) && Number.isFinite(max)) {
-        nextPriceRange = [min, max];
-      }
-    }
+      return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [0, 50000];
+    })() : [0, 50000];
 
-    let nextSortBy: SortOption = sortBy;
+    // Sort
     const sortParam = params.get('sort') as SortOption | null;
-    if (sortParam && ['relevance', 'price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) {
-      nextSortBy = sortParam;
-    }
+    const nextSortBy = (sortParam && ['relevance', 'price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) ? sortParam : 'relevance';
 
-    let nextLimit = limit;
+    // Limit
     const limitParam = params.get('limit');
-    if (limitParam !== null) {
+    const nextLimit = limitParam ? (() => {
       const parsed = Number(limitParam);
-      if ([10, 20, 30, 50].includes(parsed)) {
-        nextLimit = parsed;
-      }
-    }
+      return [10, 20, 30, 50].includes(parsed) ? parsed : 20;
+    })() : 20;
 
-    let nextPage = 1;
+    // Page
     const pageParam = params.get('page');
-    if (pageParam !== null) {
+    const nextPage = pageParam ? (() => {
       const parsed = Number(pageParam);
-      if (Number.isInteger(parsed) && parsed > 0) {
-        nextPage = parsed;
-      }
-    }
+      return (Number.isInteger(parsed) && parsed > 0) ? parsed : 1;
+    })() : 1;
 
-    let nextCompanySearch = companySearch;
-    const companyParam = params.get('company');
-    if (companyParam !== null) {
-      nextCompanySearch = companyParam;
-    }
-
-    let nextCompanyVipOnly = companyVipOnly;
+    // Company filters
+    const nextCompanySearch = params.get('company') || '';
     const vipOnlyParam = params.get('vipOnly');
-    if (vipOnlyParam !== null) {
-      nextCompanyVipOnly = vipOnlyParam === '1' || vipOnlyParam === 'true';
-    }
-
-    let nextSelectedCompanyId: string | null = selectedCompanyId;
+    const nextCompanyVipOnly = vipOnlyParam === '1' || vipOnlyParam === 'true';
     const companyIdParam = params.get('companyId');
-    if (companyIdParam !== null && companyIdParam !== '') {
-      nextSelectedCompanyId = companyIdParam;
-    }
+    const nextSelectedCompanyId = (companyIdParam !== null && companyIdParam !== '') ? companyIdParam : null;
 
+    // Build filters
     const filters = buildFiltersFromDraftState({
       searchQuery: nextSearchQuery,
       exactYear: nextExactYear,
@@ -630,98 +584,27 @@ const AuctionListingsPage = () => {
       selectedModelName,
     });
 
-    if (nextSearchQuery !== searchQuery) {
-      setSearchQuery(nextSearchQuery);
-    }
-
-    if (nextSearchKind !== searchKind) {
-      setSearchKind(nextSearchKind);
-    }
-
-    if (nextAuctionFilter !== auctionFilter) {
-      setAuctionFilter(nextAuctionFilter);
-    }
-
-    if (nextFuelType !== fuelType) {
-      setFuelType(nextFuelType);
-    }
-
-    if (nextCategory !== category) {
-      setCategory(nextCategory);
-    }
-
-    if (nextDrive !== drive) {
-      setDrive(nextDrive);
-    }
-
-    if (nextYearRange !== yearRange) {
-      setYearRange(nextYearRange);
-    }
-
-    if (nextExactYear !== exactYear) {
-      setExactYear(nextExactYear);
-    }
-
-    if (nextMaxMileage !== maxMileage) {
-      setMaxMileage(nextMaxMileage);
-    }
-
-    if (nextMinMileage !== minMileage) {
-      setMinMileage(nextMinMileage);
-    }
-
-    if (nextPriceRange !== priceRange) {
-      setPriceRange(nextPriceRange);
-    }
-
-    if (nextSortBy !== sortBy) {
-      setSortBy(nextSortBy);
-    }
-
-    if (nextLimit !== limit) {
-      setLimit(nextLimit);
-    }
-
-    if (nextCompanySearch !== companySearch) {
-      setCompanySearch(nextCompanySearch);
-    }
-
-    if (nextCompanyVipOnly !== companyVipOnly) {
-      setCompanyVipOnly(nextCompanyVipOnly);
-    }
-
-    if (nextSelectedCompanyId !== selectedCompanyId) {
-      setSelectedCompanyId(nextSelectedCompanyId);
-    }
-
-    if (nextPage !== page) {
-      setPage(nextPage);
-    }
-
+    // Set all state values
+    setSearchQuery(nextSearchQuery);
+    setSearchKind(nextSearchKind);
+    setAuctionFilter(nextAuctionFilter);
+    setFuelType(nextFuelType);
+    setCategory(nextCategory);
+    setDrive(nextDrive);
+    setYearRange(nextYearRange);
+    setExactYear(nextExactYear);
+    setMaxMileage(nextMaxMileage);
+    setMinMileage(nextMinMileage);
+    setPriceRange(nextPriceRange);
+    setSortBy(nextSortBy);
+    setLimit(nextLimit);
+    setCompanySearch(nextCompanySearch);
+    setCompanyVipOnly(nextCompanyVipOnly);
+    setSelectedCompanyId(nextSelectedCompanyId);
+    setPage(nextPage);
     setAppliedFilters(filters);
     setAppliedPage(filters.page);
-  }, [
-    location.search,
-    searchQuery,
-    searchKind,
-    auctionFilter,
-    fuelType,
-    category,
-    drive,
-    yearRange,
-    exactYear,
-    maxMileage,
-    minMileage,
-    priceRange,
-    sortBy,
-    limit,
-    companySearch,
-    companyVipOnly,
-    selectedCompanyId,
-    page,
-    selectedMakeName,
-    selectedModelName,
-  ]);
+  }, [location.search, selectedMakeName, selectedModelName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1861,55 +1744,55 @@ const AuctionListingsPage = () => {
 
                     return (
                       <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
-                        <button
-                          type="button"
-                          className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
-                          onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
-                        >
-                          <div className="relative w-full h-40">
+                        <div className="relative w-full">
+                          <button
+                            type="button"
+                            className="relative w-full h-40 overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
+                            onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
+                          >
                             <img
                               src={mainPhotoUrl}
                               alt={`${item.year} ${item.make} ${item.model}`}
                               className="absolute inset-0 h-full w-full object-cover"
                               loading="lazy"
                             />
-                            <AnimatePresence>
-                              {showCompareCheckboxes && (
-                                <motion.div
-                                  key="compare-checkbox"
-                                  initial={{ opacity: 0, y: -8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -8 }}
-                                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                                  className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white"
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  <span>შედარებისთვის არჩევა</span>
-                                  <Checkbox
-                                    aria-label="აირჩიეთ მანქანა შედარებისთვის"
-                                    checked={isSelected}
-                                    onCheckedChange={(checked) => {
-                                      setSelectedVehicleIds((prev) => {
-                                        const exists = prev.includes(vehicleKey);
-                                        if (checked && !exists) {
-                                          const next = [...prev, vehicleKey];
-                                          if (next.length > 5) {
-                                            return prev;
-                                          }
-                                          return next;
+                          </button>
+                          <AnimatePresence>
+                            {showCompareCheckboxes && (
+                              <motion.div
+                                key="compare-checkbox"
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.18, ease: 'easeOut' }}
+                                className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white z-10"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <span>შედარებისთვის არჩევა</span>
+                                <Checkbox
+                                  aria-label="აირჩიეთ მანქანა შედარებისთვის"
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedVehicleIds((prev) => {
+                                      const exists = prev.includes(vehicleKey);
+                                      if (checked && !exists) {
+                                        const next = [...prev, vehicleKey];
+                                        if (next.length > 5) {
+                                          return prev;
                                         }
-                                        if (!checked && exists) {
-                                          return prev.filter((id) => id !== vehicleKey);
-                                        }
-                                        return prev;
-                                      });
-                                    }}
-                                  />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </button>
+                                        return next;
+                                      }
+                                      if (!checked && exists) {
+                                        return prev.filter((id) => id !== vehicleKey);
+                                      }
+                                      return prev;
+                                    });
+                                  }}
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                         {extraPhotoUrls.length > 1 && (
                           <div className="flex items-center gap-1 px-2 pt-0.5 pb-1 overflow-x-auto">
                             {extraPhotoUrls.slice(0, 3).map((thumbUrl, index) => (
