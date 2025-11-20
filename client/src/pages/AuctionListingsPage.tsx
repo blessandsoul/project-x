@@ -1862,13 +1862,10 @@ const AuctionListingsPage = () => {
                   const extraPhotoUrls = photosByVehicleId[vehicleKey] || [];
                   const mainPhotoUrl =
                     item.primary_photo_url || item.primary_thumb_url || extraPhotoUrls[0] || '/cars/1.webp';
-                  const priceRaw =
-                    typeof item.calc_price === 'number'
-                      ? item.calc_price
-                      : typeof item.retail_value === 'number'
-                        ? item.retail_value
-                        : Number(item.retail_value ?? 0);
-                  const displayPrice = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+                  const calcPriceRaw = item.calc_price;
+                  const calcPriceNumeric =
+                    typeof calcPriceRaw === 'number' ? calcPriceRaw : Number(calcPriceRaw ?? 0);
+                  const displayPrice = Number.isFinite(calcPriceNumeric) ? Math.max(0, calcPriceNumeric) : 0;
 
                   const isSelected = selectedVehicleIds.includes(vehicleKey);
 
@@ -2133,13 +2130,14 @@ const AuctionListingsPage = () => {
                           const bestQuote = sortedQuotes[0] ?? null;
 
                           const getCompanyOnlyPrice = (quote: (typeof vehicle.quotes)[number]) => {
-                            const total = quote.breakdown?.total_price ?? quote.total_price;
-                            const car = quote.breakdown?.retail_value ?? 0;
-                            const totalNum = typeof total === 'number' ? total : Number(total);
-                            const carNum = typeof car === 'number' ? car : Number(car);
+                            const service = quote.breakdown?.service_fee;
 
-                            if (!Number.isFinite(totalNum)) return null;
-                            const company = totalNum - (Number.isFinite(carNum) ? carNum : 0);
+                            const serviceNum =
+                              typeof service === 'number' ? service : Number(service ?? 0);
+
+                            if (!Number.isFinite(serviceNum)) return null;
+
+                            const company = Math.max(0, serviceNum);
                             return company > 0 ? company : null;
                           };
 
@@ -2263,11 +2261,10 @@ const AuctionListingsPage = () => {
                                               </span>
                                             </div>
                                             <div className="flex items-center justify-between gap-2">
-                                              <span>კომპანიის მომსახურება (service + broker)</span>
+                                              <span>ბროკერის მომსახურება</span>
                                               <span>
                                                 {formatMoney(
-                                                  (quote.breakdown?.service_fee ?? 0) +
-                                                    (quote.breakdown?.broker_fee ?? 0),
+                                                  quote.breakdown?.broker_fee ?? 0,
                                                   compareResult.currency,
                                                 ) ?? '—'}
                                               </span>
