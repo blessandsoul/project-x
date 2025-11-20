@@ -561,6 +561,19 @@ For the corresponding write endpoints:
 | `rating`  | yes             | no             | number         | `1 <= rating <= 5`             |
 | `comment` | no              | no             | string \| null | If present: 10–2000 characters |
 
+#### Delete endpoint
+
+- **DELETE** `/companies/:companyId/reviews/:reviewId`
+
+Deletes an existing review for the given company.
+
+**Responses:**
+
+- `204 No Content` – Review was successfully deleted.
+- `400 Bad Request` – Invalid `companyId` or `reviewId`.
+- `404 Not Found` – Company or review does not exist, or the review does not belong to the company.
+- `403 Forbidden` – The authenticated user is not allowed to delete this review (only the owner can delete).
+
 ---
 
 ## Company Quotes API (Summary)

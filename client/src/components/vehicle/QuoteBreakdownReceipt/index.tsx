@@ -14,6 +14,8 @@ const formatCurrency = (value: number): string => {
 }
 
 const QuoteBreakdownReceipt: React.FC<QuoteBreakdownReceiptProps> = ({ breakdown, companyName }) => {
+  const transportCost = breakdown.base_price + breakdown.mileage_cost
+
   return (
     <Card className="mt-2 border-dashed bg-muted/40">
       <CardContent className="p-3 space-y-3 text-[11px]">
@@ -34,7 +36,7 @@ const QuoteBreakdownReceipt: React.FC<QuoteBreakdownReceiptProps> = ({ breakdown
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">ტრანსპორტირება (მიწოდება)</span>
-            <span className="font-medium">${formatCurrency(breakdown.shipping_total)}</span>
+            <span className="font-medium">${formatCurrency(transportCost)}</span>
           </div>
 
           <div className="flex items-center justify-between">

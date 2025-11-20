@@ -317,6 +317,7 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
   "distance_miles": 7800,
   "quotes": [
     {
+      "company_id": 42,
       "company_name": "ACME Shipping",
       "total_price": 12345.67, // vehicle + shipping + insurance, in requested currency
       "delivery_time_days": 35, // optional per-company override
@@ -519,6 +520,7 @@ Currency:
       "distance_miles": 7800,
       "quotes": [
         {
+          "company_id": 42,
           "company_name": "ACME Shipping",
           "total_price": 12345.67,
           "delivery_time_days": 35,
@@ -615,6 +617,7 @@ Constraints:
       "distance_miles": 7800,
       "quotes": [
         {
+          "company_id": 42,
           "company_name": "ACME Shipping",
           "total_price": 13000,
           "delivery_time_days": 35,
