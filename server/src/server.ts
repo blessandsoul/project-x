@@ -105,6 +105,8 @@ await fastify.register(cors, {
     cb(new Error('Origin not allowed by CORS'), false);
   },
   credentials: allowCorsCredentials,
+  // Explicitly allow all HTTP methods we use from the SPA, including DELETE and PUT
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 });
 
 await fastify.register(fastifyCookie);
