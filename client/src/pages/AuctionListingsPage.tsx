@@ -27,6 +27,7 @@ import type { VehiclesCompareResponse } from '@/api/vehicles';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalog';
 import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
+import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
 
 type AuctionHouse = 'all' | 'Copart' | 'IAAI' | 'Manheim';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
@@ -208,6 +209,9 @@ const AuctionListingsPage = () => {
   const [compareResult, setCompareResult] = useState<VehiclesCompareResponse | null>(null);
   const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
   const [expandedQuoteKey, setExpandedQuoteKey] = useState<string | null>(null);
+  const { data: calcData, isLoading: isCalcLoading, error: calcError, calculateQuotes } =
+    useCalculateVehicleQuotes();
+  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
 
   const companySuggestions = useMemo(() => {
     if (!companies || companies.length === 0) {
@@ -812,6 +816,15 @@ const AuctionListingsPage = () => {
   );
 
   const photosByVehicleId = useVehiclePhotosMap({ vehicleIds: backendVehicleIds });
+
+  const randomCalcQuote = useMemo(() => {
+    if (!calcData || !calcData.quotes || calcData.quotes.length === 0) {
+      return null;
+    }
+
+    const index = Math.floor(Math.random() * calcData.quotes.length);
+    return calcData.quotes[index];
+  }, [calcData]);
 
   type BackendData = NonNullable<typeof backendData>;
   type BackendItem = BackendData['items'][number];
@@ -1977,20 +1990,9 @@ const AuctionListingsPage = () => {
                               aria-label="ღირებულების გათვლა"
                               onClick={() => {
                                 const vehicleKey = item.vehicle_id ?? item.id;
-                                const companyName = getSelectedCompanyNameForLink();
-                                const search = companyName
-                                  ? `?company=${encodeURIComponent(companyName)}`
-                                  : '';
-
-                                navigate(
-                                  {
-                                    pathname: `/vehicle/${vehicleKey}`,
-                                    search,
-                                  },
-                                  {
-                                    state: { scrollToOffers: true },
-                                  },
-                                );
+                                calculateQuotes(vehicleKey).then(() => {
+                                  setIsCalcModalOpen(true);
+                                });
                               }}
                             >
                               <Icon icon="mdi:calculator-variant" className="h-3.5 w-3.5" />
@@ -2056,6 +2058,11 @@ const AuctionListingsPage = () => {
                       <div className="text-muted-foreground">
                         ნახეთ ყველაზე მომგებიანი სრული ფასები და მიწოდების დრო რამდენიმე მანქანისთვის ერთად.
                       </div>
+                      {compareResult && compareResult.vehicles.length > 0 && (
+                        <div className="text-muted-foreground">
+                          შედარებაში: {compareResult.vehicles.length} მანქანა
+                        </div>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -2094,9 +2101,17 @@ const AuctionListingsPage = () => {
 
                     {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length > 0 && (
                       <div className="space-y-3">
-                        <p className="text-xs text-muted-foreground">
-                          ვალუტა: {compareResult.currency}
-                        </p>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>ვალუტა: {compareResult.currency}</span>
+                          <span>შედარებაში: {compareResult.vehicles.length} მანქანა</span>
+                        </div>
+                        <div
+                          className={
+                            compareResult.vehicles.length === 2
+                              ? 'grid gap-3 md:grid-cols-2'
+                              : 'grid gap-3 md:grid-cols-2 lg:grid-cols-3'
+                          }
+                        >
                         {compareResult.vehicles.map((vehicle) => {
                           const backendItem = backendData?.items.find(
                             (item) => (item.vehicle_id ?? item.id) === vehicle.vehicle_id,
@@ -2287,7 +2302,138 @@ const AuctionListingsPage = () => {
                             </Card>
                           );
                         })}
+                        </div>
                       </div>
+                    )}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isCalcModalOpen && (
+              <motion.div
+                className="fixed inset-0 z-50 bg-black/70 px-2 sm:px-4 py-4 sm:py-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={() => setIsCalcModalOpen(false)}
+                role="dialog"
+                aria-modal="true"
+                aria-label="მანქანის კალკულაცია ერთი კომპანიისთვის"
+              >
+                <motion.div
+                  className="fixed left-1/2 top-1/2 z-[55] w-[calc(100%-1.5rem)] max-w-xl max-h-[85vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col"
+                  initial={{ scale: 0.96, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.96, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-4 py-2 border-b">
+                    <div className="flex flex-col gap-0.5 text-[11px]">
+                      <div className="font-medium text-sm truncate">კალკულაცია ერთი კომპანიისთვის</div>
+                      <div className="text-muted-foreground">
+                        ნახეთ ერთი შემთხვევითი კომპანიის სრული საკურიერო ფასის მაგალითი ამ ლოტისთვის.
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 text-[11px]"
+                      onClick={() => setIsCalcModalOpen(false)}
+                      aria-label="დახურვა"
+                    >
+                      <Icon icon="mdi:close" className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  <div className="px-4 py-3 text-xs space-y-3">
+                    {isCalcLoading && (
+                      <div className="space-y-2" aria-busy="true">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-5/6" />
+                      </div>
+                    )}
+
+                    {!isCalcLoading && calcError && (
+                      <Card className="border-destructive/40 bg-destructive/5">
+                        <CardContent className="py-3 text-[11px]">
+                          {calcError}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {!isCalcLoading && !calcError && calcData && randomCalcQuote && (
+                      <Card className="text-xs">
+                        <CardHeader className="pb-1">
+                          <CardTitle className="text-sm">
+                            {calcData.year} {calcData.make} {calcData.model}
+                          </CardTitle>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {calcData.yard_name} • {calcData.source}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="pt-2 space-y-2 text-[11px]">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <div className="text-muted-foreground">კომპანია</div>
+                              <div className="text-sm font-semibold">{randomCalcQuote.company_name}</div>
+                            </div>
+                            <div className="text-right space-y-0.5">
+                              <div className="text-muted-foreground">სრული ფასი</div>
+                              <div className="text-base font-bold text-emerald-600">
+                                {formatMoney(randomCalcQuote.total_price, 'USD') ?? '—'}
+                              </div>
+                              {randomCalcQuote.delivery_time_days != null && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  მიწოდების დრო: {randomCalcQuote.delivery_time_days} დღე
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-2 border-t pt-2 space-y-1.5 text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-between">
+                              <span>მანქანის ფასი აუქციონზე</span>
+                              <span>
+                                {formatMoney(randomCalcQuote.breakdown?.calc_price ?? 0, 'USD') ?? '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>მიწოდება და ლოჯისტიკა</span>
+                              <span>
+                                {formatMoney(randomCalcQuote.breakdown?.shipping_total ?? 0, 'USD') ?? '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>სერვისის საფასური</span>
+                              <span>
+                                {formatMoney(randomCalcQuote.breakdown?.service_fee ?? 0, 'USD') ?? '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>ზღვრული დაზღვევა</span>
+                              <span>
+                                {formatMoney(randomCalcQuote.breakdown?.insurance_fee ?? 0, 'USD') ?? '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between font-semibold text-foreground border-t pt-1.5 mt-1">
+                              <span>ჯამური ფასი</span>
+                              <span>
+                                {formatMoney(
+                                  randomCalcQuote.breakdown?.total_price ?? randomCalcQuote.total_price,
+                                  'USD',
+                                ) ?? '—'}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
                   </div>
                 </motion.div>
