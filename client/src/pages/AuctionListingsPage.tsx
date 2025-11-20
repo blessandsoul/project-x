@@ -2232,7 +2232,7 @@ const AuctionListingsPage = () => {
                                               <span>მანქანის ფასი აუქციონზე</span>
                                               <span>
                                                 {formatMoney(
-                                                  quote.breakdown?.retail_value ?? 0,
+                                                  quote.breakdown?.calc_price ?? 0,
                                                   compareResult.currency,
                                                 ) ?? '—'}
                                               </span>
@@ -2241,7 +2241,8 @@ const AuctionListingsPage = () => {
                                               <span>ტრანსპორტირება / მიწოდება</span>
                                               <span>
                                                 {formatMoney(
-                                                  quote.breakdown?.shipping_total ?? 0,
+                                                  (quote.breakdown?.base_price ?? 0) +
+                                                    (quote.breakdown?.mileage_cost ?? 0),
                                                   compareResult.currency,
                                                 ) ?? '—'}
                                               </span>

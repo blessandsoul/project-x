@@ -450,6 +450,7 @@ export class CompanyController {
       }
 
       return {
+        company_id: q.company_id,
         company_name: q.company_name,
         total_price: convertedTotal,
         delivery_time_days: q.delivery_time_days,
