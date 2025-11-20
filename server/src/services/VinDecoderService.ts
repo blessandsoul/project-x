@@ -44,6 +44,11 @@ export class VinDecoderService {
       const apiResponse = await this.callNHTSAApi(vin);
 
       if (!apiResponse.success) {
+        this.fastify.log.error(
+          { vin, error: apiResponse.error },
+          'VIN decoder NHTSA API call failed',
+        );
+
         return {
           success: false,
           error: apiResponse.error || 'Unknown API error',
@@ -251,10 +256,19 @@ export class VinDecoderService {
 
     } catch (error) {
       const responseTime = Date.now() - startTime;
+
+      const message = axios.isAxiosError(error)
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : 'Unknown error';
+
+      this.fastify.log.error({ error, responseTime }, 'VIN decoder health check failed');
+
       return {
         healthy: false,
         responseTime,
-        error: axios.isAxiosError(error) ? error.message : (error instanceof Error ? error.message : 'Unknown error')
+        error: message,
       };
     }
   }

@@ -17,6 +17,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { useQuotesSearch } from '@/hooks/useQuotesSearch';
+import { fetchCompanyReviewsFromApi, type ApiCompanyReview } from '@/services/companiesApi';
 
 const CompanyProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,12 +36,69 @@ const CompanyProfilePage = () => {
   const [quotePrice, setQuotePrice] = useState<number>(20000);
   const [quoteDistance, setQuoteDistance] = useState<number>(5500);
   const { quotes, isLoading: isQuotesLoading, error: quotesError, searchQuotes } = useQuotesSearch();
+  const [reviews, setReviews] = useState<ApiCompanyReview[]>([]);
+  const [reviewsPage, setReviewsPage] = useState<number>(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState<number>(1);
+  const [isReviewsLoading, setIsReviewsLoading] = useState<boolean>(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const reviewsLimit = 5;
 
   useEffect(() => {
     if (company) {
       addRecentlyViewed(company.id);
     }
   }, [company, addRecentlyViewed]);
+
+  useEffect(() => {
+    if (!company?.id) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadReviews = async () => {
+      setIsReviewsLoading(true);
+      setReviewsError(null);
+
+      try {
+        const response = await fetchCompanyReviewsFromApi(company.id, {
+          limit: reviewsLimit,
+          offset: (reviewsPage - 1) * reviewsLimit,
+        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        setReviews(Array.isArray(response.items) ? response.items : []);
+        setReviewsTotalPages(
+          typeof response.totalPages === 'number' && response.totalPages > 0
+            ? response.totalPages
+            : 1,
+        );
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        console.error('[CompanyProfilePage] Failed to load company reviews', {
+          companyId: company.id,
+          error,
+        });
+        setReviewsError('ვერ ჩატარდა შეფასებების ჩატვირთვა');
+      } finally {
+        if (!isCancelled) {
+          setIsReviewsLoading(false);
+        }
+      }
+    };
+
+    void loadReviews();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [company?.id, reviewsLimit, reviewsPage]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -371,29 +429,96 @@ const CompanyProfilePage = () => {
               {/* Reviews */}
               <Card>
                 <CardHeader>
-                  <CardTitle>შეფასებები ({company.reviews.length})</CardTitle>
+                  <CardTitle>შეფასებები ({company.reviewCount})</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {company.reviews.map(review => (
-                    <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{review.userName}</span>
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <Icon
-                                key={i}
-                                icon="mdi:star"
-                                className={`h-4 w-4 ${i < review.rating ? 'text-warning fill-current' : 'text-gray-300'}`}
-                              />
-                            ))}
+                  {isReviewsLoading && (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, index) => (
+                        <div key={index} className="animate-pulse space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="h-4 w-24 rounded bg-muted" />
+                            <div className="h-3 w-16 rounded bg-muted" />
                           </div>
+                          <div className="h-3 w-full rounded bg-muted" />
+                          <div className="h-3 w-5/6 rounded bg-muted" />
                         </div>
-                        <span className="text-sm text-muted-foreground">{review.date}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{review.comment}</p>
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  {!isReviewsLoading && reviewsError && (
+                    <p className="text-sm text-red-500">
+                      {reviewsError}
+                    </p>
+                  )}
+
+                  {!isReviewsLoading && !reviewsError && reviews.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      ამ კომპანიას ჯერ არ აქვს შეფასებები.
+                    </p>
+                  )}
+
+                  {!isReviewsLoading && !reviewsError && reviews.length > 0 && (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">
+                                მომხმარებელი #{review.user_id}
+                              </span>
+                              <div className="flex items-center">
+                                {[...Array(5)].map((_, index) => (
+                                  <Icon
+                                    key={index}
+                                    icon="mdi:star"
+                                    className={`h-4 w-4 ${
+                                      index < review.rating ? 'text-warning fill-current' : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {review.comment && (
+                            <p className="text-sm text-muted-foreground">
+                              {review.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {reviewsTotalPages > 1 && !reviewsError && (
+                    <div className="flex items-center justify-between pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isReviewsLoading || reviewsPage <= 1}
+                        onClick={() => setReviewsPage((prev) => Math.max(1, prev - 1))}
+                      >
+                        <Icon icon="mdi:chevron-left" className="h-4 w-4 mr-1" />
+                        წინა
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        {reviewsPage} / {reviewsTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isReviewsLoading || reviewsPage >= reviewsTotalPages}
+                        onClick={() => setReviewsPage((prev) => Math.min(reviewsTotalPages, prev + 1))}
+                      >
+                        შემდეგი
+                        <Icon icon="mdi:chevron-right" className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

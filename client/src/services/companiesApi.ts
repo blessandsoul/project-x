@@ -1,6 +1,6 @@
+import axios, { type AxiosError } from 'axios'
+import { API_BASE_URL } from '@/lib/apiClient'
 import type { Company } from '@/mocks/_mockData'
-
-const API_BASE_URL = 'http://localhost:3000'
 
 export type ApiCompanyReview = {
   id: number
@@ -71,7 +71,10 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   return {
     id: String(apiCompany.id),
     name: apiCompany.name,
-    logo: apiCompany.logo ?? '',
+    logo:
+      typeof apiCompany.logo === 'string' && apiCompany.logo.trim().length > 0
+        ? apiCompany.logo
+        : '/car-logos/toyota.png',
     description: apiCompany.description ?? '',
     services: [],
     priceRange: {
@@ -98,13 +101,9 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
 
 export async function fetchCompaniesFromApi(): Promise<Company[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/companies`)
+    const response = await axios.get<ApiCompany[]>(`${API_BASE_URL}/companies`)
 
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const raw = (await response.json()) as unknown
+    const raw = response.data as unknown
 
     if (!Array.isArray(raw)) {
       throw new Error('Invalid companies payload')
@@ -196,46 +195,40 @@ export async function searchCompaniesFromApi(
     ? `${API_BASE_URL}/companies/search?${queryString}`
     : `${API_BASE_URL}/companies/search`
 
-  const response = await fetch(url)
+  try {
+    const response = await axios.get<{
+      items: ApiCompany[]
+      total: number
+      limit: number
+      offset: number
+    }>(url)
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
+    const raw = response.data
 
-  const raw = (await response.json()) as {
-    items: ApiCompany[]
-    total: number
-    limit: number
-    offset: number
-  }
+    const companies = Array.isArray(raw.items)
+      ? raw.items.map((item: ApiCompany) => mapApiCompanyToUiCompany(item))
+      : []
 
-  const companies = Array.isArray(raw.items)
-    ? raw.items.map((item) => mapApiCompanyToUiCompany(item))
-    : []
-
-  return {
-    companies,
-    total: typeof raw.total === 'number' ? raw.total : companies.length,
-    limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? companies.length,
-    offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
+    return {
+      companies,
+      total: typeof raw.total === 'number' ? raw.total : companies.length,
+      limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? companies.length,
+      offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
+    }
+  } catch (error) {
+    console.error('[CompaniesAPI] Failed to search companies', {
+      params,
+      error,
+    })
+    throw error
   }
 }
 
 export async function fetchCompanyByIdFromApi(id: string | number): Promise<Company | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/companies/${id}`)
+    const response = await axios.get<ApiCompany>(`${API_BASE_URL}/companies/${id}`) 
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const raw = (await response.json()) as ApiCompany
-
-    return mapApiCompanyToUiCompany(raw)
+    return mapApiCompanyToUiCompany(response.data)
   } catch (error) {
     console.error('[CompaniesAPI] Failed to fetch company by id', {
       id,
@@ -269,26 +262,31 @@ export async function fetchCompanyReviewsFromApi(
     ? `${API_BASE_URL}/companies/${companyId}/reviews?${queryString}`
     : `${API_BASE_URL}/companies/${companyId}/reviews`
 
-  const response = await fetch(url)
+  try {
+    const response = await axios.get<CompanyReviewsResponse>(url)
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
+    const raw = response.data
 
-  const raw = (await response.json()) as CompanyReviewsResponse
-
-  if (!Array.isArray(raw.items)) {
-    return {
-      items: [],
-      total: 0,
-      limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? 0,
-      offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
-      page: typeof raw.page === 'number' ? raw.page : 1,
-      totalPages: typeof raw.totalPages === 'number' ? raw.totalPages : 0,
+    if (!Array.isArray(raw.items)) {
+      return {
+        items: [],
+        total: 0,
+        limit: typeof raw.limit === 'number' ? raw.limit : params.limit ?? 0,
+        offset: typeof raw.offset === 'number' ? raw.offset : params.offset ?? 0,
+        page: typeof raw.page === 'number' ? raw.page : 1,
+        totalPages: typeof raw.totalPages === 'number' ? raw.totalPages : 0,
+      }
     }
-  }
 
-  return raw
+    return raw
+  } catch (error) {
+    console.error('[CompaniesAPI] Failed to fetch company reviews', {
+      companyId,
+      params,
+      error,
+    })
+    throw error
+  }
 }
 
 export type LeadFromQuotesPayload = {
@@ -301,15 +299,32 @@ export type LeadFromQuotesPayload = {
 }
 
 export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/leads/from-quotes`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
+  try {
+    const response = await axios.post(`${API_BASE_URL}/leads/from-quotes`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
+    console.log('[CompaniesAPI] Successfully created lead from quotes', {
+      status: response.status,
+    })
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+
+      console.error('[CompaniesAPI] Failed to create lead from quotes', {
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        message: axiosError.message,
+      })
+    } else {
+      console.error('[CompaniesAPI] Failed to create lead from quotes', {
+        error,
+      })
+    }
+
+    throw error
   }
 }

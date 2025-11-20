@@ -37,6 +37,17 @@ export interface VehicleQuotesResponse {
   quotes: VehicleQuote[]
 }
 
+export interface VehiclesCompareRequest {
+  vehicle_ids: number[]
+  quotes_per_vehicle?: number
+  currency?: 'usd' | 'gel'
+}
+
+export interface VehiclesCompareResponse {
+  currency: 'USD' | 'GEL'
+  vehicles: VehicleQuotesResponse[]
+}
+
 export async function calculateVehicleQuotes(
   vehicleId: number,
   currency: 'usd' | 'gel' = 'usd',
@@ -62,6 +73,14 @@ export async function calculateVehicleQuotes(
   console.log('[api] calculateVehicleQuotes:full-response', response)
 
   return response
+}
+
+export async function compareVehicles(payload: VehiclesCompareRequest): Promise<VehiclesCompareResponse> {
+  return apiPost<VehiclesCompareResponse>('/vehicles/compare', {
+    vehicle_ids: payload.vehicle_ids,
+    quotes_per_vehicle: payload.quotes_per_vehicle,
+    currency: payload.currency,
+  })
 }
 
 export async function searchVehicleQuotes(filters: VehiclesSearchFilters): Promise<SearchQuotesResponse> {

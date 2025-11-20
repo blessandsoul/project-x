@@ -110,4 +110,22 @@
   .font-logo-bebas {
     font-family: 'Bebas Neue', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1B4D3E #F5F5F5;
+  }
+
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #F5F5F5;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #1B4D3E;
+    border-radius: 9999px;
+  }
 }

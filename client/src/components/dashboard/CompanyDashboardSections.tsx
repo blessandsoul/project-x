@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -166,6 +167,30 @@ export function CompanyDashboardSections({
     [companyLeads],
   )
 
+  const formatExpiresIn = (expiresAt: string | null): string | null => {
+    if (!expiresAt) return null
+
+    const expiresDate = new Date(expiresAt)
+    const now = new Date()
+    const diffMs = expiresDate.getTime() - now.getTime()
+
+    if (Number.isNaN(diffMs)) return null
+
+    if (diffMs <= 0) {
+      return 'Expired'
+    }
+
+    const diffMinutesTotal = Math.floor(diffMs / (60 * 1000))
+    const hours = Math.floor(diffMinutesTotal / 60)
+    const minutes = diffMinutesTotal % 60
+
+    if (hours <= 0) {
+      return `${minutes} min left`
+    }
+
+    return `${hours}h ${minutes}m left`
+  }
+
   const t = (key: string): string => {
     const translations: Record<string, string> = {
       'dashboard.company.leads_bubble.title': 'New client requests',
@@ -198,16 +223,31 @@ export function CompanyDashboardSections({
                 {t('dashboard.company.leads_bubble.subtitle')}
               </p>
             </div>
-            {newLeadsCount > 0 && (
-              <div
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                aria-live="polite"
+            <div className="flex items-center gap-2">
+              {newLeadsCount > 0 && (
+                <div
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                  aria-live="polite"
+                >
+                  <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span>{newLeadsCount}</span>
+                  <span>NEW</span>
+                </div>
+              )}
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
               >
-                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span>{newLeadsCount}</span>
-                <span>NEW</span>
-              </div>
-            )}
+                <Link to="/company/leads">
+                  <span className="inline-flex items-center gap-1">
+                    <span>View all</span>
+                    <Icon icon="mdi:arrow-right" className="h-3 w-3" />
+                  </span>
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {companyLeads.length === 0 ? (
@@ -229,18 +269,13 @@ export function CompanyDashboardSections({
 
                   const statusLabel = statusLabelMap[lead.status]
 
+                  const expiresLabel = formatExpiresIn(lead.expiresAt)
+
                   return (
-                    <motion.button
+                    <Link
                       key={lead.id}
-                      type="button"
+                      to={`/company/leads/${lead.id}`}
                       className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                      whileHover={{ y: -2 }}
-                      animate={
-                        isNew
-                          ? { scale: [1, 1.04, 1] }
-                          : { scale: 1 }
-                      }
-                      transition={{ duration: 0.4, ease: 'easeOut' }}
                     >
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 overflow-hidden rounded-full border bg-muted">
@@ -252,12 +287,21 @@ export function CompanyDashboardSections({
                           />
                         </div>
                         <div className="flex flex-col">
-                          <span className="line-clamp-1 font-medium">{lead.vehicle.title}</span>
+                          <span className="line-clamp-1 font-medium">
+                            {lead.vehicle.year} {lead.vehicle.title}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {lead.summary.budgetUsdMin && lead.summary.budgetUsdMax
                               ? `$${lead.summary.budgetUsdMin.toLocaleString()} - $${lead.summary.budgetUsdMax.toLocaleString()}`
                               : 'Budget not specified'}
                           </span>
+                          {lead.priority && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {lead.priority === 'price' && 'Priority: price'}
+                              {lead.priority === 'speed' && 'Priority: speed'}
+                              {lead.priority === 'premium_service' && 'Priority: premium service'}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -268,15 +312,19 @@ export function CompanyDashboardSections({
                           <span className="mr-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
                           {statusLabel}
                         </span>
-                        {lead.priority && (
+                        {Array.isArray((lead as any).leadSummary?.auctionSources) &&
+                          (lead as any).leadSummary.auctionSources.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {(lead as any).leadSummary.auctionSources[0]}
+                            </span>
+                          )}
+                        {expiresLabel && (
                           <span className="text-[10px] text-muted-foreground">
-                            {lead.priority === 'price' && 'Priority: price'}
-                            {lead.priority === 'speed' && 'Priority: speed'}
-                            {lead.priority === 'premium_service' && 'Priority: premium service'}
+                            {expiresLabel}
                           </span>
                         )}
                       </div>
-                    </motion.button>
+                    </Link>
                   )
                 })}
               </div>

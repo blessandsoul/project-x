@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import Header from '@/components/Header/index.tsx'
@@ -27,6 +27,8 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
 import { useCompanySearch } from '@/hooks/useCompanySearch'
+import { fetchUserLeadOffers, type UserLeadOffer } from '@/api/userLeads'
+import { fetchCompanyLeads } from '@/api/companyLeads'
 
 export default function DashboardPage() {
   const { favorites, clearFavorites } = useFavorites()
@@ -44,8 +46,115 @@ export default function DashboardPage() {
   const [quickGeography, setQuickGeography] = useState<string>('')
   const [quickBudget, setQuickBudget] = useState<'low' | 'medium' | 'high' | ''>('')
 
+  const [userLeadOffers, setUserLeadOffers] = useState<UserLeadOffer[]>([])
+  const [isUserLeadOffersLoading, setIsUserLeadOffersLoading] = useState(false)
+  const [userLeadOffersError, setUserLeadOffersError] = useState<string | null>(null)
+
+  const [companyLeads, setCompanyLeads] = useState<CompanyLeadBubble[]>([])
+  const [isCompanyLeadsLoading, setIsCompanyLeadsLoading] = useState(false)
+  const [companyLeadsError, setCompanyLeadsError] = useState<string | null>(null)
+
   const isDashboardLoading = false
   const dashboardError: string | null = null
+
+  useEffect(() => {
+    if (role !== 'user') {
+      return
+    }
+
+    let isMounted = true
+
+    const loadUserLeadOffers = async () => {
+      setIsUserLeadOffersLoading(true)
+      setUserLeadOffersError(null)
+
+      try {
+        const offers = await fetchUserLeadOffers()
+        if (!isMounted) return
+        setUserLeadOffers(offers)
+      } catch (error) {
+        if (!isMounted) return
+        // eslint-disable-next-line no-console
+        console.error('[dashboard] fetchUserLeadOffers:error', error)
+        setUserLeadOffersError('ვერ ჩაიტვირთა თქვენი ფასის კოტაციები. სცადეთ მოგვიანებით.')
+      } finally {
+        if (isMounted) {
+          setIsUserLeadOffersLoading(false)
+        }
+      }
+    }
+
+    loadUserLeadOffers()
+
+    return () => {
+      isMounted = false
+    }
+  }, [role])
+
+  useEffect(() => {
+    if (role !== 'company') {
+      return
+    }
+
+    let isMounted = true
+
+    const loadCompanyLeads = async () => {
+      setIsCompanyLeadsLoading(true)
+      setCompanyLeadsError(null)
+
+      try {
+        const apiLeads = await fetchCompanyLeads()
+
+        if (!isMounted) return
+
+        const mapped: CompanyLeadBubble[] = apiLeads.map((item, index) => {
+          const priority = item.leadSummary.priority ?? null
+
+          return {
+            id: String(item.leadCompanyId ?? `${item.leadId}-${index}`),
+            leadId: item.leadId,
+            status: item.status,
+            invitedAt: item.invitedAt,
+            expiresAt: item.expiresAt,
+            priority,
+            vehicle: {
+              id: item.vehicle.id,
+              title: item.vehicle.title,
+              year: item.vehicle.year,
+              imageUrl: item.vehicle.mainImageUrl,
+            },
+            summary: {
+              budgetUsdMin: item.leadSummary.budgetUsdMin
+                ? Number.parseFloat(item.leadSummary.budgetUsdMin)
+                : null,
+              budgetUsdMax: item.leadSummary.budgetUsdMax
+                ? Number.parseFloat(item.leadSummary.budgetUsdMax)
+                : null,
+              desiredDurationDays: null,
+              maxAcceptableDurationDays: null,
+            },
+          }
+        })
+
+        setCompanyLeads(mapped)
+      } catch (error) {
+        if (!isMounted) return
+        // eslint-disable-next-line no-console
+        console.error('[dashboard] fetchCompanyLeads:error', error)
+        setCompanyLeadsError('ვერ ჩაიტვირთა ახალი მოთხოვნები. სცადეთ მოგვიანებით.')
+      } finally {
+        if (isMounted) {
+          setIsCompanyLeadsLoading(false)
+        }
+      }
+    }
+
+    loadCompanyLeads()
+
+    return () => {
+      isMounted = false
+    }
+  }, [role])
 
   const handleQuickSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -80,19 +189,9 @@ export default function DashboardPage() {
     () => ({
       viewedCount: recentlyViewed.length,
       favoritesCount: favorites.length,
-      requestsCount: 0,
+      requestsCount: userLeadOffers.length,
     }),
-    [favorites.length, recentlyViewed.length],
-  )
-
-  const mockOpenRequests = useMemo(
-    () =>
-      recentlyViewedCompanies.slice(0, 4).map((company, index) => ({
-        id: `${company.id}-${index}`,
-        companyName: company.name,
-        status: index % 2 === 0 ? 'ველოდებით პასუხს' : 'საპასუხო შეთავაზება მიღებულია',
-      })),
-    [recentlyViewedCompanies],
+    [favorites.length, recentlyViewed.length, userLeadOffers.length],
   )
 
   const mockGuides = useMemo(
@@ -286,48 +385,7 @@ export default function DashboardPage() {
     [],
   )
 
-  const companyLeads: CompanyLeadBubble[] = useMemo(
-    () => {
-      const cars = mockCars.slice(0, 5)
-
-      return cars.map((car, index) => {
-        const company = mockCompanies.find((item) => item.id === car.companyId)
-
-        const baseTitle = `${car.year} ${car.make} ${car.model}`
-        const status: CompanyLeadBubble['status'] =
-          index === 0 ? 'NEW' : index === 1 ? 'OFFER_SENT' : index === 2 ? 'WON' : index === 3 ? 'LOST' : 'EXPIRED'
-
-        const priority: CompanyLeadBubble['priority'] =
-          index % 3 === 0 ? 'price' : index % 3 === 1 ? 'speed' : 'premium_service'
-
-        const now = new Date()
-        const invitedAt = new Date(now.getTime() - index * 60 * 60 * 1000).toISOString()
-        const expiresAt = new Date(now.getTime() + (24 - index * 3) * 60 * 60 * 1000).toISOString()
-
-        return {
-          id: `lead-company-${car.id}`,
-          leadId: index + 1,
-          status,
-          invitedAt,
-          expiresAt,
-          priority,
-          vehicle: {
-            id: car.id,
-            title: baseTitle,
-            year: car.year,
-            imageUrl: car.imageUrl,
-          },
-          summary: {
-            budgetUsdMin: 8000 + index * 500,
-            budgetUsdMax: 12000 + index * 1000,
-            desiredDurationDays: 14,
-            maxAcceptableDurationDays: 21,
-          },
-        }
-      })
-    },
-    [],
-  )
+  // companyLeads are now loaded from real API (/company/leads) for company role.
 
   const companyDealerActivityByState = useMemo(
     () => {
@@ -570,7 +628,9 @@ export default function DashboardPage() {
         favoriteCompanies={favoriteCompanies}
         recentlyViewedCompanies={recentlyViewedCompanies}
         activityStats={activityStats}
-        mockOpenRequests={mockOpenRequests}
+        userLeadOffers={userLeadOffers}
+        userLeadOffersLoading={isUserLeadOffersLoading}
+        userLeadOffersError={userLeadOffersError}
         mockGuides={mockGuides}
         mockOffers={mockOffers}
         mockReminders={mockReminders}

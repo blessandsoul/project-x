@@ -76,110 +76,129 @@ export class AuctionApiService {
    * @param time - Time string in format DD.MM.YYYY HH:mm
    */
   async getActiveLotsHourly(time: string): Promise<ActiveLotsResponse> {
-    const token = this.getApiToken();
+    try {
+      const token = this.getApiToken();
 
-    const form = new FormData();
-    form.append('time', time);
+      const form = new FormData();
+      form.append('time', time);
 
-    const url = `${this.baseUrl}/get-active-lots-hourly`;
+      const url = `${this.baseUrl}/get-active-lots-hourly`;
 
-    this.fastify.log.info({ url, time }, 'Calling auction get-active-lots-hourly');
+      this.fastify.log.info({ url, time }, 'Calling auction get-active-lots-hourly');
 
-    const response = await axios.post<ActiveLotsResponse>(url, form, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...form.getHeaders(),
-      },
-      timeout: 30000,
-    });
+      const response = await axios.post<ActiveLotsResponse>(url, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...form.getHeaders(),
+        },
+        timeout: 30000,
+      });
 
-    const raw = response.data;
+      const raw = response.data;
 
-    // Some APIs return plain arrays, others wrap data in an object, and in this
-    // case the API returns a JSON URL in raw.data that must be fetched to get
-    // the actual lots array.
-    let lots: any[] | null = null;
+      // Some APIs return plain arrays, others wrap data in an object, and in this
+      // case the API returns a JSON URL in raw.data that must be fetched to get
+      // the actual lots array.
+      let lots: any[] | null = null;
 
-    if (Array.isArray(raw)) {
-      lots = raw;
-    } else if (raw && Array.isArray((raw as any).data)) {
-      lots = (raw as any).data;
-    } else if (raw && typeof (raw as any).data === 'string') {
-      const lotsUrl = (raw as any).data as string;
+      if (Array.isArray(raw)) {
+        lots = raw;
+      } else if (raw && Array.isArray((raw as any).data)) {
+        lots = (raw as any).data;
+      } else if (raw && typeof (raw as any).data === 'string') {
+        const lotsUrl = (raw as any).data as string;
 
-      try {
-        this.fastify.log.info({ time, lotsUrl }, 'Fetching auction lots from JSON URL');
-        const lotsResponse = await axios.get(lotsUrl, {
-          headers: { Accept: 'application/json' },
-          timeout: 60000,
-        });
+        try {
+          this.fastify.log.info({ time, lotsUrl }, 'Fetching auction lots from JSON URL');
+          const lotsResponse = await axios.get(lotsUrl, {
+            headers: { Accept: 'application/json' },
+            timeout: 60000,
+          });
 
-        const nested = lotsResponse.data;
-        if (Array.isArray(nested)) {
-          lots = nested;
-        } else if (nested && Array.isArray((nested as any).data)) {
-          lots = (nested as any).data;
+          const nested = lotsResponse.data;
+          if (Array.isArray(nested)) {
+            lots = nested;
+          } else if (nested && Array.isArray((nested as any).data)) {
+            lots = (nested as any).data;
+          }
+
+          this.fastify.log.info(
+            {
+              time,
+              lotsUrl,
+              lotsCount: lots ? lots.length : 0,
+            },
+            'Fetched auction lots from JSON URL',
+          );
+        } catch (err) {
+          this.fastify.log.error({ time, lotsUrl, err }, 'Failed to fetch auction lots JSON URL');
         }
-
-        this.fastify.log.info(
-          {
-            time,
-            lotsUrl,
-            lotsCount: lots ? lots.length : 0,
-          },
-          'Fetched auction lots from JSON URL',
-        );
-      } catch (err) {
-        this.fastify.log.error({ time, lotsUrl, err }, 'Failed to fetch auction lots JSON URL');
       }
-    }
 
-    // Log a small preview of the response for debugging without spamming logs.
-    this.fastify.log.info(
-      {
-        time,
-        lotsCount: lots ? lots.length : 0,
-        sampleLot: lots && lots.length ? { id: lots[0].id, vin: lots[0].vin, source: lots[0].source } : null,
-      },
-      'Auction active lots API response',
-    );
-
-    AuctionApiService.latestActiveLots = {
-      time,
-      fetchedAt: new Date().toISOString(),
-      data: raw,
-    };
-
-    // Persist lots into local database so downstream APIs can read from
-    // our own tables instead of calling the external auction API.
-    if (lots && lots.length) {
+      // Log a small preview of the response for debugging without spamming logs.
       this.fastify.log.info(
-        { time, count: lots.length },
-        'Starting auction active lots DB ingestion',
+        {
+          time,
+          lotsCount: lots ? lots.length : 0,
+          sampleLot: lots && lots.length ? { id: lots[0].id, vin: lots[0].vin, source: lots[0].source } : null,
+        },
+        'Auction active lots API response',
       );
 
-      try {
-        const vehicleModel = new VehicleModel(this.fastify);
-        await vehicleModel.upsertFromAuctionLots(lots);
+      AuctionApiService.latestActiveLots = {
+        time,
+        fetchedAt: new Date().toISOString(),
+        data: raw,
+      };
+
+      // Persist lots into local database so downstream APIs can read from
+      // our own tables instead of calling the external auction API.
+      if (lots && lots.length) {
         this.fastify.log.info(
           { time, count: lots.length },
-          'Auction active lots DB ingestion finished',
+          'Starting auction active lots DB ingestion',
         );
-      } catch (err) {
-        this.fastify.log.error(
-          { err, time },
-          'Failed to persist auction active lots into database',
+
+        try {
+          const vehicleModel = new VehicleModel(this.fastify);
+          await vehicleModel.upsertFromAuctionLots(lots);
+          this.fastify.log.info(
+            { time, count: lots.length },
+            'Auction active lots DB ingestion finished',
+          );
+        } catch (err) {
+          this.fastify.log.error(
+            { err, time },
+            'Failed to persist auction active lots into database',
+          );
+        }
+      } else {
+        // Log full raw response once when we can't detect a lots array,
+        // so we can inspect the structure and adjust parsing if needed.
+        this.fastify.log.warn(
+          { time, type: typeof raw, raw },
+          'Auction API active lots response did not contain a lots array; skipping DB ingest',
         );
       }
-    } else {
-      // Log full raw response once when we can't detect a lots array,
-      // so we can inspect the structure and adjust parsing if needed.
-      this.fastify.log.warn(
-        { time, type: typeof raw, raw },
-        'Auction API active lots response did not contain a lots array; skipping DB ingest',
-      );
-    }
 
-    return raw;
+      return raw;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        this.fastify.log.error(
+          {
+            time,
+            url: `${this.baseUrl}/get-active-lots-hourly`,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            message: error.message,
+          },
+          'AuctionApiService.getActiveLotsHourly request failed',
+        );
+      } else {
+        this.fastify.log.error({ time, error }, 'AuctionApiService.getActiveLotsHourly error');
+      }
+
+      throw error;
+    }
   }
 }

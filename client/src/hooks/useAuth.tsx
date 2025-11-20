@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import axios from 'axios'
+import { apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
 import type { User } from '@/mocks/_mockData'
 
 interface AuthContextValue {
@@ -17,7 +19,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const API_BASE_URL = 'http://localhost:3000'
 const STORAGE_KEY_USER = 'projectx_auth_user'
 const STORAGE_KEY_TOKEN = 'projectx_auth_token'
 
@@ -239,38 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      let payload: unknown = null
-
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
-        const { code, message } = extractErrorInfo(payload)
-
-        console.error('[Auth][Profile][GET] Request failed', {
-          status: response.status,
-          statusText: response.statusText,
-          payload,
-          code,
-          message,
-        })
-
-        if (response.status === 401 || response.status === 404) {
-          persistSession(null, null)
-        }
-
-        throw new Error(message || 'პროფილის ჩატვირთვის დროს მოხდა შეცდომა')
-      }
+      const payload = await apiAuthorizedGet<unknown>('/profile')
 
       const profile = extractProfilePayload(payload)
 
@@ -281,7 +251,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextUser = mapProfileToUser(profile)
 
       persistSession(nextUser, token)
-    } catch (error) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data as unknown
+        const { code, message } = extractErrorInfo(payload)
+
+        console.error('[Auth][Profile][GET] Request failed', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          payload,
+          code,
+          message,
+        })
+
+        const status = error.response?.status
+
+        if (status === 401 || status === 404) {
+          persistSession(null, null)
+        }
+
+        throw new Error(message || 'პროფილის ჩატვირთვის დროს მოხდა შეცდომა')
+      }
+
       console.error('[Auth][Profile][GET] Unexpected error', error)
 
       if (error instanceof Error) {
@@ -316,24 +307,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      })
+      const payload = await apiAuthorizedMutation<unknown>('PUT', '/profile', data)
 
-      let payload: unknown = null
+      const profile = extractProfilePayload(payload)
 
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
+      if (!profile) {
+        throw new Error('არასწორი სერვერის პასუხი პროფილის განახლებაზე')
       }
 
-      if (!response.ok) {
+      const nextUser = mapProfileToUser(profile)
+
+      persistSession(nextUser, token)
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data as unknown
         const { code, message } = extractErrorInfo(payload)
 
         let friendlyMessage = message
@@ -347,31 +334,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         console.error('[Auth][Profile][PUT] Request failed', {
-          status: response.status,
-          statusText: response.statusText,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
           payload,
           code,
           message,
           friendlyMessage,
         })
 
-        if (response.status === 401 || response.status === 404) {
+        const status = error.response?.status
+
+        if (status === 401 || status === 404) {
           persistSession(null, null)
         }
 
         throw new Error(friendlyMessage)
       }
 
-      const profile = extractProfilePayload(payload)
-
-      if (!profile) {
-        throw new Error('არასწორი სერვერის პასუხი პროფილის განახლებაზე')
-      }
-
-      const nextUser = mapProfileToUser(profile)
-
-      persistSession(nextUser, token)
-    } catch (error) {
       console.error('[Auth][Profile][PUT] Unexpected error', error)
 
       if (error instanceof Error) {
@@ -392,22 +371,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      await apiAuthorizedMutation<unknown>('DELETE', '/profile')
 
-      let payload: unknown = null
-
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
+      persistSession(null, null)
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data as unknown
         const { code, message } = extractErrorInfo(payload)
 
         let friendlyMessage = message
@@ -421,23 +390,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         console.error('[Auth][Profile][DELETE] Request failed', {
-          status: response.status,
-          statusText: response.statusText,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
           payload,
           code,
           message,
           friendlyMessage,
         })
 
-        if (response.status === 401 || response.status === 404) {
+        const status = error.response?.status
+
+        if (status === 401 || status === 404) {
           persistSession(null, null)
         }
 
         throw new Error(friendlyMessage)
       }
 
-      persistSession(null, null)
-    } catch (error) {
       console.error('[Auth][Profile][DELETE] Unexpected error', error)
 
       if (error instanceof Error) {
@@ -454,50 +423,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     const performLoginRequest = async (allowRetry: boolean): Promise<void> => {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          identifier: email,
-          password,
-        }),
-      })
-
       let payload: unknown = null
 
       try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
+        payload = await apiPost<unknown>('/login', {
+          identifier: email,
+          password,
+        })
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          payload = error.response?.data as unknown
 
-      if (!response.ok) {
-        const { code, message } = extractErrorInfo(payload)
+          const { code, message } = extractErrorInfo(payload)
 
-        let friendlyMessage = message
+          let friendlyMessage = message
 
-        if (!friendlyMessage) {
-          if (code === 'VALIDATION_ERROR') {
-            friendlyMessage = 'ავტორიზაციის მონაცემები არასწორია'
-          } else if (code === 'AUTHENTICATION_ERROR') {
-            friendlyMessage = 'ელ-ფოსტა ან პაროლი არასწორია'
-          } else {
-            friendlyMessage = 'ავტორიზაციის დროს მოხდა შეცდომა'
+          if (!friendlyMessage) {
+            if (code === 'VALIDATION_ERROR') {
+              friendlyMessage = 'ავტორიზაციის მონაცემები არასწორია'
+            } else if (code === 'AUTHENTICATION_ERROR') {
+              friendlyMessage = 'ელ-ფოსტა ან პაროლი არასწორია'
+            } else {
+              friendlyMessage = 'ავტორიზაციის დროს მოხდა შეცდომა'
+            }
           }
+
+          console.error('[Auth][Login] Request failed', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            payload,
+            code,
+            message,
+            friendlyMessage,
+          })
+
+          throw new Error(friendlyMessage)
         }
 
-        console.error('[Auth][Login] Request failed', {
-          status: response.status,
-          statusText: response.statusText,
-          payload,
-          code,
-          message,
-          friendlyMessage,
-        })
+        console.error('[Auth][Login] Unexpected error during request', error)
 
-        throw new Error(friendlyMessage)
+        if (error instanceof Error) {
+          throw error
+        }
+
+        throw new Error('ავტორიზაციის დროს მოხდა შეცდომა')
       }
 
       const authPayload = extractAuthPayload(payload)
@@ -529,7 +498,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       await performLoginRequest(true)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[Auth][Login] Unexpected error', error)
 
       if (error instanceof Error) {
@@ -546,52 +515,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          username: name,
-          password,
-        }),
+      const payload = await apiPost<unknown>('/register', {
+        email,
+        username: name,
+        password,
       })
-
-      let payload: unknown = null
-
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
-        const { code, message } = extractErrorInfo(payload)
-
-        let friendlyMessage = message
-
-        if (!friendlyMessage) {
-          if (code === 'VALIDATION_ERROR') {
-            friendlyMessage = 'რეგისტრაციის მონაცემები არასწორია'
-          } else if (code === 'CONFLICT_ERROR') {
-            friendlyMessage = 'ეს ელ-ფოსტა ან მომხმარებლის სახელი უკვე გამოყენებულია'
-          } else {
-            friendlyMessage = 'რეგისტრაციის დროს მოხდა შეცდომა'
-          }
-        }
-
-        console.error('[Auth][Register] Request failed', {
-          status: response.status,
-          statusText: response.statusText,
-          payload,
-          code,
-          message,
-          friendlyMessage,
-        })
-
-        throw new Error(friendlyMessage)
-      }
 
       const authPayload = extractAuthPayload(payload)
 
@@ -611,7 +539,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       persistSession(nextUser, authPayload.token)
-    } catch (error) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data as unknown
+        const { code, message } = extractErrorInfo(payload)
+
+        let friendlyMessage = message
+
+        if (!friendlyMessage) {
+          if (code === 'VALIDATION_ERROR') {
+            friendlyMessage = 'რეგისტრაციის მონაცემები არასწორია'
+          } else if (code === 'CONFLICT_ERROR') {
+            friendlyMessage = 'ეს ელ-ფოსტა ან მომხმარებლის სახელი უკვე გამოყენებულია'
+          } else {
+            friendlyMessage = 'რეგისტრაციის დროს მოხდა შეცდომა'
+          }
+        }
+
+        console.error('[Auth][Register] Request failed', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          payload,
+          code,
+          message,
+          friendlyMessage,
+        })
+
+        throw new Error(friendlyMessage)
+      }
+
       console.error('[Auth][Register] Unexpected error', error)
 
       if (error instanceof Error) {

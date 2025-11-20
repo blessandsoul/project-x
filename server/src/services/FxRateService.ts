@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import axios, { type AxiosError } from 'axios';
 
 interface ExchangeRateApiResponse {
   result: string;
@@ -82,13 +83,11 @@ export class FxRateService {
     const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`;
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        this.fastify.log.error({ status: response.status }, 'Failed to fetch exchange rates');
-        return null;
-      }
+      const response = await axios.get<ExchangeRateApiResponse>(url, {
+        timeout: 10000,
+      });
 
-      const data = (await response.json()) as ExchangeRateApiResponse;
+      const data = response.data;
       if (data.result !== 'success') {
         this.fastify.log.error({ result: data.result }, 'Exchange rate API returned non-success result');
         return null;
@@ -102,7 +101,21 @@ export class FxRateService {
 
       return gelRate;
     } catch (error) {
-      this.fastify.log.error({ error }, 'Error while fetching exchange rates from API');
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+
+        this.fastify.log.error(
+          {
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText,
+            data: axiosError.response?.data,
+            message: axiosError.message,
+          },
+          'Error while fetching exchange rates from API',
+        );
+      } else {
+        this.fastify.log.error({ error }, 'Error while fetching exchange rates from API');
+      }
       return null;
     }
   }

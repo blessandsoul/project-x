@@ -15,7 +15,7 @@ import type { VehicleQuote } from '@/types/vehicles'
 import { VipBadge } from '@/components/company/VipBadge'
 import QuoteBreakdownReceipt from '@/components/vehicle/QuoteBreakdownReceipt'
 import { cn } from '@/lib/utils'
-import { createLeadFromQuotes } from '@/api/leads'
+import { createLeadFromQuotes, type CreateLeadFromQuotesRequest } from '@/api/leads'
 
 type QuoteWithVipMeta = { quote: VehicleQuote; index: number; vipLabel: string | null }
 
@@ -62,6 +62,15 @@ const VehicleDetailsPage = () => {
   const [isLeadSubmitting, setIsLeadSubmitting] = useState(false)
   const [leadError, setLeadError] = useState<string | null>(null)
   const [isSupportUnlockSubmitting, setIsSupportUnlockSubmitting] = useState(false)
+  const [budgetUsdMin, setBudgetUsdMin] = useState<string>('')
+  const [budgetUsdMax, setBudgetUsdMax] = useState<string>('')
+  const [desiredDurationDays, setDesiredDurationDays] = useState<string>('')
+  const [maxAcceptableDurationDays, setMaxAcceptableDurationDays] = useState<string>('')
+  const [damageTolerance, setDamageTolerance] = useState<'minimal' | 'moderate' | 'any' | ''>('')
+  const [serviceExtras, setServiceExtras] = useState<string[]>([])
+  const [preferredContactChannel, setPreferredContactChannel] = useState<
+    'whatsapp' | 'telegram' | 'phone' | 'email' | ''
+  >('')
   const vehicleId = useMemo(() => {
     if (!params.id) return null
     const parsed = Number(params.id)
@@ -99,6 +108,13 @@ const VehicleDetailsPage = () => {
         orderName?: string
         orderPhone?: string
         orderComment?: string
+        budgetUsdMin?: string
+        budgetUsdMax?: string
+        desiredDurationDays?: string
+        maxAcceptableDurationDays?: string
+        damageTolerance?: 'minimal' | 'moderate' | 'any' | ''
+        serviceExtras?: string[]
+        preferredContactChannel?: 'whatsapp' | 'telegram' | 'phone' | 'email' | ''
       } | null
 
       if (!parsed) return
@@ -115,6 +131,33 @@ const VehicleDetailsPage = () => {
       if (typeof parsed.orderComment === 'string') {
         setOrderComment(parsed.orderComment)
       }
+      if (typeof parsed.budgetUsdMin === 'string') {
+        setBudgetUsdMin(parsed.budgetUsdMin)
+      }
+      if (typeof parsed.budgetUsdMax === 'string') {
+        setBudgetUsdMax(parsed.budgetUsdMax)
+      }
+      if (typeof parsed.desiredDurationDays === 'string') {
+        setDesiredDurationDays(parsed.desiredDurationDays)
+      }
+      if (typeof parsed.maxAcceptableDurationDays === 'string') {
+        setMaxAcceptableDurationDays(parsed.maxAcceptableDurationDays)
+      }
+      if (parsed.damageTolerance === 'minimal' || parsed.damageTolerance === 'moderate' || parsed.damageTolerance === 'any' || parsed.damageTolerance === '') {
+        setDamageTolerance(parsed.damageTolerance)
+      }
+      if (Array.isArray(parsed.serviceExtras)) {
+        setServiceExtras(parsed.serviceExtras)
+      }
+      if (
+        parsed.preferredContactChannel === 'whatsapp' ||
+        parsed.preferredContactChannel === 'telegram' ||
+        parsed.preferredContactChannel === 'phone' ||
+        parsed.preferredContactChannel === 'email' ||
+        parsed.preferredContactChannel === ''
+      ) {
+        setPreferredContactChannel(parsed.preferredContactChannel)
+      }
     } catch {
       // ignore corrupted storage
     }
@@ -128,6 +171,13 @@ const VehicleDetailsPage = () => {
       orderName,
       orderPhone,
       orderComment,
+      budgetUsdMin,
+      budgetUsdMax,
+      desiredDurationDays,
+      maxAcceptableDurationDays,
+      damageTolerance,
+      serviceExtras,
+      preferredContactChannel,
     }
 
     try {
@@ -138,7 +188,20 @@ const VehicleDetailsPage = () => {
     } catch {
       // ignore storage write errors
     }
-  }, [vehicleId, selectedCompanyNames, orderName, orderPhone, orderComment])
+  }, [
+    vehicleId,
+    selectedCompanyNames,
+    orderName,
+    orderPhone,
+    orderComment,
+    budgetUsdMin,
+    budgetUsdMax,
+    desiredDurationDays,
+    maxAcceptableDurationDays,
+    damageTolerance,
+    serviceExtras,
+    preferredContactChannel,
+  ])
 
   useEffect(() => {
     setActivePhotoIndex(0)
@@ -313,8 +376,16 @@ const VehicleDetailsPage = () => {
       return
     }
 
-    if (!orderName.trim() || !orderPhone.trim()) {
+    const trimmedName = orderName.trim()
+    const trimmedPhone = orderPhone.trim()
+
+    if (!trimmedName || !trimmedPhone) {
       setLeadError('გთხოვთ შეავსოთ სახელი და ტელეფონის ნომერი.')
+      return
+    }
+
+    if (trimmedPhone.length < 3) {
+      setLeadError('ტელეფონის ნომერი უნდა შეიცავდეს მინიმუმ 3 სიმბოლოს.')
       return
     }
 
@@ -323,13 +394,21 @@ const VehicleDetailsPage = () => {
       return
     }
 
+    const parsedBudgetMin = budgetUsdMin.trim() ? Number(budgetUsdMin.trim()) : null
+    const parsedBudgetMax = budgetUsdMax.trim() ? Number(budgetUsdMax.trim()) : null
+    const parsedDesiredDuration = desiredDurationDays.trim()
+      ? Number(desiredDurationDays.trim())
+      : null
+    const parsedMaxAcceptableDuration = maxAcceptableDurationDays.trim()
+      ? Number(maxAcceptableDurationDays.trim())
+      : null
+
     const selectedCompanyIds = selectedCompanyNames
       .map((name) => {
-        const companyMeta = mockCompanies.find((company: any) => company.name === name)
-        if (!companyMeta) return null
+        const quote = quotes.find((q) => q.company_name === name)
+        if (!quote) return null
 
-        const parsedId = Number(companyMeta.id)
-        return Number.isFinite(parsedId) ? parsedId : null
+        return quote.company_id
       })
       .filter((id): id is number => id != null)
 
@@ -342,17 +421,43 @@ const VehicleDetailsPage = () => {
     setLeadError(null)
 
     try {
-      await createLeadFromQuotes({
+      const payload: CreateLeadFromQuotesRequest = {
         vehicleId,
-        company_ids: selectedCompanyIds,
-        name: orderName.trim(),
-        contact: orderPhone.trim(),
+        selectedCompanyIds,
+        name: trimmedName,
+        contact: trimmedPhone,
         message: orderComment.trim(),
         priority: leadPriority,
-      })
+        budgetUsdMin: Number.isFinite(parsedBudgetMin as number) ? parsedBudgetMin : null,
+        budgetUsdMax: Number.isFinite(parsedBudgetMax as number) ? parsedBudgetMax : null,
+        desiredDurationDays: Number.isFinite(parsedDesiredDuration as number)
+          ? parsedDesiredDuration
+          : null,
+        maxAcceptableDurationDays: Number.isFinite(parsedMaxAcceptableDuration as number)
+          ? parsedMaxAcceptableDuration
+          : null,
+        serviceExtras: serviceExtras.length > 0 ? serviceExtras : null,
+      }
+
+      if (damageTolerance) {
+        payload.damageTolerance = damageTolerance
+      }
+
+      if (preferredContactChannel) {
+        payload.preferredContactChannel = preferredContactChannel
+      }
+
+      await createLeadFromQuotes(payload)
 
       setIsLeadModalOpen(false)
       setSelectedCompanyNames([])
+      setBudgetUsdMin('')
+      setBudgetUsdMax('')
+      setDesiredDurationDays('')
+      setMaxAcceptableDurationDays('')
+      setDamageTolerance('')
+      setServiceExtras([])
+      setPreferredContactChannel('')
     } catch (error) {
       const message =
         error instanceof Error
@@ -774,7 +879,7 @@ const VehicleDetailsPage = () => {
           <div className="space-y-4">
             <Card>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   {vehicle && (
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span className="text-base md:text-lg font-semibold">
@@ -790,8 +895,21 @@ const VehicleDetailsPage = () => {
                       </span>
                     </div>
                   )}
+                  {vehicle && (
+                    <div className="flex flex-col items-end gap-0.5 text-xs">
+                      {formatMoney(vehicle.calc_price) && (
+                        <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/5 px-2 py-[2px]">
+                          <Icon icon="mdi:currency-usd" className="h-3.5 w-3.5 text-emerald-600" />
+                          <span className="font-semibold text-sm">
+                            {formatMoney(vehicle.calc_price)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-                  <AnimatePresence>
+                <AnimatePresence>
                     {isLeadModalOpen && (
                       <motion.div
                         initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
@@ -863,6 +981,172 @@ const VehicleDetailsPage = () => {
                                   disabled={isLeadSubmitting}
                                 />
                               </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-medium" htmlFor="lead-budget-min">
+                                    მინ. ბიუჯეტი (USD)
+                                  </label>
+                                  <input
+                                    id="lead-budget-min"
+                                    type="number"
+                                    className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                    value={budgetUsdMin}
+                                    onChange={(event) => setBudgetUsdMin(event.target.value)}
+                                    disabled={isLeadSubmitting}
+                                    min={0}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-medium" htmlFor="lead-budget-max">
+                                    მაქს. ბიუჯეტი (USD)
+                                  </label>
+                                  <input
+                                    id="lead-budget-max"
+                                    type="number"
+                                    className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                    value={budgetUsdMax}
+                                    onChange={(event) => setBudgetUsdMax(event.target.value)}
+                                    disabled={isLeadSubmitting}
+                                    min={0}
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <label
+                                    className="text-[11px] font-medium"
+                                    htmlFor="lead-desired-duration-days"
+                                  >
+                                    სასურველი ვადა (დღე)
+                                  </label>
+                                  <input
+                                    id="lead-desired-duration-days"
+                                    type="number"
+                                    className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                    value={desiredDurationDays}
+                                    onChange={(event) => setDesiredDurationDays(event.target.value)}
+                                    disabled={isLeadSubmitting}
+                                    min={0}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label
+                                    className="text-[11px] font-medium"
+                                    htmlFor="lead-max-duration-days"
+                                  >
+                                    მაქს. მისაღები ვადა (დღე)
+                                  </label>
+                                  <input
+                                    id="lead-max-duration-days"
+                                    type="number"
+                                    className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                    value={maxAcceptableDurationDays}
+                                    onChange={(event) => setMaxAcceptableDurationDays(event.target.value)}
+                                    disabled={isLeadSubmitting}
+                                    min={0}
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-medium">ზიანის tolerate-იანობა</div>
+                                <div className="flex flex-wrap gap-2 text-[11px]">
+                                  <label className="inline-flex items-center gap-1">
+                                    <input
+                                      type="radio"
+                                      name="lead-damage-tolerance"
+                                      value="minimal"
+                                      checked={damageTolerance === 'minimal'}
+                                      onChange={() => setDamageTolerance('minimal')}
+                                      disabled={isLeadSubmitting}
+                                    />
+                                    <span>მინიმალური</span>
+                                  </label>
+                                  <label className="inline-flex items-center gap-1">
+                                    <input
+                                      type="radio"
+                                      name="lead-damage-tolerance"
+                                      value="moderate"
+                                      checked={damageTolerance === 'moderate'}
+                                      onChange={() => setDamageTolerance('moderate')}
+                                      disabled={isLeadSubmitting}
+                                    />
+                                    <span>საშუალო</span>
+                                  </label>
+                                  <label className="inline-flex items-center gap-1">
+                                    <input
+                                      type="radio"
+                                      name="lead-damage-tolerance"
+                                      value="any"
+                                      checked={damageTolerance === 'any'}
+                                      onChange={() => setDamageTolerance('any')}
+                                      disabled={isLeadSubmitting}
+                                    />
+                                    <span>ნებისმიერი</span>
+                                  </label>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-medium">დამატებითი სერვისები</div>
+                                <div className="flex flex-wrap gap-2 text-[11px]">
+                                  {[
+                                    { key: 'full_documents', label: 'სრული დოკუმენტები' },
+                                    { key: 'door_delivery', label: 'მიწოდება მისამართზე' },
+                                    { key: 'customs_support', label: 'საბაჟო მხარდაჭერა' },
+                                  ].map((item) => {
+                                    const checked = serviceExtras.includes(item.key)
+                                    return (
+                                      <label key={item.key} className="inline-flex items-center gap-1">
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={(event) => {
+                                            if (event.target.checked) {
+                                              setServiceExtras((prev) =>
+                                                prev.includes(item.key)
+                                                  ? prev
+                                                  : [...prev, item.key],
+                                              )
+                                            } else {
+                                              setServiceExtras((prev) =>
+                                                prev.filter((value) => value !== item.key),
+                                              )
+                                            }
+                                          }}
+                                          disabled={isLeadSubmitting}
+                                        />
+                                        <span>{item.label}</span>
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-medium">სასურველი საკონტაქტო არხი</div>
+                                <div className="flex flex-wrap gap-2 text-[11px]">
+                                  {[
+                                    { key: 'whatsapp', label: 'WhatsApp' },
+                                    { key: 'telegram', label: 'Telegram' },
+                                    { key: 'phone', label: 'ზარი' },
+                                    { key: 'email', label: 'Email' },
+                                  ].map((channel) => (
+                                    <label key={channel.key} className="inline-flex items-center gap-1">
+                                      <input
+                                        type="radio"
+                                        name="lead-contact-channel"
+                                        value={channel.key}
+                                        checked={preferredContactChannel === channel.key}
+                                        onChange={() =>
+                                          setPreferredContactChannel(
+                                            channel.key as 'whatsapp' | 'telegram' | 'phone' | 'email',
+                                          )
+                                        }
+                                        disabled={isLeadSubmitting}
+                                      />
+                                      <span>{channel.label}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium" htmlFor="lead-priority">
                                   პრიორიტეტი
@@ -907,19 +1191,6 @@ const VehicleDetailsPage = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
-                {vehicle && (
-                  <div className="flex flex-col items-end gap-0.5 text-xs">
-                    {formatMoney(vehicle.calc_price) && (
-                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/5 px-2 py-[2px]">
-                        <Icon icon="mdi:currency-usd" className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="font-semibold text-sm">
-                          {formatMoney(vehicle.calc_price)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -1499,7 +1770,7 @@ const VehicleDetailsPage = () => {
                                     <Icon icon="mdi:crown" className="h-3 w-3 text-amber-400" />
                                     <span>Premium / VIP შეთავაზებები</span>
                                   </div>
-                                  {premiumQuotes.map(({ quote, vipLabel }) => {
+                                  {premiumQuotes.map(({ quote, vipLabel, index }) => {
                                     const companyMeta = mockCompanies.find(
                                       (company: any) => company.name === quote.company_name,
                                     )
@@ -1533,7 +1804,7 @@ const VehicleDetailsPage = () => {
 
                                     return (
                                       <motion.div
-                                        key={`${quote.company_name}-${quote.total_price}`}
+                                        key={`${quote.company_id ?? quote.company_name}-${quote.total_price}-${index}`}
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -6 }}
@@ -1761,7 +2032,7 @@ const VehicleDetailsPage = () => {
                                     <Icon icon="mdi:cash-multiple" className="h-3 w-3 text-emerald-500" />
                                     <span>სტანდარტული შეთავაზებები — უფრო დაბალი ფასით</span>
                                   </div>
-                                  {standardQuotes.map(({ quote, vipLabel }) => {
+                                  {standardQuotes.map(({ quote, vipLabel, index }) => {
                                     const companyMeta = mockCompanies.find(
                                       (company: any) => company.name === quote.company_name,
                                     )
@@ -1790,7 +2061,7 @@ const VehicleDetailsPage = () => {
 
                                     return (
                                       <motion.div
-                                        key={`${quote.company_name}-${quote.total_price}`}
+                                        key={`${quote.company_id ?? quote.company_name}-${quote.total_price}-${index}`}
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -6 }}

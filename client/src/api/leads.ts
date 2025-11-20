@@ -1,10 +1,10 @@
-import { apiPost } from '@/lib/apiClient'
+import { apiAuthorizedMutation } from '@/lib/apiClient'
 
 export type LeadPriority = 'price' | 'speed' | 'premium_service'
 
 export interface CreateLeadFromQuotesRequest {
   vehicleId: number
-  company_ids: number[]
+  selectedCompanyIds: number[]
   name: string
   contact: string
   message?: string
@@ -75,10 +75,19 @@ export async function createLeadFromQuotes(
   // eslint-disable-next-line no-console
   console.log('[leads] createLeadFromQuotes:request', payload)
 
-  const response = await apiPost<CreateLeadFromQuotesResponse>('/leads/from-quotes', payload)
+  try {
+    const response = await apiAuthorizedMutation<CreateLeadFromQuotesResponse>(
+      'POST',
+      '/leads/from-quotes',
+      payload,
+    )
 
-  // eslint-disable-next-line no-console
-  console.log('[leads] createLeadFromQuotes:response', response)
+    // eslint-disable-next-line no-console
+    console.log('[leads] createLeadFromQuotes:response', response)
 
-  return response
+    return response
+  } catch (error) {
+    console.error('[leads] createLeadFromQuotes:error', error)
+    throw error
+  }
 }

@@ -86,6 +86,7 @@ export interface QuoteBreakdown {
 }
 
 export interface VehicleQuote {
+  company_id: number
   company_name: string
   total_price: number
   delivery_time_days?: number | null

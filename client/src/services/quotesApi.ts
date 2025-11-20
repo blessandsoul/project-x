@@ -1,4 +1,55 @@
-const API_BASE_URL = 'http://localhost:3000'
+import { apiPost } from '@/lib/apiClient'
+
+export type QuoteBreakdown = {
+  base_price: number
+  distance_miles: number
+  price_per_mile: number
+  mileage_cost: number
+  customs_fee: number
+  service_fee: number
+  broker_fee: number
+  retail_value: number
+  insurance_rate: number
+  insurance_fee: number
+  shipping_total: number
+  calc_price: number
+  total_price: number
+  formula_source: string
+}
+
+export type VehicleQuote = {
+  company_name: string
+  total_price: number
+  delivery_time_days: number | null
+  breakdown: QuoteBreakdown
+}
+
+export type CalculateQuotesResponse = {
+  vehicle_id: number
+  make: string
+  model: string
+  year: number
+  mileage: number | null
+  yard_name: string
+  source: string
+  distance_miles: number
+  quotes: VehicleQuote[]
+}
+
+export async function calculateVehicleQuotes(
+  vehicleId: number,
+  currency: 'usd' | 'gel' = 'usd'
+): Promise<CalculateQuotesResponse> {
+  const path = `/vehicles/${vehicleId}/calculate-quotes`
+
+  // Backend implements this as POST /vehicles/:vehicleId/calculate-quotes with no body
+  // We send an empty object as the body and pass currency as a query param.
+  return apiPost<CalculateQuotesResponse>(path, {}, {
+    params: {
+      currency,
+    },
+  })
+}
 
 export type VehicleQuotesRequest = {
   vehicle: {
@@ -30,32 +81,18 @@ export type VehicleQuotesResponse = {
 export async function searchVehicleQuotes(
   payload: VehicleQuotesRequest,
 ): Promise<VehicleQuoteItem[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vehicles/search-quotes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
+  const raw = await apiPost<VehicleQuotesResponse | VehicleQuoteItem[]>(
+    '/vehicles/search-quotes',
+    payload,
+  )
 
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const raw = (await response.json()) as VehicleQuotesResponse | VehicleQuoteItem[]
-
-    if (Array.isArray(raw)) {
-      return raw
-    }
-
-    if (!raw || !Array.isArray(raw.results)) {
-      throw new Error('Invalid search-quotes payload')
-    }
-
-    return raw.results
-  } catch (error) {
-    console.error('[QuotesAPI] Failed to search vehicle quotes', error)
-    throw error
+  if (Array.isArray(raw)) {
+    return raw
   }
+
+  if (!raw || !Array.isArray(raw.results)) {
+    throw new Error('Invalid search-quotes payload')
+  }
+
+  return raw.results
 }
