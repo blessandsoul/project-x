@@ -433,7 +433,7 @@ const CompanyCatalogPage = () => {
                         <SelectValue placeholder="დალაგება" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="newest">თავ تازა (ახალს)"</SelectItem>
+                        <SelectItem value="newest">უახლესი (ახალი)</SelectItem>
                         <SelectItem value="rating">რეიტინგით</SelectItem>
                         <SelectItem value="cheapest">ფასი (იაფი)</SelectItem>
                         <SelectItem value="name">სახელით</SelectItem>

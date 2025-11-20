@@ -24,6 +24,7 @@ import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { compareVehicles, fetchVehiclePhotos, searchVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
+import QuoteBreakdownReceipt from '@/components/vehicle/QuoteBreakdownReceipt';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalog';
 import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
@@ -2220,64 +2221,23 @@ const AuctionListingsPage = () => {
                                           </div>
                                         </div>
 
-                                        {expandedQuoteKey === quoteKey && (
-                                          <motion.div
-                                            initial={{ opacity: 0, y: -4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -4 }}
-                                            transition={{ duration: 0.16, ease: 'easeOut' }}
-                                            className="mt-1.5 border-t pt-1.5 text-[11px] text-muted-foreground space-y-0.5"
-                                          >
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>მანქანის ფასი აუქციონზე</span>
-                                              <span>
-                                                {formatMoney(
-                                                  quote.breakdown?.retail_value ?? 0,
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>ტრანსპორტირება / მიწოდება</span>
-                                              <span>
-                                                {formatMoney(
-                                                  quote.breakdown?.shipping_total ?? 0,
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>კომპანიის მომსახურება (service + broker)</span>
-                                              <span>
-                                                {formatMoney(
-                                                  (quote.breakdown?.service_fee ?? 0) +
-                                                    (quote.breakdown?.broker_fee ?? 0),
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>საბაჟო + დაზღვევა</span>
-                                              <span>
-                                                {formatMoney(
-                                                  (quote.breakdown?.customs_fee ?? 0) +
-                                                    (quote.breakdown?.insurance_fee ?? 0),
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-
-                                            <div className="mt-1.5 pt-1.5 border-t flex items-center justify-between gap-2 font-semibold text-foreground">
-                                              <span>სრული ფასი (მანქანა + მიწოდება + მომსახურება)</span>
-                                              <span>
-                                                {formatMoney(
-                                                  quote.breakdown?.total_price ?? quote.total_price,
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                          </motion.div>
-                                        )}
+                                        <AnimatePresence initial={false}>
+                                          {expandedQuoteKey === quoteKey && quote.breakdown && (
+                                            <motion.div
+                                              key="quote-breakdown"
+                                              initial={{ opacity: 0, height: 0 }}
+                                              animate={{ opacity: 1, height: 'auto' }}
+                                              exit={{ opacity: 0, height: 0 }}
+                                              transition={{ duration: 0.18, ease: 'easeOut' }}
+                                              className="mt-1.5 overflow-hidden"
+                                            >
+                                              <QuoteBreakdownReceipt
+                                                breakdown={quote.breakdown}
+                                                companyName={quote.company_name}
+                                              />
+                                            </motion.div>
+                                          )}
+                                        </AnimatePresence>
                                       </div>
                                     );
                                   })}
