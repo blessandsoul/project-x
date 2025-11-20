@@ -80,3 +80,4 @@ VC-012: Added AuthDrawer component with tabbed login/register forms and integrat
 
 VC-013: Updated client/vite.config.ts to configure Vite dev server host/port and enable file polling for more reliable HMR during development.
 VC-014: Added a Vite HMR fallback in client/src/main.tsx using import.meta.hot.accept to force full page reloads on module updates when React Fast Refresh is disabled by external React DevTools shims.
+VC-016: Added smooth animations to compare/cancel and close buttons in the vehicle comparison modal with hover, tap, and state transition effects using framer-motion.

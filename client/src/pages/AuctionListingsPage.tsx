@@ -148,7 +148,7 @@ const formatMoney = (
     return `${numeric.toLocaleString()} GEL`;
   }
 
-  return `$${numeric.toLocaleString()} USD`;
+  return `$${numeric.toLocaleString()}`;
 };
 
 const AuctionListingsPage = () => {
@@ -863,9 +863,9 @@ const AuctionListingsPage = () => {
       bestTotalPrice:
         item.quotes && item.quotes.length > 0
           ? item.quotes.reduce(
-              (min, quote) => (quote.total_price < min ? quote.total_price : min),
-              item.quotes[0].total_price,
-            )
+            (min, quote) => (quote.total_price < min ? quote.total_price : min),
+            item.quotes[0].total_price,
+          )
           : null,
       distanceMiles: item.distance_miles ?? null,
       photos: [fallbackPhotoUrl],
@@ -876,8 +876,8 @@ const AuctionListingsPage = () => {
       const photos = await fetchVehiclePhotos(vehicleKey);
       const urls = Array.isArray(photos)
         ? photos
-            .map((photo) => (photo.url || photo.thumb_url_middle || photo.thumb_url) ?? '')
-            .filter((url) => url.length > 0)
+          .map((photo) => (photo.url || photo.thumb_url_middle || photo.thumb_url) ?? '')
+          .filter((url) => url.length > 0)
         : [];
 
       if (urls.length > 0) {
@@ -1688,7 +1688,7 @@ const AuctionListingsPage = () => {
                   size="sm"
                   className="h-8 px-3 text-[11px]"
                   variant="outline"
-                  onClick={async () => {
+                  onClick={() => {
                     if (!showCompareCheckboxes) {
                       setShowCompareCheckboxes(true);
                       return;
@@ -1698,29 +1698,16 @@ const AuctionListingsPage = () => {
                       setShowCompareCheckboxes(false);
                       return;
                     }
-
-                    if (selectedVehicleIds.length === 0) return;
-                    setIsCompareOpen(true);
-                    setIsCompareLoading(true);
-                    setCompareError(null);
-                    setCompareResult(null);
-                    try {
-                      const response = await compareVehicles({
-                        vehicle_ids: selectedVehicleIds,
-                        quotes_per_vehicle: 3,
-                        currency: 'usd',
-                      });
-                      setCompareResult(response);
-                    } catch (error: any) {
-                      setCompareError(error?.message || 'შედარების ჩატვირთვა ვერ მოხერხდა');
-                    } finally {
-                      setIsCompareLoading(false);
-                    }
                   }}
                   aria-label="ავტომობილების შედარება ფასებით"
                 >
                   ფასების შედარება{selectedVehicleIds.length > 0 ? ` (${selectedVehicleIds.length})` : ''}
                 </Button>
+                {showCompareCheckboxes && selectedVehicleIds.length === 1 && (
+                  <span className="text-[10px] text-orange-600">
+                    მინიმუმ 2 კომპანია აირჩიეთ შესადარებლად
+                  </span>
+                )}
               </div>
             </div>
             {isBackendLoading && (
@@ -1837,7 +1824,7 @@ const AuctionListingsPage = () => {
                         !appliedFilters ||
                         !backendData ||
                         appliedPage >=
-                          (backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit)))
+                        (backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit)))
                       }
                       onClick={() => {
                         if (!appliedFilters || !backendData) return;
@@ -1858,172 +1845,172 @@ const AuctionListingsPage = () => {
                   aria-label="რეალური ლოტების შედეგები"
                 >
                   {filteredBackendItems.map((item) => {
-                  const vehicleKey = item.vehicle_id ?? item.id;
-                  const extraPhotoUrls = photosByVehicleId[vehicleKey] || [];
-                  const mainPhotoUrl =
-                    item.primary_photo_url || item.primary_thumb_url || extraPhotoUrls[0] || '/cars/1.webp';
-                  const priceRaw =
-                    typeof item.calc_price === 'number'
-                      ? item.calc_price
-                      : typeof item.retail_value === 'number'
-                        ? item.retail_value
-                        : Number(item.retail_value ?? 0);
-                  const displayPrice = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+                    const vehicleKey = item.vehicle_id ?? item.id;
+                    const extraPhotoUrls = photosByVehicleId[vehicleKey] || [];
+                    const mainPhotoUrl =
+                      item.primary_photo_url || item.primary_thumb_url || extraPhotoUrls[0] || '/cars/1.webp';
+                    const priceRaw =
+                      typeof item.calc_price === 'number'
+                        ? item.calc_price
+                        : typeof item.retail_value === 'number'
+                          ? item.retail_value
+                          : Number(item.retail_value ?? 0);
+                    const displayPrice = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
 
-                  const isSelected = selectedVehicleIds.includes(vehicleKey);
+                    const isSelected = selectedVehicleIds.includes(vehicleKey);
 
-                  return (
-                    <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
-                      <button
-                        type="button"
-                        className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
-                        onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
-                      >
-                        <div className="relative w-full h-40">
-                          <img
-                            src={mainPhotoUrl}
-                            alt={`${item.year} ${item.make} ${item.model}`}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                          <AnimatePresence>
-                            {showCompareCheckboxes && (
-                              <motion.div
-                                key="compare-checkbox"
-                                initial={{ opacity: 0, y: -8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.18, ease: 'easeOut' }}
-                                className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <span>შედარებისთვის არჩევა</span>
-                                <Checkbox
-                                  aria-label="აირჩიეთ მანქანა შედარებისთვის"
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => {
-                                    setSelectedVehicleIds((prev) => {
-                                      const exists = prev.includes(vehicleKey);
-                                      if (checked && !exists) {
-                                        const next = [...prev, vehicleKey];
-                                        if (next.length > 5) {
-                                          return prev;
+                    return (
+                      <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
+                        <button
+                          type="button"
+                          className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
+                          onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
+                        >
+                          <div className="relative w-full h-40">
+                            <img
+                              src={mainPhotoUrl}
+                              alt={`${item.year} ${item.make} ${item.model}`}
+                              className="absolute inset-0 h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                            <AnimatePresence>
+                              {showCompareCheckboxes && (
+                                <motion.div
+                                  key="compare-checkbox"
+                                  initial={{ opacity: 0, y: -8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -8 }}
+                                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                                  className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <span>შედარებისთვის არჩევა</span>
+                                  <Checkbox
+                                    aria-label="აირჩიეთ მანქანა შედარებისთვის"
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedVehicleIds((prev) => {
+                                        const exists = prev.includes(vehicleKey);
+                                        if (checked && !exists) {
+                                          const next = [...prev, vehicleKey];
+                                          if (next.length > 5) {
+                                            return prev;
+                                          }
+                                          return next;
                                         }
-                                        return next;
-                                      }
-                                      if (!checked && exists) {
-                                        return prev.filter((id) => id !== vehicleKey);
-                                      }
-                                      return prev;
-                                    });
-                                  }}
+                                        if (!checked && exists) {
+                                          return prev.filter((id) => id !== vehicleKey);
+                                        }
+                                        return prev;
+                                      });
+                                    }}
+                                  />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </button>
+                        {extraPhotoUrls.length > 1 && (
+                          <div className="flex items-center gap-1 px-2 pt-0.5 pb-1 overflow-x-auto">
+                            {extraPhotoUrls.slice(0, 3).map((thumbUrl, index) => (
+                              <button
+                                key={`${item.id}-thumb-${index}`}
+                                type="button"
+                                className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-sm border border-border hover:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/60"
+                                onClick={() => handleOpenBackendGallery(item, thumbUrl)}
+                              >
+                                <img
+                                  src={thumbUrl}
+                                  alt={`${item.year} ${item.make} ${item.model} thumb ${index + 1}`}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
                                 />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </button>
-                      {extraPhotoUrls.length > 1 && (
-                        <div className="flex items-center gap-1 px-2 pt-0.5 pb-1 overflow-x-auto">
-                          {extraPhotoUrls.slice(0, 3).map((thumbUrl, index) => (
-                            <button
-                              key={`${item.id}-thumb-${index}`}
-                              type="button"
-                              className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-sm border border-border hover:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/60"
-                              onClick={() => handleOpenBackendGallery(item, thumbUrl)}
-                            >
-                              <img
-                                src={thumbUrl}
-                                alt={`${item.year} ${item.make} ${item.model} thumb ${index + 1}`}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <CardTitle className="text-base leading-tight">
-                              {item.year} {item.make} {item.model}
-                            </CardTitle>
-                            <p className="text-[11px] text-muted-foreground mt-1">
-                              {item.yard_name} • {item.source}
-                            </p>
+                              </button>
+                            ))}
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0 flex-1 flex flex-col justify-between text-xs">
-                        <div className="space-y-2 mb-3">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        )}
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between gap-2">
                             <div>
-                              <span className="block text-[10px] text-muted-foreground">გარბენი</span>
-                              <span>{item.mileage ? item.mileage.toLocaleString() : 'N/A'} km</span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] text-muted-foreground">დისტანცია</span>
-                              <span>
-                                {item.distance_miles != null
-                                  ? item.distance_miles.toLocaleString()
-                                  : 'N/A'}{' '}
-                                mi
-                              </span>
+                              <CardTitle className="text-base leading-tight">
+                                {item.year} {item.make} {item.model}
+                              </CardTitle>
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                {item.yard_name} • {item.source}
+                              </p>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
-                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
-                              <span className="font-medium">
-                                ${displayPrice.toLocaleString()}
-                              </span>
+                        </CardHeader>
+                        <CardContent className="pt-0 flex-1 flex flex-col justify-between text-xs">
+                          <div className="space-y-2 mb-3">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                              <div>
+                                <span className="block text-[10px] text-muted-foreground">გარბენი</span>
+                                <span>{item.mileage ? item.mileage.toLocaleString() : 'N/A'} km</span>
+                              </div>
+                              <div>
+                                <span className="block text-[10px] text-muted-foreground">დისტანცია</span>
+                                <span>
+                                  {item.distance_miles != null
+                                    ? item.distance_miles.toLocaleString()
+                                    : 'N/A'}{' '}
+                                  mi
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label="ღირებულების გათვლა"
-                              onClick={() => {
-                                const vehicleKey = item.vehicle_id ?? item.id;
-                                calculateQuotes(vehicleKey).then(() => {
-                                  setIsCalcModalOpen(true);
-                                });
-                              }}
-                            >
-                              <Icon icon="mdi:calculator-variant" className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label="დეტალურად ნახვა"
-                              onClick={() => {
-                                const vehicleKey = item.vehicle_id ?? item.id;
-                                const companyName = getSelectedCompanyNameForLink();
-                                const search = companyName
-                                  ? `?company=${encodeURIComponent(companyName)}`
-                                  : '';
+                          <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
+                            <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
+                                <span className="font-medium">
+                                  ${displayPrice.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label="ღირებულების გათვლა"
+                                onClick={() => {
+                                  const vehicleKey = item.vehicle_id ?? item.id;
+                                  calculateQuotes(vehicleKey).then(() => {
+                                    setIsCalcModalOpen(true);
+                                  });
+                                }}
+                              >
+                                <Icon icon="mdi:calculator-variant" className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label="დეტალურად ნახვა"
+                                onClick={() => {
+                                  const vehicleKey = item.vehicle_id ?? item.id;
+                                  const companyName = getSelectedCompanyNameForLink();
+                                  const search = companyName
+                                    ? `?company=${encodeURIComponent(companyName)}`
+                                    : '';
 
-                                navigate({
-                                  pathname: `/vehicle/${vehicleKey}`,
-                                  search,
-                                });
-                              }}
-                            >
-                              <Icon icon="mdi:eye-outline" className="h-3.5 w-3.5" />
-                            </Button>
+                                  navigate({
+                                    pathname: `/vehicle/${vehicleKey}`,
+                                    search,
+                                  });
+                                }}
+                              >
+                                <Icon icon="mdi:eye-outline" className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -2032,7 +2019,7 @@ const AuctionListingsPage = () => {
           <AnimatePresence>
             {isCompareOpen && (
               <motion.div
-                className="fixed inset-0 z-50 bg-black/70 px-2 sm:px-4 py-4 sm:py-8"
+                className="fixed inset-0 z-50 bg-black/90"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -2042,271 +2029,285 @@ const AuctionListingsPage = () => {
                 aria-modal="true"
                 aria-label="შერჩეული მანქანების ფასების შედარება"
               >
-                <motion.div
-                  className="fixed left-1/2 top-1/2 z-[55] w-[calc(100%-1.5rem)] max-w-5xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col"
-                  initial={{ scale: 0.96, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.96, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <div className="flex items-center justify-between px-4 py-2 border-b">
-                    <div className="flex flex-col gap-0.5 text-[11px]">
-                      <div className="font-medium text-sm truncate">
-                        შერჩეული მანქანების ფასების შედარება
-                      </div>
-                      <div className="text-muted-foreground">
-                        ნახეთ ყველაზე მომგებიანი სრული ფასები და მიწოდების დრო რამდენიმე მანქანისთვის ერთად.
-                      </div>
-                      {compareResult && compareResult.vehicles.length > 0 && (
+                <div className="fixed inset-0 px-2 sm:px-4 py-4 sm:py-8 overflow-y-auto pointer-events-none">
+                  <motion.div
+                    className="relative left-1/2 top-1/2 z-[55] w-full max-w-5xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col pointer-events-auto"
+                    initial={{ scale: 0.96, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.96, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between px-4 py-2 border-b">
+                      <div className="flex flex-col gap-0.5 text-[11px]">
+                        <div className="font-medium text-sm truncate">
+                          შერჩეული მანქანების ფასების შედარება
+                        </div>
                         <div className="text-muted-foreground">
-                          შედარებაში: {compareResult.vehicles.length} მანქანა
+                          ნახეთ ყველაზე მომგებიანი სრული ფასები და მიწოდების დრო რამდენიმე მანქანისთვის ერთად.
+                        </div>
+                        {compareResult && compareResult.vehicles.length > 0 && (
+                          <div className="text-muted-foreground">
+                            შედარებაში: {compareResult.vehicles.length} მანქანა
+                          </div>
+                        )}
+                      </div>
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="h-7 w-7 text-[11px] transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => setIsCompareOpen(false)}
+                          aria-label="დახურვა"
+                        >
+                          <motion.div
+                            animate={{ rotate: 0 }}
+                            whileHover={{ rotate: 180 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Icon icon="mdi:close" className="h-3 w-3" />
+                          </motion.div>
+                        </Button>
+                      </motion.div>
+                    </div>
+
+                    <div className="px-4 py-3 text-xs space-y-3">
+                      {isCompareLoading && (
+                        <div className="space-y-2" aria-busy="true">
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-5/6" />
+                        </div>
+                      )}
+
+                      {!isCompareLoading && compareError && (
+                        <Card className="border-destructive/40 bg-destructive/5">
+                          <CardContent className="py-3 text-[11px]">
+                            {compareError}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length === 0 && (
+                        <p className="text-[11px] text-muted-foreground">
+                          შერჩეული მანქანებისთვის შეთავაზებები ვერ მოიძებნა.
+                        </p>
+                      )}
+
+                      {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>ვალუტა: {compareResult.currency}</span>
+                            <span>შედარებაში: {compareResult.vehicles.length} მანქანა</span>
+                          </div>
+                          <div
+                            className={
+                              compareResult.vehicles.length === 2
+                                ? 'grid gap-3 md:grid-cols-2'
+                                : 'grid gap-3 md:grid-cols-2 lg:grid-cols-3'
+                            }
+                          >
+                            {compareResult.vehicles.map((vehicle) => {
+                              const backendItem = backendData?.items.find(
+                                (item) => (item.vehicle_id ?? item.id) === vehicle.vehicle_id,
+                              );
+                              const extraPhotos = backendItem ? photosByVehicleId[vehicle.vehicle_id] || [] : [];
+                              const thumbnailUrl =
+                                backendItem?.primary_photo_url ||
+                                backendItem?.primary_thumb_url ||
+                                extraPhotos[0] ||
+                                '/cars/1.webp';
+                              const sortedQuotes = [...vehicle.quotes].sort((a, b) => {
+                                const aRaw = a.total_price as number | string;
+                                const bRaw = b.total_price as number | string;
+                                const aNum = typeof aRaw === 'number' ? aRaw : Number(aRaw);
+                                const bNum = typeof bRaw === 'number' ? bRaw : Number(bRaw);
+                                return (Number.isFinite(aNum) ? aNum : 0) - (Number.isFinite(bNum) ? bNum : 0);
+                              });
+
+                              const bestQuote = sortedQuotes[0] ?? null;
+
+                              const getCompanyOnlyPrice = (quote: (typeof vehicle.quotes)[number]) => {
+                                const total = quote.breakdown?.total_price ?? quote.total_price;
+                                const car = quote.breakdown?.retail_value ?? 0;
+                                const totalNum = typeof total === 'number' ? total : Number(total);
+                                const carNum = typeof car === 'number' ? car : Number(car);
+
+                                if (!Number.isFinite(totalNum)) return null;
+                                const company = totalNum - (Number.isFinite(carNum) ? carNum : 0);
+                                return company > 0 ? company : null;
+                              };
+
+                              return (
+                                <Card key={vehicle.vehicle_id} className="text-sm">
+                                  <CardHeader className="pb-1 flex flex-row items-start gap-3">
+                                    <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded border border-border bg-muted">
+                                      <img
+                                        src={thumbnailUrl}
+                                        alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-base font-semibold truncate">
+                                        {vehicle.year} {vehicle.make} {vehicle.model}
+                                      </CardTitle>
+                                      {vehicle.yard_name && (
+                                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                          {vehicle.yard_name} • {vehicle.source}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent className="pt-1 space-y-2">
+                                    {bestQuote && (
+                                      <div className="p-2 rounded-md border bg-muted/40 flex items-center justify-between gap-2">
+                                        <div className="space-y-0.5">
+                                          <div className="text-[11px] text-muted-foreground">
+                                            ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
+                                          </div>
+                                          <div className="text-base font-semibold text-emerald-600">
+                                            {formatMoney(getCompanyOnlyPrice(bestQuote) ?? bestQuote.total_price, compareResult.currency) ?? '—'}
+                                          </div>
+                                          {bestQuote.delivery_time_days != null && (
+                                            <div className="text-[11px] text-muted-foreground">
+                                              მიწოდების მიახლოებითი დრო: {bestQuote.delivery_time_days} დღე
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="text-[11px] font-medium text-foreground">
+                                          {bestQuote.company_name}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    <div
+                                      className="space-y-1.5"
+                                      role="list"
+                                      aria-label="კომპანიების შეთავაზებები ამ მანქანისთვის"
+                                    >
+                                      {sortedQuotes.slice(0, 3).map((quote) => {
+                                        const companyOnly = getCompanyOnlyPrice(quote);
+                                        const quoteKey = `${vehicle.vehicle_id}-${quote.company_name}-${quote.total_price}`;
+
+                                        return (
+                                          <div
+                                            key={quoteKey}
+                                            className="space-y-1.5 rounded-md border bg-muted/20 px-2 py-1.5"
+                                            role="listitem"
+                                          >
+                                            <div className="flex items-start justify-between gap-2">
+                                              <div className="space-y-0.5">
+                                                <div className="text-[11px] font-semibold mb-0.5">
+                                                  {quote.company_name}
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                  ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
+                                                </div>
+                                                {quote.delivery_time_days != null && (
+                                                  <div className="text-[11px] text-muted-foreground">
+                                                    მიწოდების დრო: {quote.delivery_time_days} დღე
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-2 text-right">
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-7 w-7"
+                                                  aria-label="კალკულაცია"
+                                                  onClick={() => {
+                                                    setExpandedQuoteKey((prev) => (prev === quoteKey ? null : quoteKey));
+                                                  }}
+                                                >
+                                                  <Icon icon="mdi:calculator-variant" className="h-3 w-3" />
+                                                </Button>
+                                                <div className="text-base font-bold text-emerald-600">
+                                                  {formatMoney(companyOnly ?? quote.total_price, compareResult.currency) ?? '—'}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {expandedQuoteKey === quoteKey && (
+                                              <motion.div
+                                                initial={{ opacity: 0, y: -4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -4 }}
+                                                transition={{ duration: 0.16, ease: 'easeOut' }}
+                                                className="mt-1.5 border-t pt-1.5 text-[11px] text-muted-foreground space-y-0.5"
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span>მანქანის ფასი აუქციონზე</span>
+                                                  <span>
+                                                    {formatMoney(
+                                                      quote.breakdown?.calc_price ?? 0,
+                                                      compareResult.currency,
+                                                    ) ?? '—'}
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span>ტრანსპორტირება / მიწოდება</span>
+                                                  <span>
+                                                    {formatMoney(
+                                                      (quote.breakdown?.base_price ?? 0) +
+                                                      (quote.breakdown?.mileage_cost ?? 0),
+                                                      compareResult.currency,
+                                                    ) ?? '—'}
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span>კომპანიის მომსახურება (service + broker)</span>
+                                                  <span>
+                                                    {formatMoney(
+                                                      (quote.breakdown?.service_fee ?? 0) +
+                                                      (quote.breakdown?.broker_fee ?? 0),
+                                                      compareResult.currency,
+                                                    ) ?? '—'}
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span>საბაჟო + დაზღვევა</span>
+                                                  <span>
+                                                    {formatMoney(
+                                                      (quote.breakdown?.customs_fee ?? 0) +
+                                                      (quote.breakdown?.insurance_fee ?? 0),
+                                                      compareResult.currency,
+                                                    ) ?? '—'}
+                                                  </span>
+                                                </div>
+
+                                                <div className="mt-1.5 pt-1.5 border-t flex items-center justify-between gap-2 font-semibold text-foreground">
+                                                  <span>სრული ფასი (მანქანა + მიწოდება + მომსახურება)</span>
+                                                  <span>
+                                                    {formatMoney(
+                                                      quote.breakdown?.total_price ?? quote.total_price,
+                                                      compareResult.currency,
+                                                    ) ?? '—'}
+                                                  </span>
+                                                </div>
+                                              </motion.div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      className="h-7 w-7 text-[11px]"
-                      onClick={() => setIsCompareOpen(false)}
-                      aria-label="დახურვა"
-                    >
-                      <Icon icon="mdi:close" className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="px-4 py-3 text-xs space-y-3">
-                    {isCompareLoading && (
-                      <div className="space-y-2" aria-busy="true">
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-5/6" />
-                      </div>
-                    )}
-
-                    {!isCompareLoading && compareError && (
-                      <Card className="border-destructive/40 bg-destructive/5">
-                        <CardContent className="py-3 text-[11px]">
-                          {compareError}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length === 0 && (
-                      <p className="text-[11px] text-muted-foreground">
-                        შერჩეული მანქანებისთვის შეთავაზებები ვერ მოიძებნა.
-                      </p>
-                    )}
-
-                    {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>ვალუტა: {compareResult.currency}</span>
-                          <span>შედარებაში: {compareResult.vehicles.length} მანქანა</span>
-                        </div>
-                        <div
-                          className={
-                            compareResult.vehicles.length === 2
-                              ? 'grid gap-3 md:grid-cols-2'
-                              : 'grid gap-3 md:grid-cols-2 lg:grid-cols-3'
-                          }
-                        >
-                        {compareResult.vehicles.map((vehicle) => {
-                          const backendItem = backendData?.items.find(
-                            (item) => (item.vehicle_id ?? item.id) === vehicle.vehicle_id,
-                          );
-                          const extraPhotos = backendItem ? photosByVehicleId[vehicle.vehicle_id] || [] : [];
-                          const thumbnailUrl =
-                            backendItem?.primary_photo_url ||
-                            backendItem?.primary_thumb_url ||
-                            extraPhotos[0] ||
-                            '/cars/1.webp';
-                          const sortedQuotes = [...vehicle.quotes].sort((a, b) => {
-                            const aRaw = a.total_price as number | string;
-                            const bRaw = b.total_price as number | string;
-                            const aNum = typeof aRaw === 'number' ? aRaw : Number(aRaw);
-                            const bNum = typeof bRaw === 'number' ? bRaw : Number(bRaw);
-                            return (Number.isFinite(aNum) ? aNum : 0) - (Number.isFinite(bNum) ? bNum : 0);
-                          });
-
-                          const bestQuote = sortedQuotes[0] ?? null;
-
-                          const getCompanyOnlyPrice = (quote: (typeof vehicle.quotes)[number]) => {
-                            const total = quote.breakdown?.total_price ?? quote.total_price;
-                            const car = quote.breakdown?.retail_value ?? 0;
-                            const totalNum = typeof total === 'number' ? total : Number(total);
-                            const carNum = typeof car === 'number' ? car : Number(car);
-
-                            if (!Number.isFinite(totalNum)) return null;
-                            const company = totalNum - (Number.isFinite(carNum) ? carNum : 0);
-                            return company > 0 ? company : null;
-                          };
-
-                          return (
-                            <Card key={vehicle.vehicle_id} className="text-sm">
-                              <CardHeader className="pb-1 flex flex-row items-start gap-3">
-                                <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded border border-border bg-muted">
-                                  <img
-                                    src={thumbnailUrl}
-                                    alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <CardTitle className="text-base font-semibold truncate">
-                                    {vehicle.year} {vehicle.make} {vehicle.model}
-                                  </CardTitle>
-                                  {vehicle.yard_name && (
-                                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                                      {vehicle.yard_name} • {vehicle.source}
-                                    </p>
-                                  )}
-                                </div>
-                              </CardHeader>
-                              <CardContent className="pt-1 space-y-2">
-                                {bestQuote && (
-                                  <div className="p-2 rounded-md border bg-muted/40 flex items-center justify-between gap-2">
-                                    <div className="space-y-0.5">
-                                      <div className="text-[11px] text-muted-foreground">
-                                        ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
-                                      </div>
-                                      <div className="text-base font-semibold text-emerald-600">
-                                        {formatMoney(getCompanyOnlyPrice(bestQuote) ?? bestQuote.total_price, compareResult.currency) ?? '—'}
-                                      </div>
-                                      {bestQuote.delivery_time_days != null && (
-                                        <div className="text-[11px] text-muted-foreground">
-                                          მიწოდების მიახლოებითი დრო: {bestQuote.delivery_time_days} დღე
-                                        </div>
-                                      )}
-                                    </div>
-                                    <span className="text-[11px] font-medium text-foreground">
-                                      {bestQuote.company_name}
-                                    </span>
-                                  </div>
-                                )}
-
-                                <div
-                                  className="space-y-1.5"
-                                  role="list"
-                                  aria-label="კომპანიების შეთავაზებები ამ მანქანისთვის"
-                                >
-                                  {sortedQuotes.slice(0, 3).map((quote) => {
-                                    const companyOnly = getCompanyOnlyPrice(quote);
-                                    const quoteKey = `${vehicle.vehicle_id}-${quote.company_name}-${quote.total_price}`;
-
-                                    return (
-                                      <div
-                                        key={quoteKey}
-                                        className="space-y-1.5 rounded-md border bg-muted/20 px-2 py-1.5"
-                                        role="listitem"
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="space-y-0.5">
-                                            <div className="text-[11px] font-semibold mb-0.5">
-                                              {quote.company_name}
-                                            </div>
-                                            <div className="text-[11px] text-muted-foreground">
-                                              ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
-                                            </div>
-                                            {quote.delivery_time_days != null && (
-                                              <div className="text-[11px] text-muted-foreground">
-                                                მიწოდების დრო: {quote.delivery_time_days} დღე
-                                              </div>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-2 text-right">
-                                            <Button
-                                              type="button"
-                                              variant="outline"
-                                              size="icon"
-                                              className="h-7 w-7"
-                                              aria-label="კალკულაცია"
-                                              onClick={() => {
-                                                setExpandedQuoteKey((prev) => (prev === quoteKey ? null : quoteKey));
-                                              }}
-                                            >
-                                              <Icon icon="mdi:calculator-variant" className="h-3 w-3" />
-                                            </Button>
-                                            <div className="text-base font-bold text-emerald-600">
-                                              {formatMoney(companyOnly ?? quote.total_price, compareResult.currency) ?? '—'}
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {expandedQuoteKey === quoteKey && (
-                                          <motion.div
-                                            initial={{ opacity: 0, y: -4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -4 }}
-                                            transition={{ duration: 0.16, ease: 'easeOut' }}
-                                            className="mt-1.5 border-t pt-1.5 text-[11px] text-muted-foreground space-y-0.5"
-                                          >
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>მანქანის ფასი აუქციონზე</span>
-                                              <span>
-                                                {formatMoney(
-                                                  quote.breakdown?.calc_price ?? 0,
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>ტრანსპორტირება / მიწოდება</span>
-                                              <span>
-                                                {formatMoney(
-                                                  (quote.breakdown?.base_price ?? 0) +
-                                                    (quote.breakdown?.mileage_cost ?? 0),
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>კომპანიის მომსახურება (service + broker)</span>
-                                              <span>
-                                                {formatMoney(
-                                                  (quote.breakdown?.service_fee ?? 0) +
-                                                    (quote.breakdown?.broker_fee ?? 0),
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span>საბაჟო + დაზღვევა</span>
-                                              <span>
-                                                {formatMoney(
-                                                  (quote.breakdown?.customs_fee ?? 0) +
-                                                    (quote.breakdown?.insurance_fee ?? 0),
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-
-                                            <div className="mt-1.5 pt-1.5 border-t flex items-center justify-between gap-2 font-semibold text-foreground">
-                                              <span>სრული ფასი (მანქანა + მიწოდება + მომსახურება)</span>
-                                              <span>
-                                                {formatMoney(
-                                                  quote.breakdown?.total_price ?? quote.total_price,
-                                                  compareResult.currency,
-                                                ) ?? '—'}
-                                              </span>
-                                            </div>
-                                          </motion.div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -2495,11 +2496,10 @@ const AuctionListingsPage = () => {
                             <button
                               key={photoUrl + index}
                               type="button"
-                              className={`h-12 w-16 overflow-hidden rounded-sm border ${
-                                index === backendGalleryIndex
-                                  ? 'border-primary'
-                                  : 'border-border hover:border-primary/60'
-                              }`}
+                              className={`h-12 w-16 overflow-hidden rounded-sm border ${index === backendGalleryIndex
+                                ? 'border-primary'
+                                : 'border-border hover:border-primary/60'
+                                }`}
                               onClick={() => setBackendGalleryIndex(index)}
                             >
                               <img
@@ -2579,6 +2579,86 @@ const AuctionListingsPage = () => {
                       </div>
                     </div>
                   </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Floating compare button */}
+          <AnimatePresence>
+            {showCompareCheckboxes && selectedVehicleIds.length >= 2 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="fixed bottom-6 right-6 z-50"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <Button
+                    type="button"
+                    size="lg"
+                    className={`h-14 px-6 text-sm font-semibold shadow-xl text-white transition-all duration-300 ${isCompareOpen
+                      ? 'bg-red-500 hover:bg-red-600 hover:shadow-red-500/25'
+                      : 'bg-orange-500 hover:bg-orange-600 hover:shadow-orange-500/25'
+                      }`}
+                    onClick={async () => {
+                      if (isCompareOpen) {
+                        setIsCompareOpen(false);
+                        return;
+                      }
+
+                      setIsCompareOpen(true);
+                      setIsCompareLoading(true);
+                      setCompareError(null);
+                      setCompareResult(null);
+                      try {
+                        const response = await compareVehicles({
+                          vehicle_ids: selectedVehicleIds,
+                          quotes_per_vehicle: 3,
+                          currency: 'usd',
+                        });
+                        setCompareResult(response);
+                      } catch (error: any) {
+                        setCompareError(error?.message || 'შედარების ჩატვირთვა ვერ მოხერხდა');
+                      } finally {
+                        setIsCompareLoading(false);
+                      }
+                    }}
+                    aria-label={isCompareOpen ? 'შედარების დახურვა' : 'შედარების ფანჯრის გახსნა'}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isCompareOpen ? (
+                        <motion.div
+                          key="cancel"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center"
+                        >
+                          <Icon icon="mdi:close" className="h-5 w-5 mr-2" />
+                          გაუქმება
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="compare"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center"
+                        >
+                          <Icon icon="mdi:compare" className="h-5 w-5 mr-2" />
+                          შედარება ({selectedVehicleIds.length})
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Button>
                 </motion.div>
               </motion.div>
             )}

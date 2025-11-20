@@ -1,0 +1,6 @@
+Changes to apply:
+1. Line 1691-1719: Remove async and comparison logic from button
+2. Line 1722-1724: Add validation message
+3. Line 2022: Remove padding from overlay
+4. Line 2032-2034: Add wrapper div and fix modal positioning
+5. Line 2585: Add floating button before closing AnimatePresence

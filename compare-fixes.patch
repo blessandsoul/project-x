@@ -1,0 +1,141 @@
+diff --git a/client/src/pages/AuctionListingsPage.tsx b/client/src/pages/AuctionListingsPage.tsx
+index 1234567..abcdefg 100644
+--- a/client/src/pages/AuctionListingsPage.tsx
++++ b/client/src/pages/AuctionListingsPage.tsx
+@@ -1688,7 +1688,7 @@
+                   size="sm"
+                   className="h-8 px-3 text-[11px]"
+                   variant="outline"
+-                  onClick={async () => {
++                  onClick={() => {
+                     if (!showCompareCheckboxes) {
+                       setShowCompareCheckboxes(true);
+                       return;
+@@ -1697,24 +1697,6 @@
+                       setShowCompareCheckboxes(false);
+                       return;
+                     }
+-
+-                    if (selectedVehicleIds.length === 0) return;
+-                    setIsCompareOpen(true);
+-                    setIsCompareLoading(true);
+-                    setCompareError(null);
+-                    setCompareResult(null);
+-                    try {
+-                      const response = await compareVehicles({
+-                        vehicle_ids: selectedVehicleIds,
+-                        quotes_per_vehicle: 3,
+-                        currency: 'usd',
+-                      });
+-                      setCompareResult(response);
+-                    } catch (error: any) {
+-                      setCompareError(error?.message || 'შედარების ჩატვირთვა ვერ მოხერხდა');
+-                    } finally {
+-                      setIsCompareLoading(false);
+-                    }
+                   }}
+                   aria-label="ავტომობილების შედარება ფასებით"
+                 >
+@@ -1721,4 +1703,9 @@
+                 </Button>
++                {showCompareCheckboxes && selectedVehicleIds.length === 1 && (
++                  <span className="text-[10px] text-orange-600">
++                    მინიმუმ 2 კომპანია აირჩიეთ შესადარებლად
++                  </span>
++                )}
+               </div>
+             </div>
+@@ -2019,7 +2006,7 @@
+           <AnimatePresence>
+             {isCompareOpen && (
+               <motion.div
+-                className="fixed inset-0 z-50 bg-black/70 px-2 sm:px-4 py-4 sm:py-8"
++                className="fixed inset-0 z-50 bg-black/70"
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+@@ -2028,8 +2015,9 @@
+                 aria-modal="true"
+                 aria-label="შერჩეული მანქანების ფასების შედარება"
+               >
+-                <motion.div
+-                  className="fixed left-1/2 top-1/2 z-[55] w-[calc(100%-1.5rem)] max-w-5xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col"
++                <div className="fixed inset-0 px-2 sm:px-4 py-4 sm:py-8 overflow-y-auto pointer-events-none">
++                <motion.div
++                  className="relative left-1/2 top-1/2 z-[55] w-full max-w-5xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col pointer-events-auto"
+                   initial={{ scale: 0.96, opacity: 0 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   exit={{ scale: 0.96, opacity: 0 }}
+@@ -2295,6 +2283,7 @@
+                     </div>
+                   </motion.div>
++                </div>
+               </motion.div>
+             )}
+           </AnimatePresence>
+@@ -2585,6 +2574,65 @@
+               </motion.div>
+             )}
+           </AnimatePresence>
++
++          {/* Floating compare button */}
++          <AnimatePresence>
++            {showCompareCheckboxes && selectedVehicleIds.length >= 2 && (
++              <motion.div
++                initial={{ opacity: 0, y: 20, scale: 0.9 }}
++                animate={{ opacity: 1, y: 0, scale: 1 }}
++                exit={{ opacity: 0, y: 20, scale: 0.9 }}
++                transition={{ duration: 0.2, ease: 'easeOut' }}
++                className="fixed bottom-6 right-6 z-50"
++              >
++                <Button
++                  type="button"
++                  size="lg"
++                  className={`h-14 px-6 text-sm font-semibold shadow-xl text-white ${
++                    isCompareOpen
++                      ? 'bg-red-500 hover:bg-red-600'
++                      : 'bg-orange-500 hover:bg-orange-600'
++                  }`}
++                  onClick={async () => {
++                    if (isCompareOpen) {
++                      setIsCompareOpen(false);
++                      return;
++                    }
++
++                    setIsCompareOpen(true);
++                    setIsCompareLoading(true);
++                    setCompareError(null);
++                    setCompareResult(null);
++                    try {
++                      const response = await compareVehicles({
++                        vehicle_ids: selectedVehicleIds,
++                        quotes_per_vehicle: 3,
++                        currency: 'usd',
++                      });
++                      setCompareResult(response);
++                    } catch (error: any) {
++                      setCompareError(error?.message || 'შედარების ჩატვირთვა ვერ მოხერხდა');
++                    } finally {
++                      setIsCompareLoading(false);
++                    }
++                  }}
++                  aria-label={isCompareOpen ? 'შედარების დახურვა' : 'შედარების ფანჯრის გახსნა'}
++                >
++                  {isCompareOpen ? (
++                    <>
++                      <Icon icon="mdi:close" className="h-5 w-5 mr-2" />
++                      გაუქმება
++                    </>
++                  ) : (
++                    <>
++                      <Icon icon="mdi:compare" className="h-5 w-5 mr-2" />
++                      შედარება ({selectedVehicleIds.length})
++                    </>
++                  )}
++                </Button>
++              </motion.div>
++            )}
++          </AnimatePresence>
+         </div>
+       </main>
+       <Footer footerLinks={mockFooterLinks} />

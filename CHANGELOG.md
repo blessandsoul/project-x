@@ -28,3 +28,4 @@
 - Added AuthDrawer component with tabbed login/register forms and wired the main Header sign-in button to open the authentication drawer instead of navigating to a standalone auth page
 - Improved Vite dev server configuration (host/port/polling) for more reliable HMR in the client React app
 - Added a Vite HMR fallback in client/src/main.tsx to force full-page reloads on module updates when React Fast Refresh is disabled by external shims
+- Added smooth animations to compare/cancel and close buttons in the vehicle comparison modal
