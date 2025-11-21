@@ -78,12 +78,10 @@ const OnboardingPage = () => {
 
     if (type) {
       setActiveTab(type);
-
-      if (type === 'company') {
-        setForcedRole('company');
-      } else {
-        setForcedRole(null);
-      }
+      // Lock the onboarding tab to the role inferred from the route
+      // so a user on /onboarding/user or /onboarding/dealer cannot
+      // switch to other roles' forms, same as company.
+      setForcedRole(type);
     }
   }, [location.pathname, location.search]);
 
