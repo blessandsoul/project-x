@@ -17,7 +17,8 @@ export function RequireGuest({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    // Redirect to onboarding instead of dashboard if already logged in
+    return <Navigate to="/onboarding" replace />
   }
 
   return <>{children}</>

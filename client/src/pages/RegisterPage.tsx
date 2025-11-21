@@ -30,7 +30,7 @@ const RegisterPage = () => {
 
     try {
       await register(name, email, password)
-      navigate('/dashboard', { replace: true })
+      navigate('/onboarding', { replace: true })
     } catch (err) {
       const message =
         err instanceof Error && err.message

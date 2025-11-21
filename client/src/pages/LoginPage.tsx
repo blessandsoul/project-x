@@ -37,7 +37,8 @@ const LoginPage = () => {
 
     try {
       await login(email, password)
-      const redirectTo = state?.from?.pathname || '/dashboard'
+      // Default to /onboarding for testing flow
+      const redirectTo = state?.from?.pathname || '/onboarding'
       navigate(redirectTo, { replace: true })
     } catch (err) {
       const message =

@@ -454,6 +454,182 @@
     "empty": {
       "no_companies": "لم تتم إضافة شركات بعد",
       "no_companies_desc": "ستظهر شركات الاستيراد التي تم التحقق منها هنا قريبًا. في الوقت الحالي، استكشف ميزات المنصة."
+    },
+    "lead_capture": {
+      "title": "لم تجد ما كنت تبحث عنه؟",
+      "description": "اترك طلباً وستتواصل معك الشركات بنفسها مع أفضل العروض.",
+      "response_time": "متوسط وقت الرد: 15 دقيقة",
+      "privacy_guarantee": "بياناتك محمية",
+      "form_title": "طلب استيراد سيارة",
+      "name_label": "اسمك",
+      "contact_label": "رقم الاتصال أو البريد الإلكتروني",
+      "contact_placeholder": "+995 555 00 00 00",
+      "budget_label": "أقصى ميزانية (USD)",
+      "car_type_label": "نوع السيارة",
+      "car_type_placeholder": "اختر النوع",
+      "car_type_any": "أي",
+      "car_type_sedan": "سيدان",
+      "car_type_suv": "جيب / SUV",
+      "car_type_hatchback": "هاتشباك",
+      "car_type_premium": "فاخر",
+      "auction_source_label": "المزاد",
+      "auction_source_placeholder": "اختر المصدر",
+      "auction_source_any": "أي",
+      "message_label": "تفاصيل إضافية",
+      "message_placeholder": "مثال: موديل معين، سنة، لون...",
+      "priority_label": "ما هو الأهم؟",
+      "priority_placeholder": "اختر الأولوية",
+      "priority_price": "سعر منخفض",
+      "priority_speed": "توصيل سريع",
+      "priority_premium": "خدمة مميزة",
+      "advanced_show": "إظهار المعلمات المتقدمة",
+      "advanced_hide": "إخفاء المعلمات المتقدمة",
+      "advanced_hint": "معلمات اختيارية لبحث أكثر دقة",
+      "brand_label": "العلامة التجارية",
+      "brand_placeholder": "مثال: تويوتا",
+      "model_label": "الموديل",
+      "model_placeholder": "مثال: كامري",
+      "year_from_label": "سنة من",
+      "year_from_placeholder": "2015",
+      "color_label": "اللون",
+      "color_placeholder": "أي",
+      "color_any": "أي",
+      "color_white": "أبيض",
+      "color_black": "أسود",
+      "color_grey": "رمادي",
+      "color_blue": "أزرق",
+      "color_red": "أحمر",
+      "consent_label": "أوافق على معالجة بياناتي الشخصية",
+      "submit_btn": "إرسال الطلب",
+      "submitting_btn": "جاري الإرسال...",
+      "success_message": "تم إرسال الطلب بنجاح!",
+      "validation": {
+        "name_required": "الاسم مطلوب",
+        "contact_required": "الاتصال مطلوب",
+        "car_type_required": "نوع السيارة مطلوب",
+        "auction_source_required": "مصدر المزاد مطلوب",
+        "priority_required": "الأولوية مطلوبة",
+        "consent_required": "الموافقة مطلوبة"
+      }
+    },
+    "quick_search": {
+      "title": "بحث سريع عن الشركات",
+      "state_label": "الولاية في الولايات المتحدة",
+      "state_placeholder": "اختر الولاية",
+      "service_label": "الخدمة",
+      "service_placeholder": "اختر الخدمة",
+      "rating_label": "الحد الأدنى للتقييم",
+      "rating_all": "الكل",
+      "vip_only": "شركات VIP فقط",
+      "search_btn": "ابحث عن شركات موثوقة",
+      "reset_btn": "مسح الفلاتر",
+      "presets_title": "سيناريوهات شائعة",
+      "presets_description": "اختر مجموعات شائعة للحصول على نتائج سريعة.",
+      "preset_1": "تقييم عالي • كاليفورنيا • VIP",
+      "preset_2": "سيدان اقتصادي • فلوريدا • 3+",
+      "preset_3": "باقة فاخرة • جورجيا • 5★ • VIP"
+    },
+    "price_calculator": {
+      "title": "حساب التكلفة الإجمالية",
+      "description": "اختر نطاق الميزانية لتقدير تكلفة استيراد سيارة من الولايات المتحدة إلى جورجيا.",
+      "budget_label": "ميزانية السيارة، USD",
+      "budget_range_aria": "نطاق ميزانية السيارة",
+      "estimated_total_label": "التكلفة الإجمالية المقدرة",
+      "disclaimer": "يشمل الحساب رسوم الخدمة والرسوم الجمركية وهو تقريبي.",
+      "secure_payment": "دفع آمن",
+      "secure_payment_tooltip": "يتم حجز الأموال كأجزاء وتحويلها للمستورد فقط بعد التأكيد. استخدمه كمرجع فقط.",
+      "estimate_note": "هذا تقدير تقريبي. قد تختلف التكلفة الفعلية حسب الشركة والمزاد والجمارك.",
+      "find_btn": "ابحث عن شركات لهذه الميزانية"
+    },
+    "audience": {
+      "title": "لمن هذه المنصة",
+      "description": "اختر السيناريو الذي يناسبك أكثر، وسنعرض لك الشركات ذات الصلة.",
+      "first_time": {
+        "title": "استيراد لأول مرة",
+        "description": "بحاجة إلى دليل خطوة بخطوة — من المزاد إلى التسليم في تبليسي، مع دعم كامل للمستندات.",
+        "cta": "للمبتدئين"
+      },
+      "reseller": {
+        "title": "تجار وموزعين",
+        "description": "أبحث عن شريك مستقر بأسعار الجملة، لوجستيات سريعة وجدول زمني متوقع.",
+        "cta": "ابحث عن شريك"
+      },
+      "safe_first": {
+        "title": "أقصى موثوقية",
+        "description": "أريد فقط شركات تم التحقق منها، عقود شفافة وتقييمات عالية من العملاء السابقين.",
+        "cta": "الشركات الأعلى تقييماً"
+      },
+      "budget": {
+        "title": "أقل ميزانية",
+        "description": "المهم هو الميزانية الإجمالية. مستعد للانتظار لفترة أطول للحصول على سعر أفضل.",
+        "cta": "عروض بأسعار معقولة"
+      }
+    },
+    "ready_scenarios": {
+      "title": "سيناريوهات بحث جاهزة",
+      "subtitle": "اختبار قصير",
+      "description": "اختر السيناريو الأقرب لاحتياجاتك. سيتم ضبط الفلاتر تلقائياً.",
+      "scenarios": {
+        "budget_10k": {
+          "label": "ميزانية • حتى 10,000$",
+          "description": "خيارات مناسبة للسيارة الأولى أو العائلية."
+        },
+        "family_suv": {
+          "label": "سيارة عائلية SUV",
+          "description": "سيارات دفع رباعي مريحة وآمنة للعائلة."
+        },
+        "premium_25k": {
+          "label": "فاخرة • حتى 25,000$",
+          "description": "توازن بين الفئة الفاخرة والميزانية المعقولة."
+        },
+        "for_resale": {
+          "label": "لإعادة البيع",
+          "description": "شركات لديها خبرة مع التجار."
+        }
+      }
+    },
+    "how_it_works": {
+      "title": "كيف يعمل",
+      "description": "العملية الكاملة في صفحة واحدة: من الاختيار إلى التسليم النهائي.",
+      "steps": {
+        "1": {
+          "title": "اختر شركة",
+          "description": "ابحث عن المستوردين حسب الفلاتر والتقييمات."
+        },
+        "2": {
+          "title": "تواصل",
+          "description": "اتفق على التفاصيل والشروط وحجم الخدمة."
+        },
+        "3": {
+          "title": "المستندات والدفع",
+          "description": "تساعدك الشركة في الوثائق وتنظيم الدفع."
+        },
+        "4": {
+          "title": "السيارة في جورجيا",
+          "description": "تصل السيارة المطلوبة إلى الميناء ويتم تسليمها لك."
+        }
+      }
+    },
+    "featured_companies": {
+      "title": "مستوردو VIP",
+      "description": "شركات ذات تقييم عالي وشروط شفافة.",
+      "view_all": "عرض جميع الشركات",
+      "empty_title": "شركات VIP لا تظهر بعد",
+      "empty_desc": "بمجرد إضافة مستوردين تم التحقق منهم إلى المنصة، سيظهرون هنا. في الوقت الحالي يمكنك تصفح جميع الشركات في الفهرس.",
+      "top_partner": "شريك مميز",
+      "vip_diamond": "VIP ماسي",
+      "vip_gold": "VIP ذهبي",
+      "vip_silver": "VIP فضي",
+      "reviews_count": "({{count}} مراجعة)",
+      "full_cycle": "USA → GEO دورة كاملة",
+      "docs_customs": "مستندات / جمارك / توصيل",
+      "deals_label": "صفقات",
+      "deals_tooltip": "العدد التقريبي للصفقات المكتملة بناءً على المراجعات (≈ عدد المراجعات × 3).",
+      "satisfaction_label": "رضا",
+      "satisfaction_tooltip": "مستوى الرضا التقريبي بناءً على التقييم (التقييم/5).",
+      "established": "تأسست: {{year}}",
+      "response_time": "متوسط وقت الرد: {{hours}} ساعة",
+      "response_time_tooltip": "متوسط سرعة رد الشركة على الرسالة الأولى."
     }
   },
   "company_profile": {
@@ -522,6 +698,7 @@
       "add": "أضف إلى المفضلة",
       "remove": "إزالة من المفضلة"
     }
+  },
   "profile": {
     "title": "الملف الشخصي",
     "edit": "تعديل الملف الشخصي",
