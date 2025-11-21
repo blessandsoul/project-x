@@ -8,7 +8,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    fallbackLng: 'ka',
+    fallbackLng: 'en',
     supportedLngs: ['ka', 'en', 'ru', 'ar'],
     debug: import.meta.env.DEV,
     
@@ -17,7 +17,8 @@ i18n
     },
 
     backend: {
-      loadPath: '/locales/{{lng}}/translation.json',
+      // versioned query param to force browsers/dev server to refetch updated translation files
+      loadPath: '/locales/{{lng}}/translation.json?v=2',
     },
 
     detection: {

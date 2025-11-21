@@ -1067,6 +1067,9 @@
       "warning_title": "Warning",
       "warning_text_1": "This page uses test data and is not connected to a real VIN check service. Use results for visualization and design evaluation only.",
       "warning_text_2": "For real history, integration with official VIN service and valid API key is required.",
+      "error_vin_required": "Please enter VIN code.",
+      "error_vin_length": "VIN must be exactly 17 characters.",
+      "error_decode_failed": "VIN decode failed. Please try again.",
       "mock": {
         "damage_summary": "Front part was lightly damaged, front bumper replaced.",
         "events": {

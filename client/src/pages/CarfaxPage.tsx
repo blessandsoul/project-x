@@ -132,30 +132,30 @@ const CarfaxPage = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Icon icon="mdi:car-info" className="h-5 w-5 text-primary" />
-                      {t('carfax.basic_info')}
+                      {t('carfax.basic_info.title')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-4 text-sm md:grid-cols-2">
                     <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">VIN</span>
+                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.vin_label')}</span>
                       <span className="font-medium tracking-[0.1em] uppercase">{result?.vin ?? mockReport.vin}</span>
                     </div>
                     <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.year_make_model')}</span>
+                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.year_make_model_label')}</span>
                       <span className="font-medium">
                         {mockReport.year} {mockReport.make} {mockReport.model}
                       </span>
                     </div>
                     <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.engine')}</span>
+                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.engine_label')}</span>
                       <span>{mockReport.engine}</span>
                     </div>
                     <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.transmission')}</span>
+                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.transmission_label')}</span>
                       <span>{mockReport.transmission}</span>
                     </div>
                     <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.last_mileage')}</span>
+                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.mileage_label')}</span>
                       <span>{mockReport.mileage.toLocaleString()} km</span>
                     </div>
                   </CardContent>
@@ -165,15 +165,15 @@ const CarfaxPage = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Icon icon="mdi:clipboard-list-outline" className="h-5 w-5 text-primary" />
-                      {t('carfax.summary')}
+                      {t('carfax.summary.title')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-3 md:grid-cols-2 text-sm">
                     <div className="flex items-start gap-2">
                       <Icon icon="mdi:account-group" className="h-4 w-4 mt-1 text-primary" />
                       <div>
-                        <div className="font-medium">{t('carfax.owners_count')}</div>
-                        <div className="text-muted-foreground text-xs">{t('carfax.recorded_owners', { count: mockReport.owners })}</div>
+                        <div className="font-medium">{t('carfax.summary.owners_count_label')}</div>
+                        <div className="text-muted-foreground text-xs">{t('carfax.summary.owners_count', { count: mockReport.owners })}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
@@ -182,11 +182,11 @@ const CarfaxPage = () => {
                         className="h-4 w-4 mt-1 text-primary"
                       />
                       <div>
-                        <div className="font-medium">{t('carfax.accidents_history')}</div>
+                        <div className="font-medium">{t('carfax.summary.accidents_label')}</div>
                         <div className="text-muted-foreground text-xs">
                           {mockReport.accidents > 0
-                            ? t('carfax.recorded_accidents', { count: mockReport.accidents })
-                            : t('carfax.no_accidents')}
+                            ? t('carfax.summary.accidents_count', { count: mockReport.accidents })
+                            : t('carfax.summary.no_accidents')}
                         </div>
                       </div>
                     </div>
@@ -196,9 +196,11 @@ const CarfaxPage = () => {
                         className="h-4 w-4 mt-1 text-primary"
                       />
                       <div>
-                        <div className="font-medium">{t('carfax.lease_fleet')}</div>
+                        <div className="font-medium">{t('carfax.summary.lease_label')}</div>
                         <div className="text-muted-foreground text-xs">
-                          {mockReport.lease ? t('carfax.lease_record_exists') : t('carfax.no_lease_record')}
+                          {mockReport.lease
+                            ? t('carfax.summary.lease_exists')
+                            : t('carfax.summary.no_lease')}
                         </div>
                       </div>
                     </div>

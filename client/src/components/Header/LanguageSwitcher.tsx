@@ -22,6 +22,11 @@ const LanguageSwitcher = () => {
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
+    try {
+      window.localStorage.setItem('i18nextLng', langCode);
+    } catch {
+      // ignore storage errors (e.g. disabled cookies)
+    }
   };
 
   return (

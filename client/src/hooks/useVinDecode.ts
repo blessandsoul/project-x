@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { decodeVin, type VinDecodeSuccess } from '@/lib/vinApi'
 
 export interface UseVinDecodeState {
@@ -13,6 +14,7 @@ export interface UseVinDecodeResult extends UseVinDecodeState {
 }
 
 export function useVinDecode(): UseVinDecodeResult {
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<VinDecodeSuccess | null>(null)
@@ -26,13 +28,13 @@ export function useVinDecode(): UseVinDecodeResult {
     const trimmed = rawVin.trim().toUpperCase()
 
     if (!trimmed) {
-      setError('გთხოვთ, შეიყვანოთ VIN კოდი')
+      setError(t('carfax.error_vin_required'))
       setResult(null)
       return
     }
 
     if (trimmed.length !== 17) {
-      setError('VIN უნდა იყოს 17 სიმბოლო')
+      setError(t('carfax.error_vin_length'))
       setResult(null)
       return
     }
@@ -45,9 +47,9 @@ export function useVinDecode(): UseVinDecodeResult {
       setResult(decoded)
     } catch (submissionError) {
       if (submissionError instanceof Error) {
-        setError(submissionError.message || 'VIN decode failed')
+        setError(submissionError.message || t('carfax.error_decode_failed'))
       } else {
-        setError('VIN decode failed')
+        setError(t('carfax.error_decode_failed'))
       }
       setResult(null)
     } finally {
