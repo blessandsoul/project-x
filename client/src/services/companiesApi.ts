@@ -211,6 +211,29 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   }
 }
 
+export async function uploadCompanyLogoFromApi(
+  companyId: string | number,
+  file: File,
+): Promise<{ logoUrl: string; originalLogoUrl: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const token = window.localStorage.getItem('projectx_auth_token')
+
+  const response = await axios.post<{ logoUrl: string; originalLogoUrl: string }>(
+    `${API_BASE_URL}/companies/${companyId}/logo`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    },
+  )
+
+  return response.data
+}
+
 export async function fetchCompaniesFromApi(): Promise<Company[]> {
   try {
     const response = await axios.get<ApiCompany[]>(`${API_BASE_URL}/companies`)
@@ -224,6 +247,72 @@ export async function fetchCompaniesFromApi(): Promise<Company[]> {
     return raw.map((item) => mapApiCompanyToUiCompany(item as ApiCompany))
   } catch (error) {
     console.error('[CompaniesAPI] Failed to fetch companies', error)
+    throw error
+  }
+}
+
+export type UpdateCompanyPayload = {
+  name?: string
+  base_price?: number
+  customs_fee?: number
+  service_fee?: number
+  broker_fee?: number
+  price_per_mile?: number
+  description?: string | null
+  country?: string | null
+  city?: string | null
+  phone_number?: string | null
+  contact_email?: string | null
+  website?: string | null
+  established_year?: number | null
+  services?: string[]
+}
+
+export async function updateCompanyFromApi(
+  id: string | number,
+  payload: UpdateCompanyPayload,
+): Promise<ApiCompany> {
+  const response = await apiAuthorizedMutation<ApiCompany>(
+    'PUT',
+    `/companies/${id}`,
+    payload,
+  )
+
+  return response
+}
+
+export async function deleteCompanySocialLinkFromApi(
+  socialLinkId: string | number,
+): Promise<void> {
+  await apiAuthorizedMutation<unknown>(
+    'DELETE',
+    `/social-links/${socialLinkId}`,
+    undefined as any,
+  )
+}
+
+export async function createCompanySocialLinkFromApi(
+  companyId: string | number,
+  url: string,
+): Promise<ApiCompanySocialLink> {
+  const response = await apiAuthorizedMutation<ApiCompanySocialLink>(
+    'POST',
+    `/companies/${companyId}/social-links`,
+    { url },
+  )
+
+  return response
+}
+
+export async function fetchRawCompanyByIdFromApi(id: string | number): Promise<ApiCompany | null> {
+  try {
+    const response = await axios.get<ApiCompany>(`${API_BASE_URL}/companies/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('[CompaniesAPI] Failed to fetch raw company by id', {
+      id,
+      error,
+    })
     throw error
   }
 }

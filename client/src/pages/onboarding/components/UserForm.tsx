@@ -14,9 +14,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { onboardingApi } from "@/services/onboardingService"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Icon } from "@iconify/react"
 import { BODY_TYPES, FUEL_TYPES, USAGE_GOALS } from "@/constants/onboarding"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -28,17 +28,15 @@ export function UserForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState(1)
+  const navigate = useNavigate()
 
   const userFormSchema = z.object({
-    budget_min: z.coerce.number().min(0, t('onboarding.user.validation.budget_min')),
-    budget_max: z.coerce.number().min(0, t('onboarding.user.validation.budget_max')),
+    budget_min: z.coerce.number().optional(),
+    budget_max: z.coerce.number().optional(),
     body_types: z.array(z.string()).optional(),
     fuel_types: z.array(z.string()).optional(),
     usage_goal: z.enum(['commute', 'family', 'resale', 'fun', 'other']).optional(),
     purchase_timeframe: z.enum(['immediate', '1-3_months', '3-6_months', 'planning']).optional(),
-  }).refine((data) => data.budget_max >= data.budget_min, {
-    message: t('onboarding.user.validation.budget_range'),
-    path: ["budget_max"],
   })
 
   type UserFormValues = z.infer<typeof userFormSchema>
@@ -56,9 +54,13 @@ export function UserForm() {
   async function onSubmit(data: UserFormValues) {
     setIsLoading(true)
     try {
-      await onboardingApi.submitUserOnboarding(data)
+      // No API call for user onboarding for now; this is a local no-op submit.
+      console.log('[UserOnboarding] Local submit payload (no API call yet)', data)
       toast.success(t('onboarding.user.success'))
       triggerConfetti()
+      setTimeout(() => {
+        navigate('/')
+      }, 1000)
     } catch (error) {
       toast.error(t('onboarding.user.failure'))
       console.error(error)

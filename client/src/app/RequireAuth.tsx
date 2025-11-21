@@ -14,11 +14,17 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export function RequireGuest({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, userRole } = useAuth()
 
   if (isAuthenticated) {
-    // Redirect to onboarding instead of dashboard if already logged in
-    return <Navigate to="/onboarding" replace />
+    let target = '/onboarding/user'
+    if (userRole === 'dealer') {
+      target = '/onboarding/dealer'
+    } else if (userRole === 'company') {
+      target = '/onboarding/company'
+    }
+
+    return <Navigate to={target} replace />
   }
 
   return <>{children}</>

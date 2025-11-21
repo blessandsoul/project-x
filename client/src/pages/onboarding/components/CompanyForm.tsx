@@ -12,19 +12,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { onboardingApi } from "@/services/onboardingService"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Icon } from "@iconify/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SERVICES } from "@/constants/onboarding"
 import { useOnboardingForm } from "@/hooks/useOnboardingForm"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { API_BASE_URL } from "@/lib/apiClient"
 import { useTranslation } from "react-i18next"
+import { useAuth } from "@/hooks/useAuth"
+import { fetchRawCompanyByIdFromApi, updateCompanyFromApi, createCompanySocialLinkFromApi, uploadCompanyLogoFromApi, deleteCompanySocialLinkFromApi } from "@/services/companiesApi"
 
 export function CompanyForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
+  const [isPrefilling, setIsPrefilling] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null)
+  const [initialSocialLinks, setInitialSocialLinks] = useState<string[]>([])
+  const { isAuthenticated, userRole, companyId } = useAuth();
+  const navigate = useNavigate()
 
   const companyFormSchema = z.object({
     name: z.string().min(2, t('onboarding.company.validation.name_length')),
@@ -42,13 +50,16 @@ export function CompanyForm() {
     established_year: z.coerce.number().optional(),
     phone_number: z.string().optional(),
     services: z.array(z.string()).optional(),
-    social_links: z.array(z.object({ url: z.string().url() })).optional(),
+    social_links: z.array(z.object({
+      id: z.union([z.string(), z.number()]).optional(),
+      url: z.string().url(),
+    })).optional(),
   })
 
   type CompanyFormValues = z.infer<typeof companyFormSchema>
 
   const { form, triggerConfetti } = useOnboardingForm<CompanyFormValues>('company', {
-    resolver: zodResolver(companyFormSchema),
+    resolver: zodResolver(companyFormSchema) as any,
     defaultValues: {
       name: "",
       slug: "",
@@ -69,15 +80,175 @@ export function CompanyForm() {
     },
   })
 
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== 'company' || !companyId) {
+      return
+    }
+
+    let isMounted = true
+    setIsPrefilling(true)
+
+    console.log('[CompanyOnboarding] Prefill start', {
+      isAuthenticated,
+      userRole,
+      companyId,
+    })
+
+    fetchRawCompanyByIdFromApi(companyId)
+      .then((company) => {
+        if (!company || !isMounted) {
+          return
+        }
+
+        console.log('[CompanyOnboarding] Prefill loaded company', company)
+
+        const services = Array.isArray(company.services) ? company.services : []
+        const socialLinksArray = Array.isArray(company.social_links) ? company.social_links : []
+
+        const establishedYear = typeof company.established_year === 'number'
+          ? new Date(company.established_year * 1000).getFullYear()
+          : new Date(company.created_at).getFullYear()
+
+        const normalizedSocialLinks = socialLinksArray
+          .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
+          .map((link) => ({ id: link.id, url: (link.url ?? '').trim() }))
+
+        setInitialSocialLinks(normalizedSocialLinks.map((link) => link.url))
+
+        let logoUrl: string | null = null
+        const rawLogo =
+          (typeof company.logo_url === 'string' && company.logo_url.trim().length > 0
+            ? company.logo_url.trim()
+            : typeof (company as any).logo === 'string' && (company as any).logo.trim().length > 0
+              ? (company as any).logo.trim()
+              : null)
+
+        // Normalize logo URL to avoid CORP:
+        // - If it's absolute and matches API_BASE_URL, strip the origin so the
+        //   browser requests it from the frontend origin (dev proxy can handle it).
+        // - If it's another absolute URL, use as-is.
+        // - If it's relative, use as-is.
+        if (rawLogo) {
+          if (rawLogo.startsWith(API_BASE_URL)) {
+            logoUrl = rawLogo.slice(API_BASE_URL.length) || '/'
+          } else {
+            logoUrl = rawLogo
+          }
+        }
+
+        // Debug: verify what URL we are trying to load
+        console.log('[CompanyOnboarding] Resolved logo URL', {
+          logo_url: company.logo_url,
+          logo: (company as any).logo,
+          resolved: logoUrl,
+        })
+
+        setCurrentLogoUrl(logoUrl)
+
+        form.reset({
+          name: company.name || "",
+          slug: company.slug || "",
+          base_price: Number(company.base_price) || 0,
+          price_per_mile: Number(company.price_per_mile) || 0,
+          customs_fee: Number(company.customs_fee) || 0,
+          service_fee: Number(company.service_fee) || 0,
+          broker_fee: Number(company.broker_fee) || 0,
+          description: company.description || "",
+          country: company.country || "",
+          city: company.city || "",
+          phone_number: company.phone_number || "",
+          contact_email: company.contact_email || "",
+          website: company.website || "",
+          established_year: establishedYear,
+          services,
+          social_links: normalizedSocialLinks,
+        })
+      })
+      .catch((error) => {
+        console.error('[CompanyOnboarding] Failed to prefill company data', error)
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsPrefilling(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated, userRole, companyId, form])
+
   async function onSubmit(data: CompanyFormValues) {
+    if (!companyId) {
+      toast.error(t('onboarding.company.failure'))
+      console.error('[CompanyOnboarding] Missing companyId in auth state')
+      return
+    }
+
     setIsLoading(true)
+
     try {
-      await onboardingApi.submitCompanyOnboarding(data)
+      const sanitizedServices = Array.isArray(data.services)
+        ? data.services.filter((svc) => typeof svc === 'string' && svc.trim().length > 0)
+        : []
+
+      const socialLinks = Array.isArray(data.social_links)
+        ? data.social_links.filter((item) => item && typeof item.url === 'string' && item.url.trim().length > 0)
+        : []
+
+      const year = typeof data.established_year === 'number'
+        ? data.established_year
+        : new Date().getFullYear()
+
+      const establishedTimestamp = Math.floor(new Date(year, 0, 1).getTime() / 1000)
+
+      const payload = {
+        name: data.name,
+        base_price: data.base_price,
+        customs_fee: data.customs_fee ?? undefined,
+        service_fee: data.service_fee ?? undefined,
+        broker_fee: data.broker_fee ?? undefined,
+        price_per_mile: data.price_per_mile,
+        description: data.description || null,
+        country: data.country || null,
+        city: data.city || null,
+        phone_number: data.phone_number || null,
+        contact_email: data.contact_email || null,
+        website: data.website || null,
+        established_year: establishedTimestamp,
+        services: sanitizedServices.length > 0 ? sanitizedServices : undefined,
+      }
+
+      await updateCompanyFromApi(companyId, payload)
+
+      const newSocialLinks = socialLinks.filter((link) => !link.id)
+
+      if (newSocialLinks.length > 0) {
+        await Promise.all(
+          newSocialLinks.map((link) =>
+            createCompanySocialLinkFromApi(companyId, link.url.trim()),
+          ),
+        )
+      }
+
+      if (logoFile) {
+        try {
+          await uploadCompanyLogoFromApi(companyId, logoFile)
+        } catch (error) {
+          console.error('[CompanyOnboarding] Logo upload failed', error)
+          toast.error(t('onboarding.company.failure'))
+          return
+        }
+      }
+
       toast.success(t('onboarding.company.success'))
       triggerConfetti()
+      setTimeout(() => {
+        navigate('/')
+      }, 1000)
     } catch (error) {
       toast.error(t('onboarding.company.failure'))
-      console.error(error)
+      console.error('[CompanyOnboarding] Submit failed', error)
     } finally {
       setIsLoading(false)
     }
@@ -119,6 +290,33 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FormLabel>Company Logo</FormLabel>
+                {currentLogoUrl && (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={currentLogoUrl}
+                      alt="Current company logo"
+                      className="h-12 w-12 rounded-md object-contain border"
+                    />
+                    <span className="text-sm text-muted-foreground">Current logo</span>
+                  </div>
+                )}
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null
+                      setLogoFile(file)
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -347,9 +545,41 @@ export function CompanyForm() {
                         name={`social_links.${index}.url`}
                         render={({ field }) => (
                             <FormItem>
-                                <FormControl>
-                                    <Input placeholder="https://social.com/..." {...field} />
-                                </FormControl>
+                                <div className="flex items-center gap-2">
+                                  <FormControl>
+                                      <Input placeholder="https://social.com/..." {...field} />
+                                  </FormControl>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={async () => {
+                                      const current = form.getValues("social_links") || [];
+                                      const link = current[index];
+
+                                      form.setValue(
+                                        "social_links",
+                                        current.filter((_, i) => i !== index),
+                                      );
+
+                                      const url = (link?.url ?? "").trim();
+                                      if (url) {
+                                        setInitialSocialLinks((prev) => prev.filter((item) => item !== url));
+                                      }
+
+                                      if (link && link.id) {
+                                        try {
+                                          await deleteCompanySocialLinkFromApi(link.id);
+                                        } catch (error) {
+                                          console.error('[CompanyOnboarding] Failed to delete social link', error);
+                                          toast.error(t('onboarding.company.failure'));
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
+                                  </Button>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -368,7 +598,7 @@ export function CompanyForm() {
                 </Button>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || isPrefilling}>
               {isLoading ? <Icon icon="mdi:loading" className="animate-spin mr-2" /> : null}
               {t('onboarding.company.submit')}
             </Button>

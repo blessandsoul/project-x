@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { onboardingApi } from "@/services/onboardingService"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Icon } from "@iconify/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DEALER_INVENTORY_SIZES } from "@/constants/onboarding"
@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next"
 export function DealerForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const dealerFormSchema = z.object({
     business_name: z.string().min(2, t('onboarding.dealer.validation.name_length')),
@@ -50,9 +51,13 @@ export function DealerForm() {
   async function onSubmit(data: DealerFormValues) {
     setIsLoading(true)
     try {
-      await onboardingApi.submitDealerOnboarding(data)
+      // No API call for dealer onboarding for now; this is a local no-op submit.
+      console.log('[DealerOnboarding] Local submit payload (no API call yet)', data)
       toast.success(t('onboarding.dealer.success'))
       triggerConfetti()
+      setTimeout(() => {
+        navigate('/')
+      }, 1000)
     } catch (error) {
       toast.error(t('onboarding.dealer.failure'))
       console.error(error)

@@ -6,12 +6,16 @@ export interface User {
   id: number;
   email: string;
   username: string;
+  /** Optional display name used in the UI (may mirror username) */
+  name?: string;
+  /** Optional avatar URL generated on the frontend */
+  avatar?: string;
   role?: UserRole;
   dealerSlug?: string | null;
   companyId?: string | null;
   companySlug?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface SocialLink {
