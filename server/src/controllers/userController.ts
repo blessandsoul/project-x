@@ -141,7 +141,13 @@ export class UserController {
 
     return {
       token,
-      user: { id: user.id, email: user.email, username: user.username, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        company_id: user.company_id,
+      },
     };
   }
 
@@ -181,7 +187,13 @@ export class UserController {
 
     return {
       token,
-      user: { id: user.id, email: user.email, username: user.username, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        company_id: user.company_id,
+      },
     };
   }
 

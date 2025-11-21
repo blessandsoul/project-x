@@ -1,15 +1,24 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import axios from 'axios'
 import { apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
-import type { User } from '@/types/api'
+import type { User, UserRole } from '@/types/api'
 
 interface AuthContextValue {
   user: User | null
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  userRole: UserRole | null
+  companyId: number | null
   login: (identifier: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role?: string,
+    companyName?: string,
+    companyPhone?: string
+  ) => Promise<void>
   logout: () => void
   updateUser: (updates: Partial<User>) => void
   refreshProfile: () => Promise<void>
@@ -21,6 +30,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 const STORAGE_KEY_USER = 'projectx_auth_user'
 const STORAGE_KEY_TOKEN = 'projectx_auth_token'
+const STORAGE_KEY_ROLE = 'projectx_auth_role'
+const STORAGE_KEY_COMPANY_ID = 'projectx_auth_company_id'
 
 const AVATAR_IMAGES = [
   '/avatars/user.jpg',
@@ -46,6 +57,8 @@ type BackendUser = {
   id: number
   email: string
   username: string
+  role?: UserRole
+  company_id?: number | null
 }
 
 type AuthSuccessPayload = {
@@ -143,11 +156,7 @@ const extractAuthPayload = (payload: unknown): AuthSuccessPayload | null => {
     return null
   }
 
-  const backendUser = user as {
-    id?: unknown
-    email?: unknown
-    username?: unknown
-  }
+  const backendUser = user as BackendUser
 
   if (typeof backendUser.id !== 'number' || typeof backendUser.email !== 'string') {
     return null
@@ -164,6 +173,8 @@ const extractAuthPayload = (payload: unknown): AuthSuccessPayload | null => {
       id: backendUser.id,
       email: backendUser.email,
       username,
+      role: backendUser.role,
+      company_id: backendUser.company_id ?? null,
     },
   }
 }
@@ -172,20 +183,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [companyId, setCompanyId] = useState<number | null>(null)
 
   useEffect(() => {
     try {
       const storedUser = window.localStorage.getItem(STORAGE_KEY_USER)
       const storedToken = window.localStorage.getItem(STORAGE_KEY_TOKEN)
+      const storedRole = window.localStorage.getItem(STORAGE_KEY_ROLE) as UserRole | null
+      const storedCompanyId = window.localStorage.getItem(STORAGE_KEY_COMPANY_ID)
       if (storedUser) {
         setUser(JSON.parse(storedUser))
       }
       if (storedToken) {
         setToken(storedToken)
       }
+      if (storedRole) {
+        setUserRole(storedRole)
+      }
+      if (storedCompanyId) {
+        const parsed = Number.parseInt(storedCompanyId, 10)
+        if (!Number.isNaN(parsed)) {
+          setCompanyId(parsed)
+        }
+      }
     } catch {
       setUser(null)
       setToken(null)
+      setUserRole(null)
+      setCompanyId(null)
     }
   }, [])
 
@@ -203,6 +229,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(STORAGE_KEY_TOKEN, nextToken)
     } else {
       window.localStorage.removeItem(STORAGE_KEY_TOKEN)
+    }
+  }
+
+  const persistAuthMetadata = (role: UserRole | null, companyIdValue: number | null) => {
+    setUserRole(role)
+    setCompanyId(companyIdValue)
+
+    if (role) {
+      window.localStorage.setItem(STORAGE_KEY_ROLE, role)
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY_ROLE)
+    }
+
+    if (typeof companyIdValue === 'number') {
+      window.localStorage.setItem(STORAGE_KEY_COMPANY_ID, String(companyIdValue))
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY_COMPANY_ID)
     }
   }
 
@@ -494,6 +537,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       persistSession(nextUser, authPayload.token)
+
+      const role = backendUser.role ?? 'user'
+      const companyIdValue = typeof backendUser.company_id === 'number' ? backendUser.company_id : null
+      persistAuthMetadata(role, companyIdValue)
     }
 
     try {
@@ -511,7 +558,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role?: string,
+    companyName?: string,
+    companyPhone?: string,
+  ) => {
     setIsLoading(true)
 
     try {
@@ -519,6 +573,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         username: name,
         password,
+        role,
+        companyName,
+        companyPhone,
       })
 
       const authPayload = extractAuthPayload(payload)
@@ -582,6 +639,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     persistSession(null, null)
+    persistAuthMetadata(null, null)
   }
 
   const value: AuthContextValue = {
@@ -589,6 +647,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token,
     isAuthenticated: !!user && !!token,
     isLoading,
+    userRole,
+    companyId,
     login,
     register,
     logout,

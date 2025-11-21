@@ -123,6 +123,30 @@ function AppRoutes() {
             )}
           />
           <Route
+            path="/onboarding/user"
+            element={renderWithTransition(
+              <RequireAuth>
+                <OnboardingPage />
+              </RequireAuth>,
+            )}
+          />
+          <Route
+            path="/onboarding/dealer"
+            element={renderWithTransition(
+              <RequireAuth>
+                <OnboardingPage />
+              </RequireAuth>,
+            )}
+          />
+          <Route
+            path="/onboarding/company"
+            element={renderWithTransition(
+              <RequireAuth>
+                <OnboardingPage />
+              </RequireAuth>,
+            )}
+          />
+          <Route
             path="/auction-listings"
             element={renderWithTransition(<AuctionListingsPage />)}
           />

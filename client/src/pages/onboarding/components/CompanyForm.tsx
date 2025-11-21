@@ -12,19 +12,23 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { onboardingApi } from "@/services/onboardingService"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Icon } from "@iconify/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SERVICES } from "@/constants/onboarding"
 import { useOnboardingForm } from "@/hooks/useOnboardingForm"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTranslation } from "react-i18next"
+import { useAuth } from "@/hooks/useAuth"
+import { fetchRawCompanyByIdFromApi, updateCompanyFromApi, createCompanySocialLinkFromApi } from "@/services/companiesApi"
 
 export function CompanyForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
+  const [isPrefilling, setIsPrefilling] = useState(false)
+  const { isAuthenticated, userRole, companyId } = useAuth();
+  const navigate = useNavigate()
 
   const companyFormSchema = z.object({
     name: z.string().min(2, t('onboarding.company.validation.name_length')),
@@ -48,7 +52,7 @@ export function CompanyForm() {
   type CompanyFormValues = z.infer<typeof companyFormSchema>
 
   const { form, triggerConfetti } = useOnboardingForm<CompanyFormValues>('company', {
-    resolver: zodResolver(companyFormSchema),
+    resolver: zodResolver(companyFormSchema) as any,
     defaultValues: {
       name: "",
       slug: "",
@@ -69,15 +73,129 @@ export function CompanyForm() {
     },
   })
 
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== 'company' || !companyId) {
+      return
+    }
+
+    let isMounted = true
+    setIsPrefilling(true)
+
+    console.log('[CompanyOnboarding] Prefill start', {
+      isAuthenticated,
+      userRole,
+      companyId,
+    })
+
+    fetchRawCompanyByIdFromApi(companyId)
+      .then((company) => {
+        if (!company || !isMounted) {
+          return
+        }
+
+        console.log('[CompanyOnboarding] Prefill loaded company', company)
+
+        const services = Array.isArray(company.services) ? company.services : []
+        const socialLinksArray = Array.isArray(company.social_links) ? company.social_links : []
+
+        const establishedYear = typeof company.established_year === 'number'
+          ? new Date(company.established_year * 1000).getFullYear()
+          : new Date(company.created_at).getFullYear()
+
+        form.reset({
+          name: company.name || "",
+          slug: company.slug || "",
+          base_price: Number(company.base_price) || 0,
+          price_per_mile: Number(company.price_per_mile) || 0,
+          customs_fee: Number(company.customs_fee) || 0,
+          service_fee: Number(company.service_fee) || 0,
+          broker_fee: Number(company.broker_fee) || 0,
+          description: company.description || "",
+          country: company.country || "",
+          city: company.city || "",
+          phone_number: company.phone_number || "",
+          contact_email: company.contact_email || "",
+          website: company.website || "",
+          established_year: establishedYear,
+          services,
+          social_links: socialLinksArray
+            .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
+            .map((link) => ({ url: (link.url ?? '').trim() })),
+        })
+      })
+      .catch((error) => {
+        console.error('[CompanyOnboarding] Failed to prefill company data', error)
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsPrefilling(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated, userRole, companyId, form])
+
   async function onSubmit(data: CompanyFormValues) {
+    if (!companyId) {
+      toast.error(t('onboarding.company.failure'))
+      console.error('[CompanyOnboarding] Missing companyId in auth state')
+      return
+    }
+
     setIsLoading(true)
+
     try {
-      await onboardingApi.submitCompanyOnboarding(data)
+      const sanitizedServices = Array.isArray(data.services)
+        ? data.services.filter((svc) => typeof svc === 'string' && svc.trim().length > 0)
+        : []
+
+      const socialLinks = Array.isArray(data.social_links)
+        ? data.social_links.filter((item) => item && typeof item.url === 'string' && item.url.trim().length > 0)
+        : []
+
+      const year = typeof data.established_year === 'number'
+        ? data.established_year
+        : new Date().getFullYear()
+
+      const establishedTimestamp = Math.floor(new Date(year, 0, 1).getTime() / 1000)
+
+      const payload = {
+        name: data.name,
+        base_price: data.base_price,
+        customs_fee: data.customs_fee ?? undefined,
+        service_fee: data.service_fee ?? undefined,
+        broker_fee: data.broker_fee ?? undefined,
+        price_per_mile: data.price_per_mile,
+        description: data.description || null,
+        country: data.country || null,
+        city: data.city || null,
+        phone_number: data.phone_number || null,
+        contact_email: data.contact_email || null,
+        website: data.website || null,
+        established_year: establishedTimestamp,
+        services: sanitizedServices.length > 0 ? sanitizedServices : undefined,
+      }
+
+      await updateCompanyFromApi(companyId, payload)
+
+      if (socialLinks.length > 0) {
+        await Promise.all(
+          socialLinks.map((link) =>
+            createCompanySocialLinkFromApi(companyId, link.url.trim()),
+          ),
+        )
+      }
+
       toast.success(t('onboarding.company.success'))
       triggerConfetti()
+      setTimeout(() => {
+        navigate('/')
+      }, 1000)
     } catch (error) {
       toast.error(t('onboarding.company.failure'))
-      console.error(error)
+      console.error('[CompanyOnboarding] Submit failed', error)
     } finally {
       setIsLoading(false)
     }
@@ -368,7 +486,7 @@ export function CompanyForm() {
                 </Button>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || isPrefilling}>
               {isLoading ? <Icon icon="mdi:loading" className="animate-spin mr-2" /> : null}
               {t('onboarding.company.submit')}
             </Button>

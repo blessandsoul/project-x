@@ -228,6 +228,62 @@ export async function fetchCompaniesFromApi(): Promise<Company[]> {
   }
 }
 
+export type UpdateCompanyPayload = {
+  name?: string
+  base_price?: number
+  customs_fee?: number
+  service_fee?: number
+  broker_fee?: number
+  price_per_mile?: number
+  description?: string | null
+  country?: string | null
+  city?: string | null
+  phone_number?: string | null
+  contact_email?: string | null
+  website?: string | null
+  established_year?: number | null
+  services?: string[]
+}
+
+export async function updateCompanyFromApi(
+  id: string | number,
+  payload: UpdateCompanyPayload,
+): Promise<ApiCompany> {
+  const response = await apiAuthorizedMutation<ApiCompany>(
+    'PUT',
+    `/companies/${id}`,
+    payload,
+  )
+
+  return response
+}
+
+export async function createCompanySocialLinkFromApi(
+  companyId: string | number,
+  url: string,
+): Promise<ApiCompanySocialLink> {
+  const response = await apiAuthorizedMutation<ApiCompanySocialLink>(
+    'POST',
+    `/companies/${companyId}/social-links`,
+    { url },
+  )
+
+  return response
+}
+
+export async function fetchRawCompanyByIdFromApi(id: string | number): Promise<ApiCompany | null> {
+  try {
+    const response = await axios.get<ApiCompany>(`${API_BASE_URL}/companies/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('[CompaniesAPI] Failed to fetch raw company by id', {
+      id,
+      error,
+    })
+    throw error
+  }
+}
+
 export type CompaniesSearchParams = {
   limit?: number
   offset?: number
