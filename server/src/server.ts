@@ -87,7 +87,14 @@ const globalRateLimitMax = process.env.RATE_LIMIT_MAX
 const globalRateLimitWindow = process.env.RATE_LIMIT_TIME_WINDOW || '1 minute';
 
 // Register plugins
-await fastify.register(helmet);
+await fastify.register(helmet, {
+  // Allow static assets (like company logos) to be embedded from a different
+  // origin (e.g. Vite dev server at http://localhost:5173) while keeping
+  // other helmet protections enabled.
+  crossOriginResourcePolicy: {
+    policy: 'cross-origin',
+  },
+});
 
 await fastify.register(cors, {
   // Allow only explicitly configured origins in production; allow all in development
