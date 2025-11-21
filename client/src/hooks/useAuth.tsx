@@ -270,7 +270,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const username = profile.username || profile.email.split('@')[0] || 'User'
 
     return {
-      id: String(profile.id),
+      id: profile.id,
+      username,
       name: username,
       email: profile.email,
       avatar: pickAvatar(username),
@@ -530,7 +531,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         backendUser.username || backendUser.email.split('@')[0] || 'User'
 
       const nextUser: User = {
-        id: String(backendUser.id),
+        id: backendUser.id,
+        username,
         name: username,
         email: backendUser.email,
         avatar: pickAvatar(username),
@@ -589,7 +591,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const username = backendUser.username || name || backendUser.email.split('@')[0] || 'User'
 
       const nextUser: User = {
-        id: String(backendUser.id),
+        id: backendUser.id,
+        username,
         name: username,
         email: backendUser.email,
         avatar: pickAvatar(username),
