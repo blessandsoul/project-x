@@ -1,34 +1,29 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { useTranslation } from 'react-i18next'
 
 const BENEFITS = [
   {
-    id: 1,
+    id: 'verified',
     icon: 'mdi:shield-check',
-    title: 'ვერიფიცირებული იმპორტიორები',
-    description: 'ყველა კომპანია გადის მინიმალურ შემოწმებას სანდოობის და გამოცდილების მიხედვით.',
   },
   {
-    id: 2,
+    id: 'transparent',
     icon: 'mdi:cash-multiple',
-    title: 'გამჭვირვალე ფასები',
-    description: 'დაახლოებით ღირებულება ჩანს წინასწარ, დამალული საკომისიოებისა და გადასახადების გარეშე.',
   },
   {
-    id: 3,
+    id: 'reviews',
     icon: 'mdi:star-circle',
-    title: 'რეალური შეფასებები',
-    description: 'კომპანიების რეიტინგი დაფუძნებულია მყიდველების შეფასებებსა და გამოცდილებაზე.',
   },
   {
-    id: 4,
+    id: 'support',
     icon: 'mdi:chat-processing',
-    title: 'მხარდაჭერა ქართულ ენზე',
-    description: 'ჩვენი გუნდი დაგეხმარებათ ბუნდოვანი საკითხების განმარტებაში და სწორი არჩევანის გაკეთებაში.',
   },
 ]
 
 export function BenefitsSection() {
+  const { t } = useTranslation()
+
   return (
     <section
       className="border-b bg-background"
@@ -40,10 +35,10 @@ export function BenefitsSection() {
             id="home-benefits-heading"
             className="text-2xl font-semibold tracking-tight md:text-3xl"
           >
-            რატომ ჩვენი პლატფორმა
+            {t('home.benefits.title')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            მთავარი უპირატესობები, რომლებიც თქვენი გადაწყვეტილების მიღებას ამარტივებს.
+            {t('home.benefits.subtitle')}
           </p>
         </div>
 
@@ -55,12 +50,12 @@ export function BenefitsSection() {
                   <Icon icon={benefit.icon} className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <CardTitle className="text-base font-semibold">
-                  {benefit.title}
+                  {t(`home.benefits.items.${benefit.id}.title`)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  {benefit.description}
+                  {t(`home.benefits.items.${benefit.id}.description`)}
                 </p>
               </CardContent>
             </Card>

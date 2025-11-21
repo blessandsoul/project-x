@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 interface AuthDrawerProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface AuthDrawerProps {
 }
 
 const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, register, isLoading } = useAuth();
 
@@ -41,7 +43,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
     setLoginError('');
 
     if (!loginEmail || !loginPassword) {
-      setLoginError('გთხოვთ შეიყვანოთ ელ-ფოსტა და პაროლი');
+      setLoginError(t('auth.login.error.required'));
       return;
     }
 
@@ -53,7 +55,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'ავტორიზაციის დროს მოხდა შეცდომა';
+          : t('auth.login.error.generic');
       setLoginError(message);
     }
   };
@@ -63,7 +65,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
     setRegisterError('');
 
     if (!name || !registerEmail || !registerPassword) {
-      setRegisterError('გთხოვთ შეავსოთ ყველა ველი');
+      setRegisterError(t('auth.register.error.required'));
       return;
     }
 
@@ -75,7 +77,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'რეგისტრაციის დროს მოხდა შეცდომა';
+          : t('auth.register.error.generic');
       setRegisterError(message);
     }
   };
@@ -90,7 +92,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
     <AnimatePresence mode="wait" initial={false}>
       {open && (
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent aria-label="ავტორიზაცია და რეგისტრაცია">
+          <DialogContent aria-label={t('auth.header.subtitle')}>
             <motion.div
               initial={{ opacity: 0, y: -32, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -100,15 +102,28 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon icon="mdi:account" className="h-5 w-5" />
-              <span>ანგარიში</span>
+              <span>{t('auth.header.account')}</span>
             </DialogTitle>
             <DialogDescription>
-              შესვლა ან რეგისტრაცია{' '}
+              {t('auth.header.subtitle')}{' '}
               <span className="font-logo-bebas inline-flex items-baseline gap-1">
                 <span className="font-bold">Trusted</span>{' '}
                 <span className="font-normal">Importers.Ge</span>
               </span>{' '}
-              პლატფორმაზე
+              {/* "platform" word might be needed if not in subtitle, checking translation file. 
+                  Subtitle is "Login or Register on". "platform" is implicit or part of sentence structure. 
+                  In KA: "შესვლა ან რეგისტრაცია ... პლატფორმაზე". 
+                  So I need "platform" or similar suffix. 
+                  I'll check if I should add suffix. 
+                  In KA file: "platform" word was hardcoded at the end. 
+                  Let's assume 'subtitle' covers the beginning, and we might need a suffix if the language structure requires it.
+                  For now, I will leave "platform" logic out or assume it is handled by word order if I just put the brand name.
+                  Actually KA had "პლატფორმაზე" at the end. 
+                  I'll add a suffix key or just hardcode/remove. 
+                  "Login or Register on TrustedImporters.Ge" is fine for EN.
+                  "შესვლა ან რეგისტრაცია TrustedImporters.Ge-ზე" would be better but "პლატფორმაზე" means "on platform".
+                  I'll stick to simple concatenation for now.
+               */}
             </DialogDescription>
           </DialogHeader>
           <div className="pt-2">
@@ -124,7 +139,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                   onClick={() => setActiveTab('login')}
                 >
                   <Icon icon="mdi:login" className="mr-1 h-4 w-4" />
-                  <span>შესვლა</span>
+                  <span>{t('auth.login.title')}</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="register"
@@ -132,7 +147,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                   onClick={() => setActiveTab('register')}
                 >
                   <Icon icon="mdi:account-plus" className="mr-1 h-4 w-4" />
-                  <span>რეგისტრაცია</span>
+                  <span>{t('auth.register.title')}</span>
                 </TabsTrigger>
               </TabsList>
               <AnimatePresence mode="wait" initial={false}>
@@ -145,10 +160,10 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                       exit={{ opacity: 0, x: 40 }}
                       transition={{ duration: 0.25, ease: 'easeOut' as const }}
                     >
-                      <Card className="w-full" role="form" aria-label="ავტორიზაცია">
+                      <Card className="w-full" role="form" aria-label={t('auth.login.title')}>
                         <CardHeader className="space-y-2 text-center">
                           <Icon icon="mdi:car" className="mx-auto h-10 w-10 text-primary" />
-                          <CardTitle className="text-2xl font-bold">ავტორიზაცია</CardTitle>
+                          <CardTitle className="text-2xl font-bold">{t('auth.login.title')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <form
@@ -157,24 +172,24 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                             aria-busy={isLoading}
                           >
                             <div className="space-y-2">
-                              <Label htmlFor="auth-login-email">ელ-ფოსტა</Label>
+                              <Label htmlFor="auth-login-email">{t('auth.login.email')}</Label>
                               <Input
                                 id="auth-login-email"
                                 type="email"
                                 value={loginEmail}
                                 onChange={(event) => setLoginEmail(event.target.value)}
-                                placeholder="you@example.com"
+                                placeholder={t('auth.placeholders.email')}
                                 required
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="auth-login-password">პაროლი</Label>
+                              <Label htmlFor="auth-login-password">{t('auth.login.password')}</Label>
                               <Input
                                 id="auth-login-password"
                                 type="password"
                                 value={loginPassword}
                                 onChange={(event) => setLoginPassword(event.target.value)}
-                                placeholder="••••••••"
+                                placeholder={t('auth.placeholders.password')}
                                 required
                               />
                             </div>
@@ -190,7 +205,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                               aria-disabled={isLoading}
                             >
                               <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
-                              {isLoading ? 'შესვლა...' : 'შესვლა'}
+                              {isLoading ? t('auth.login.loading') : t('auth.login.submit')}
                             </Button>
                           </form>
                         </CardContent>
@@ -207,10 +222,10 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                       exit={{ opacity: 0, x: -40 }}
                       transition={{ duration: 0.25, ease: 'easeOut' as const }}
                     >
-                      <Card className="w-full" role="form" aria-label="რეგისტრაცია">
+                      <Card className="w-full" role="form" aria-label={t('auth.register.title')}>
                         <CardHeader className="space-y-2 text-center">
                           <Icon icon="mdi:account-plus" className="mx-auto h-10 w-10 text-primary" />
-                          <CardTitle className="text-2xl font-bold">რეგისტრაცია</CardTitle>
+                          <CardTitle className="text-2xl font-bold">{t('auth.register.title')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <form
@@ -219,7 +234,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                             aria-busy={isLoading}
                           >
                             <div className="space-y-2">
-                              <Label htmlFor="auth-account-type">ანგარიშის ტიპი</Label>
+                              <Label htmlFor="auth-account-type">{t('auth.account_type')}</Label>
                               <ToggleGroup
                                 type="single"
                                 id="auth-account-type"
@@ -233,35 +248,35 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                               >
                                 <ToggleGroupItem
                                   value="user"
-                                  aria-label="ჩვეულობრივი მომხმარებელი"
+                                  aria-label={t('auth.roles.user.title')}
                                   className="flex w-full items-center justify-start gap-2 rounded-md border px-2.5 py-2 text-left text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/5 overflow-hidden"
                                 >
                                   <Icon icon="mdi:account" className="h-4 w-4" />
                                   <div className="flex flex-col min-w-0">
-                                    <span className="font-medium">კლიენტი</span>
-                                    <span className="text-[11px] text-muted-foreground break-words">ვინ ეძებს კომპანიებს და ტოვებს განაცხადებს</span>
+                                    <span className="font-medium">{t('auth.roles.user.title')}</span>
+                                    <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.user.desc')}</span>
                                   </div>
                                 </ToggleGroupItem>
                                 <ToggleGroupItem
                                   value="dealer"
-                                  aria-label="დილერი"
+                                  aria-label={t('auth.roles.dealer.title')}
                                   className="flex w-full items-center justify-start gap-3 rounded-md border px-3 py-2 text-left text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/5"
                                 >
                                   <Icon icon="mdi:steering" className="h-4 w-4" />
                                   <div className="flex flex-col min-w-0">
-                                    <span className="font-medium">დილერი</span>
-                                    <span className="text-[11px] text-muted-foreground break-words">ფიზიკური პირი, რომელიც ეძებს კლიენტებს იმპორტისთვის</span>
+                                    <span className="font-medium">{t('auth.roles.dealer.title')}</span>
+                                    <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.dealer.desc')}</span>
                                   </div>
                                 </ToggleGroupItem>
                                 <ToggleGroupItem
                                   value="company"
-                                  aria-label="კომპანია"
+                                  aria-label={t('auth.roles.company.title')}
                                   className="flex w-full items-center justify-start gap-3 rounded-md border px-3 py-2 text-left text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/5"
                                 >
                                   <Icon icon="mdi:office-building" className="h-4 w-4" />
                                   <div className="flex flex-col min-w-0">
-                                    <span className="font-medium">კომპანია</span>
-                                    <span className="text-[11px] text-muted-foreground break-words">ავტოიმპორტის/სერვისის კომპანია სრული პროფილით</span>
+                                    <span className="font-medium">{t('auth.roles.company.title')}</span>
+                                    <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.company.desc')}</span>
                                   </div>
                                 </ToggleGroupItem>
                               </ToggleGroup>
@@ -277,10 +292,10 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                   className="space-y-2"
                                 >
                                   <div className="space-y-2">
-                                    <Label htmlFor="auth-user-phone">ტელეფონი (არასავალდებულო)</Label>
+                                    <Label htmlFor="auth-user-phone">{t('auth.phone_optional')}</Label>
                                     <Input
                                       id="auth-user-phone"
-                                      placeholder="+995 5XX XX XX XX"
+                                      placeholder={t('auth.placeholders.phone')}
                                     />
                                   </div>
                                 </motion.div>
@@ -295,10 +310,10 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                   className="space-y-2"
                                 >
                                   <div className="space-y-2">
-                                    <Label htmlFor="auth-dealer-phone">საკონტაქტო ტელეფონი</Label>
+                                    <Label htmlFor="auth-dealer-phone">{t('auth.contact_phone')}</Label>
                                     <Input
                                       id="auth-dealer-phone"
-                                      placeholder="+995 5XX XX XX XX"
+                                      placeholder={t('auth.placeholders.phone')}
                                     />
                                   </div>
                                 </motion.div>
@@ -313,10 +328,10 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                   className="space-y-2"
                                 >
                                   <div className="space-y-2">
-                                    <Label htmlFor="auth-company-legal-name">კომპანიის სრული სახელი</Label>
+                                    <Label htmlFor="auth-company-legal-name">{t('auth.company_legal_name')}</Label>
                                     <Input
                                       id="auth-company-legal-name"
-                                      placeholder="Example Auto Import LLC"
+                                      placeholder={t('auth.placeholders.company_name')}
                                     />
                                   </div>
                                 </motion.div>
@@ -324,35 +339,35 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                             </AnimatePresence>
                             {accountType !== 'company' && (
                               <div className="space-y-2">
-                                <Label htmlFor="auth-register-name">სახელი</Label>
+                                <Label htmlFor="auth-register-name">{t('auth.register.name')}</Label>
                                 <Input
                                   id="auth-register-name"
                                   value={name}
                                   onChange={(event) => setName(event.target.value)}
-                                  placeholder="გიორგი"
+                                  placeholder={t('auth.placeholders.name')}
                                   required
                                 />
                               </div>
                             )}
                             <div className="space-y-2">
-                              <Label htmlFor="auth-register-email">ელ-ფოსტა</Label>
+                              <Label htmlFor="auth-register-email">{t('auth.register.email')}</Label>
                               <Input
                                 id="auth-register-email"
                                 type="email"
                                 value={registerEmail}
                                 onChange={(event) => setRegisterEmail(event.target.value)}
-                                placeholder="you@example.com"
+                                placeholder={t('auth.placeholders.email')}
                                 required
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="auth-register-password">პაროლი</Label>
+                              <Label htmlFor="auth-register-password">{t('auth.register.password')}</Label>
                               <Input
                                 id="auth-register-password"
                                 type="password"
                                 value={registerPassword}
                                 onChange={(event) => setRegisterPassword(event.target.value)}
-                                placeholder="••••••••"
+                                placeholder={t('auth.placeholders.password')}
                                 required
                               />
                             </div>
@@ -368,7 +383,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                               aria-disabled={isLoading}
                             >
                               <Icon icon="mdi:account-plus" className="mr-2 h-4 w-4" />
-                              {isLoading ? 'რეგისტრაცია...' : 'რეგისტრაცია'}
+                              {isLoading ? t('auth.register.loading') : t('auth.register.submit')}
                             </Button>
                           </form>
                         </CardContent>

@@ -8,6 +8,7 @@ import { Icon } from '@iconify/react/dist/iconify.js'
 import { EmptyState } from '@/components/company/EmptyState'
 import { useCompaniesData } from '@/hooks/useCompaniesData'
 import { fetchCompanyReviewsFromApi, type ApiCompanyReview } from '@/services/companiesApi'
+import { useTranslation } from 'react-i18next'
 
 interface Testimonial {
   id: string
@@ -18,6 +19,7 @@ interface Testimonial {
 }
 
 export function TestimonialsSection() {
+  const { t } = useTranslation()
   const [tickerIndex, setTickerIndex] = useState(0)
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -135,10 +137,10 @@ export function TestimonialsSection() {
               id="home-testimonials-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              კლიენტების შეფასებები
+              {t('home.testimonials.title')}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              რეალური გამოცდილება იმპორტის პროცესიდან.
+              {t('home.testimonials.description')}
             </p>
           </div>
           {testimonials.length > 0 && (
@@ -151,8 +153,7 @@ export function TestimonialsSection() {
                 />
                 {shouldReduceMotion ? (
                   <p className="whitespace-nowrap" aria-live="polite">
-                    {testimonials[tickerIndex].userName} დატოვა {testimonials[tickerIndex].rating}★
-                    შეფასება კომპანიაზე {testimonials[tickerIndex].companyName}.
+                     {t('home.testimonials.ticker_message', { user: testimonials[tickerIndex].userName, rating: testimonials[tickerIndex].rating, company: testimonials[tickerIndex].companyName })}
                   </p>
                 ) : (
                   <motion.p
@@ -163,8 +164,7 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, ease: 'easeOut' }}
                   >
-                    {testimonials[tickerIndex].userName} დატოვა {testimonials[tickerIndex].rating}★
-                    შეფასება კომპანიაზე {testimonials[tickerIndex].companyName}.
+                    {t('home.testimonials.ticker_message', { user: testimonials[tickerIndex].userName, rating: testimonials[tickerIndex].rating, company: testimonials[tickerIndex].companyName })}
                   </motion.p>
                 )}
               </div>
@@ -176,13 +176,13 @@ export function TestimonialsSection() {
             <Card className="md:col-span-3 p-8">
               <EmptyState
                 icon="mdi:account-off"
-                title="შეფასებები ჯერ არ არის დამატებული"
-                description="როგორც კი მომხმარებლების რეალური შეფასებები დაემატება პლატფორმას, ისინი გამოჩნდება ამ ბლოკში. ამ ეტაპზე შეგიძლიათ გაეცნოთ იმპორტის კომპანიებს კატალოგში."
+                title={t('home.testimonials.empty.title')}
+                description={t('home.testimonials.empty.description')}
                 action={(
                   <Button asChild variant="outline" size="sm" className="inline-flex items-center gap-1">
                     <Link to="/catalog">
-                      <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
-                      <span>კატალოგის ნახვა</span>
+                      <Icon icon="mdi:view-grid" className="me-1 h-4 w-4" aria-hidden="true" />
+                      <span>{t('home.testimonials.view_catalog_btn')}</span>
                     </Link>
                   </Button>
                 )}

@@ -199,18 +199,18 @@ export default function DashboardPage() {
     () => [
       {
         id: 'guide-1',
-        title: 'როგორ ავარჩიოთ სანდო იმპორტიორი აშშ-დან',
+        title: t('dashboard.user.guides.guide1'),
       },
       {
         id: 'guide-2',
-        title: 'რა უნდა შევამოწმოთ კონტრაქტში ბოლომდე ხელმოწერამდე',
+        title: t('dashboard.user.guides.guide2'),
       },
       {
         id: 'guide-3',
-        title: 'TOP შეცდომები, რომელსაც კლიენტები უშვებენ იმპორტის დროს',
+        title: t('dashboard.user.guides.guide3'),
       },
     ],
-    [],
+    [t],
   )
 
   const mockOffers = useMemo(
@@ -221,9 +221,9 @@ export default function DashboardPage() {
         .map((company) => ({
           id: `offer-${company.id}`,
           companyName: company.name,
-          description: 'სპეციალური ფასი იმპორტზე მომდევნო 30 დღეში.',
+          description: t('dashboard.user.offers.description'),
         })),
-    [],
+    [t],
   )
 
   const mockReminders = useMemo(
@@ -233,7 +233,7 @@ export default function DashboardPage() {
       if (recentlyViewedCompanies.length > 0) {
         reminders.push({
           id: 'reminder-reviews',
-          text: 'არ გაქვთ დათვალიერებული ბოლო ნანახი კომპანიის ყველა შეფასება.',
+          text: t('dashboard.user.reminders.reviews'),
           type: 'reviews',
         })
       }
@@ -241,7 +241,7 @@ export default function DashboardPage() {
       if (mockOffers.length > 0) {
         reminders.push({
           id: 'reminder-offer',
-          text: 'თქვენ გაქვთ ჯერ კიდევ გასანახავი სპეციალური შეთავაზება ზოგიერთი კომპანიისგან.',
+          text: t('dashboard.user.reminders.offers'),
           type: 'offer',
         })
       }
@@ -249,14 +249,14 @@ export default function DashboardPage() {
       if (favorites.length === 0) {
         reminders.push({
           id: 'reminder-favorites',
-          text: 'დაამატეთ თქვენთვის საინტერესო კომპანიები რჩეულებში, რომ სწრაფად დაბრუნდეთ მათზე.',
+          text: t('dashboard.user.reminders.favorites'),
           type: 'favorites',
         })
       }
 
       return reminders
     },
-    [favorites.length, mockOffers.length, recentlyViewedCompanies.length],
+    [favorites.length, mockOffers.length, recentlyViewedCompanies.length, t],
   )
 
   const dealerLeadsStats = useMemo(
@@ -283,10 +283,10 @@ export default function DashboardPage() {
       mockCompanies.slice(0, 5).map((company, index) => ({
         id: `lead-${company.id}-${index}`,
         companyName: company.name,
-        clientName: `კლიენტი #${index + 1}`,
-        status: index === 0 ? 'ახალი' : index < 3 ? 'მუშავდება' : 'დახურული',
+        clientName: `${t('common.client')} #${index + 1}`,
+        status: index === 0 ? t('dashboard.dealer.requests.status.new') : index < 3 ? t('dashboard.dealer.requests.status.processing') : t('dashboard.dealer.requests.status.closed'),
       })),
-    [],
+    [t],
   )
 
   const dealerLeadReminders = useMemo(
@@ -296,20 +296,20 @@ export default function DashboardPage() {
       if (dealerLeadsStats.inProgress > 3) {
         reminders.push({
           id: 'dealer-reminder-slow',
-          text: 'რამდენიმე ლიდი 24 საათზე მეტია პასუხს ელოდება. შეამოწმეთ სტატუსები.',
+          text: t('dashboard.dealer.reminders.slow'),
         })
       }
 
       if (dealerLeadsStats.todayNew > 0 && dealerLeadsStats.inProgress === 0) {
         reminders.push({
           id: 'dealer-reminder-no-notes',
-          text: 'ამ დღის ახალი ლიდებისთვის ჯერ არ გაქვთ დამატებული კომენტარები.',
+          text: t('dashboard.dealer.reminders.no_notes'),
         })
       }
 
       return reminders
     },
-    [dealerLeadsStats.inProgress, dealerLeadsStats.todayNew],
+    [dealerLeadsStats.inProgress, dealerLeadsStats.todayNew, t],
   )
 
   const dealerTopPromoted = useMemo(
@@ -361,11 +361,11 @@ export default function DashboardPage() {
 
   const dealerTasksToday = useMemo(
     () => [
-      'დაურეკეთ მთავარ კლიენტს და დაამტკიცეთ პირობები',
-      'გაუგზავნეთ კომერციული წინადადება 2 ახალ ლიდს',
-      'განაახლეთ ფასები პოპულარულ პოზიციებზე',
+      t('dashboard.dealer.tasks.task1'),
+      t('dashboard.dealer.tasks.task2'),
+      t('dashboard.dealer.tasks.task3'),
     ],
-    [],
+    [t],
   )
 
   const dealerComparisonStats = useMemo(
@@ -458,21 +458,21 @@ export default function DashboardPage() {
     () => [
       {
         id: 'seg-1',
-        label: 'თბილისი / სრული იმპორტი',
+        label: t('dashboard.company.segments.segment1'),
         sharePercent: 38,
       },
       {
         id: 'seg-2',
-        label: 'ბათუმი / საბაჟო + მიწოდება',
+        label: t('dashboard.company.segments.segment2'),
         sharePercent: 24,
       },
       {
         id: 'seg-3',
-        label: 'ქუთაისი / ბიუჯეტური იმპორტი',
+        label: t('dashboard.company.segments.segment3'),
         sharePercent: 18,
       },
     ],
-    [],
+    [t],
   )
 
   const companyCompetitors = useMemo(
@@ -494,62 +494,62 @@ export default function DashboardPage() {
       if (lowRated.length > 0) {
         alerts.push({
           id: 'alert-rating-low',
-          text: `რამდენიმე კომპანიას აქვს რეიტინგი 4.0-ზე ნაკლები (${lowRated.length}).`,
+          text: t('dashboard.company.alerts.rating', { count: lowRated.length }),
           type: 'rating',
         })
       }
 
       alerts.push({
         id: 'alert-leads-drop',
-        text: 'ზოგიერთ რეგიონში მოთხოვნების რაოდენობა შემცირებულია წინა პერიოდთან შედარებით.',
+        text: t('dashboard.company.alerts.leads_drop'),
         type: 'leads',
       })
 
       return alerts
     },
-    [],
+    [t],
   )
 
   const companyNetworkActions = useMemo(
     () => [
       {
         id: 'action-add-dealer',
-        label: 'ახალი დილერის დამატება',
+        label: t('dashboard.company.actions.add_dealer'),
         icon: 'mdi:account-multiple-plus',
       },
       {
         id: 'action-edit-terms',
-        label: 'თანამშრომლობის პირობების შეცვლა',
+        label: t('dashboard.company.actions.edit_terms'),
         icon: 'mdi:file-document-edit-outline',
       },
       {
         id: 'action-disable-location',
-        label: 'ერთ-ერთი ლოკაციის დროებითი გათიშვა',
+        label: t('dashboard.company.actions.disable_location'),
         icon: 'mdi:store-off-outline',
       },
     ],
-    [],
+    [t],
   )
 
   const companyGoals = useMemo(
     () => [
       {
         id: 'goal-leads',
-        label: 'მოთხოვნების რაოდენობის +20% ზრდა',
+        label: t('dashboard.company.goals.leads'),
         progressPercent: 45,
       },
       {
         id: 'goal-rating',
-        label: 'საშუალო რეიტინგის 4.5-მდე გაზრდა',
+        label: t('dashboard.company.goals.rating'),
         progressPercent: 60,
       },
       {
         id: 'goal-coverage',
-        label: 'გეოგრაფიული დაფარვის გაფართოება 3 ახალი შტატით',
+        label: t('dashboard.company.goals.coverage'),
         progressPercent: 30,
       },
     ],
-    [],
+    [t],
   )
 
   const getSectionMotionProps = (index: number) => {
@@ -569,7 +569,7 @@ export default function DashboardPage() {
   const handleClearFavorites = () => {
     if (
       typeof window !== 'undefined' &&
-      window.confirm('ნამდვილად გსურთ რჩეული კომპანიების გასუფთავება?')
+      window.confirm(t('dashboard.user.confirm_clear_favorites'))
     ) {
       clearFavorites()
     }
@@ -578,7 +578,7 @@ export default function DashboardPage() {
   const handleClearRecentlyViewed = () => {
     if (
       typeof window !== 'undefined' &&
-      window.confirm('ნამდვილად გსურთ ბოლოს ნახული კომპანიების ისტორიის გასუფთავება?')
+      window.confirm(t('dashboard.user.confirm_clear_recent'))
     ) {
       clearRecentlyViewed()
     }

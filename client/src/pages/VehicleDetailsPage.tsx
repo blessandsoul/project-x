@@ -372,7 +372,7 @@ const VehicleDetailsPage = () => {
     event.preventDefault()
 
     if (!vehicleId) {
-      setLeadError('ავტომობილის იდენტიფიკატორი ვერ მოიძებნა.')
+      setLeadError(t('vehicle_details.errors.not_found'))
       return
     }
 
@@ -380,17 +380,17 @@ const VehicleDetailsPage = () => {
     const trimmedPhone = orderPhone.trim()
 
     if (!trimmedName || !trimmedPhone) {
-      setLeadError('გთხოვთ შეავსოთ სახელი და ტელეფონის ნომერი.')
+      setLeadError(t('vehicle_details.errors.fill_name_phone'))
       return
     }
 
     if (trimmedPhone.length < 3) {
-      setLeadError('ტელეფონის ნომერი უნდა შეიცავდეს მინიმუმ 3 სიმბოლოს.')
+      setLeadError(t('vehicle_details.errors.phone_min_length'))
       return
     }
 
     if (selectedCompanyNames.length === 0) {
-      setLeadError('აირჩიეთ მინიმუმ ერთი კომპანია საერთო მოთხოვნისთვის.')
+      setLeadError(t('vehicle_details.errors.select_min_one_company'))
       return
     }
 
@@ -413,7 +413,7 @@ const VehicleDetailsPage = () => {
       .filter((id): id is number => id != null)
 
     if (selectedCompanyIds.length === 0) {
-      setLeadError('ვერ მოხერხდა არჩეული კომპანიების იდენტიფიკაცია.')
+      setLeadError(t('vehicle_details.errors.company_id_failed'))
       return
     }
 
@@ -462,7 +462,7 @@ const VehicleDetailsPage = () => {
       const message =
         error instanceof Error
           ? error.message
-          : 'ვერ მოხერხდა მოთხოვნის გაგზავნა. სცადეთ კიდევ ერთხელ.'
+          : t('vehicle_details.errors.request_failed')
       setLeadError(message)
     } finally {
       setIsLeadSubmitting(false)
@@ -507,9 +507,9 @@ const VehicleDetailsPage = () => {
   }
 
   const getVipLabelForIndex = (index: number): string | null => {
-    if (index === 0) return 'Diamond VIP'
-    if (index === 1) return 'Gold VIP'
-    if (index === 2) return 'Silver VIP'
+    if (index === 0) return t('featured_companies.vip_diamond')
+    if (index === 1) return t('featured_companies.vip_gold')
+    if (index === 2) return t('featured_companies.vip_silver')
     return null
   }
 
@@ -754,14 +754,14 @@ const VehicleDetailsPage = () => {
         user={null}
         navigationItems={navigationItems}
       />
-      <main className="flex-1" role="main" aria-label="ავტომობილის დეტალები">
+      <main className="flex-1" role="main" aria-label={t('vehicle_details.title')}>
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8">
           {isSupportModalOpen && (
             <div
               className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
               role="dialog"
               aria-modal="true"
-              aria-label="აირჩიე მეტი კომპანია მხარდაჭერისთვის"
+              aria-label={t('vehicle_details.support_modal.aria_label')}
               onClick={() => setIsSupportModalOpen(false)}
             >
               <div
@@ -772,15 +772,15 @@ const VehicleDetailsPage = () => {
                   type="button"
                   className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
                   onClick={() => setIsSupportModalOpen(false)}
-                  aria-label="დახურე მხარდაჭერის ფანჯარა"
+                  aria-label={t('vehicle_details.support_modal.close_aria')}
                 >
                   <Icon icon="mdi:close" className="h-4 w-4" />
                 </button>
                 <div className="space-y-3 text-sm">
                   <div>
-                    <div className="text-base font-semibold mb-1">გახსენი არჩევანი 5 კომპანიამდე</div>
+                    <div className="text-base font-semibold mb-1">{t('vehicle_details.support_modal.title')}</div>
                     <div className="text-[11px] text-muted-foreground">
-                      დაალაიქე ჩვენი პროექტი სოციალურ ქსელებში და დაწერე მოკლე შეფასება, რათა ერთდროულად რამდენიმე კომპანიას გაუგზავნო მოთხოვნა.
+                      {t('vehicle_details.support_modal.description')}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 text-[11px]">
@@ -819,7 +819,7 @@ const VehicleDetailsPage = () => {
                         checked={supportLikeChecked}
                         onChange={(event) => setSupportLikeChecked(event.target.checked)}
                       />
-                      <span>მე დავუჭირე მხარი პროექტს სოციალურ ქსელებში</span>
+                      <span>{t('vehicle_details.support_modal.liked_project')}</span>
                     </label>
                     <label className="flex items-center gap-2">
                       <input
@@ -827,10 +827,10 @@ const VehicleDetailsPage = () => {
                         checked={supportReviewChecked}
                         onChange={(event) => setSupportReviewChecked(event.target.checked)}
                       />
-                      <span>მზად ვარ გავუზიარო მოკლე შეფასება</span>
+                      <span>{t('vehicle_details.support_modal.ready_to_review')}</span>
                     </label>
                     <div className="space-y-1">
-                      <div className="text-[11px] font-medium">შენი მოკლე შეფასება</div>
+                      <div className="text-[11px] font-medium">{t('vehicle_details.support_modal.your_review_label')}</div>
                       <textarea
                         className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[72px]"
                         value={supportReviewText}
@@ -847,7 +847,7 @@ const VehicleDetailsPage = () => {
                       onClick={() => setIsSupportModalOpen(false)}
                       disabled={isSupportUnlockSubmitting}
                     >
-                      გაუქმება
+                      {t('common.cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -869,7 +869,7 @@ const VehicleDetailsPage = () => {
                         setIsSupportUnlockSubmitting(false)
                       }}
                     >
-                      გახსენი არჩევანი 5 კომპანიამდე
+                      {t('vehicle_details.support_modal.unlock_btn')}
                     </Button>
                   </div>
                 </div>
@@ -919,7 +919,7 @@ const VehicleDetailsPage = () => {
                         className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
                         role="dialog"
                         aria-modal="true"
-                        aria-label="საერთო მოთხოვნა რამდენიმე კომპანიაზე"
+                        aria-label={t('vehicle_details.request_modal.aria_label')}
                         onClick={() => setIsLeadModalOpen(false)}
                       >
                         <div
@@ -930,15 +930,15 @@ const VehicleDetailsPage = () => {
                             type="button"
                             className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
                             onClick={() => setIsLeadModalOpen(false)}
-                            aria-label="დახურე საერთო მოთხოვნის ფანჯარა"
+                            aria-label={t('vehicle_details.request_modal.close_aria')}
                           >
                             <Icon icon="mdi:close" className="h-4 w-4" />
                           </button>
                           <div className="space-y-3 text-sm">
                             <div>
-                              <div className="text-base font-semibold mb-1">საერთო მოთხოვნა რამდენიმე კომპანიაზე</div>
+                              <div className="text-base font-semibold mb-1">{t('vehicle_details.request_modal.title')}</div>
                               <div className="text-[11px] text-muted-foreground">
-                                არჩეული კომპანიები: {selectedCompanyNames.join(', ')}
+                                {t('vehicle_details.request_modal.selected_companies', { names: selectedCompanyNames.join(', ') })}
                               </div>
                             </div>
                             {leadError && (
@@ -947,7 +947,7 @@ const VehicleDetailsPage = () => {
                             <form className="space-y-3 mt-2" onSubmit={handleSubmitLead}>
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium" htmlFor="lead-name">
-                                  სახელი
+                                  {t('common.name')}
                                 </label>
                                 <input
                                   id="lead-name"
@@ -959,7 +959,7 @@ const VehicleDetailsPage = () => {
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium" htmlFor="lead-phone">
-                                  ტელეფონი
+                                  {t('common.phone')}
                                 </label>
                                 <input
                                   id="lead-phone"
@@ -971,7 +971,7 @@ const VehicleDetailsPage = () => {
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium" htmlFor="lead-comment">
-                                  კომენტარი / დამატებითი სურვილები
+                                  {t('vehicle_details.request_modal.comment_label')}
                                 </label>
                                 <textarea
                                   id="lead-comment"
@@ -984,7 +984,7 @@ const VehicleDetailsPage = () => {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div className="space-y-1">
                                   <label className="text-[11px] font-medium" htmlFor="lead-budget-min">
-                                    მინ. ბიუჯეტი (USD)
+                                    {t('vehicle_details.request_modal.min_budget')}
                                   </label>
                                   <input
                                     id="lead-budget-min"
@@ -998,7 +998,7 @@ const VehicleDetailsPage = () => {
                                 </div>
                                 <div className="space-y-1">
                                   <label className="text-[11px] font-medium" htmlFor="lead-budget-max">
-                                    მაქს. ბიუჯეტი (USD)
+                                    {t('vehicle_details.request_modal.max_budget')}
                                   </label>
                                   <input
                                     id="lead-budget-max"
@@ -1017,7 +1017,7 @@ const VehicleDetailsPage = () => {
                                     className="text-[11px] font-medium"
                                     htmlFor="lead-desired-duration-days"
                                   >
-                                    სასურველი ვადა (დღე)
+                                    {t('vehicle_details.request_modal.desired_time')}
                                   </label>
                                   <input
                                     id="lead-desired-duration-days"
@@ -1034,7 +1034,7 @@ const VehicleDetailsPage = () => {
                                     className="text-[11px] font-medium"
                                     htmlFor="lead-max-duration-days"
                                   >
-                                    მაქს. მისაღები ვადა (დღე)
+                                    {t('vehicle_details.request_modal.max_time')}
                                   </label>
                                   <input
                                     id="lead-max-duration-days"
@@ -1048,7 +1048,7 @@ const VehicleDetailsPage = () => {
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <div className="text-[11px] font-medium">ზიანის tolerate-იანობა</div>
+                                <div className="text-[11px] font-medium">{t('vehicle_details.request_modal.damage_tolerance.title')}</div>
                                 <div className="flex flex-wrap gap-2 text-[11px]">
                                   <label className="inline-flex items-center gap-1">
                                     <input
@@ -1059,7 +1059,7 @@ const VehicleDetailsPage = () => {
                                       onChange={() => setDamageTolerance('minimal')}
                                       disabled={isLeadSubmitting}
                                     />
-                                    <span>მინიმალური</span>
+                                    <span>{t('vehicle_details.request_modal.damage_tolerance.minimal')}</span>
                                   </label>
                                   <label className="inline-flex items-center gap-1">
                                     <input
@@ -1070,7 +1070,7 @@ const VehicleDetailsPage = () => {
                                       onChange={() => setDamageTolerance('moderate')}
                                       disabled={isLeadSubmitting}
                                     />
-                                    <span>საშუალო</span>
+                                    <span>{t('vehicle_details.request_modal.damage_tolerance.average')}</span>
                                   </label>
                                   <label className="inline-flex items-center gap-1">
                                     <input
@@ -1081,17 +1081,17 @@ const VehicleDetailsPage = () => {
                                       onChange={() => setDamageTolerance('any')}
                                       disabled={isLeadSubmitting}
                                     />
-                                    <span>ნებისმიერი</span>
+                                    <span>{t('vehicle_details.request_modal.damage_tolerance.any')}</span>
                                   </label>
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <div className="text-[11px] font-medium">დამატებითი სერვისები</div>
+                                <div className="text-[11px] font-medium">{t('vehicle_details.request_modal.additional_services.title')}</div>
                                 <div className="flex flex-wrap gap-2 text-[11px]">
                                   {[
-                                    { key: 'full_documents', label: 'სრული დოკუმენტები' },
-                                    { key: 'door_delivery', label: 'მიწოდება მისამართზე' },
-                                    { key: 'customs_support', label: 'საბაჟო მხარდაჭერა' },
+                                    { key: 'full_documents', label: t('vehicle_details.request_modal.additional_services.full_documents') },
+                                    { key: 'door_delivery', label: t('vehicle_details.request_modal.additional_services.door_delivery') },
+                                    { key: 'customs_support', label: t('vehicle_details.request_modal.additional_services.customs_support') },
                                   ].map((item) => {
                                     const checked = serviceExtras.includes(item.key)
                                     return (
@@ -1121,12 +1121,12 @@ const VehicleDetailsPage = () => {
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <div className="text-[11px] font-medium">სასურველი საკონტაქტო არხი</div>
+                                <div className="text-[11px] font-medium">{t('vehicle_details.request_modal.contact_channel.title')}</div>
                                 <div className="flex flex-wrap gap-2 text-[11px]">
                                   {[
                                     { key: 'whatsapp', label: 'WhatsApp' },
                                     { key: 'telegram', label: 'Telegram' },
-                                    { key: 'phone', label: 'ზარი' },
+                                    { key: 'phone', label: t('vehicle_details.request_modal.contact_channel.call') },
                                     { key: 'email', label: 'Email' },
                                   ].map((channel) => (
                                     <label key={channel.key} className="inline-flex items-center gap-1">
@@ -1149,7 +1149,7 @@ const VehicleDetailsPage = () => {
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium" htmlFor="lead-priority">
-                                  პრიორიტეტი
+                                  {t('vehicle_details.request_modal.priority')}
                                 </label>
                                 <select
                                   id="lead-priority"
@@ -1158,7 +1158,7 @@ const VehicleDetailsPage = () => {
                                   onChange={(event) => setLeadPriority(event.target.value as 'price')}
                                   disabled={isLeadSubmitting}
                                 >
-                                  <option value="price">ფასი</option>
+                                  <option value="price">{t('common.price')}</option>
                                 </select>
                               </div>
                               <div className="flex justify-end gap-2 pt-1">
@@ -1170,7 +1170,7 @@ const VehicleDetailsPage = () => {
                                   onClick={() => setIsLeadModalOpen(false)}
                                   disabled={isLeadSubmitting}
                                 >
-                                  გაგზავნა
+                                  {t('vehicle_details.request_modal.send_btn')}
                                 </Button>
                                 <Button
                                   type="submit"
@@ -1182,9 +1182,13 @@ const VehicleDetailsPage = () => {
                                     icon={isLeadSubmitting ? 'mdi:loading' : 'mdi:send-circle'}
                                     className={cn('h-4 w-4', isLeadSubmitting && 'animate-spin')}
                                   />
-                                  გაგზავნა მოთხოვნა
+                                  {t('vehicle_details.request_modal.send_request_btn')}
                                 </Button>
                               </div>
+                            </form>
+                          </div>
+                        </div>
+                      </motion.div>
                             </form>
                           </div>
                         </div>
@@ -1229,7 +1233,7 @@ const VehicleDetailsPage = () => {
                     onClick={recalculate}
                     className="h-8 px-3 text-xs"
                   >
-                    თავიდან ცდა
+                    {t('common.retry')}
                   </Button>
                 </CardContent>
               </Card>
@@ -1244,7 +1248,7 @@ const VehicleDetailsPage = () => {
                             type="button"
                             className="w-full cursor-zoom-in rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                             onClick={() => setIsLightboxOpen(true)}
-                            aria-label="გაადიდე მთავარი ფოტო სრულ ეკრანზე"
+                            aria-label={t('vehicle_details.gallery.zoom_aria')}
                           >
                             <img
                               src={photos[activePhotoIndex]?.url || photos[0].url}
@@ -1267,7 +1271,7 @@ const VehicleDetailsPage = () => {
                                     setThumbPage((prev) => (prev > 0 ? prev - 1 : prev))
                                   }
                                   disabled={clampedThumbPage === 0}
-                                  aria-label="წინა ფოტოები"
+                                  aria-label={t('vehicle_details.gallery.prev_aria')}
                                 >
                                   <Icon icon="mdi:chevron-left" className="h-4 w-4" />
                                 </Button>
@@ -1290,7 +1294,7 @@ const VehicleDetailsPage = () => {
                                         if (isActive) return
                                         setActivePhotoIndex(globalIndex)
                                       }}
-                                      aria-label="აირჩიე ეს ფოტო გასადიდებლად"
+                                      aria-label={t('vehicle_details.gallery.select_zoom_aria')}
                                     >
                                       <img
                                         src={photo.thumb_url || photo.url}
@@ -1314,7 +1318,7 @@ const VehicleDetailsPage = () => {
                                     )
                                   }
                                   disabled={clampedThumbPage >= totalThumbPages - 1}
-                                  aria-label="შემდეგი ფოტოები"
+                                  aria-label={t('vehicle_details.gallery.next_aria')}
                                 >
                                   <Icon icon="mdi:chevron-right" className="h-4 w-4" />
                                 </Button>
@@ -1325,18 +1329,18 @@ const VehicleDetailsPage = () => {
                       ) : (
                         <div className="h-64 flex flex-col items-center justify-center bg-muted rounded-md text-xs text-muted-foreground gap-2">
                           <Icon icon="mdi:image-off" className="h-5 w-5" />
-                          <span>ფოტოები მიუწვდომელია</span>
+                          <span>{t('vehicle_details.gallery.unavailable')}</span>
                         </div>
                       )}
 
                       <div
                         className="space-y-3 text-[11px] text-muted-foreground pt-2"
-                        aria-label="ავტომობილის დეტალური მონაცემები"
+                        aria-label={t('vehicle_details.title')}
                       >
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              ძირითადი მონაცემები
+                              {t('vehicle_details.info.basic_data')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {vehicle.year} · {formatMileage(vehicle.mileage) || 'N/A'}
@@ -1353,7 +1357,7 @@ const VehicleDetailsPage = () => {
 
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              ძრავი / ტრანსმისია
+                              {t('vehicle_details.info.engine_transmission')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {(vehicle.engine_volume ? `${vehicle.engine_volume}L` : '—')}
@@ -1364,7 +1368,7 @@ const VehicleDetailsPage = () => {
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              ფერი / მდგომარეობა
+                              {t('vehicle_details.info.color_condition')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {vehicle.color || '—'}
@@ -1378,7 +1382,7 @@ const VehicleDetailsPage = () => {
                           ) && (
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                დაზიანებები
+                                {t('vehicle_details.info.damages')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.damage_main_damages || '—'}
@@ -1390,7 +1394,7 @@ const VehicleDetailsPage = () => {
                           )}
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              გასაღებები / Run & Drive
+                              {t('vehicle_details.info.keys_run_drive')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {vehicle.has_keys_readable || (vehicle.has_keys ? 'yes' : 'no') || '—'}
@@ -1400,7 +1404,7 @@ const VehicleDetailsPage = () => {
 
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              AIRBAGS / ODOMETER
+                              {t('vehicle_details.info.airbags_odometer')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {vehicle.airbags || '—'}
@@ -1409,7 +1413,7 @@ const VehicleDetailsPage = () => {
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                              ცილინდრები / აღჭურვილობა
+                              {t('vehicle_details.info.cylinders_equipment')}
                             </span>
                             <span className="text-xs font-medium text-foreground">
                               {vehicle.cylinders || '—'}
@@ -1418,14 +1422,14 @@ const VehicleDetailsPage = () => {
                           </div>
                         </div>
 
-                        <div className="pt-1 border-t border-border/40" aria-label="დოკუმენტები და აუქციონის მონაცემები">
+                        <div className="pt-1 border-t border-border/40" aria-label={t('vehicle_details.info.docs_auction')}>
                           <div className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground/90 uppercase">
-                            დოკუმენტები და აუქციონი
+                            {t('vehicle_details.info.docs_auction')}
                           </div>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                აუქციონის ეზო / მდებარეობა
+                                {t('vehicle_details.info.yard_location')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.yard_name || '—'}
@@ -1436,11 +1440,11 @@ const VehicleDetailsPage = () => {
                                   : ''}
                               </span>
                             </div>
-                            {/* ID / ლოტis ნომერი intentionally hidden per requirements */}
+                            {/* ID / Lot number intentionally hidden per requirements */}
 
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                SOURCE LOT ID / SALVAGE ID
+                                {t('vehicle_details.info.source_lot_salvage')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.source_lot_id || '—'}
@@ -1449,7 +1453,7 @@ const VehicleDetailsPage = () => {
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                საბაზრო / შეკეთების ღირებულება
+                                {t('vehicle_details.info.market_repair_value')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {formatMoney(vehicle.retail_value) || '—'}
@@ -1461,7 +1465,7 @@ const VehicleDetailsPage = () => {
 
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                გამოთვლილი ფასი
+                                {t('vehicle_details.info.calculated_price')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {formatMoney(vehicle.calc_price) || '—'}
@@ -1469,21 +1473,21 @@ const VehicleDetailsPage = () => {
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                FINAL BID / BUY IT NOW
+                                {t('vehicle_details.info.final_bid_buy_now')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.final_bid
                                   ? `$${Number(vehicle.final_bid).toLocaleString()} USD`
                                   : '—'}
                                 {Number(vehicle.buy_it_now_price) > 0
-                                  ? ` · BUY NOW: $${Number(vehicle.buy_it_now_price).toLocaleString()} USD`
+                                  ? ` · ${t('vehicle_details.info.buy_now')}: $${Number(vehicle.buy_it_now_price).toLocaleString()} USD`
                                   : ''}
                               </span>
                             </div>
 
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                გამყიდველი
+                                {t('vehicle_details.info.seller')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.seller || '—'}
@@ -1492,7 +1496,7 @@ const VehicleDetailsPage = () => {
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                TITLE / დოკუმენტი
+                                {t('vehicle_details.info.title_doc')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.sale_title_type || vehicle.title || '—'}
@@ -1502,7 +1506,7 @@ const VehicleDetailsPage = () => {
 
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                გაყიდვის თარიღი
+                                {t('vehicle_details.info.sale_date')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {formatDateTime(vehicle.sold_at_date || vehicle.sold_at, vehicle.sold_at_time) || '—'}
@@ -1510,7 +1514,7 @@ const VehicleDetailsPage = () => {
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
-                                შექმნა / განახლება
+                                {t('vehicle_details.info.created_updated')}
                               </span>
                               <span className="text-xs font-medium text-foreground">
                                 {formatDateTime(vehicle.created_at, null) || '—'}
@@ -1520,20 +1524,20 @@ const VehicleDetailsPage = () => {
                           </div>
                         </div>
 
-                        <div className="pt-1 border-t border-border/40" aria-label="დამატებითი API ველები">
+                        <div className="pt-1 border-t border-border/40" aria-label={t('vehicle_details.info.api_fields')}>
                           <div className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground/90 uppercase">
-                            დამატებითი API ველები (დამხმარე ინფორმაცია)
+                            {t('vehicle_details.info.api_fields')}
                           </div>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <div className="flex flex-col gap-0.5">
-                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">VEHICLE TYPE / KEY</span>
+                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">{t('vehicle_details.info.vehicle_type_key')}</span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.vehicle_type || '—'}
                                 {vehicle.vehicle_type_key ? ` · ${vehicle.vehicle_type_key}` : ''}
                               </span>
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">STATE / CITY SLUG</span>
+                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">{t('vehicle_details.info.state_city_slug')}</span>
                               <span className="text-xs font-medium text-foreground">
                                 {vehicle.state || '—'}
                                 {vehicle.city_slug ? ` · ${vehicle.city_slug}` : ''}
@@ -1541,16 +1545,16 @@ const VehicleDetailsPage = () => {
                             </div>
 
                             <div className="flex flex-col gap-0.5">
-                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">IS NEW</span>
+                              <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">{t('vehicle_details.info.is_new')}</span>
                               <span className="text-xs font-medium text-foreground">{vehicle.is_new ?? '—'}</span>
                             </div>
                           </div>
                         </div>
 
                         {vehicle.iaai_360_view && (
-                          <div className="pt-1 border-t border-border/40" aria-label="IAAI 360 VIEW">
+                          <div className="pt-1 border-t border-border/40" aria-label={t('vehicle_details.info.iaai_360_view')}>
                             <div className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground/90 uppercase">
-                              IAAI 360 VIEW
+                              {t('vehicle_details.info.iaai_360_view')}
                             </div>
                             <div className="rounded-md border overflow-hidden">
                               <iframe
@@ -1571,7 +1575,7 @@ const VehicleDetailsPage = () => {
                     <CardHeader>
                       <CardTitle className="text-base flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
-                          <span>კომპანიების შეთავაზებები ამ ავტომობილზე</span>
+                          <span>{t('vehicle_details.offers.title')}</span>
                           <div className="flex items-center gap-2">
                             <Button
                               type="button"
@@ -1585,27 +1589,27 @@ const VehicleDetailsPage = () => {
                               {isLoading ? (
                                 <>
                                   <Icon icon="mdi:loading" className="h-3 w-3 animate-spin" />
-                                  გადათვლა...
+                                  {t('vehicle_details.offers.recalculating')}
                                 </>
                               ) : (
                                 <>
                                   <Icon icon="mdi:refresh" className="h-4 w-4" />
-                                  გადათვლა
+                                  {t('vehicle_details.offers.recalculate')}
                                 </>
                               )}
                             </Button>
                           </div>
                         </div>
                         <span className="text-[11px] text-muted-foreground">
-                          შეადარე იმპორტის სრული ფასი და მიწოდების დრო სხვადასხვა სანდო კომპანიისგან აშშ-დან საქართველოში.
+                          {t('vehicle_details.offers.compare_text')}
                         </span>
                         {distanceMiles != null && (
                           <span className="text-[11px] text-muted-foreground">
-                            დისტანცია ფოთამდე: {formatMilesToKilometers(distanceMiles) ?? `${distanceMiles.toLocaleString()} mi`}
+                            {t('vehicle_details.offers.distance_to_poti')}: {formatMilesToKilometers(distanceMiles) ?? `${distanceMiles.toLocaleString()} mi`}
                           </span>
                         )}
                         <span className="text-[11px] text-muted-foreground">
-                          სრული ფასი მოიცავს ფასი მანქანის, ტრანსპორტირებას, მომსახურებისა და საბროკერო საფასურს, საბაჟო და სხვა გადასახადები წარმოდგენილია დაახლოებით.
+                          {t('vehicle_details.offers.total_price_disclaimer')}
                         </span>
                       </CardTitle>
                     </CardHeader>
@@ -1627,7 +1631,7 @@ const VehicleDetailsPage = () => {
                       {!isLoading && !sortedQuotes.length && (
                         <div className="space-y-3 text-xs">
                           <p className="text-muted-foreground">
-                            ამ ეტაპზე ავტომობილის იმპორტის შეთავაზებები არ არის ნაპოვნი. სცადეთ გადათვლა ან მოგვიანებით დაბრუნება, ან მოიძიეთ სხვა ავტომობილი იმპორტისთვის.
+                            {t('vehicle_details.offers.no_offers')}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -1638,7 +1642,7 @@ const VehicleDetailsPage = () => {
                               onClick={() => navigate('/catalog')}
                             >
                               <Icon icon="mdi:view-grid" className="h-4 w-4" />
-                              კატალოგში დაბრუნება
+                              {t('vehicle_details.offers.back_to_catalog')}
                             </Button>
                             <Button
                               type="button"
@@ -1648,7 +1652,7 @@ const VehicleDetailsPage = () => {
                               onClick={() => navigate('/catalog')}
                             >
                               <Icon icon="mdi:magnify" className="h-4 w-4" />
-                              მოძებნე სხვა ავტომობილი
+                              {t('vehicle_details.offers.find_other')}
                             </Button>
                           </div>
                         </div>
@@ -1665,23 +1669,23 @@ const VehicleDetailsPage = () => {
                             >
                               <div>
                                 <div className="text-[11px] text-muted-foreground mb-1">
-                                  საუკეთესო ტრანსპორტირების ფასი
+                                  {t('vehicle_details.offers.best_shipping')}
                                 </div>
                                 <div className="text-sm font-semibold">
                                   {formatMoney(bestQuote.breakdown?.shipping_total ?? null) ?? '—'}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground">
-                                  ტრანსპორტირება აშშ-დან საქართველოს პორტამდე (სხვა მომსახურება ცალკე ითვლება)
+                                  {t('vehicle_details.offers.shipping_desc')}
                                 </div>
                                 <div className="mt-1 text-sm font-semibold text-foreground">
                                   {bestQuote.company_name}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground">
-                                  სრული მომსახურება აშშ-დან საქართველოს პორტამდე.
+                                  {t('vehicle_details.offers.full_service_desc')}
                                 </div>
                                 {bestQuote.delivery_time_days != null && (
                                   <div className="text-[11px] text-muted-foreground mt-0.5">
-                                    ორიენტირებით მიწოდება: {bestQuote.delivery_time_days} დღე
+                                    {t('vehicle_details.offers.delivery_time', { days: bestQuote.delivery_time_days })}
                                   </div>
                                 )}
                               </div>
@@ -1693,7 +1697,7 @@ const VehicleDetailsPage = () => {
                             <div className="mt-1 flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300">
                               <Icon icon="mdi:piggy-bank" className="h-4 w-4" />
                               <span>
-                                შენ შეიძლება დაზოგო დაახლოებით{' '}
+                                {t('vehicle_details.offers.approx_savings')}{' '}
                                 <span className="font-semibold">
                                   ${savingsAmount.toLocaleString()} USD
                                 </span>
@@ -1703,7 +1707,7 @@ const VehicleDetailsPage = () => {
 
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                             <span className="text-[11px] text-muted-foreground">
-                              კომპანიების ფილტრი
+                              {t('vehicle_details.offers.company_filter')}
                             </span>
                             <div className="flex flex-wrap items-center gap-1.5">
                               <Button
@@ -1757,18 +1761,18 @@ const VehicleDetailsPage = () => {
                                 aria-pressed={onlyFastDelivery}
                               >
                                 <Icon icon="mdi:truck-fast" className="h-3 w-3" />
-                                სწრაფი მიწოდება
+                                {t('vehicle_details.offers.fast_delivery')}
                               </Button>
                             </div>
                           </div>
 
-                          <div className="space-y-3" role="list" aria-label="კომპანიების შეთავაზებების სია">
+                          <div className="space-y-3" role="list" aria-label={t('vehicle_details.offers.list_aria')}>
                             <AnimatePresence initial={false}>
                               {premiumQuotes.length > 0 && !showOnlyStandard && (
                                 <>
                                   <div className="text-[11px] font-medium text-foreground flex items-center gap-1">
                                     <Icon icon="mdi:crown" className="h-3 w-3 text-amber-400" />
-                                    <span>Premium / VIP შეთავაზებები</span>
+                                    <span>{t('vehicle_details.offers.premium_vip')}</span>
                                   </div>
                                   {premiumQuotes.map(({ quote, vipLabel, index }) => {
                                     const companyMeta = mockCompanies.find(
@@ -1846,27 +1850,27 @@ const VehicleDetailsPage = () => {
                                                   />
                                                 ))}
                                                 <span>{companyMeta.rating.toFixed(1)}</span>
-                                                <span>({companyMeta.reviewCount} შეფასება)</span>
+                                                <span>({companyMeta.reviewCount} {t('common.reviews')})</span>
                                               </div>
                                             )}
                                             <div className="space-y-0.5">
                                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
+                                                <span>{t('vehicle_details.offers.shipping_desc')}</span>
                                                 {isDiscounted && (
                                                   <Tooltip>
                                                     <TooltipTrigger asChild>
                                                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium cursor-help">
                                                         <Icon icon="mdi:tag" className="h-3 w-3" />
-                                                        ფასდაკლება
+                                                        {t('vehicle_details.offers.discount')}
                                                       </span>
                                                     </TooltipTrigger>
                                                     <TooltipContent side="top">
                                                       <span>
-                                                        დაახლოებითი ეკონომია:
+                                                        {t('vehicle_details.offers.approx_savings')}:
                                                         {averageTotalPrice != null
                                                           ? ` $${(averageTotalPrice - quote.total_price).toLocaleString()} USD`
-                                                          : ' ინდივიდუალური გათვლა'}
-                                                        . ფასდაკლება აქტუალურია მიმდინარე კალკულაციისთვის და შეიძლება შეიცვალოს.
+                                                          : ' ' + t('vehicle_details.offers.individual_calc')}
+                                                        . {t('vehicle_details.offers.discount_disclaimer')}
                                                       </span>
                                                     </TooltipContent>
                                                   </Tooltip>
@@ -1887,7 +1891,7 @@ const VehicleDetailsPage = () => {
                                             </div>
                                             {quote.delivery_time_days != null && (
                                               <div className="text-[11px] text-muted-foreground">
-                                                მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
+                                                {t('vehicle_details.offers.import_completed_in', { days: quote.delivery_time_days })}
                                               </div>
                                             )}
                                             <div className="flex flex-wrap gap-1 pt-1">
@@ -1895,12 +1899,12 @@ const VehicleDetailsPage = () => {
                                                 <TooltipTrigger asChild>
                                                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium cursor-help">
                                                     <Icon icon="mdi:shield-check" className="h-3 w-3" />
-                                                    სანდო პარტნიორი
+                                                    {t('vehicle_details.offers.trusted_partner')}
                                                   </span>
                                                 </TooltipTrigger>
                                                 <TooltipContent side="top">
                                                   <span>
-                                                    სანდო პარტნიორი — ჩვენი შიდა შეფასებით და მომხმარებელთა გამოხმაურებებით შერჩეული იმპორტერი.
+                                                    {t('vehicle_details.offers.trusted_partner_desc')}
                                                   </span>
                                                 </TooltipContent>
                                               </Tooltip>
@@ -1909,12 +1913,12 @@ const VehicleDetailsPage = () => {
                                                   <TooltipTrigger asChild>
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2 py-[2px] text-[10px] font-medium cursor-help">
                                                       <Icon icon="mdi:lock-check" className="h-3 w-3" />
-                                                      დაცული გადახდა
+                                                      {t('vehicle_details.offers.secure_payment')}
                                                     </span>
                                                   </TooltipTrigger>
                                                   <TooltipContent side="top">
                                                     <span>
-                                                      დაცული გადახდა — თანხა იფიქსირება სანდო არხით, სანამ იმპორტერი არ დაადასტურებს მომსახურებას.
+                                                      {t('vehicle_details.offers.secure_payment_desc')}
                                                     </span>
                                                   </TooltipContent>
                                                 </Tooltip>
@@ -1924,12 +1928,12 @@ const VehicleDetailsPage = () => {
                                                   <TooltipTrigger asChild>
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 px-2 py-[2px] text-[10px] font-medium cursor-help">
                                                       <Icon icon="mdi:file-check" className="h-3 w-3" />
-                                                      დოკუმენტები სრულად
+                                                      {t('vehicle_details.offers.documents_full')}
                                                     </span>
                                                   </TooltipTrigger>
                                                   <TooltipContent side="top">
                                                     <span>
-                                                      დოკუმენტები სრულად — იმპორტერი უზრუნველყოფს ყველა საჭირო იმპორტის და რეგისტრაციის დოკუმენტის მომზადებას.
+                                                      {t('vehicle_details.offers.documents_full_desc')}
                                                     </span>
                                                   </TooltipContent>
                                                 </Tooltip>
@@ -1944,7 +1948,7 @@ const VehicleDetailsPage = () => {
                                                     includesDocuments ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>დოკუმენტები</span>
+                                                <span>{t('vehicle_details.offers.documents')}</span>
                                               </span>
                                               <span className="inline-flex items-center gap-1">
                                                 <Icon
@@ -1954,7 +1958,7 @@ const VehicleDetailsPage = () => {
                                                     includesTransport ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>ტრანსპორტირება</span>
+                                                <span>{t('vehicle_details.offers.transport')}</span>
                                               </span>
                                               <span className="inline-flex items-center gap-1">
                                                 <Icon
@@ -1964,7 +1968,7 @@ const VehicleDetailsPage = () => {
                                                     includesCustoms ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>საბაჟო</span>
+                                                <span>{t('vehicle_details.offers.customs')}</span>
                                               </span>
                                             </div>
                                           </div>
@@ -1984,10 +1988,10 @@ const VehicleDetailsPage = () => {
                                                   setActiveBreakdownQuote(quote)
                                                 }}
                                                 aria-pressed={isActiveBreakdown}
-                                                aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
+                                                aria-label={t('vehicle_details.offers.select_fee_aria')}
                                               >
                                                 <Icon icon="mdi:receipt-text" className="h-3 w-3" />
-                                                კალკულაცია
+                                                {t('vehicle_details.offers.individual_calc')}
                                               </Button>
                                               <Button
                                                 type="button"
@@ -1999,7 +2003,7 @@ const VehicleDetailsPage = () => {
                                                   toggleSelectedCompany(quote.company_name)
                                                 }}
                                                 aria-pressed={isInLeadSelection}
-                                                aria-label="აირჩიე ეს შეთავაზება ან მოხსენი არჩევანი"
+                                                aria-label={t('vehicle_details.offers.select_offer_aria')}
                                               >
                                                 <Icon
                                                   icon={
@@ -2012,9 +2016,9 @@ const VehicleDetailsPage = () => {
                                                 <span>
                                                   {isInLeadSelection
                                                     ? selectedCompanyNames.length === 1
-                                                      ? 'არჩეულია'
-                                                      : 'არჩეულია საერთო მოთხოვნისთვის'
-                                                    : 'არჩევა'}
+                                                      ? t('vehicle_details.offers.selected')
+                                                      : t('vehicle_details.offers.selected_common')
+                                                    : t('vehicle_details.offers.select')}
                                                 </span>
                                               </Button>
                                             </div>
@@ -2030,7 +2034,7 @@ const VehicleDetailsPage = () => {
                                 <>
                                   <div className="pt-2 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                                     <Icon icon="mdi:cash-multiple" className="h-3 w-3 text-emerald-500" />
-                                    <span>სტანდარტული შეთავაზებები — უფრო დაბალი ფასით</span>
+                                    <span>{t('vehicle_details.offers.standard')}</span>
                                   </div>
                                   {standardQuotes.map(({ quote, vipLabel, index }) => {
                                     const companyMeta = mockCompanies.find(
@@ -2101,16 +2105,16 @@ const VehicleDetailsPage = () => {
                                                   />
                                                 ))}
                                                 <span>{companyMeta.rating.toFixed(1)}</span>
-                                                <span>({companyMeta.reviewCount} შეფასება)</span>
+                                                <span>({companyMeta.reviewCount} {t('common.reviews')})</span>
                                               </div>
                                             )}
                                             <div className="space-y-0.5">
                                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
+                                                <span>{t('vehicle_details.offers.shipping_desc')}</span>
                                                 {isDiscounted && (
                                                   <span className="inline-flex itemsორცნერ gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
                                                     <Icon icon="mdi:tag" className="h-3 w-3" />
-                                                    ფასდაკლება
+                                                    {t('vehicle_details.offers.discount')}
                                                   </span>
                                                 )}
                                               </div>
@@ -2129,13 +2133,13 @@ const VehicleDetailsPage = () => {
                                             </div>
                                             {quote.delivery_time_days != null && (
                                               <div className="text-[11px] text-muted-foreground">
-                                                მიწოდების მიახლოებითი დრო: {quote.delivery_time_days} დღე
+                                                {t('vehicle_details.offers.import_completed_in', { days: quote.delivery_time_days })}
                                               </div>
                                             )}
                                             <div className="flex flex-wrap gap-1 pt-1">
                                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-[2px] text-[10px] font-medium">
                                                 <Icon icon="mdi:shield-check" className="h-3 w-3" />
-                                                სანდო პარტნიორი
+                                                {t('vehicle_details.offers.trusted_partner')}
                                               </span>
                                             </div>
                                             <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
@@ -2147,7 +2151,7 @@ const VehicleDetailsPage = () => {
                                                     includesDocuments ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>დოკუმენტები</span>
+                                                <span>{t('vehicle_details.offers.documents')}</span>
                                               </span>
                                               <span className="inline-flex items-center gap-1">
                                                 <Icon
@@ -2157,7 +2161,7 @@ const VehicleDetailsPage = () => {
                                                     includesTransport ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>ტრანსპორტირება</span>
+                                                <span>{t('vehicle_details.offers.transport')}</span>
                                               </span>
                                               <span className="inline-flex items-center gap-1">
                                                 <Icon
@@ -2167,7 +2171,7 @@ const VehicleDetailsPage = () => {
                                                     includesCustoms ? 'text-emerald-500' : 'text-slate-400',
                                                   )}
                                                 />
-                                                <span>საბაჟო</span>
+                                                <span>{t('vehicle_details.offers.customs')}</span>
                                               </span>
                                             </div>
                                           </div>
@@ -2184,10 +2188,10 @@ const VehicleDetailsPage = () => {
                                                 )}
                                                 onClick={() => setActiveBreakdownQuote(quote)}
                                                 aria-pressed={isActiveBreakdown}
-                                                aria-label="გამოყავი საფასური ამ კომპანიის შეთავაზებისთვის"
+                                                aria-label={t('vehicle_details.offers.select_fee_aria')}
                                               >
                                                 <Icon icon="mdi:receipt-text" className="h-3 w-3" />
-                                                კალკულაცია
+                                                {t('vehicle_details.offers.individual_calc')}
                                               </Button>
                                               <Button
                                                 type="button"
@@ -2196,7 +2200,7 @@ const VehicleDetailsPage = () => {
                                                 className="h-7 px-2 text-[10px] flex items-center gap-1"
                                                 onClick={() => toggleSelectedCompany(quote.company_name)}
                                                 aria-pressed={isInLeadSelection}
-                                                aria-label="დამატება საერთო მოთხოვნაში ამ კომპანიისთვის"
+                                                aria-label={t('vehicle_details.offers.add_to_common_aria')}
                                               >
                                                 <Icon
                                                   icon={
@@ -2209,9 +2213,9 @@ const VehicleDetailsPage = () => {
                                                 <span>
                                                   {isInLeadSelection
                                                     ? selectedCompanyNames.length === 1
-                                                      ? 'არჩეულია'
-                                                      : 'არჩეულია საერთო მოთხოვნისთვის'
-                                                    : 'არჩევა'}
+                                                      ? t('vehicle_details.offers.selected')
+                                                      : t('vehicle_details.offers.selected_common')
+                                                    : t('vehicle_details.offers.select')}
                                                 </span>
                                               </Button>
                                             </div>
@@ -2229,7 +2233,7 @@ const VehicleDetailsPage = () => {
                             <div className="mt-3 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs mt-4">
                               <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-foreground/70">
                                 <Icon icon="mdi:clock-check" className="h-3 w-3" />
-                                <span>ბოლო წარმატებული იმპორტის მაგალითები</span>
+                                <span>{t('vehicle_details.offers.recent_imports')}</span>
                               </div>
                               <ul className="space-y-[2px]">
                                 {mockRecentCases.slice(0, 3).map((item: { id: string; make: string; model: string; from: string; to: string; days: number }) => (
@@ -2237,9 +2241,9 @@ const VehicleDetailsPage = () => {
                                     <span className="mt-[2px] text-[9px] text-muted-foreground">•</span>
                                     <span>
                                       <span className="font-medium">{item.make} {item.model}</span>
-                                      {" — იმპორტი "}
+                                      {" — "}
                                       <span className="font-medium">{item.from}→{item.to}</span>
-                                      {`, დასრულდა ${item.days} დღეში`}
+                                      {", " + t('vehicle_details.offers.import_completed_in', { days: item.days })}
                                     </span>
                                   </li>
                                 ))}
@@ -2256,7 +2260,7 @@ const VehicleDetailsPage = () => {
                               onClick={() => navigate('/auction-listings')}
                             >
                               <Icon icon="mdi:car-search" className="h-4 w-4" />
-                              ნახე სხვა აქტიური აუქციონები
+                              {t('vehicle_details.offers.see_other_auctions')}
                             </Button>
                           </div>
                         </div>
@@ -2267,15 +2271,15 @@ const VehicleDetailsPage = () => {
               )}
               {!isInitialLoading && !error && !vehicle && (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  ავტომობილი ვერ მოიძებნა. სცადეთ კიდევ ერთხელ ან დაბრუნდით ძიებაზე.
+                  {t('vehicle_details.offers.not_found_msg')}
                 </div>
               )}
           </div>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-xs mt-4">
             <div>
-              <div className="font-medium text-sm">გაგრძელე მუშაობა შეთავაზებებთან</div>
+              <div className="font-medium text-sm">{t('vehicle_details.offers.continue_working')}</div>
               <div className="text-muted-foreground mt-1">
-                შეადარე კომპანიები, აირჩიე საუკეთესო და დაბრუნდი კატალოგში ახალი ავტომობილის სანახავად.
+                {t('vehicle_details.offers.compare_desc')}
               </div>
             </div>
             <div className="flex gap-2">
@@ -2285,20 +2289,20 @@ const VehicleDetailsPage = () => {
                 size="sm"
                 className="h-8 px-3 text-xs flex items-center gap-1"
                 onClick={() => navigate('/catalog')}
-                aria-label="დაბრუნდი კომპანიების კატალოგში"
+                aria-label={t('vehicle_details.offers.back_to_catalog_aria')}
               >
                 <Icon icon="mdi:view-grid" className="h-4 w-4" />
-                კატალოგში დაბრუნება
+                {t('vehicle_details.offers.back_to_catalog')}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 className="h-8 px-3 text-xs flex items-center gap-1"
                 onClick={handleScrollToOffers}
-                aria-label="გადადი კომპანიების შეთავაზებების სექციაზე"
+                aria-label={t('vehicle_details.offers.go_to_offers_aria')}
               >
                 <Icon icon="mdi:car-info" className="h-4 w-4" />
-                ნახე შეთავაზებები
+                {t('vehicle_details.offers.see_offers')}
               </Button>
             </div>
           </div>
@@ -2321,11 +2325,11 @@ const VehicleDetailsPage = () => {
                 size="sm"
                 className="h-8 px-3 text-xs flex items-center gap-1"
                 onClick={handleSendClick}
-                aria-label="გაგზავნა მოთხოვნის გაგზავნა არჩეული კომპანიებისთვის"
+                aria-label={t('vehicle_details.offers.send_request_aria')}
                 disabled={selectedCompanyNames.length === 0 || isLeadSubmitting}
               >
                 <Icon icon="mdi:arrow-right-circle" className="h-4 w-4" />
-                გაგზავნა
+                {t('vehicle_details.request_modal.send_btn')}
               </Button>
             </div>
           </motion.div>
@@ -2340,7 +2344,7 @@ const VehicleDetailsPage = () => {
           )}
           role="dialog"
           aria-modal="true"
-          aria-label={`შეკვეთის გაფორმება - ${selectedQuote.company_name}`}
+          aria-label={t('vehicle_details.checkout.aria_label', { company: selectedQuote.company_name })}
           onClick={closeOrderPopup}
         >
           <div
@@ -2356,31 +2360,31 @@ const VehicleDetailsPage = () => {
               type="button"
               className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
               onClick={closeOrderPopup}
-              aria-label="დახურე შეკვეთის გაფორმების ფანჯარა"
+              aria-label={t('vehicle_details.checkout.close_aria')}
             >
               <Icon icon="mdi:close" className="h-4 w-4" />
             </button>
             <div className="space-y-3 text-sm">
               <div>
-                <div className="text-base font-semibold mb-1">შეკვეთის გაფორმება</div>
+                <div className="text-base font-semibold mb-1">{t('vehicle_details.checkout.title')}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  კომპანია: {selectedQuote.company_name}
+                  {t('vehicle_details.checkout.company_label', { company: selectedQuote.company_name })}
                 </div>
               </div>
               <div className="space-y-1 text-[11px] text-muted-foreground">
                 <div>
-                  სრული ფასი იმპორტზე: <span className="font-semibold">${selectedQuote.total_price.toLocaleString()} USD</span>
+                  {t('vehicle_details.checkout.total_import_price')}: <span className="font-semibold">${selectedQuote.total_price.toLocaleString()} USD</span>
                 </div>
                 {selectedQuote.delivery_time_days != null && (
                   <div>
-                    მიწოდების მიახლოებითი დრო: {selectedQuote.delivery_time_days} დღე
+                    {t('vehicle_details.checkout.estimated_delivery', { days: selectedQuote.delivery_time_days })}
                   </div>
                 )}
               </div>
               <form className="space-y-3 mt-2" onSubmit={handleSubmitOrder}>
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium" htmlFor="order-name">
-                    სახელი
+                    {t('vehicle_details.checkout.name_label')}
                   </label>
                   <input
                     id="order-name"
@@ -2391,7 +2395,7 @@ const VehicleDetailsPage = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium" htmlFor="order-phone">
-                    ტელეფონი
+                    {t('vehicle_details.checkout.phone_label')}
                   </label>
                   <input
                     id="order-phone"
@@ -2402,7 +2406,7 @@ const VehicleDetailsPage = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium" htmlFor="order-comment">
-                    კომენტარი / დამატებითი სურვილები
+                    {t('vehicle_details.checkout.comment_label')}
                   </label>
                   <textarea
                     id="order-comment"
@@ -2419,14 +2423,14 @@ const VehicleDetailsPage = () => {
                     className="h-8 px-3 text-[11px]"
                     onClick={() => setIsOrderPopupOpen(false)}
                   >
-                    გაუქმება
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     type="submit"
                     size="sm"
                     className="h-8 px-3 text-[11px]"
                   >
-                    გაგზავნა განაცხადი
+                    {t('vehicle_details.checkout.send_application')}
                   </Button>
                 </div>
               </form>
@@ -2443,7 +2447,7 @@ const VehicleDetailsPage = () => {
           )}
           role="dialog"
           aria-modal="true"
-          aria-label={`განაცხადი მიღებულია - ${selectedQuote.company_name}`}
+          aria-label={t('vehicle_details.checkout.received_aria', { company: selectedQuote.company_name })}
           onClick={closeSuccessModal}
         >
           <div
@@ -2459,29 +2463,29 @@ const VehicleDetailsPage = () => {
               type="button"
               className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
               onClick={closeSuccessModal}
-              aria-label="დახურე დადასტურების ფანჯარა"
+              aria-label={t('vehicle_details.checkout.close_confirmation_aria')}
             >
               <Icon icon="mdi:close" className="h-4 w-4" />
             </button>
             <div className="space-y-3 text-sm">
               <div>
-                <div className="text-base font-semibold mb-1">განაცხადი მიღებულია</div>
+                <div className="text-base font-semibold mb-1">{t('vehicle_details.checkout.received_title')}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  კომპანია: {selectedQuote.company_name}
+                  {t('vehicle_details.checkout.company_label', { company: selectedQuote.company_name })}
                 </div>
               </div>
               <div className="space-y-1 text-[11px] text-muted-foreground">
                 <div>
-                  სრული ფასი იმპორტზე:{' '}
+                  {t('vehicle_details.checkout.total_import_price')}:{' '}
                   <span className="font-semibold">
                     ${selectedQuote.total_price.toLocaleString()} USD
                   </span>
                 </div>
                 {selectedQuote.delivery_time_days != null && (
-                  <div>მიწოდების მიახლოებითი დრო: {selectedQuote.delivery_time_days} დღე</div>
+                  <div>{t('vehicle_details.checkout.estimated_delivery', { days: selectedQuote.delivery_time_days })}</div>
                 )}
                 <div className="mt-1">
-                  ჩვენ გადავცემთ თქვენს განაცხადს იმპორტერს და ის დაგიკავშირდებათ უახლოეს სამუშაო დღეს.
+                  {t('vehicle_details.checkout.received_desc')}
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -2493,7 +2497,7 @@ const VehicleDetailsPage = () => {
                   onClick={closeSuccessModal}
                 >
                   <Icon icon="mdi:phone" className="h-4 w-4" />
-                  დაუკავშირდი იმპორტერს
+                  {t('vehicle_details.checkout.contact_importer')}
                 </Button>
                 <Button
                   type="button"
@@ -2505,7 +2509,7 @@ const VehicleDetailsPage = () => {
                   }}
                 >
                   <Icon icon="mdi:open-in-new" className="h-4 w-4" />
-                  გადადი კომპანიის გვერდზე
+                  {t('vehicle_details.checkout.go_to_company')}
                 </Button>
               </div>
             </div>
@@ -2522,7 +2526,7 @@ const VehicleDetailsPage = () => {
           onClick={closeBreakdownPopup}
           role="dialog"
           aria-modal="true"
-          aria-label={`დეტალური ფასი იმპორტზე - ${activeBreakdownQuote.company_name}`}
+          aria-label={t('vehicle_details.checkout.detailed_price_aria', { company: activeBreakdownQuote.company_name })}
         >
           <div
             className={cn(
@@ -2535,7 +2539,7 @@ const VehicleDetailsPage = () => {
               type="button"
               className="absolute right-2 top-2 h-7 w-7 flex items-center justify-center rounded-full bg-muted text-xs hover:bg-muted/80 transition-colors"
               onClick={closeBreakdownPopup}
-              aria-label="დახურე ფასის დეტალური ჩეკი"
+              aria-label={t('vehicle_details.checkout.close_price_check_aria')}
             >
               <Icon icon="mdi:close" className="h-4 w-4" />
             </button>
@@ -2553,7 +2557,7 @@ const VehicleDetailsPage = () => {
           onClick={() => setIsLightboxOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label="ფოტოს სრულეკრანიანი ჩვენება"
+          aria-label={t('vehicle_details.checkout.fullscreen_photo_aria')}
         >
           <div
             className="relative max-w-5xl max-h-[85vh] w-full flex items-center justify-center"
@@ -2563,7 +2567,7 @@ const VehicleDetailsPage = () => {
               type="button"
               className="absolute top-2 right-2 h-8 w-8 flex items-center justify-center rounded-full bg-black/60 text-white text-xs hover:bg-black/80 transition-colors"
               onClick={() => setIsLightboxOpen(false)}
-              aria-label="დახურვა"
+              aria-label={t('vehicle_details.checkout.close')}
             >
               <Icon icon="mdi:close" className="h-4 w-4" />
             </button>

@@ -4,8 +4,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { useAuth } from '@/hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 export function FinalCTASection() {
+  const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const shouldReduceMotion = useReducedMotion()
@@ -36,11 +38,10 @@ export function FinalCTASection() {
                 id="home-final-cta-heading"
                 className="text-2xl font-semibold tracking-tight md:text-3xl"
               >
-                მზად ხართ დაიწყოთ იმპორტი აშშ-დან?
+                {t('home.final_cta.title')}
               </h2>
               <p className="text-sm text-muted-foreground md:text-base">
-                შეარჩიეთ სანდო კომპანია, მიიღეთ საუკეთესო შეთავაზება და
-                ისარგებლეთ გამჭვირვალე პირობებით.
+                {t('home.final_cta.description')}
               </p>
             </div>
               <Button
@@ -49,8 +50,8 @@ export function FinalCTASection() {
                 className="mt-2 md:mt-0"
                 motionVariant="scale"
               >
-                <Icon icon="mdi:arrow-right" className="mr-2 h-4 w-4" />
-                {isAuthenticated ? 'გახსენი დაფა' : 'დაიწყე რეგისტრაცია'}
+                <Icon icon="mdi:arrow-right" className="me-2 h-4 w-4" />
+                {isAuthenticated ? t('home.final_cta.dashboard_btn') : t('home.final_cta.register_btn')}
               </Button>
             </CardContent>
           </Card>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CompanyRating } from '@/components/company/CompanyRating'
@@ -22,6 +23,7 @@ export function FeaturedCompaniesSection({
   isLoading,
 }: FeaturedCompaniesSectionProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const vipCompanies = useMemo<Company[]>(() => {
     if (!companies || companies.length === 0) {
@@ -65,8 +67,8 @@ export function FeaturedCompaniesSection({
         <Card className="md:col-span-3 p-8">
           <EmptyState
             icon="mdi:magnify-remove"
-            title="VIP კომპანიები ჯერ არ არის ნაჩვენები"
-            description="როგორც კი ვერიფიცირებული იმპორტიორები დაემატება პლატფორმას, ისინი გამოჩნდება ამ ბლოკში. ამ ეტაპზე შეგიძლიათ გაიცნოთ ყველა კომპანია კატალოგში."
+            title={t('home.featured_companies.empty_title')}
+            description={t('home.featured_companies.empty_desc')}
             action={null}
           />
         </Card>
@@ -103,15 +105,15 @@ export function FeaturedCompaniesSection({
         }
 
         if (tier === 'diamond') {
-          return 'Diamond VIP'
+          return t('home.featured_companies.vip_diamond')
         }
 
         if (tier === 'gold') {
-          return 'Gold VIP'
+          return t('home.featured_companies.vip_gold')
         }
 
         if (tier === 'silver') {
-          return 'Silver VIP'
+          return t('home.featured_companies.vip_silver')
         }
 
         return 'VIP'
@@ -136,7 +138,7 @@ export function FeaturedCompaniesSection({
                       className="h-3 w-3"
                       aria-hidden="true"
                     />
-                    <span>ტოპ პარტნიორი</span>
+                    <span>{t('home.featured_companies.top_partner')}</span>
                   </div>
                 )}
                 {company.vipStatus && (
@@ -158,7 +160,7 @@ export function FeaturedCompaniesSection({
             <div className="flex items-center gap-2 text-sm">
               <CompanyRating rating={company.rating} />
               <span className="text-xs text-muted-foreground">
-                ({company.reviewCount} შეფასება)
+                ({company.reviewCount} {t('common.reviews')})
               </span>
             </div>
             <p
@@ -171,11 +173,11 @@ export function FeaturedCompaniesSection({
             <div className="flex flex-wrap gap-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                 <Icon icon="mdi:car-arrow-right" className="h-3 w-3" aria-hidden="true" />
-                <span>USA → GEO სრული ციკლი</span>
+                <span>{t('home.featured_companies.full_cycle')}</span>
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                 <Icon icon="mdi:file-document-outline" className="h-3 w-3" aria-hidden="true" />
-                <span>დოკუმენტები / საბაჟო / მიწოდება</span>
+                <span>{t('home.featured_companies.docs_customs')}</span>
               </span>
             </div>
             <div className="mt-2 border-t border-muted/40 pt-2 text-xs flex flex-col gap-2">
@@ -211,13 +213,13 @@ export function FeaturedCompaniesSection({
                               {estimatedDeals}
                             </span>
                             <span className="truncate">
-                              გარიგებები
+                              {t('home.featured_companies.deals')}
                             </span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" align="end" className="max-w-xs text-[11px]">
                           <p>
-                            შეფასებების რაოდენობიდან დათვლილი მიახლოებითი რაოდენობა დასრულებული გარიგებების (≈ reviewCount × 3).
+                            {t('home.featured_companies.deals_tooltip')}
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -233,13 +235,13 @@ export function FeaturedCompaniesSection({
                               {satisfaction}%
                             </span>
                             <span className="truncate">
-                              კმაყოფილება
+                              {t('home.featured_companies.satisfaction')}
                             </span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" align="end" className="max-w-xs text-[11px]">
                           <p>
-                            მიახლოებითი კმაყოფილების დონე, დათვლილი საშუალო რეიტინგიდან (rating/5).
+                            {t('home.featured_companies.satisfaction_tooltip')}
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -257,7 +259,7 @@ export function FeaturedCompaniesSection({
             <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Icon icon="mdi:calendar" className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>დაფუძნებული: {company.establishedYear}</span>
+                <span>{t('home.featured_companies.established', { year: company.establishedYear })}</span>
               </div>
               {(() => {
                 let avgResponseHours = 6
@@ -277,13 +279,13 @@ export function FeaturedCompaniesSection({
                           aria-hidden="true"
                         />
                         <span className="font-semibold text-[11px]">
-                          საშ. პასუხის დრო: {avgResponseHours} სთ
+                          {t('home.featured_companies.response_time', { hours: avgResponseHours })}
                         </span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="end" className="max-w-xs text-[11px]">
                       <p>
-                        საშუალო სიჩქარე, რა დრო სჭირდება კომპანიას პირველ შეტყობინებაზე პასუხის გასაცემად (დაიანგარიშდა რეიტინგის მიხედვით).
+                        {t('home.featured_companies.avg_response_time_tooltip')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -326,15 +328,15 @@ export function FeaturedCompaniesSection({
               id="home-featured-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              VIP იმპორტიორები
+              {t('home.featured_companies.title')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              მაღალი რეიტინგის და გამჭვირვალე პირობების მქონე კომპანიები.
+              {t('home.featured_companies.description')}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/catalog')}>
             <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
-            ყველა კომპანიის ნახვა
+            {t('home.featured_companies.view_all')}
           </Button>
         </div>
 

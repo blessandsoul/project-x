@@ -1,7 +1,10 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { useTranslation } from 'react-i18next'
 
 export function TrustSection() {
+  const { t } = useTranslation()
+
   return (
     <section
       className="border-b bg-background"
@@ -19,10 +22,10 @@ export function TrustSection() {
                   id="home-trust-heading"
                   className="text-lg font-semibold md:text-xl"
                 >
-                  როგორ ვამოწმებთ კომპანიებს
+                  {t('home.trust.title')}
                 </CardTitle>
                 <p className="text-xs text-muted-foreground md:text-sm">
-                  ჩვენი მიზანია, რომ მხოლოდ სანდო იმპორტიორები მოხვდნენ თქვენს სიაში.
+                  {t('home.trust.description')}
                 </p>
               </div>
             </div>
@@ -30,19 +33,19 @@ export function TrustSection() {
           <CardContent className="grid gap-4 text-sm md:grid-cols-4">
             <div className="flex items-start gap-2">
               <Icon icon="mdi:clipboard-check" className="mt-0.5 h-4 w-4 text-primary" />
-              <p>ვამოწმებთ გამოცდილებას, შესრულებულ ბრძანებებს და ბაზარზე ყოფნის პერიოდს.</p>
+              <p>{t('home.trust.items.experience')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Icon icon="mdi:star-circle" className="mt-0.5 h-4 w-4 text-primary" />
-              <p>ვაკვირდებით რეიტინგებსა და მომხმარებელთა შეფასებებს ჩვენს პლატფორმაზე.</p>
+              <p>{t('home.trust.items.reviews')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Icon icon="mdi:file-document-check" className="mt-0.5 h-4 w-4 text-primary" />
-              <p>ვკითხულობთ დოკუმენტაციას, საკონტაქტო ინფორმაციასა და იურიდიულ დეტალებს.</p>
+              <p>{t('home.trust.items.docs')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Icon icon="mdi:lock" className="mt-0.5 h-4 w-4 text-primary" />
-              <p>არასოდეს ვუზიარებთ თქვენს პირად მონაცემებს მესამე პირებს დაუკითხავად.</p>
+              <p>{t('home.trust.items.privacy')}</p>
             </div>
           </CardContent>
         </Card>

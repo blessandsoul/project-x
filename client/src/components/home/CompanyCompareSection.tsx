@@ -8,6 +8,7 @@ import { CompanyRating } from '@/components/company/CompanyRating'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 type CompanyCompareSectionProps = {
   companies: Company[]
@@ -16,6 +17,7 @@ type CompanyCompareSectionProps = {
 }
 
 export function CompanyCompareSection({ companies, isLoading, error }: CompanyCompareSectionProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const { vipCompanies, regularCompanies } = useMemo(() => {
@@ -46,22 +48,22 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
               id="home-compare-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              შეადარე იმპორტიორები ერთ ცხრილში
+              {t('home.compare.title')}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              რეპუტაცია, ფასი და მომსახურება ერთი მიმოხილვით.
+              {t('home.compare.description')}
             </p>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2" aria-label="იმპორტიორების შეთავაზებების სია">
-          <div className="space-y-3" role="list" aria-label="VIP შეთავაზებები">
+        <div className="grid gap-4 md:grid-cols-2" aria-label={t('home.compare.list_aria_label')}>
+          <div className="space-y-3" role="list" aria-label={t('home.compare.vip_list_aria_label')}>
             <div className="text-[11px] font-medium text-foreground flex items-center gap-1">
               <Icon
                 icon="mdi:crown"
                 className="h-3 w-3 text-amber-400"
               />
-              <span>Premium / VIP შეთავაზებები</span>
+              <span>{t('home.compare.vip_offers_title')}</span>
             </div>
             {isLoading
               ? Array.from({ length: 3 }).map((_, index: number) => (
@@ -108,8 +110,15 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                     tier === 'diamond'
                       ? 'border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.5)]'
                       : tier === 'gold'
-                        ? 'border-amber-400/70 shadow-[0_0_0_1px_rgба(251,191,36,0.5)]'
+                        ? 'border-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.5)]'
                         : 'border-slate-300/70'
+
+                  const vipLabel = (() => {
+                    if (tier === 'diamond') return t('home.featured_companies.vip_labels.diamond')
+                    if (tier === 'gold') return t('home.featured_companies.vip_labels.gold')
+                    if (tier === 'silver') return t('home.featured_companies.vip_labels.silver')
+                    return 'VIP'
+                  })()
 
                   return (
                     <div
@@ -141,7 +150,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                               size="sm"
                             />
                             <span>
-                              ({company.reviewCount} შეფასება)
+                              ({company.reviewCount} {t('common.reviews')})
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -155,7 +164,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                           </div>
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                              <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
+                              <span>{t('home.compare.shipping_price_label')}</span>
                             </div>
                             <div className="flex items-center gap-1 text-sm font-bold text-emerald-600">
                               <Icon
@@ -176,12 +185,12 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                     icon="mdi:shield-check"
                                     className="h-3 w-3"
                                   />
-                                  <span>სანდო პარტნიორი</span>
+                                  <span>{t('home.compare.badges.trusted')}</span>
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent side="top">
                                 <span>
-                                  სანდო პარტნიორი — ჩვენი შიდა შეფასებით და მომხმარებელთა გამოხმაურებებით შერჩეული იმპორტერი.
+                                  {t('home.compare.badges.trusted_tooltip')}
                                 </span>
                               </TooltipContent>
                             </Tooltip>
@@ -193,12 +202,12 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                       icon="mdi:lock-check"
                                       className="h-3 w-3"
                                     />
-                                    <span>დაცული გადახდა</span>
+                                    <span>{t('home.compare.badges.secure')}</span>
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
                                   <span>
-                                    დაცული გადახდა — თანხა იფიქსირება სანდო არხით, სანამ იმპორტერი არ დაადასტურებს მომსახურებას.
+                                    {t('home.compare.badges.secure_tooltip')}
                                   </span>
                                 </TooltipContent>
                               </Tooltip>
@@ -211,12 +220,12 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                       icon="mdi:file-check"
                                       className="h-3 w-3"
                                     />
-                                    <span>დოკუმენტები სრულად</span>
+                                    <span>{t('home.compare.badges.docs')}</span>
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
                                   <span>
-                                    დოკუმენტები სრულად — იმპორტერი უზრუნველყოფს ყველა საჭირო იმპორტის და რეგისტრაციის დოკუმენტის მომზადებას.
+                                    {t('home.compare.badges.docs_tooltip')}
                                   </span>
                                 </TooltipContent>
                               </Tooltip>
@@ -231,7 +240,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesDocuments ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>დოკუმენტები</span>
+                              <span>{t('home.compare.services.documents')}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -241,7 +250,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesTransport ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>ტრანსპორტირება</span>
+                              <span>{t('home.compare.services.shipping')}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -251,7 +260,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesCustoms ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>საბაჟო</span>
+                              <span>{t('home.compare.services.customs')}</span>
                             </span>
                           </div>
                         </div>
@@ -259,13 +268,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                       <div className="flex flex-col items-end gap-2">
                         {company.vipStatus && (
                           <VipBadge
-                            label={
-                              tier === 'diamond'
-                                ? 'Diamond VIP'
-                                : tier === 'gold'
-                                  ? 'Gold VIP'
-                                  : 'Silver VIP'
-                            }
+                            label={vipLabel}
                           />
                         )}
                       </div>
@@ -274,13 +277,13 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                 })}
           </div>
 
-          <div className="space-y-3" role="list" aria-label="სტანდარტული შეთავაზებები">
+          <div className="space-y-3" role="list" aria-label={t('home.compare.standard_list_aria_label')}>
             <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
               <Icon
                 icon="mdi:cash-multiple"
                 className="h-3 w-3 text-emerald-500"
               />
-              <span>სტანდარტული შეთავაზებები</span>
+              <span>{t('home.compare.standard_offers_title')}</span>
             </div>
             {isLoading
               ? Array.from({ length: 3 }).map((_, index: number) => (
@@ -350,7 +353,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                               size="sm"
                             />
                             <span>
-                              ({company.reviewCount} შეფასება)
+                              ({company.reviewCount} {t('common.reviews')})
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -364,7 +367,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                           </div>
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                              <span>ტრანსპორტირების ფასი აშშ-დან საქართველოს პორტამდე</span>
+                              <span>{t('home.compare.shipping_price_label')}</span>
                             </div>
                             <div className="flex items-center gap-1 text-sm font-bold text-emerald-600">
                               <Icon
@@ -386,7 +389,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesDocuments ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>დოკუმენტები</span>
+                              <span>{t('home.compare.services.documents')}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -396,7 +399,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesTransport ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>ტრანსპორტირება</span>
+                              <span>{t('home.compare.services.shipping')}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Icon
@@ -406,7 +409,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                   includesCustoms ? 'text-emerald-500' : 'text-slate-400',
                                 )}
                               />
-                              <span>საბაჟო</span>
+                              <span>{t('home.compare.services.customs')}</span>
                             </span>
                           </div>
                         </div>

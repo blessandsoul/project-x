@@ -2,35 +2,39 @@ import { useState } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { useTranslation } from 'react-i18next'
 
-const FAQ_ITEMS = [
+interface FAQItem {
+  id: number
+  questionKey: string
+  answerKey: string
+}
+
+const FAQ_ITEMS: FAQItem[] = [
   {
     id: 1,
-    question: 'რამდენი ჯდება აშშ-დან ავტომობილის შემოტანა? ',
-    answer:
-      'ფასი დამოკიდებულია აუქციონის ფასზე, ტრანსპორტირებაზე, დაზღვევასა და საბაჟო გადასახადებზე. ჩვენი პლატფორმა გეხმარებათ წინასწარი შეფასების მიღებაში.',
+    questionKey: 'faq.q1.question',
+    answerKey: 'faq.q1.answer',
   },
   {
     id: 2,
-    question: 'რამდენი დრო სჭირდება მანქანის ჩამოყვანას? ',
-    answer:
-      'საშუალოდ 6-10 კვირა, დამოკიდებულია პორტსა და სატრანსპორტო მარშრუტზე. კონკრეტულ ვადას კომპანია გეტყვით.',
+    questionKey: 'faq.q2.question',
+    answerKey: 'faq.q2.answer',
   },
   {
     id: 3,
-    question: 'როგორ ხდება კომპანიების შემოწმება? ',
-    answer:
-      'ვაკვირდებით გამოცდილებას, რეიტინგებს და მომხმარებელთა შეფასებებს. საეჭვო კომპანიები ვერ ხვდებიან რეკომენდირებულ სიისში.',
+    questionKey: 'faq.q3.question',
+    answerKey: 'faq.q3.answer',
   },
   {
     id: 4,
-    question: 'შემიძლია რამდენიმე კომპანიის შეთავაზების შედარება? ',
-    answer:
-      'დიახ, შეგიძლიათ შეადაროთ ფასები, მომსახურება და რეიტინგები სხვადასხვა კომპანიის მიხედვით.',
+    questionKey: 'faq.q4.question',
+    answerKey: 'faq.q4.answer',
   },
 ]
 
 export function FAQSection() {
+  const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
   const [openId, setOpenId] = useState<number | null>(FAQ_ITEMS[0]?.id ?? null)
 
@@ -58,10 +62,10 @@ export function FAQSection() {
             id="home-faq-heading"
             className="text-2xl font-semibold tracking-tight md:text-3xl"
           >
-            ხშირი კითხვები
+            {t('home.faq.title')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            პასუხები ყველაზე გავრცელებულ კითხვებზე იმპორტის პროცესის შესახებ.
+            {t('home.faq.description')}
           </p>
         </div>
 
@@ -78,13 +82,13 @@ export function FAQSection() {
                 <Card className="border-muted/60">
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-start"
                     onClick={() => setOpenId(isOpen ? null : item.id)}
                     aria-expanded={isOpen}
                     aria-controls={`faq-panel-${item.id}`}
                   >
                     <span className="text-sm font-medium md:text-base">
-                      {item.question}
+                      {t(`home.faq.items.${item.questionKey}`)}
                     </span>
                     <motion.span
                       animate={
@@ -120,7 +124,7 @@ export function FAQSection() {
                       >
                         <CardContent className="px-4 pb-4 pt-0">
                           <p className="text-sm text-muted-foreground">
-                            {item.answer}
+                            {t(`home.faq.items.${item.answerKey}`)}
                           </p>
                         </CardContent>
                       </motion.div>

@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
 
 const BRAND_LOGOS = [
   { id: 1, name: 'BMW', src: '/car-logos/bmw.png' },
@@ -11,6 +12,8 @@ const BRAND_LOGOS = [
 ]
 
 export function BrandLogosSection() {
+  const { t } = useTranslation()
+
   return (
     <section
       className="border-b bg-background"
@@ -23,11 +26,10 @@ export function BrandLogosSection() {
               id="home-brands-heading"
               className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              ჩვენი პარტნიორები
+              {t('home.brands.title')}
             </h2>
             <p className="text-xs text-muted-foreground">
-              სანდო ბანკები, ლოგისტიკის და დაზღვევის პარტნიორები, რომლებსაც ვეყრდნობით
-              იმპორტის პროცესში.
+              {t('home.brands.subtitle')}
             </p>
           </div>
           <div className="mt-1 md:mt-0">
@@ -37,7 +39,7 @@ export function BrandLogosSection() {
               className="h-auto px-0 text-xs text-primary"
               type="button"
             >
-              როგორ ვირჩევთ პარტნიორებს
+              {t('home.brands.cta')}
             </Button>
           </div>
         </div>

@@ -62,32 +62,6 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
-export interface UserPreferences {
-  user_id: number;
-  budget_min: number | null;
-  budget_max: number | null;
-  body_types: string[] | null;
-  fuel_types: string[] | null;
-  usage_goal: 'family' | 'commute' | 'resale' | 'fun' | 'other' | null;
-  target_regions: string[] | null;
-  purchase_timeframe: 'immediate' | '1-3_months' | '3-6_months' | 'planning' | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface UserPreferencesCreate {
-  user_id: number;
-  budget_min?: number;
-  budget_max?: number;
-  body_types?: string[];
-  fuel_types?: string[];
-  usage_goal?: 'family' | 'commute' | 'resale' | 'fun' | 'other';
-  target_regions?: string[];
-  purchase_timeframe?: 'immediate' | '1-3_months' | '3-6_months' | 'planning';
-}
-
-export interface UserPreferencesUpdate extends Partial<Omit<UserPreferencesCreate, 'user_id'>> {}
-
 declare module 'fastify' {
   interface FastifyRequest {
     user?: AuthUser;

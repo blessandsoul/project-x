@@ -4,56 +4,59 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { EmptyState } from '@/components/company/EmptyState'
+import { useTranslation } from 'react-i18next'
 
 interface CarCase {
   id: number
   image: string
-  title: string
-  subtitle: string
-  price: string
-  saved: string
-  before: string
-  after: string
-  quote: string
+  titleKey: string
+  subtitleKey: string
+  priceKey: string
+  savedKey: string
+  beforeKey: string
+  afterKey: string
+  quoteKey: string
 }
 
 const CAR_CASES: CarCase[] = [
   {
     id: 1,
     image: '/cars/21.webp',
-    title: 'BMW X5, 2018',
-    subtitle: 'California → საქართველო',
-    price: '$19 800 სრული იმპორტით',
-    saved: 'დაზოგვა ≈ $1 200 აუქციონის საშუალო ფასთან შედარებით',
-    before: 'მანამდე ოჯახი ნახევარ წელზე მეტს ეძებდა უსაფრთხო SUV-ს ადგილობრივ ბაზარზე, მაგრამ ფასები ყოველთვის ბიუჯეტს აღემატებოდა.',
-    after: 'TrustedImporters.Ge-ის საშუალებით 6 კვირაში მიიღეს X5 სრულ იმპორტით და დაზოგეს თანხა, რომელიც სარემონტო სამუშაოებსაც ეყო.',
-    quote: '"ვფიქრობდით, რომ X5 მხოლოდ ოცნება იყო, ახლა კი უკვე ოჯახური მანქანაა."',
+    titleKey: 'case1.title',
+    subtitleKey: 'case1.subtitle',
+    priceKey: 'case1.price',
+    savedKey: 'case1.saved',
+    beforeKey: 'case1.before',
+    afterKey: 'case1.after',
+    quoteKey: 'case1.quote',
   },
   {
     id: 2,
     image: '/cars/95.webp',
-    title: 'Toyota Camry, 2019',
-    subtitle: 'Florida → საქართველო',
-    price: '$12 400 სრული იმპორტით',
-    saved: 'დაზოგვა ≈ $900 ადგილობრივ ბაზართან შედარებით',
-    before: 'მანამდე მყიდველს სჭირდებოდა საიმედო სედანი დღის სამუშაოსა და ოჯახის გზებისთვის, მაგრამ კარგ ვარიანტს ვერ პოულობდა.',
-    after: 'პლატფორმამ აჩვენა რამდენიმე სანდო იმპორტიორი და Camry მოვიდა მინიმალური გარბენითა და გამჭვირვალე ისტორიით.',
-    quote: '"პირველი მანქანის არჩევა ძალიან გვაშინებდა, მაგრამ პროცესი ბევრად მარტივი აღმოჩნდა, ვიდრე ველოდით."',
+    titleKey: 'case2.title',
+    subtitleKey: 'case2.subtitle',
+    priceKey: 'case2.price',
+    savedKey: 'case2.saved',
+    beforeKey: 'case2.before',
+    afterKey: 'case2.after',
+    quoteKey: 'case2.quote',
   },
   {
     id: 3,
     image: '/cars/150.webp',
-    title: 'Mercedes-Benz C-Class, 2017',
-    subtitle: 'New York → საქართველო',
-    price: '$17 300 სრული იმპორტით',
-    saved: 'დაზოგვა ≈ $1 500 დილერის შეთავაზებასთან შედარებით',
-    before: 'ადგილობრივ დილერთან შეთავაზებული პრემიუმ სედანი წინასწარ გადახდას და დამატებით მალულ გადასახადებს მოითხოვდა.',
-    after: 'TrustedImporters.Ge-მა აჩვენა ალTERNATივი აშშ-დან იმპორტით, სადაც კლიენტმა ზუსტად იცოდა, რისთვის იხდიდა.',
-    quote: '"იმის ცოდნა, რომ ყოველ საფეხურს ვაკონტროლებდით, ბევრად უფრო მშვიდად გვაგრძნობინებდა."',
+    titleKey: 'case3.title',
+    subtitleKey: 'case3.subtitle',
+    priceKey: 'case3.price',
+    savedKey: 'case3.saved',
+    beforeKey: 'case3.before',
+    afterKey: 'case3.after',
+    quoteKey: 'case3.quote',
   },
 ]
 
 export function CarCasesSection() {
+  const { t } = useTranslation()
+
   return (
     <section
       className="border-b bg-background"
@@ -66,10 +69,10 @@ export function CarCasesSection() {
               id="home-cases-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              რეალური მაგალითები მანქანების იმპორტიდან
+              {t('home.car_cases.title')}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              სანახავი რამდენიმე ტიპური შემთხვევა ფასით და სავარაუდო დაზოგვით.
+              {t('home.car_cases.description')}
             </p>
           </div>
           <div className="mt-2 md:mt-0">
@@ -81,8 +84,8 @@ export function CarCasesSection() {
               motionVariant="scale"
             >
               <Link to="/catalog">
-                <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
-                <span>კატალოგის ნახვა</span>
+                <Icon icon="mdi:view-grid" className="me-1 h-4 w-4" aria-hidden="true" />
+                <span>{t('home.car_cases.view_catalog_btn')}</span>
               </Link>
             </Button>
           </div>
@@ -93,8 +96,8 @@ export function CarCasesSection() {
             <Card className="min-w-[260px] md:min-w-[320px] p-8">
               <EmptyState
                 icon="mdi:car-off"
-                title="იმპორტის მაგალითები ჯერ არ არის ნაჩვენები"
-                description="როგორც კი რეალური იმპორტის მაგალითები დაემატება პლატფორმას, ისინი გამოჩნდება ამ ბლოკში. ამ ეტაპზე შეგიძლიათ გაეცნოთ იმპორტის კომპანიებს კატალოგში."
+                title={t('home.car_cases.empty.title')}
+                description={t('home.car_cases.empty.description')}
                 action={(
                   <Button
                     asChild
@@ -103,8 +106,8 @@ export function CarCasesSection() {
                     className="inline-flex items-center gap-1"
                   >
                     <Link to="/catalog">
-                      <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
-                      <span>კატალოგის ნახვა</span>
+                      <Icon icon="mdi:view-grid" className="me-1 h-4 w-4" aria-hidden="true" />
+                      <span>{t('home.car_cases.view_catalog_btn')}</span>
                     </Link>
                   </Button>
                 )}
@@ -120,7 +123,7 @@ export function CarCasesSection() {
                 <div className="aspect-video w-full overflow-hidden bg-muted">
                   <img
                     src={item.image}
-                    alt={item.title}
+                    alt={t(`home.car_cases.cases.${item.titleKey}`)}
                     className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                     loading="lazy"
                   />
@@ -128,33 +131,33 @@ export function CarCasesSection() {
                 <CardHeader className="space-y-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base font-semibold">
-                      {item.title}
+                      {t(`home.car_cases.cases.${item.titleKey}`)}
                     </CardTitle>
                     <Badge variant="outline" className="text-[11px]">
                       <Icon
                         icon="mdi:flag-variant"
-                        className="mr-1 h-3 w-3 text-primary"
+                        className="me-1 h-3 w-3 text-primary"
                       />
-                      Demo case
+                      {t('home.car_cases.demo_case_badge')}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{item.subtitle}</p>
+                  <p className="text-xs text-muted-foreground">{t(`home.car_cases.cases.${item.subtitleKey}`)}</p>
                 </CardHeader>
                 <CardContent className="space-y-2 pb-5">
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <p>
-                      <span className="font-semibold">მანამდე:</span> {item.before}
+                      <span className="font-semibold">{t('home.car_cases.before_label')}:</span> {t(`home.car_cases.cases.${item.beforeKey}`)}
                     </p>
                     <p>
-                      <span className="font-semibold">შემდეგ:</span> {item.after}
+                      <span className="font-semibold">{t('home.car_cases.after_label')}:</span> {t(`home.car_cases.cases.${item.afterKey}`)}
                     </p>
                   </div>
-                  <p className="text-xs italic text-muted-foreground">{item.quote}</p>
+                  <p className="text-xs italic text-muted-foreground">{t(`home.car_cases.cases.${item.quoteKey}`)}</p>
                   <div className="pt-1 space-y-1">
-                    <p className="text-sm font-semibold text-primary">{item.price}</p>
+                    <p className="text-sm font-semibold text-primary">{t(`home.car_cases.cases.${item.priceKey}`)}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Icon icon="mdi:cash-multiple" className="h-3 w-3 text-primary" />
-                      <span>{item.saved}</span>
+                      <span>{t(`home.car_cases.cases.${item.savedKey}`)}</span>
                     </p>
                   </div>
                 </CardContent>

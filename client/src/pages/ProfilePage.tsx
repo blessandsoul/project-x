@@ -133,7 +133,7 @@ const ProfilePage = () => {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
+                placeholder={t('auth.placeholders.email')}
               />
             </div>
             <div className="space-y-2">
@@ -143,7 +143,7 @@ const ProfilePage = () => {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder={t('profile.password_placeholder')}
+                placeholder={t('auth.placeholders.password')}
               />
             </div>
             {error && (

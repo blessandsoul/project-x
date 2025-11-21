@@ -23,14 +23,21 @@ export interface DealerOnboardingData {
 
 export interface CompanyOnboardingData {
   name?: string;
+  slug?: string;
   services?: string[];
   base_price?: number;
   price_per_mile?: number;
+  customs_fee?: number;
+  service_fee?: number;
+  broker_fee?: number;
   country?: string;
   city?: string;
   description?: string;
   website?: string;
+  contact_email?: string;
   phone_number?: string;
+  established_year?: number;
+  social_links?: { url: string }[];
 }
 
 export const onboardingApi = {

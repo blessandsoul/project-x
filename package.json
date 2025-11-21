@@ -3,5 +3,11 @@
   "private": true,
   "scripts": {
     "code-graph-rag-mcp": "code-graph-rag-mcp ."
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
+    "react-hook-form": "^7.66.1"
   }
 }

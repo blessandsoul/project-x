@@ -28,6 +28,7 @@ import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalog';
 import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
+import { useTranslation } from 'react-i18next';
 
 type AuctionHouse = 'all' | 'Copart' | 'IAAI' | 'Manheim';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
@@ -152,6 +153,7 @@ const formatMoney = (
 };
 
 const AuctionListingsPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>('all');
@@ -431,41 +433,41 @@ const AuctionListingsPage = () => {
       const labels: { id: string; label: string }[] = [];
 
       if (auctionFilter !== 'all') {
-        labels.push({ id: 'auction', label: `აუქციონი: ${auctionFilter}` });
+        labels.push({ id: 'auction', label: `${t('auction.filters.auction')}: ${auctionFilter}` });
       }
 
       if (fuelType !== 'all') {
-        labels.push({ id: 'fuel', label: `საწვავი: ${fuelType}` });
+        labels.push({ id: 'fuel', label: `${t('auction.filters.fuel')}: ${fuelType}` });
       }
 
       if (buyNowOnly) {
-        labels.push({ id: 'buyNow', label: 'მხოლოდ Buy Now' });
+        labels.push({ id: 'buyNow', label: t('auction.filters.buy_now_only') });
       }
 
       if (showVinCodes) {
-        labels.push({ id: 'vin', label: 'VIN კოდების ჩვენება' });
+        labels.push({ id: 'vin', label: t('auction.filters.show_vin') });
       }
 
       if (selectedMakeName) {
-        labels.push({ id: 'make', label: `მარკა: ${selectedMakeName}` });
+        labels.push({ id: 'make', label: `${t('auction.filters.make')}: ${selectedMakeName}` });
       }
 
       if (selectedModelName) {
-        labels.push({ id: 'model', label: `მოდელი: ${selectedModelName}` });
+        labels.push({ id: 'model', label: `${t('auction.filters.model')}: ${selectedModelName}` });
       }
 
       if (companyFilterTerm) {
-        labels.push({ id: 'company', label: `კომპანია: ${companyFilterTerm}` });
+        labels.push({ id: 'company', label: `${t('auction.filters.company_importer')}: ${companyFilterTerm}` });
       }
 
       const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
       if (hasExactYear) {
-        labels.push({ id: 'yearExact', label: `წელი: ${exactYear}` });
+        labels.push({ id: 'yearExact', label: `${t('auction.filters.year')}: ${exactYear}` });
       } else {
-        labels.push({ id: 'yearRange', label: `წელი: ${yearRange[0]}-${yearRange[1]}` });
+        labels.push({ id: 'yearRange', label: `${t('auction.filters.year')}: ${yearRange[0]}-${yearRange[1]}` });
       }
 
-      labels.push({ id: 'price', label: `ფასი: $${priceRange[0]}-$${priceRange[1]}` });
+      labels.push({ id: 'price', label: `${t('auction.filters.price')}: $${priceRange[0]}-$${priceRange[1]}` });
 
       return labels;
     },
@@ -780,14 +782,13 @@ const AuctionListingsPage = () => {
       <main
         className="flex-1"
         role="main"
-        aria-label="აქტიური აუქციონები"
+        aria-label={t('auction.active_auctions')}
       >
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold">აქტიური აუქციონები</h1>
+            <h1 className="text-3xl font-bold">{t('auction.active_auctions')}</h1>
             <p className="text-muted-foreground">
-              ნახეთ სასაჩვენო ლისტინგები COPART, IAAI და Manheim აუქციონებიდან და გამოიყენეთ სწრაფი
-              ფილტრები თქვენთვის საინტერესო ლოტების საპოვნელად.
+              {t('auction.description')}
             </p>
           </div>
           <Card>
@@ -795,11 +796,11 @@ const AuctionListingsPage = () => {
               {/* Hero search: type + query + actions */}
               <section
                 role="search"
-                aria-label="ძირითადი ძებნა"
+                aria-label={t('auction.basic_search')}
                 className="flex flex-col gap-2 md:flex-row md:items-end md:gap-3"
               >
                 <div className="space-y-1 w-full md:w-40">
-                  <span className="text-xs text-muted-foreground">რა სახის ტრანსპორტი?</span>
+                  <span className="text-xs text-muted-foreground">{t('auction.transport_type')}</span>
                   <Select
                     value={searchKind}
                     onValueChange={(value) => {
@@ -813,23 +814,23 @@ const AuctionListingsPage = () => {
                     <SelectTrigger className="h-9">
                       <div className="flex items-center gap-1">
                         <Icon icon="mdi:car" className="h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder="ყველა" />
+                        <SelectValue placeholder={t('common.all')} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
-                      <SelectItem value="car">მანქანები</SelectItem>
-                      <SelectItem value="moto">მოტოციკლები</SelectItem>
-                      <SelectItem value="van">მიკროავტობუსები</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
+                      <SelectItem value="car">{t('common.cars')}</SelectItem>
+                      <SelectItem value="moto">{t('common.motorcycles')}</SelectItem>
+                      <SelectItem value="van">{t('common.vans')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1 flex-1">
-                  <span className="text-xs text-muted-foreground">ძებნა (მარკა, მოდელი ან VIN)</span>
+                  <span className="text-xs text-muted-foreground">{t('auction.search_placeholder_label')}</span>
                   <div className="flex items-center gap-2">
                     <Input
-                      placeholder="მაგ: BMW X5, Camry 2018, JTMBFREV7JD123456"
+                      placeholder={t('auction.search_placeholder')}
                       value={searchQuery}
                       onChange={(event) => {
                         const value = event.target.value;
@@ -844,7 +845,7 @@ const AuctionListingsPage = () => {
                         if (event.key === 'Enter') {
                           const trimmed = searchQuery.trim();
                           if (trimmed.length > 0 && trimmed.length < 4) {
-                            setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                            setSearchValidationError(t('auction.search_min_chars'));
                             return;
                           }
 
@@ -860,7 +861,7 @@ const AuctionListingsPage = () => {
                       variant="outline"
                       size="icon"
                       className="h-9 w-9"
-                      aria-label="დამატებითი ფილტრები"
+                      aria-label={t('auction.more_filters')}
                       onClick={() => setIsAdvancedFiltersOpen(true)}
                     >
                       <Icon icon="mdi:tune" className="h-4 w-4" />
@@ -880,7 +881,7 @@ const AuctionListingsPage = () => {
                       onClick={() => {
                         const trimmed = searchQuery.trim();
                         if (trimmed.length > 0 && trimmed.length < 4) {
-                          setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                          setSearchValidationError(t('auction.search_min_chars'));
                           return;
                         }
 
@@ -889,7 +890,7 @@ const AuctionListingsPage = () => {
                         updateUrlFromState({ page: 1, replace: false });
                       }}
                     >
-                      ძებნა
+                      {t('common.search')}
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -897,7 +898,7 @@ const AuctionListingsPage = () => {
                           type="button"
                           size="sm"
                           className="bg-orange-500 hover:bg-orange-600 text-white border-l border-orange-600 rounded-l-none px-2"
-                          aria-label="ფილტრები"
+                          aria-label={t('common.filters')}
                         >
                           <Icon icon="mdi:chevron-down" className="h-4 w-4" />
                         </Button>
@@ -931,7 +932,7 @@ const AuctionListingsPage = () => {
                           }}
                         >
                           <Icon icon="mdi:filter-remove" className="mr-2 h-4 w-4" />
-                          ფილტრების განულება
+                          {t('common.reset_filters')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -941,11 +942,11 @@ const AuctionListingsPage = () => {
 
               {/* Quick filters row: make/model, year, price, auction, fuel, VIN, Buy now */}
               <section
-                aria-label="სწრაფი ფილტრები"
+                aria-label={t('auction.quick_filters')}
                 className="flex flex-wrap items-center gap-1 text-xs"
               >
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">მარკა</span>
+                  <span className="text-xs text-muted-foreground">{t('common.make')}</span>
                   <Select
                     value={selectedMakeId}
                     onValueChange={(value) => {
@@ -958,11 +959,11 @@ const AuctionListingsPage = () => {
                     <SelectTrigger className="h-8">
                       <div className="flex items-center gap-1">
                         <Icon icon="mdi:car-info" className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue placeholder="აირჩიეთ მარკა" />
+                        <SelectValue placeholder={t('common.select_make')} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
                       {catalogMakes.map((make) => (
                         <SelectItem key={make.makeId} value={String(make.makeId)}>
                           {make.name}
@@ -973,7 +974,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">მოდელი</span>
+                  <span className="text-xs text-muted-foreground">{t('common.model')}</span>
                   <Select
                     value={selectedModelId}
                     onValueChange={(value) => setSelectedModelId(value)}
@@ -984,13 +985,13 @@ const AuctionListingsPage = () => {
                         <Icon icon="mdi:car-info" className="h-3.5 w-3.5 text-muted-foreground" />
                         <SelectValue
                           placeholder={
-                            selectedMakeId !== 'all' ? 'აირჩიეთ მოდელი' : 'ჯერ აირჩიეთ მარკა'
+                            selectedMakeId !== 'all' ? t('common.select_model') : t('common.first_select_make')
                           }
                         />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
                       {catalogModels.map((model) => (
                         <SelectItem key={model.modelId} value={String(model.modelId)}>
                           {model.name}
@@ -1001,7 +1002,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">წელი</span>
+                  <span className="text-xs text-muted-foreground">{t('common.year')}</span>
                   <Select
                     value="all"
                     onValueChange={(value) => {
@@ -1019,11 +1020,11 @@ const AuctionListingsPage = () => {
                     <SelectTrigger className="h-8">
                       <div className="flex items-center gap-1">
                         <Icon icon="mdi:calendar-range" className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue placeholder={`ძ. ${yearRange[0]} - ${yearRange[1]}`} />
+                        <SelectValue placeholder={`${t('common.old')} ${yearRange[0]} - ${yearRange[1]}`} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
                       <SelectItem value="2015+">2015+</SelectItem>
                       <SelectItem value="2018+">2018+</SelectItem>
                       <SelectItem value="2020+">2020+</SelectItem>
@@ -1032,7 +1033,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">ფასი</span>
+                  <span className="text-xs text-muted-foreground">{t('common.price')}</span>
                   <Select
                     value="all"
                     onValueChange={(value) => {
@@ -1054,8 +1055,8 @@ const AuctionListingsPage = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
-                      <SelectItem value="to10000">მდე $10 000</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
+                      <SelectItem value="to10000">{t('common.up_to')} $10 000</SelectItem>
                       <SelectItem value="10-20">$10 000 - $20 000</SelectItem>
                       <SelectItem value="20+">$20 000+</SelectItem>
                     </SelectContent>
@@ -1063,7 +1064,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">აუქციონი</span>
+                  <span className="text-xs text-muted-foreground">{t('common.auction')}</span>
                   <Select
                     value={auctionFilter}
                     onValueChange={(value) => setAuctionFilter(value as AuctionHouse)}
@@ -1071,11 +1072,11 @@ const AuctionListingsPage = () => {
                     <SelectTrigger className="h-8">
                       <div className="flex items-center gap-1">
                         <Icon icon="mdi:gavel" className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue placeholder="ყველა" />
+                        <SelectValue placeholder={t('common.all')} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
                       <SelectItem value="Copart">COPART</SelectItem>
                       <SelectItem value="IAAI">IAAI</SelectItem>
                       <SelectItem value="Manheim">Manheim</SelectItem>
@@ -1084,7 +1085,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">საწვავი</span>
+                  <span className="text-xs text-muted-foreground">{t('common.fuel')}</span>
                   <Select
                     value={fuelType}
                     onValueChange={(value) => setFuelType(value)}
@@ -1092,15 +1093,15 @@ const AuctionListingsPage = () => {
                     <SelectTrigger className="h-8">
                       <div className="flex items-center gap-1">
                         <Icon icon="mdi:gas-station" className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue placeholder="ყველა" />
+                        <SelectValue placeholder={t('common.all')} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">ყველა</SelectItem>
-                      <SelectItem value="gas">ბენზინი</SelectItem>
-                      <SelectItem value="diesel">დიზელი</SelectItem>
-                      <SelectItem value="hybrid">ჰიბრიდი</SelectItem>
-                      <SelectItem value="electric">ელექტრო</SelectItem>
+                      <SelectItem value="all">{t('common.all')}</SelectItem>
+                      <SelectItem value="gas">{t('common.fuel_gas')}</SelectItem>
+                      <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
+                      <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
+                      <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1113,7 +1114,7 @@ const AuctionListingsPage = () => {
                       onCheckedChange={(checked) => setBuyNowOnly(!!checked)}
                     />
                     <label htmlFor="buy-now-only" className="cursor-pointer">
-                      მხოლოდ Buy Now ლოტები
+                      {t('auction.filters.buy_now_only')}
                     </label>
                   </div>
 
@@ -1124,7 +1125,7 @@ const AuctionListingsPage = () => {
                       onCheckedChange={(checked) => setShowVinCodes(!!checked)}
                     />
                     <label htmlFor="vin-only" className="cursor-pointer">
-                      VIN კოდების ჩვენება
+                      {t('auction.filters.show_vin')}
                     </label>
                   </div>
                 </div>
@@ -1133,9 +1134,9 @@ const AuctionListingsPage = () => {
           </Card>
 
           <Sheet open={isAdvancedFiltersOpen} onOpenChange={setIsAdvancedFiltersOpen}>
-            <SheetContent side="right" aria-label="დამატებითი ფილტრები">
+            <SheetContent side="right" aria-label={t('auction.more_filters')}>
               <SheetHeader>
-                <SheetTitle>დამატებითი ფილტრები</SheetTitle>
+                <SheetTitle>{t('auction.more_filters')}</SheetTitle>
               </SheetHeader>
               <motion.div
                 className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 mt-2 text-sm"
@@ -1146,11 +1147,11 @@ const AuctionListingsPage = () => {
               >
                 {/* Company and brand/model filters */}
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">კომპანია / იმპორტიორი</h3>
+                  <h3 className="font-semibold text-sm">{t('auction.company_importer')}</h3>
                   <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">კომპანიით ძიება</span>
+                    <span className="text-xs text-muted-foreground">{t('auction.search_by_company')}</span>
                     <Input
-                      placeholder="მაგ: Premium Auto Import..."
+                      placeholder={t('auction.company_search_placeholder')}
                       value={companySearch}
                       onChange={(event) => {
                         setCompanySearch(event.target.value);
@@ -1188,22 +1189,22 @@ const AuctionListingsPage = () => {
                       onCheckedChange={(checked) => setCompanyVipOnly(!!checked)}
                     />
                     <label htmlFor="company-vip-only" className="text-xs">
-                      მხოლოდ VIP კომპანიები
+                      {t('auction.vip_companies_only')}
                     </label>
                   </div>
 
                   {selectedCompanyId && (
                     <p className="text-[11px] text-muted-foreground">
-                      ნაჩვენებია მხოლოდ ლოტები, სადაც ამ კომპანიის შეთავაზებებია.
+                      {t('auction.vip_companies_hint')}
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">ბრენდი და მოდელი</h3>
+                  <h3 className="font-semibold text-sm">{t('auction.brand_and_model')}</h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">მარკა</span>
+                      <span className="text-xs text-muted-foreground">{t('common.make')}</span>
                       <Select
                         value={selectedMakeId}
                         onValueChange={(value) => {
@@ -1214,10 +1215,10 @@ const AuctionListingsPage = () => {
                         disabled={isLoadingMakes}
                       >
                         <SelectTrigger className="h-9 text-xs">
-                          <SelectValue placeholder="აირჩიეთ მარკა" />
+                          <SelectValue placeholder={t('common.select_make')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
+                          <SelectItem value="all">{t('common.all')}</SelectItem>
                           {catalogMakes.map((make) => (
                             <SelectItem key={make.makeId} value={String(make.makeId)}>
                               {make.name}
@@ -1228,7 +1229,7 @@ const AuctionListingsPage = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">მოდელი</span>
+                      <span className="text-xs text-muted-foreground">{t('common.model')}</span>
                       <Select
                         value={selectedModelId}
                         onValueChange={(value) => setSelectedModelId(value)}
@@ -1237,12 +1238,12 @@ const AuctionListingsPage = () => {
                         <SelectTrigger className="h-9 text-xs">
                           <SelectValue
                             placeholder={
-                              selectedMakeId !== 'all' ? 'აირჩიეთ მოდელი' : 'ჯერ აირჩიეთ მარკა'
+                              selectedMakeId !== 'all' ? t('common.select_model') : t('common.first_select_make')
                             }
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
+                          <SelectItem value="all">{t('common.all')}</SelectItem>
                           {catalogModels.map((model) => (
                             <SelectItem key={model.modelId} value={String(model.modelId)}>
                               {model.name}
@@ -1255,10 +1256,10 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">ინფორმაცია ავტომობილზე</h3>
+                  <h3 className="font-semibold text-sm">{t('auction.filters.vehicle_info_title')}</h3>
                   <div className="space-y-2">
                     <span className="text-xs text-muted-foreground block">
-                      წელი: {yearRange[0]} - {yearRange[1]}
+                      {t('auction.filters.year')}: {yearRange[0]} - {yearRange[1]}
                     </span>
                     <Slider
                       value={yearRange}
@@ -1268,7 +1269,7 @@ const AuctionListingsPage = () => {
                       onValueChange={setYearRange}
                     />
                     <span className="text-xs text-muted-foreground block">
-                      მაქს. გარბენი: {maxMileage[0].toLocaleString()} km
+                      {t('auction.filters.max_mileage')}: {maxMileage[0].toLocaleString()} km
                     </span>
                     <Slider
                       value={maxMileage}
@@ -1277,7 +1278,7 @@ const AuctionListingsPage = () => {
                       step={10000}
                       onValueChange={setMaxMileage}
                     />
-                    <span className="text-xs text-muted-foreground block">ზუსტი წელი / მინ. გარბენი</span>
+                    <span className="text-xs text-muted-foreground block">{t('auction.exact_year_min_mileage')}</span>
                     <div className="grid grid-cols-2 gap-2">
                       <Input
                         type="number"
@@ -1316,7 +1317,7 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">ფასი</h3>
+                  <h3 className="font-semibold text-sm">{t('common.price')}</h3>
                   <span className="text-xs text-muted-foreground block">
                     ${priceRange[0]} - ${priceRange[1]}
                   </span>
@@ -1330,37 +1331,37 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">ტექნიკური მონაცემები</h3>
+                  <h3 className="font-semibold text-sm">{t('auction.technical_data')}</h3>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">საწვავი</span>
+                      <span className="text-xs text-muted-foreground">{t('common.fuel')}</span>
                       <Select
                         value={fuelType}
                         onValueChange={(value) => setFuelType(value)}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
+                          <SelectValue placeholder={t('common.all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
-                          <SelectItem value="gas">ბენზინი</SelectItem>
-                          <SelectItem value="diesel">დიზელი</SelectItem>
-                          <SelectItem value="hybrid">ჰიბრიდი</SelectItem>
-                          <SelectItem value="electric">ელექტრო</SelectItem>
+                          <SelectItem value="all">{t('common.all')}</SelectItem>
+                          <SelectItem value="gas">{t('common.fuel_gas')}</SelectItem>
+                          <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
+                          <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
+                          <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">კატეგორია</span>
+                      <span className="text-xs text-muted-foreground">{t('common.category')}</span>
                       <Select
                         value={category}
                         onValueChange={(value) => setCategory(value)}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
+                          <SelectValue placeholder={t('common.all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
+                          <SelectItem value="all">{t('common.all')}</SelectItem>
                           <SelectItem value="suv">SUV</SelectItem>
                           <SelectItem value="sedan">Sedan</SelectItem>
                           <SelectItem value="coupe">Coupe</SelectItem>
@@ -1370,16 +1371,16 @@ const AuctionListingsPage = () => {
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">წამყვანი</span>
+                      <span className="text-xs text-muted-foreground">{t('common.drive')}</span>
                       <Select
                         value={drive}
                         onValueChange={(value) => setDrive(value)}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ყველა" />
+                          <SelectValue placeholder={t('common.all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">ყველა</SelectItem>
+                          <SelectItem value="all">{t('common.all')}</SelectItem>
                           <SelectItem value="fwd">FWD</SelectItem>
                           <SelectItem value="rwd">RWD</SelectItem>
                           <SelectItem value="4wd">4WD / AWD</SelectItem>
@@ -1387,7 +1388,7 @@ const AuctionListingsPage = () => {
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">რაოდენობა ერთ გვერდზე</span>
+                      <span className="text-xs text-muted-foreground">{t('common.items_per_page')}</span>
                       <Select
                         value={String(limit)}
                         onValueChange={(value) => {
@@ -1442,7 +1443,7 @@ const AuctionListingsPage = () => {
                       updateUrlFromState({ page: 1, limit: 20, replace: false });
                     }}
                   >
-                    ფილტრების განულება
+                    {t('common.reset_filters')}
                   </Button>
                   <Button
                     type="button"
@@ -1450,7 +1451,7 @@ const AuctionListingsPage = () => {
                     onClick={() => {
                       const trimmed = searchQuery.trim();
                       if (trimmed.length > 0 && trimmed.length < 4) {
-                        setSearchValidationError('მინ. 4 სიმბოლო ძიებისთვის');
+                        setSearchValidationError(t('auction.search_min_chars'));
                         return;
                       }
 
@@ -1460,7 +1461,7 @@ const AuctionListingsPage = () => {
                       setIsAdvancedFiltersOpen(false);
                     }}
                   >
-                    გამოყენება
+                    {t('common.apply')}
                   </Button>
                 </div>
               </SheetFooter>
@@ -1473,17 +1474,17 @@ const AuctionListingsPage = () => {
           >
             <div className="flex flex-col gap-0.5">
               <span>
-                {isBackendLoading && 'იტვირთება რეალური აუქციონის მონაცემები...'}
+                {isBackendLoading && t('auction.loading_data')}
                 {!isBackendLoading && backendError && backendError}
                 {!isBackendLoading && !backendError && backendData && (
                   backendData.total > 0
-                    ? `ნაჩვენებია ${filteredBackendItems.length} ლოტი ${backendData.total}-დან (რეალური API)`
-                    : 'ამ ფილტრებით ვერ მოიძებნა მანქანები'
+                    ? t('auction.showing_results', { count: filteredBackendItems.length, total: backendData.total })
+                    : t('auction.no_results')
                 )}
               </span>
               {!isBackendLoading && !backendError && backendData && backendData.total > 0 && (
                 <span className="text-[11px] text-muted-foreground">
-                  ნაპოვნი მანქანები: {backendData.total}
+                  {t('auction.found_cars', { count: backendData.total })}
                 </span>
               )}
             </div>
@@ -1548,22 +1549,22 @@ const AuctionListingsPage = () => {
           {/* Backend-powered results only */}
           <div className="space-y-3 mt-2">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">რეალური შედეგები (Vehicles + Quotes API)</h2>
+              <h2 className="text-sm font-semibold">{t('auction.real_results')}</h2>
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <span className="hidden sm:inline">დალაგება:</span>
+                <span className="hidden sm:inline">{t('common.sort_by')}</span>
                 <Select
                   value={sortBy}
                   onValueChange={(value) => setSortBy(value as SortOption)}
                 >
                   <SelectTrigger className="h-8 w-[150px]">
-                    <SelectValue placeholder="დალაგება" />
+                    <SelectValue placeholder={t('common.sort_by').replace(':', '')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">რელევანტურობით</SelectItem>
-                    <SelectItem value="price-low">ფასი (დაბალი)</SelectItem>
-                    <SelectItem value="price-high">ფასი (მაღალი)</SelectItem>
-                    <SelectItem value="year-new">წელი (ახალი)</SelectItem>
-                    <SelectItem value="year-old">წელი (ძველი)</SelectItem>
+                    <SelectItem value="relevance">{t('sort.relevance')}</SelectItem>
+                    <SelectItem value="price-low">{t('sort.price_low')}</SelectItem>
+                    <SelectItem value="price-high">{t('sort.price_high')}</SelectItem>
+                    <SelectItem value="year-new">{t('sort.year_new')}</SelectItem>
+                    <SelectItem value="year-old">{t('sort.year_old')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -1582,13 +1583,13 @@ const AuctionListingsPage = () => {
                       return;
                     }
                   }}
-                  aria-label="ავტომობილების შედარება ფასებით"
+                  aria-label={t('auction.compare_prices')}
                 >
-                  ფასების შედარება{selectedVehicleIds.length > 0 ? ` (${selectedVehicleIds.length})` : ''}
+                  {t('auction.price_comparison')}{selectedVehicleIds.length > 0 ? ` (${selectedVehicleIds.length})` : ''}
                 </Button>
                 {showCompareCheckboxes && selectedVehicleIds.length === 1 && (
                   <span className="text-[10px] text-orange-600">
-                    მინიმუმ 2 კომპანია აირჩიეთ შესადარებლად
+                    {t('auction.select_companies_to_compare')}
                   </span>
                 )}
               </div>
@@ -1612,7 +1613,7 @@ const AuctionListingsPage = () => {
               <Card className="border-destructive/40 bg-destructive/5 text-xs">
                 <CardContent className="py-3 flex items-center justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-destructive">ვერ მოხერხდა რეალური მონაცემების ჩატვირთვა</span>
+                    <span className="text-destructive">{t('error.failed_to_load_data')}</span>
                     <span className="text-[11px] text-muted-foreground break-words">
                       {backendError}
                     </span>
@@ -1628,7 +1629,7 @@ const AuctionListingsPage = () => {
                         setAppliedFilters({ ...appliedFilters });
                       }}
                     >
-                      თავიდან ცდა
+                      {t('common.retry')}
                     </Button>
                   )}
                 </CardContent>
@@ -1639,9 +1640,9 @@ const AuctionListingsPage = () => {
               <Card className="text-xs">
                 <CardContent className="py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">ამ ფილტრებით ვერ მოიძებნა მანქანები</span>
+                    <span className="font-medium">{t('auction.no_results')}</span>
                     <span className="text-[11px] text-muted-foreground">
-                      სცადეთ ფილტრების განულება ან შეცვლა და კიდევ ერთხელ სცადეთ.
+                      {t('auction.try_resetting')}
                     </span>
                   </div>
                   <Button
@@ -1669,7 +1670,7 @@ const AuctionListingsPage = () => {
                       updateUrlFromState({ page: 1, limit: 20, replace: false })
                     }}
                   >
-                    ფილტრების განულება
+                    {t('common.reset_filters')}
                   </Button>
                 </CardContent>
               </Card>
@@ -1679,7 +1680,7 @@ const AuctionListingsPage = () => {
               <>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>
-                    გვერდი {appliedPage} / {backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit))}
+                    {t('common.page')} {appliedPage} / {backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit))}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1696,7 +1697,7 @@ const AuctionListingsPage = () => {
                         updateUrlFromState({ page: nextPage, replace: false });
                       }}
                     >
-                      წინა
+                      {t('common.prev')}
                     </Button>
                     <Button
                       type="button"
@@ -1719,13 +1720,13 @@ const AuctionListingsPage = () => {
                         updateUrlFromState({ page: nextPage, replace: false });
                       }}
                     >
-                      შემდეგი
+                      {t('common.next')}
                     </Button>
                   </div>
                 </div>
                 <div
                   className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-                  aria-label="რეალური ლოტების შედეგები"
+                  aria-label={t('auction.real_lot_results')}
                 >
                   {filteredBackendItems.map((item) => {
                     const vehicleKey = item.vehicle_id ?? item.id;
@@ -1768,9 +1769,9 @@ const AuctionListingsPage = () => {
                                 className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white z-10"
                                 onClick={(event) => event.stopPropagation()}
                               >
-                                <span>შედარებისთვის არჩევა</span>
+                                <span>{t('auction.select_for_comparison')}</span>
                                 <Checkbox
-                                  aria-label="აირჩიეთ მანქანა შედარებისთვის"
+                                  aria-label={t('auction.select_vehicle_compare')}
                                   checked={isSelected}
                                   onCheckedChange={(checked) => {
                                     setSelectedVehicleIds((prev) => {
@@ -1828,11 +1829,11 @@ const AuctionListingsPage = () => {
                           <div className="space-y-2 mb-3">
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                               <div>
-                                <span className="block text-[10px] text-muted-foreground">გარბენი</span>
+                                <span className="block text-[10px] text-muted-foreground">{t('common.mileage')}</span>
                                 <span>{item.mileage ? item.mileage.toLocaleString() : 'N/A'} km</span>
                               </div>
                               <div>
-                                <span className="block text-[10px] text-muted-foreground">დისტანცია</span>
+                                <span className="block text-[10px] text-muted-foreground">{t('common.distance')}</span>
                                 <span>
                                   {item.distance_miles != null
                                     ? item.distance_miles.toLocaleString()
@@ -1857,7 +1858,7 @@ const AuctionListingsPage = () => {
                                 variant="outline"
                                 size="icon"
                                 className="h-7 w-7"
-                                aria-label="ღირებულების გათვლა"
+                                aria-label={t('auction.calculate_cost')}
                                 onClick={() => {
                                   const vehicleKey = item.vehicle_id ?? item.id;
                                   calculateQuotes(vehicleKey).then(() => {
@@ -1872,7 +1873,7 @@ const AuctionListingsPage = () => {
                                 variant="outline"
                                 size="icon"
                                 className="h-7 w-7"
-                                aria-label="დეტალურად ნახვა"
+                                aria-label={t('common.view_details')}
                                 onClick={() => {
                                   const vehicleKey = item.vehicle_id ?? item.id;
                                   const companyName = getSelectedCompanyNameForLink();
@@ -1910,7 +1911,7 @@ const AuctionListingsPage = () => {
                 onClick={() => setIsCompareOpen(false)}
                 role="dialog"
                 aria-modal="true"
-                aria-label="შერჩეული მანქანების ფასების შედარება"
+                aria-label={t('auction.compare_selected_prices')}
               >
                 <div className="fixed inset-0 px-2 sm:px-4 py-4 sm:py-8 overflow-y-auto pointer-events-none">
                   <motion.div
@@ -1924,14 +1925,14 @@ const AuctionListingsPage = () => {
                     <div className="flex items-center justify-between px-4 py-2 border-b">
                       <div className="flex flex-col gap-0.5 text-[11px]">
                         <div className="font-medium text-sm truncate">
-                          შერჩეული მანქანების ფასების შედარება
+                          {t('auction.compare_selected_prices')}
                         </div>
                         <div className="text-muted-foreground">
-                          ნახეთ ყველაზე მომგებიანი სრული ფასები და მიწოდების დრო რამდენიმე მანქანისთვის ერთად.
+                          {t('auction.compare_description')}
                         </div>
                         {compareResult && compareResult.vehicles.length > 0 && (
                           <div className="text-muted-foreground">
-                            შედარებაში: {compareResult.vehicles.length} მანქანა
+                            {t('auction.comparing_count', { count: compareResult.vehicles.length })}
                           </div>
                         )}
                       </div>
@@ -1946,7 +1947,7 @@ const AuctionListingsPage = () => {
                           variant="outline"
                           className="h-7 w-7 text-[11px] transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground"
                           onClick={() => setIsCompareOpen(false)}
-                          aria-label="დახურვა"
+                          aria-label={t('common.close')}
                         >
                           <motion.div
                             animate={{ rotate: 0 }}
@@ -1978,15 +1979,15 @@ const AuctionListingsPage = () => {
 
                       {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length === 0 && (
                         <p className="text-[11px] text-muted-foreground">
-                          შერჩეული მანქანებისთვის შეთავაზებები ვერ მოიძებნა.
+                          {t('auction.no_quotes_found')}
                         </p>
                       )}
 
                       {!isCompareLoading && !compareError && compareResult && compareResult.vehicles.length > 0 && (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>ვალუტა: {compareResult.currency}</span>
-                            <span>შედარებაში: {compareResult.vehicles.length} მანქანა</span>
+                            <span>{t('common.currency')}: {compareResult.currency}</span>
+                            <span>{t('auction.comparing_count', { count: compareResult.vehicles.length })}</span>
                           </div>
                           <div
                             className={
@@ -2053,14 +2054,14 @@ const AuctionListingsPage = () => {
                                       <div className="p-2 rounded-md border bg-muted/40 flex items-center justify-between gap-2">
                                         <div className="space-y-0.5">
                                           <div className="text-[11px] text-muted-foreground">
-                                            ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
+                                            {t('auction.service_price_only')}
                                           </div>
                                           <div className="text-base font-semibold text-emerald-600">
                                             {formatMoney(getCompanyOnlyPrice(bestQuote) ?? bestQuote.total_price, compareResult.currency) ?? '—'}
                                           </div>
                                           {bestQuote.delivery_time_days != null && (
                                             <div className="text-[11px] text-muted-foreground">
-                                              მიწოდების მიახლოებითი დრო: {bestQuote.delivery_time_days} დღე
+                                              {t('auction.delivery_time', { days: bestQuote.delivery_time_days })}
                                             </div>
                                           )}
                                         </div>
@@ -2073,7 +2074,7 @@ const AuctionListingsPage = () => {
                                     <div
                                       className="space-y-1.5"
                                       role="list"
-                                      aria-label="კომპანიების შეთავაზებები ამ მანქანისთვის"
+                                      aria-label={t('auction.company_quotes')}
                                     >
                                       {sortedQuotes.slice(0, 3).map((quote) => {
                                         const companyOnly = getCompanyOnlyPrice(quote);
@@ -2091,11 +2092,11 @@ const AuctionListingsPage = () => {
                                                   {quote.company_name}
                                                 </div>
                                                 <div className="text-[11px] text-muted-foreground">
-                                                  ფასი მხოლოდ კომპანიის მომსახურებისთვის (მანქანის ფასის გარეშე)
+                                                  {t('auction.service_price_only')}
                                                 </div>
                                                 {quote.delivery_time_days != null && (
                                                   <div className="text-[11px] text-muted-foreground">
-                                                    მიწოდების დრო: {quote.delivery_time_days} დღე
+                                                    {t('auction.delivery_time_short', { days: quote.delivery_time_days })}
                                                   </div>
                                                 )}
                                               </div>
@@ -2105,7 +2106,7 @@ const AuctionListingsPage = () => {
                                                   variant="outline"
                                                   size="icon"
                                                   className="h-7 w-7"
-                                                  aria-label="კალკულაცია"
+                                                  aria-label={t('auction.calculation')}
                                                   onClick={() => {
                                                     setExpandedQuoteKey((prev) => (prev === quoteKey ? null : quoteKey));
                                                   }}
@@ -2127,7 +2128,7 @@ const AuctionListingsPage = () => {
                                                 className="mt-1.5 border-t pt-1.5 text-[11px] text-muted-foreground space-y-0.5"
                                               >
                                                 <div className="flex items-center justify-between gap-2">
-                                                  <span>მანქანის ფასი აუქციონზე</span>
+                                                  <span>{t('auction.car_price')}</span>
                                                   <span>
                                                     {formatMoney(
                                                       quote.breakdown?.calc_price ?? 0,
@@ -2136,7 +2137,7 @@ const AuctionListingsPage = () => {
                                                   </span>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-2">
-                                                  <span>ტრანსპორტირება / მიწოდება</span>
+                                                  <span>{t('auction.transportation')}</span>
                                                   <span>
                                                     {formatMoney(
                                                       (quote.breakdown?.base_price ?? 0) +
@@ -2146,7 +2147,7 @@ const AuctionListingsPage = () => {
                                                   </span>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-2">
-                                                  <span>კომპანიის მომსახურება (service + broker)</span>
+                                                  <span>{t('auction.company_service')}</span>
                                                   <span>
                                                     {formatMoney(
                                                       (quote.breakdown?.service_fee ?? 0) +
@@ -2156,7 +2157,7 @@ const AuctionListingsPage = () => {
                                                   </span>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-2">
-                                                  <span>საბაჟო + დაზღვევა</span>
+                                                  <span>{t('auction.customs_insurance')}</span>
                                                   <span>
                                                     {formatMoney(
                                                       (quote.breakdown?.customs_fee ?? 0) +
@@ -2167,7 +2168,7 @@ const AuctionListingsPage = () => {
                                                 </div>
 
                                                 <div className="mt-1.5 pt-1.5 border-t flex items-center justify-between gap-2 font-semibold text-foreground">
-                                                  <span>სრული ფასი (მანქანა + მიწოდება + მომსახურება)</span>
+                                                  <span>{t('auction.total_price')}</span>
                                                   <span>
                                                     {formatMoney(
                                                       quote.breakdown?.total_price ?? quote.total_price,
@@ -2206,7 +2207,7 @@ const AuctionListingsPage = () => {
                 onClick={() => setIsCalcModalOpen(false)}
                 role="dialog"
                 aria-modal="true"
-                aria-label="მანქანის კალკულაცია ერთი კომპანიისთვის"
+                aria-label={t('auction.calc_modal_title')}
               >
                 <motion.div
                   className="fixed left-1/2 top-1/2 z-[55] w-[calc(100%-1.5rem)] max-w-xl max-h-[85vh] -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-lg overflow-y-auto flex flex-col"
@@ -2218,9 +2219,9 @@ const AuctionListingsPage = () => {
                 >
                   <div className="flex items-center justify-between px-4 py-2 border-b">
                     <div className="flex flex-col gap-0.5 text-[11px]">
-                      <div className="font-medium text-sm truncate">კალკულაცია ერთი კომპანიისთვის</div>
+                      <div className="font-medium text-sm truncate">{t('auction.calc_modal_title')}</div>
                       <div className="text-muted-foreground">
-                        ნახეთ ერთი შემთხვევითი კომპანიის სრული საკურიერო ფასის მაგალითი ამ ლოტისთვის.
+                        {t('auction.calc_modal_desc')}
                       </div>
                     </div>
                     <Button
@@ -2229,7 +2230,7 @@ const AuctionListingsPage = () => {
                       variant="outline"
                       className="h-7 w-7 text-[11px]"
                       onClick={() => setIsCalcModalOpen(false)}
-                      aria-label="დახურვა"
+                      aria-label={t('common.close')}
                     >
                       <Icon icon="mdi:close" className="h-3 w-3" />
                     </Button>
@@ -2265,17 +2266,17 @@ const AuctionListingsPage = () => {
                         <CardContent className="pt-2 space-y-2 text-[11px]">
                           <div className="flex items-center justify-between gap-2">
                             <div className="space-y-0.5">
-                              <div className="text-muted-foreground">კომპანია</div>
+                              <div className="text-muted-foreground">{t('common.company')}</div>
                               <div className="text-sm font-semibold">{randomCalcQuote.company_name}</div>
                             </div>
                             <div className="text-right space-y-0.5">
-                              <div className="text-muted-foreground">სრული ფასი</div>
+                              <div className="text-muted-foreground">{t('auction.total_price')}</div>
                               <div className="text-base font-bold text-emerald-600">
                                 {formatMoney(randomCalcQuote.total_price, 'USD') ?? '—'}
                               </div>
                               {randomCalcQuote.delivery_time_days != null && (
                                 <div className="text-[11px] text-muted-foreground">
-                                  მიწოდების დრო: {randomCalcQuote.delivery_time_days} დღე
+                                  {t('auction.delivery_time_short', { days: randomCalcQuote.delivery_time_days })}
                                 </div>
                               )}
                             </div>
@@ -2283,31 +2284,31 @@ const AuctionListingsPage = () => {
 
                           <div className="mt-2 border-t pt-2 space-y-1.5 text-[11px] text-muted-foreground">
                             <div className="flex items-center justify-between">
-                              <span>მანქანის ფასი აუქციონზე</span>
+                              <span>{t('auction.car_price')}</span>
                               <span>
                                 {formatMoney(randomCalcQuote.breakdown?.calc_price ?? 0, 'USD') ?? '—'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span>მიწოდება და ლოჯისტიკა</span>
+                              <span>{t('auction.transportation')}</span>
                               <span>
                                 {formatMoney(randomCalcQuote.breakdown?.shipping_total ?? 0, 'USD') ?? '—'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span>სერვისის საფასური</span>
+                              <span>{t('auction.company_service')}</span>
                               <span>
                                 {formatMoney(randomCalcQuote.breakdown?.service_fee ?? 0, 'USD') ?? '—'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span>ზღვრული დაზღვევა</span>
+                              <span>{t('auction.customs_insurance')}</span>
                               <span>
                                 {formatMoney(randomCalcQuote.breakdown?.insurance_fee ?? 0, 'USD') ?? '—'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between font-semibold text-foreground border-t pt-1.5 mt-1">
-                              <span>ჯამური ფასი</span>
+                              <span>{t('auction.total_price')}</span>
                               <span>
                                 {formatMoney(
                                   randomCalcQuote.breakdown?.total_price ?? randomCalcQuote.total_price,
@@ -2357,7 +2358,7 @@ const AuctionListingsPage = () => {
                       variant="outline"
                       className="h-7 w-7 text-[11px]"
                       onClick={() => setBackendGallery(null)}
-                      aria-label="დახურვა"
+                      aria-label={t('common.close')}
                     >
                       <Icon icon="mdi:close" className="h-3 w-3" />
                     </Button>
@@ -2399,7 +2400,7 @@ const AuctionListingsPage = () => {
                       <div className="space-y-1">
                         {backendGallery.bestTotalPrice != null && (
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">საუკეთესო სრული ფასი</span>
+                            <span className="text-muted-foreground">{t('auction.best_total_price')}</span>
                             <span className="font-semibold text-sm">
                               ${backendGallery.bestTotalPrice.toLocaleString()}
                             </span>
@@ -2407,7 +2408,7 @@ const AuctionListingsPage = () => {
                         )}
                         {backendGallery.distanceMiles != null && (
                           <div className="flex items-center justify-between text-muted-foreground">
-                            <span>დისტანცია ფოთამდე</span>
+                            <span>{t('auction.distance_to_poti')}</span>
                             <span className="font-medium text-foreground">
                               {backendGallery.distanceMiles.toLocaleString()} mi
                             </span>
@@ -2437,7 +2438,7 @@ const AuctionListingsPage = () => {
                               );
                             }}
                           >
-                            ღირებულების გათვლა
+                            {t('auction.calculate_cost')}
                           </Button>
                           <Button
                             type="button"
@@ -2456,7 +2457,7 @@ const AuctionListingsPage = () => {
                               });
                             }}
                           >
-                            დეტალურად ნახვა
+                            {t('common.view_details')}
                           </Button>
                         </div>
                       </div>
@@ -2507,12 +2508,12 @@ const AuctionListingsPage = () => {
                         });
                         setCompareResult(response);
                       } catch (error: any) {
-                        setCompareError(error?.message || 'შედარების ჩატვირთვა ვერ მოხერხდა');
+                        setCompareError(error?.message || t('error.failed_to_load_data'));
                       } finally {
                         setIsCompareLoading(false);
                       }
                     }}
-                    aria-label={isCompareOpen ? 'შედარების დახურვა' : 'შედარების ფანჯრის გახსნა'}
+                    aria-label={isCompareOpen ? t('common.close') : t('auction.price_comparison')}
                   >
                     <AnimatePresence mode="wait">
                       {isCompareOpen ? (
@@ -2525,7 +2526,7 @@ const AuctionListingsPage = () => {
                           className="flex items-center"
                         >
                           <Icon icon="mdi:close" className="h-5 w-5 mr-2" />
-                          გაუქმება
+                          {t('common.cancel')}
                         </motion.div>
                       ) : (
                         <motion.div
@@ -2537,7 +2538,7 @@ const AuctionListingsPage = () => {
                           className="flex items-center"
                         >
                           <Icon icon="mdi:compare" className="h-5 w-5 mr-2" />
-                          შედარება ({selectedVehicleIds.length})
+                          {t('auction.price_comparison')} ({selectedVehicleIds.length})
                         </motion.div>
                       )}
                     </AnimatePresence>
