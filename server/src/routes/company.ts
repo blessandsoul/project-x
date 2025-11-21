@@ -356,10 +356,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const uploadsRoot = path.join(process.cwd(), 'uploads', 'companies', safeSlug, 'logos');
     await fs.mkdir(uploadsRoot, { recursive: true });
 
-    const originalFilename = `logo-original.${ext}`;
+    const originalFilename = `${safeSlug}-original.${ext}`;
     const originalFilePath = path.join(uploadsRoot, originalFilename);
 
-    const resizedFilename = `logo.${ext}`;
+    const resizedFilename = `${safeSlug}.${ext}`;
     const resizedFilePath = path.join(uploadsRoot, resizedFilename);
 
     const originalBuffer = await file.toBuffer();

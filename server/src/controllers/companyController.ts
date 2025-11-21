@@ -89,8 +89,15 @@ export class CompanyController {
       return { logo_url: null, original_logo_url: null };
     }
 
-    const logoFile = files.find((f) => f.startsWith('logo.')) || null;
-    const originalFile = files.find((f) => f.startsWith('logo-original.')) || null;
+    let logoFile = files.find((f) => f.startsWith(`${safeSlug}.`)) || null;
+    if (!logoFile) {
+      logoFile = files.find((f) => f.startsWith('logo.')) || null;
+    }
+
+    let originalFile = files.find((f) => f.startsWith(`${safeSlug}-original.`)) || null;
+    if (!originalFile) {
+      originalFile = files.find((f) => f.startsWith('logo-original.')) || null;
+    }
 
     const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
 
