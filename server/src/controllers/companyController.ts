@@ -67,7 +67,7 @@ export class CompanyController {
     this.fxRateService = new FxRateService(fastify);
   }
 
-  private async computeLogoUrl(slug: string): Promise<string | null> {
+  private async computeLogoUrls(slug: string): Promise<{ logo_url: string | null; original_logo_url: string | null }> {
     const safeSlug = slug
       .toLowerCase()
       .trim()
@@ -86,22 +86,27 @@ export class CompanyController {
     try {
       files = await fs.readdir(uploadsRoot);
     } catch {
-      return null;
+      return { logo_url: null, original_logo_url: null };
     }
 
-    const logoFile = files.find((f) => f.startsWith('logo.'));
-    if (!logoFile) {
-      return null;
-    }
+    const logoFile = files.find((f) => f.startsWith('logo.')) || null;
+    const originalFile = files.find((f) => f.startsWith('logo-original.')) || null;
 
-    const publicPath = `/uploads/companies/${safeSlug}/logos/${logoFile}`;
     const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
 
-    if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
-      return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
-    }
+    const buildUrl = (file: string | null): string | null => {
+      if (!file) return null;
+      const publicPath = `/uploads/companies/${safeSlug}/logos/${file}`;
+      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
+        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
+      }
+      return publicPath;
+    };
 
-    return publicPath;
+    return {
+      logo_url: buildUrl(logoFile),
+      original_logo_url: buildUrl(originalFile),
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -112,7 +117,7 @@ export class CompanyController {
     return this.companyModel.create(data);
   }
 
-  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number; logo_url: string | null }> {
+  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number; logo_url: string | null; original_logo_url: string | null }> {
     const withRelations = await this.companyModel.getWithRelations(id);
     if (!withRelations) {
       throw new NotFoundError('Company');
@@ -121,7 +126,7 @@ export class CompanyController {
     const { social_links, quotes: _quotes, ...company } = withRelations;
     const agg = await this.companyReviewModel.getAggregatedRating(id);
 
-    const logo_url = await this.computeLogoUrl(company.slug);
+    const { logo_url, original_logo_url } = await this.computeLogoUrls(company.slug);
 
     return {
       ...(company as Company),
@@ -131,10 +136,11 @@ export class CompanyController {
       // aggregation so the frontend can show "X reviews".
       reviewCount: agg.count,
       logo_url,
+      original_logo_url,
     };
   }
 
-  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number; logo_url: string | null }>> {
+  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number; logo_url: string | null; original_logo_url: string | null }>> {
     const companies = await this.companyModel.findAll(limit, offset);
     if (!companies.length) {
       return [];
@@ -142,14 +148,15 @@ export class CompanyController {
 
     const ids = companies.map((c) => c.id);
     const counts = await this.companyReviewModel.countByCompanyIds(ids);
-    const logoUrls = await Promise.all(
-      companies.map((c) => this.computeLogoUrl(c.slug)),
+    const logoMeta = await Promise.all(
+      companies.map((c) => this.computeLogoUrls(c.slug)),
     );
 
     return companies.map((c, index) => ({
       ...c,
       reviewCount: counts[c.id] ?? 0,
-      logo_url: logoUrls[index] ?? null,
+      logo_url: logoMeta[index]?.logo_url ?? null,
+      original_logo_url: logoMeta[index]?.original_logo_url ?? null,
     }));
   }
 
@@ -167,7 +174,7 @@ export class CompanyController {
     search?: string | undefined;
     orderBy?: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
     orderDirection?: 'asc' | 'desc' | undefined;
-  }): Promise<{ items: Array<Company & { reviewCount: number; logo_url: string | null }>; total: number; limit: number; offset: number }> {
+  }): Promise<{ items: Array<Company & { reviewCount: number; logo_url: string | null; original_logo_url: string | null }>; total: number; limit: number; offset: number }> {
     const {
       limit = 20,
       offset = 0,
@@ -209,14 +216,15 @@ export class CompanyController {
 
     const ids = items.map((c) => c.id);
     const counts = await this.companyReviewModel.countByCompanyIds(ids);
-    const logoUrls = await Promise.all(
-      items.map((c) => this.computeLogoUrl(c.slug)),
+    const logoMeta = await Promise.all(
+      items.map((c) => this.computeLogoUrls(c.slug)),
     );
 
     const withCounts = items.map((c, index) => ({
       ...c,
       reviewCount: counts[c.id] ?? 0,
-      logo_url: logoUrls[index] ?? null,
+      logo_url: logoMeta[index]?.logo_url ?? null,
+      original_logo_url: logoMeta[index]?.original_logo_url ?? null,
     }));
 
     return { items: withCounts, total, limit: safeLimit, offset: safeOffset };
