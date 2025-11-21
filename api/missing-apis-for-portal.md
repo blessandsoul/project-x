@@ -18,7 +18,7 @@
 
 **Сейчас**
 
-- Фронтенд использует `mockNavigationItems` из `client/src/mocks/_mockData.js` (Header на всех страницах).
+- Фронтенд использует конфигурацию из `client/src/config/navigation.ts` (ранее `mockNavigationItems` из `client/src/mocks/_mockData.js`) для Header на всех страницах.
 
 **Задача**
 
@@ -127,7 +127,7 @@
 
 **Сейчас**
 
-- `mockFooterLinks` в `_mockData.js` используются в `Footer` на всех страницах.
+- `footerLinks` из `client/src/config/navigation.ts` (ранее `mockFooterLinks` в `_mockData.js`) используются в `Footer` на всех страницах.
 
 **Задача**
 

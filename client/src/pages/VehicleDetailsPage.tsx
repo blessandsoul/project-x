@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import * as mockData from '@/mocks/_mockData'
+import { navigationItems, footerLinks } from '@/config/navigation'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,7 +22,7 @@ type QuoteWithVipMeta = { quote: VehicleQuote; index: number; vipLabel: string |
 const LEAD_STATE_STORAGE_PREFIX = 'vehicle_lead_state_'
 
 const VehicleDetailsPage = () => {
-  const { mockCompanies, mockFooterLinks, mockNavigationItems, mockRecentCases } = mockData as any
+  const { mockCompanies, mockRecentCases } = { mockCompanies: [], mockRecentCases: [] }
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated } = useAuth()
@@ -752,7 +752,7 @@ const VehicleDetailsPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header
         user={null}
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
       <main className="flex-1" role="main" aria-label="ავტომობილის დეტალები">
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8">
@@ -2304,7 +2304,7 @@ const VehicleDetailsPage = () => {
           </div>
         </div>
       </main>
-      <Footer footerLinks={mockFooterLinks} />
+      <Footer footerLinks={footerLinks} />
 
       <AnimatePresence>
         {sortedQuotes.length > 0 && selectedCompanyNames.length > 0 && (

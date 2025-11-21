@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import { CompanyTile } from '@/components/dashboard/CompanyTile'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 import { mockCars } from '@/mocks/_mockData'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 import type { UserLeadOffer } from '@/api/userLeads'
 
 type ActivityStats = {
@@ -84,6 +85,7 @@ export function UserDashboardSections({
   onClearRecentlyViewed,
   getSectionMotionProps,
 }: UserDashboardSectionsProps) {
+  const { t } = useTranslation()
   type CompanySortMode = 'default' | 'rating' | 'city'
 
   const [sortMode, setSortMode] = useState<CompanySortMode>('rating')
@@ -109,15 +111,15 @@ export function UserDashboardSections({
   const getOfferStatusLabel = (status: string): string => {
     switch (status) {
       case 'SELECTED':
-        return 'არჩეული შეთავაზება'
+        return t('dashboard.user.offers.status.selected')
       case 'PENDING':
-        return 'მიმდინარე შეთავაზება'
+        return t('dashboard.user.offers.status.pending')
       case 'REJECTED':
-        return 'უარყოფილი შეთავაზება'
+        return t('dashboard.user.offers.status.rejected')
       case 'EXPIRED':
-        return 'ვადაგასული შეთავაზება'
+        return t('dashboard.user.offers.status.expired')
       case 'ACCEPTED':
-        return 'დადასტურებული შეთავაზება'
+        return t('dashboard.user.offers.status.accepted')
       default:
         return status
     }
@@ -140,7 +142,7 @@ export function UserDashboardSections({
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Icon icon="mdi:clipboard-text-clock" className="h-5 w-5" />
-              გახსნილი მოთხოვნები / ფასის კოტაციები
+              {t('dashboard.user.quotes.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -154,7 +156,7 @@ export function UserDashboardSections({
               <p className="text-sm text-red-500">{userLeadOffersError}</p>
             ) : !hasUserLeadOffers ? (
               <p className="text-sm text-muted-foreground">
-                ამ ეტაპზე არ გაქვთ გახსნილი მოთხოვნები. დაიწყეთ თანამშრომლობა კომპანიის გვერდიდან.
+                {t('dashboard.user.quotes.empty')}
               </p>
             ) : (
               <div className="space-y-2">
@@ -167,7 +169,7 @@ export function UserDashboardSections({
                   return (
                     <motion.div
                       key={offer.offerId}
-                      className="flex w-full cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      className="flex w-full cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2 text-start text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                       whileHover={{ y: -2 }}
                       transition={{ duration: 0.4, ease: 'easeOut' }}
                       onClick={() => {
@@ -191,22 +193,22 @@ export function UserDashboardSections({
                         <div className="flex flex-col">
                           <span className="font-medium line-clamp-1">{offer.companyName}</span>
                           <span className="text-xs text-muted-foreground line-clamp-1">
-                            რეიტინგი: {offer.companyRating}{' '}
+                            {t('dashboard.user.quotes.rating')}: {offer.companyRating}{' '}
                             {typeof offer.companyCompletedDeals === 'number'
-                              ? `• გარიგებები: ${offer.companyCompletedDeals}`
+                              ? `• ${t('dashboard.user.quotes.deals')}: ${offer.companyCompletedDeals}`
                               : null}
                           </span>
                           <span className="text-xs text-muted-foreground line-clamp-1">
-                            ჯამური ბიუჯეტი:{' '}
+                            {t('dashboard.user.quotes.budget')}:{' '}
                             {Number.isFinite(estimatedMin) && Number.isFinite(estimatedMax)
                               ? `$${estimatedMin.toLocaleString()} - $${estimatedMax.toLocaleString()}`
                               : 'n/a'}
                             {Number.isFinite(serviceFee)
-                              ? ` • სერვის-ფი: $${serviceFee.toLocaleString()}`
+                              ? ` • ${t('dashboard.user.quotes.service_fee')}: $${serviceFee.toLocaleString()}`
                               : ''}
                           </span>
                           <span className="text-xs text-muted-foreground line-clamp-1">
-                            სავარაუდო ვადა: {offer.estimatedDurationDays} დღე
+                            {t('dashboard.user.quotes.duration', { count: offer.estimatedDurationDays })}
                           </span>
                           {offer.comment && (
                             <span className="text-xs text-muted-foreground line-clamp-2">
@@ -220,7 +222,7 @@ export function UserDashboardSections({
                           className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
                           data-status={offer.status}
                         >
-                          <span className="mr-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span className="me-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
                           {getOfferStatusLabel(offer.status)}
                         </span>
                         <div className="flex flex-wrap items-center justify-end gap-1">
@@ -235,7 +237,7 @@ export function UserDashboardSections({
                             }}
                           >
                             <Icon icon="mdi:message-text-outline" className="h-3 w-3" />
-                            დიალოგის ნახვა
+                            {t('dashboard.user.quotes.view_dialog')}
                           </Button>
                           <Button
                             size="sm"
@@ -259,7 +261,7 @@ export function UserDashboardSections({
                             }}
                           >
                             <Icon icon="mdi:compare-horizontal" className="h-3 w-3" />
-                            {compareIndices.includes(index) ? 'შედარებიდან ამოღება' : 'შედარება'}
+                            {compareIndices.includes(index) ? t('dashboard.user.quotes.remove_compare') : t('dashboard.user.quotes.compare')}
                           </Button>
                         </div>
                       </div>
@@ -281,7 +283,7 @@ export function UserDashboardSections({
             onClick={() => setIsCompareDialogOpen(true)}
           >
             <Icon icon="mdi:compare-horizontal" className="h-3 w-3" />
-            შეთავაზებების შედარება ({selectedCompareOffers.length}/3)
+            {t('dashboard.user.quotes.compare_selected', { count: selectedCompareOffers.length })}
           </Button>
         </div>
       )}
@@ -294,7 +296,7 @@ export function UserDashboardSections({
                 {activeDialogOffer.companyName}
               </DialogTitle>
               <DialogDescription>
-                დეტალური ინფორმაცია კომპანიის შეთავაზებაზე და პირობებზე.
+                {t('dashboard.user.quotes.dialog.description')}
               </DialogDescription>
             </DialogHeader>
             <div className="mt-3 space-y-3 text-sm">
@@ -303,48 +305,48 @@ export function UserDashboardSections({
                   ID: {activeDialogOffer.offerId} • Company ID: {activeDialogOffer.companyId}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="me-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   {getOfferStatusLabel(activeDialogOffer.status)}
                 </span>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">კომპანია</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t('dashboard.user.quotes.dialog.company')}</p>
                   <p className="text-sm font-medium">{activeDialogOffer.companyName}</p>
                   <p className="text-xs text-muted-foreground">
-                    რეიტინგი: {activeDialogOffer.companyRating}{' '}
+                    {t('dashboard.user.quotes.rating')}: {activeDialogOffer.companyRating}{' '}
                     {typeof activeDialogOffer.companyCompletedDeals === 'number'
-                      ? `• გარიგებები: ${activeDialogOffer.companyCompletedDeals}`
+                      ? `• ${t('dashboard.user.quotes.deals')}: ${activeDialogOffer.companyCompletedDeals}`
                       : null}
                   </p>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">ფინანსური პირობები</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t('dashboard.user.quotes.dialog.financials')}</p>
                   <p className="text-sm">
-                    ჯამური ბიუჯეტი:{' '}
+                    {t('dashboard.user.quotes.budget')}:{' '}
                     <span className="font-medium">
                       {activeDialogOffer.estimatedTotalUsd} - {activeDialogOffer.estimatedTotalUsdMax} USD
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    სერვის-ფი: <span className="font-medium">{activeDialogOffer.serviceFeeUsd} USD</span>
+                    {t('dashboard.user.quotes.service_fee')}: <span className="font-medium">{activeDialogOffer.serviceFeeUsd} USD</span>
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">ვადა და პირობები</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t('dashboard.user.quotes.dialog.terms')}</p>
                   <p className="text-sm">
-                    სავარაუდო ვადა:{' '}
-                    <span className="font-medium">{activeDialogOffer.estimatedDurationDays} დღე</span>
+                    {t('dashboard.user.quotes.duration_label')}:{' '}
+                    <span className="font-medium">{t('dashboard.user.quotes.duration', { count: activeDialogOffer.estimatedDurationDays })}</span>
                   </p>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">ტექნიკური დეტალები</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t('dashboard.user.quotes.dialog.tech_details')}</p>
                   <p className="text-xs text-muted-foreground">
                     Offer ID: <span className="font-mono text-[11px]">{activeDialogOffer.offerId}</span>
                   </p>
@@ -359,7 +361,7 @@ export function UserDashboardSections({
 
               {activeDialogOffer.comment && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">კომპანიის კომენტარი</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t('dashboard.user.quotes.dialog.comment')}</p>
                   <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
                     {activeDialogOffer.comment}
                   </p>
@@ -368,7 +370,7 @@ export function UserDashboardSections({
 
               <div className="pt-1 space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  დემო ღილაკები იმისთვის, თუ რა ქმედებები შეიძლება იყოს ამ დიალოგში მომავალში.
+                  {t('dashboard.user.quotes.dialog.demo_actions_hint')}
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <Button
@@ -377,7 +379,7 @@ export function UserDashboardSections({
                     className="h-8 justify-start gap-1 px-2 text-[11px]"
                   >
                     <Icon icon="mdi:chat-outline" className="h-3 w-3" />
-                    შეტყობინების დაწერა
+                    {t('dashboard.user.quotes.dialog.action.message')}
                   </Button>
                   <Button
                     type="button"
@@ -386,7 +388,7 @@ export function UserDashboardSections({
                     className="h-8 justify-start gap-1 px-2 text-[11px]"
                   >
                     <Icon icon="mdi:phone-outline" className="h-3 w-3" />
-                    საკონტაქტო ნომრის გაზიარება
+                    {t('dashboard.user.quotes.dialog.action.contact')}
                   </Button>
                   <Button
                     type="button"
@@ -395,7 +397,7 @@ export function UserDashboardSections({
                     className="h-8 justify-start gap-1 px-2 text-[11px] col-span-2"
                   >
                     <Icon icon="mdi:note-text-outline" className="h-3 w-3" />
-                    დამატებითი კითხვების გამოგზავნა
+                    {t('dashboard.user.quotes.dialog.action.questions')}
                   </Button>
                   <Button
                     type="button"
@@ -403,7 +405,7 @@ export function UserDashboardSections({
                     className="h-8 justify-start gap-1 px-2 text-[11px]"
                   >
                     <Icon icon="mdi:check-circle-outline" className="h-3 w-3" />
-                    შეთავაზების დადასტურება
+                    {t('dashboard.user.quotes.dialog.action.accept')}
                   </Button>
                   <Button
                     type="button"
@@ -412,7 +414,7 @@ export function UserDashboardSections({
                     className="h-8 justify-start gap-1 px-2 text-[11px]"
                   >
                     <Icon icon="mdi:close-circle-outline" className="h-3 w-3" />
-                    შეთავაზების გაუქმება
+                    {t('dashboard.user.quotes.dialog.action.reject')}
                   </Button>
                 </div>
               </div>
@@ -425,34 +427,34 @@ export function UserDashboardSections({
         <Dialog open onOpenChange={(open) => !open && setIsCompareDialogOpen(false)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>შეთავაზებების შედარება</DialogTitle>
+              <DialogTitle>{t('dashboard.user.compare.title')}</DialogTitle>
               <DialogDescription>
-                მაქსიმუმ სამი შეთავაზება შედარებისთვის. ეს არის დემო-ვიუ, რეალური ლოგიკა დაემატება მოგვიანებით.
+                {t('dashboard.user.compare.description')}
               </DialogDescription>
             </DialogHeader>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b text-left text-[11px] text-muted-foreground">
-                    <th className="py-1 pr-3 font-medium">კომპანია</th>
-                    <th className="py-1 pr-3 font-medium">ბიუჯეტი</th>
-                    <th className="py-1 pr-3 font-medium">სერვის-ფი</th>
-                    <th className="py-1 pr-3 font-medium">ვადა</th>
-                    <th className="py-1 pr-3 font-medium">სტატუსი</th>
+                  <tr className="border-b text-start text-[11px] text-muted-foreground">
+                    <th className="py-1 px-3 font-medium text-start">{t('dashboard.user.compare.headers.company')}</th>
+                    <th className="py-1 px-3 font-medium text-start">{t('dashboard.user.compare.headers.budget')}</th>
+                    <th className="py-1 px-3 font-medium text-start">{t('dashboard.user.compare.headers.service_fee')}</th>
+                    <th className="py-1 px-3 font-medium text-start">{t('dashboard.user.compare.headers.duration')}</th>
+                    <th className="py-1 px-3 font-medium text-start">{t('dashboard.user.compare.headers.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedCompareOffers.map((offer) => (
                     <tr key={offer.offerId} className="border-b last:border-0">
-                      <td className="py-1 pr-3 whitespace-nowrap font-medium">
+                      <td className="py-1 px-3 whitespace-nowrap font-medium text-start">
                         {offer.companyName}
                       </td>
-                      <td className="py-1 pr-3 whitespace-nowrap">
+                      <td className="py-1 px-3 whitespace-nowrap text-start">
                         {offer.estimatedTotalUsd} - {offer.estimatedTotalUsdMax} USD
                       </td>
-                      <td className="py-1 pr-3 whitespace-nowrap">{offer.serviceFeeUsd} USD</td>
-                      <td className="py-1 pr-3 whitespace-nowrap">{offer.estimatedDurationDays} დღე</td>
-                      <td className="py-1 pr-3 whitespace-nowrap">{getOfferStatusLabel(offer.status)}</td>
+                      <td className="py-1 px-3 whitespace-nowrap text-start">{offer.serviceFeeUsd} USD</td>
+                      <td className="py-1 px-3 whitespace-nowrap text-start">{offer.estimatedDurationDays} {t('common.days')}</td>
+                      <td className="py-1 px-3 whitespace-nowrap text-start">{getOfferStatusLabel(offer.status)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -472,14 +474,14 @@ export function UserDashboardSections({
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:magnify" className="h-5 w-5" />
-                სწრაფი ძიება კომპანიების მიხედვით
+                {t('dashboard.user.quick_search.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form className="grid gap-3 md:grid-cols-3" onSubmit={onQuickSearchSubmit}>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-service">
-                    სერვისის კატეგორია
+                    {t('dashboard.user.quick_search.service')}
                   </label>
                   <select
                     id="quick-service"
@@ -487,7 +489,7 @@ export function UserDashboardSections({
                     value={quickService}
                     onChange={(event) => onQuickServiceChange(event.target.value)}
                   >
-                    <option value="">არ აქვს მნიშვნელობა</option>
+                    <option value="">{t('dashboard.user.quick_search.any')}</option>
                     {availableServices.map((service) => (
                       <option key={service} value={service}>
                         {service}
@@ -498,7 +500,7 @@ export function UserDashboardSections({
 
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-geography">
-                    შტატი / რეგიონი
+                    {t('dashboard.user.quick_search.geography')}
                   </label>
                   <select
                     id="quick-geography"
@@ -506,7 +508,7 @@ export function UserDashboardSections({
                     value={quickGeography}
                     onChange={(event) => onQuickGeographyChange(event.target.value)}
                   >
-                    <option value="">არ აქვს მნიშვნელობა</option>
+                    <option value="">{t('dashboard.user.quick_search.any')}</option>
                     {availableGeography.map((location) => (
                       <option key={location} value={location}>
                         {location}
@@ -516,7 +518,7 @@ export function UserDashboardSections({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">ბიუჯეტი</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t('dashboard.user.quick_search.budget')}</span>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
@@ -548,7 +550,7 @@ export function UserDashboardSections({
                 <div className="md:col-span-3 flex justify-end">
                   <Button type="submit" className="flex items-center gap-2">
                     <Icon icon="mdi:magnify" className="h-4 w-4" />
-                    კომპანიის მოძებნა
+                    {t('dashboard.user.quick_search.submit')}
                   </Button>
                 </div>
               </form>
@@ -559,26 +561,26 @@ export function UserDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:flash" className="h-5 w-5" />
-                სწრაფი მოქმედებები
+                {t('dashboard.user.actions.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/search">
                   <Icon icon="mdi:magnify" className="h-4 w-4" />
-                  ახალი ძიების დაწყება
+                  {t('dashboard.user.actions.new_search')}
                 </Link>
               </Button>
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/catalog">
                   <Icon icon="mdi:send-circle-outline" className="h-4 w-4" />
-                  საერთო ბრიფის შევსება და გაგზავნა
+                  {t('dashboard.user.actions.fill_brief')}
                 </Link>
               </Button>
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/dashboard">
                   <Icon icon="mdi:message-text-outline" className="h-4 w-4" />
-                  გადავიდეთ თქვენს მოთხოვნებზე
+                  {t('dashboard.user.actions.go_to_requests')}
                 </Link>
               </Button>
             </CardContent>
@@ -593,7 +595,7 @@ export function UserDashboardSections({
       >
         <Card className="mt-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg font-semibold">რჩეული კომპანიები</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t('dashboard.user.favorites.title')}</CardTitle>
             {favoriteCompanies.length > 0 && (
               <Button
                 variant="ghost"
@@ -603,15 +605,14 @@ export function UserDashboardSections({
                 motionVariant="scale"
               >
                 <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
-                გასუფთავება
+                {t('dashboard.user.favorites.clear')}
               </Button>
             )}
           </CardHeader>
           <CardContent>
             {sortedFavorites.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                ჯერ არ გაქვთ დამატებული რჩეული კომპანიები. გახსენით კატალოგი და შეინახეთ
-                საინტერესო კომპანიები.
+                {t('dashboard.user.favorites.empty')}
               </p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -631,7 +632,7 @@ export function UserDashboardSections({
       >
         <Card className="mt-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg font-semibold">ბოლოს ნახული კომპანიები</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t('dashboard.user.recent.title')}</CardTitle>
             {recentlyViewedCompanies.length > 0 && (
               <Button
                 variant="ghost"
@@ -641,15 +642,14 @@ export function UserDashboardSections({
                 motionVariant="scale"
               >
                 <Icon icon="mdi:history" className="h-4 w-4" />
-                გასუფთავება
+                {t('dashboard.user.recent.clear')}
               </Button>
             )}
           </CardHeader>
           <CardContent>
             {sortedRecentlyViewed.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                ჯერ არ გაქვთ ნანახი კომპანიების ისტორია ამ სესიაში. გახსენით რომელიმე კომპანიის გვერდი,
-                რომ ნახოთ ისინი აქ.
+                {t('dashboard.user.recent.empty')}
               </p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -672,22 +672,22 @@ export function UserDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:chart-line" className="h-5 w-5" />
-                თქვენი აქტივობის სტატისტიკა
+                {t('dashboard.user.stats.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-2xl font-semibold">{activityStats.viewedCount}</p>
-                  <p className="text-xs text-muted-foreground">ნანახი კომპანია</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.user.stats.viewed')}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{activityStats.favoritesCount}</p>
-                  <p className="text-xs text-muted-foreground">რჩეული</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.user.stats.favorites')}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{activityStats.requestsCount}</p>
-                  <p className="text-xs text-muted-foreground">გაგზავნილი მოთხოვნა</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.user.stats.requests')}</p>
                 </div>
               </div>
             </CardContent>
@@ -705,13 +705,13 @@ export function UserDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:book-open-page-variant" className="h-5 w-5" />
-                სასარგებლო სტატიები და გიდები
+                {t('dashboard.user.guides.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {mockGuides.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  სტატიები მალე დაემატება.
+                  {t('dashboard.user.guides.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -719,7 +719,7 @@ export function UserDashboardSections({
                     <li key={guide.id} className="flex items-center justify-between gap-2">
                       <span className="line-clamp-2">{guide.title}</span>
                       <Button size="sm" variant="link" className="px-0 text-xs">
-                        კითხვა
+                        {t('dashboard.user.guides.read')}
                       </Button>
                     </li>
                   ))}
@@ -732,13 +732,13 @@ export function UserDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:gift-open-outline" className="h-5 w-5" />
-                სპეციალური შეთავაზებები
+                {t('dashboard.user.offers.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {mockOffers.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  ამ მომენტში აქტივი სპეციალური შეთავაზებები არ არის. დაბრუნდით მოგვიანებით.
+                  {t('dashboard.user.offers.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -755,7 +755,7 @@ export function UserDashboardSections({
                       </div>
                       <Button size="sm" variant="outline" className="flex items-center gap-1">
                         <Icon icon="mdi:eye-outline" className="h-3 w-3" />
-                        ნახვა
+                        {t('dashboard.user.offers.view')}
                       </Button>
                     </li>
                   ))}
@@ -775,13 +775,13 @@ export function UserDashboardSections({
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Icon icon="mdi:bell-outline" className="h-5 w-5" />
-              შეგახსენებთ
+              {t('dashboard.user.reminders.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {mockReminders.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                ამ დროისთვის არ გაქვთ აქტიური შეხსენებები.
+                {t('dashboard.user.reminders.empty')}
               </p>
             ) : (
               <ul className="space-y-2 text-sm">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 import { useReducedMotion } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react"
-import type { UserRole } from "@/mocks/_mockData"
+import type { UserRole } from "@/types/api"
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -49,6 +50,7 @@ type SectionCardsProps = {
 }
 
 export function SectionCards({ role }: SectionCardsProps) {
+  const { t } = useTranslation()
   const baseCardClassName = "shadow-sm rounded-md px-2 py-1.5 sm:px-3 sm:py-2"
 
   const animatedDealerLeads = useAnimatedMetric(32)
@@ -72,7 +74,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Leads</span>
+              <span>{t('dashboard.cards.leads')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-xs sm:text-sm font-semibold tabular-nums">
@@ -83,7 +85,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-red-200 bg-red-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Listings</span>
+              <span>{t('dashboard.cards.listings')}</span>
               <TrendingDownIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-xs sm:text-sm font-semibold tabular-nums">
@@ -94,7 +96,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-red-200 bg-red-50`}>
           <CardHeader className="p-0 space-y-0">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Deals</span>
+              <span>{t('dashboard.cards.deals')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -105,7 +107,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Margin</span>
+              <span>{t('dashboard.cards.margin')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -123,7 +125,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Views</span>
+              <span>{t('dashboard.cards.views')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -134,7 +136,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Quotes</span>
+              <span>{t('dashboard.cards.quotes')}</span>
               <TrendingDownIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -145,7 +147,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Conv.</span>
+              <span>{t('dashboard.cards.conversion')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -156,7 +158,7 @@ export function SectionCards({ role }: SectionCardsProps) {
         <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
           <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <span>Rating</span>
+              <span>{t('dashboard.cards.rating')}</span>
               <TrendingUpIcon className="h-3 w-3" />
             </div>
             <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -173,7 +175,7 @@ export function SectionCards({ role }: SectionCardsProps) {
       <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
         <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
           <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-            <span>Total</span>
+            <span>{t('dashboard.cards.total')}</span>
             <TrendingUpIcon className="h-3 w-3" />
           </div>
           <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -184,7 +186,7 @@ export function SectionCards({ role }: SectionCardsProps) {
       <Card className={`${baseCardClassName} border-red-200 bg-red-50`}>
         <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
           <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-            <span>New</span>
+            <span>{t('dashboard.cards.new')}</span>
             <TrendingDownIcon className="h-3 w-3" />
           </div>
           <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -195,7 +197,7 @@ export function SectionCards({ role }: SectionCardsProps) {
       <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
         <CardHeader className="p-0 space-y-0">
           <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-            <span>Accounts</span>
+            <span>{t('dashboard.cards.accounts')}</span>
             <TrendingUpIcon className="h-3 w-3" />
           </div>
           <CardTitle className="text-sm sm:text-base font-semibold tabular-nums">
@@ -206,7 +208,7 @@ export function SectionCards({ role }: SectionCardsProps) {
       <Card className={`${baseCardClassName} border-emerald-200 bg-emerald-50`}>
         <CardHeader className="p-0 space-y-0 flex flex-col gap-0.5">
           <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-            <span>Growth</span>
+            <span>{t('dashboard.cards.growth')}</span>
             <TrendingUpIcon className="h-3 w-3" />
           </div>
           <CardTitle className="text-xs sm:text-sm font-semibold tabular-nums">

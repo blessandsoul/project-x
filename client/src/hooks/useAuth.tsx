@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import axios from 'axios'
 import { apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
-import type { User } from '@/mocks/_mockData'
+import type { User } from '@/types/api'
 
 interface AuthContextValue {
   user: User | null

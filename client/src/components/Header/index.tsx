@@ -1,12 +1,14 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
 import AuthDrawer from '@/components/AuthDrawer';
 import UserMenu from './UserMenu';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface User {
   id: string;
@@ -17,7 +19,7 @@ interface User {
 
 interface NavigationItem {
   id: string;
-  label: string;
+  label: string; // This is actually not used for display anymore, we use id for translation key
   href: string;
 }
 
@@ -28,26 +30,9 @@ interface HeaderProps {
 }
 
 const STORAGE_KEY_USER = 'projectx_auth_user';
-// TODO-FX: Replace with real i18n implementation.
-const HEADER_MESSAGES: Record<string, string> = {
-  'header.brand': 'TrustedImporters.Ge',
-  'header.menu': 'მენიუ',
-  'header.sign_in': 'შესვლა',
-};
-
-const NAV_MESSAGES: Record<string, string> = {
-  'navigation.home': 'მთავარი',
-  'navigation.search': 'ძიება',
-  'navigation.catalog': 'კატალოგი',
-  'navigation.dashboard': 'დაფა',
-  'navigation.logisticsRadar': 'ლოგისტიკის რადარი',
-  'navigation.auctionListings': 'აქტიური აუქციონები',
-  'navigation.carfax': 'VIN შემოწმება',
-};
-
-const t = (key: string): string => HEADER_MESSAGES[key] ?? NAV_MESSAGES[key] ?? key;
 
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true }) => {
+  const { t } = useTranslation();
   const { user: authUser, isAuthenticated, logout } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   let storedUser: User | null = null;
@@ -64,21 +49,6 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
   }
 
   const effectiveUser = authUser ?? storedUser ?? (isAuthenticated ? authUser : user ?? null);
-  // TODO-FX: Replace with real API call.
-  // API Endpoint: GET /api/user/profile
-  // Expected Data:
-  // type: object
-  // properties:
-  //   id:
-  //     type: string
-  //   name:
-  //     type: string
-  //   email:
-  //     type: string
-  //     format: email
-  //   avatar:
-  //     type: string
-  //     format: uri
 
   return (
     <header
@@ -86,8 +56,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
       role="banner"
     >
       <div className="container mx-auto px-2 sm:px-4 lg:px-6 flex h-14 items-center">
-        <div className="mr-4 hidden md:flex">
-          <Link to="/" className="mr-6 flex items-center space-x-2">
+        <div className="me-4 hidden md:flex">
+          <Link to="/" className="me-6 flex items-center space-x-2">
             <Icon icon="mdi:home" className="h-6 w-6" />
             <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
               <span className="font-bold">Trusted</span>{' '}
@@ -154,7 +124,9 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
             </Sheet>
           </div>
 
-          <nav className="flex items-center">
+          <nav className="flex items-center gap-2">
+            <LanguageSwitcher />
+            
             {effectiveUser ? (
               <UserMenu user={effectiveUser} onLogout={logout} />
             ) : (
@@ -164,7 +136,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                 onClick={() => setIsAuthOpen(true)}
                 aria-label={t('header.sign_in')}
               >
-                <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
+                <Icon icon="mdi:login" className="me-2 h-4 w-4" />
                 {t('header.sign_in')}
               </Button>
             )}

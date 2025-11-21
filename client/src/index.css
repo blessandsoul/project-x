@@ -131,11 +131,59 @@
 }
 
 @layer utilities {
-  .space-y-4 {
-    :where(& > :not(:last-child)) {
-      --tw-space-y-reverse: 0 !important;
-      margin-block-start: calc(calc(var(--spacing) * 4) * var(--tw-space-y-reverse)) !important;
-      margin-block-end: 0 !important;
-    }
+  .dialog-overlay[data-state='open'] {
+    animation: dialogOverlayFadeIn 0.35s ease-out forwards;
+  }
+
+  .dialog-overlay[data-state='closed'] {
+    animation: dialogOverlayFadeOut 0.35s ease-in forwards;
+  }
+
+  .dialog-content[data-state='open'] {
+    animation: dialogContentIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .dialog-content[data-state='closed'] {
+    animation: dialogContentOut 0.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+}
+
+@keyframes dialogOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogOverlayFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialogContentIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dialogContentOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
   }
 }

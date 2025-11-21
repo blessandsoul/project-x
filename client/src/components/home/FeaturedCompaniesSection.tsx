@@ -8,7 +8,7 @@ import { Icon } from '@iconify/react/dist/iconify.js'
 import { EmptyState } from '@/components/company/EmptyState'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 
 type VipTier = 'diamond' | 'gold' | 'silver'
 

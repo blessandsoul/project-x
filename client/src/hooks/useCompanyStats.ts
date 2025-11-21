@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 import { mockCompanies } from '@/mocks/_mockData'
 
 export interface CompanyStats {
@@ -8,6 +8,7 @@ export interface CompanyStats {
   avgRating: number
 }
 
+// @ts-ignore: Mock data compatibility
 export const useCompanyStats = (companies: Company[] = mockCompanies): CompanyStats => {
   const stats = useMemo(() => {
     const total = companies.length

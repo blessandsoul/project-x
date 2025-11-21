@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -155,6 +156,7 @@ export function CompanyDashboardSections({
   companyGoals,
   getSectionMotionProps,
 }: CompanyDashboardSectionsProps) {
+  const { t } = useTranslation()
   const animatedTotalProfileViews = useAnimatedValue(companyNetworkStats.totalProfileViews)
   const animatedDealersCount = useAnimatedValue(companyNetworkStats.dealersCount)
   const animatedActiveCompanies = useAnimatedValue(companyNetworkStats.activeCompaniesCount)
@@ -177,7 +179,7 @@ export function CompanyDashboardSections({
     if (Number.isNaN(diffMs)) return null
 
     if (diffMs <= 0) {
-      return 'Expired'
+      return t('dashboard.company.leads_bubble.expired')
     }
 
     const diffMinutesTotal = Math.floor(diffMs / (60 * 1000))
@@ -185,26 +187,12 @@ export function CompanyDashboardSections({
     const minutes = diffMinutesTotal % 60
 
     if (hours <= 0) {
-      return `${minutes} min left`
+      return t('dashboard.company.leads_bubble.minutes_left', { count: minutes })
     }
 
-    return `${hours}h ${minutes}m left`
+    return t('dashboard.company.leads_bubble.hours_left', { hours, minutes })
   }
 
-  const t = (key: string): string => {
-    const translations: Record<string, string> = {
-      'dashboard.company.leads_bubble.title': 'New client requests',
-      'dashboard.company.leads_bubble.subtitle': 'Requests from users for specific vehicles',
-      'dashboard.company.leads_bubble.empty': 'You have no new client requests right now.',
-      'dashboard.company.leads_bubble.status_new': 'New',
-      'dashboard.company.leads_bubble.status_offer_sent': 'Offer sent',
-      'dashboard.company.leads_bubble.status_won': 'Won',
-      'dashboard.company.leads_bubble.status_lost': 'Lost',
-      'dashboard.company.leads_bubble.status_expired': 'Expired',
-    }
-
-    return translations[key] ?? key
-  }
   return (
     <>
       <motion.div
@@ -242,7 +230,7 @@ export function CompanyDashboardSections({
               >
                 <Link to="/company/leads">
                   <span className="inline-flex items-center gap-1">
-                    <span>View all</span>
+                    <span>{t('common.view_all')}</span>
                     <Icon icon="mdi:arrow-right" className="h-3 w-3" />
                   </span>
                 </Link>
@@ -257,14 +245,12 @@ export function CompanyDashboardSections({
             ) : (
               <div className="flex flex-col gap-2">
                 {companyLeads.slice(0, 5).map((lead) => {
-                  const isNew = lead.status === 'NEW'
-
                   const statusLabelMap: Record<CompanyLeadBubble['status'], string> = {
-                    NEW: t('dashboard.company.leads_bubble.status_new'),
-                    OFFER_SENT: t('dashboard.company.leads_bubble.status_offer_sent'),
-                    WON: t('dashboard.company.leads_bubble.status_won'),
-                    LOST: t('dashboard.company.leads_bubble.status_lost'),
-                    EXPIRED: t('dashboard.company.leads_bubble.status_expired'),
+                    NEW: t('dashboard.company.leads_bubble.status.new'),
+                    OFFER_SENT: t('dashboard.company.leads_bubble.status.offer_sent'),
+                    WON: t('dashboard.company.leads_bubble.status.won'),
+                    LOST: t('dashboard.company.leads_bubble.status.lost'),
+                    EXPIRED: t('dashboard.company.leads_bubble.status.expired'),
                   }
 
                   const statusLabel = statusLabelMap[lead.status]
@@ -275,7 +261,7 @@ export function CompanyDashboardSections({
                     <Link
                       key={lead.id}
                       to={`/company/leads/${lead.id}`}
-                      className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-start text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 overflow-hidden rounded-full border bg-muted">
@@ -293,13 +279,13 @@ export function CompanyDashboardSections({
                           <span className="text-xs text-muted-foreground">
                             {lead.summary.budgetUsdMin && lead.summary.budgetUsdMax
                               ? `$${lead.summary.budgetUsdMin.toLocaleString()} - $${lead.summary.budgetUsdMax.toLocaleString()}`
-                              : 'Budget not specified'}
+                              : t('dashboard.company.leads_bubble.budget_not_specified')}
                           </span>
                           {lead.priority && (
                             <span className="text-[10px] text-muted-foreground">
-                              {lead.priority === 'price' && 'Priority: price'}
-                              {lead.priority === 'speed' && 'Priority: speed'}
-                              {lead.priority === 'premium_service' && 'Priority: premium service'}
+                              {lead.priority === 'price' && t('dashboard.company.leads_bubble.priority.price')}
+                              {lead.priority === 'speed' && t('dashboard.company.leads_bubble.priority.speed')}
+                              {lead.priority === 'premium_service' && t('dashboard.company.leads_bubble.priority.premium')}
                             </span>
                           )}
                         </div>
@@ -309,7 +295,7 @@ export function CompanyDashboardSections({
                           className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
                           data-status={lead.status}
                         >
-                          <span className="mr-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span className="me-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
                           {statusLabel}
                         </span>
                         {Array.isArray((lead as any).leadSummary?.auctionSources) &&
@@ -342,22 +328,22 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:office-building-outline" className="h-5 w-5" />
-                ქსელის საერთო სტატისტიკა
+                {t('dashboard.company.stats.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <p className="text-2xl font-semibold">{animatedTotalProfileViews}</p>
-                  <p className="text-xs text-muted-foreground">პროფილის ნახვები</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.profile_views')}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{animatedDealersCount}</p>
-                  <p className="text-xs text-muted-foreground">აქტიური დილერი</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.active_dealers')}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{animatedActiveCompanies}</p>
-                  <p className="text-xs text-muted-foreground">აქტიური კომპანია</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.active_companies')}</p>
                 </div>
               </div>
             </CardContent>
@@ -367,12 +353,12 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:map-marker-radius-outline" className="h-5 w-5" />
-                დილერების აქტივობა შტატების მიხედვით
+                {t('dashboard.company.dealer_activity.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {companyDealerActivityByState.length === 0 ? (
-                <p className="text-sm text-muted-foreground">აქტივობის მონაცემები ჯერ არ არის.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.company.dealer_activity.empty')}</p>
               ) : (
                 <ul className="space-y-1 text-sm">
                   {companyDealerActivityByState.map((item) => (
@@ -381,7 +367,7 @@ export function CompanyDashboardSections({
                       className="flex items-center justify-between rounded-md border px-3 py-1.5"
                     >
                       <span className="line-clamp-1">{item.state}</span>
-                      <span className="text-xs text-muted-foreground">{item.leads} ლიძე / აქტივობა</span>
+                      <span className="text-xs text-muted-foreground">{item.leads} {t('dashboard.company.dealer_activity.leads_label')}</span>
                     </li>
                   ))}
                 </ul>
@@ -393,18 +379,18 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:heart-pulse" className="h-5 w-5" />
-                Brand health
+                {t('dashboard.company.brand_health.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-semibold">{companyBrandHealth.averageRating}</p>
                 <p className="text-xs text-muted-foreground">
-                  / 5 ({companyBrandHealth.totalReviews} შეფასება)
+                  / 5 ({companyBrandHealth.totalReviews} {t('common.reviews')})
                 </p>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                ბრენდის საერთო აღქმა ყველა ქსელის დილერის მიხედვით.
+                {t('dashboard.company.brand_health.description')}
               </p>
             </CardContent>
           </Card>
@@ -421,22 +407,22 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:headset" className="h-5 w-5" />
-                მომსახურების ხარისხი
+                {t('dashboard.company.service_quality.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">საშ. რეაგირების დრო</p>
-                  <p className="text-xl font-semibold">{animatedAvgReplyMinutes} წთ</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.company.service_quality.reply_time')}</p>
+                  <p className="text-xl font-semibold">{animatedAvgReplyMinutes} {t('common.min')}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">დამუშავებული მოთხოვნები</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.company.service_quality.handled_requests')}</p>
                   <p className="text-xl font-semibold">{animatedHandledPercent}%</p>
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                მონაცემა ილუსტრირებულია, შემდგომში ჩანაცვლდება რეალური API მონაცემებით.
+                {t('dashboard.company.service_quality.description')}
               </p>
             </CardContent>
           </Card>
@@ -445,12 +431,12 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:bullhorn-outline" className="h-5 w-5" />
-                მარკეტინგული კამპანიები
+                {t('dashboard.company.campaigns.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {companyCampaigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ამ დროისთვის აქტიური კამპანიები არ არის.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.company.campaigns.empty')}</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {companyCampaigns.map((campaign) => (
@@ -483,12 +469,12 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:account-group-outline" className="h-5 w-5" />
-                აუდიტორიის სეგმენტები
+                {t('dashboard.company.segments.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {companyAudienceSegments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">სეგმენტაციის მონაცემები არ არის.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.company.segments.empty')}</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {companyAudienceSegments.map((segment) => (
@@ -496,7 +482,7 @@ export function CompanyDashboardSections({
                       key={segment.id}
                       className="flex items-center justify-between rounded-md border px-3 py-2"
                     >
-                      <span className="line-clamp-2 mr-2">{segment.label}</span>
+                      <span className="line-clamp-2 me-2">{segment.label}</span>
                       <span className="text-xs text-muted-foreground">{segment.sharePercent}%</span>
                     </li>
                   ))}
@@ -509,12 +495,12 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:shield-search-outline" className="h-5 w-5" />
-                კონკურენტების მონიტორინგი
+                {t('dashboard.company.competitors.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {companyCompetitors.length === 0 ? (
-                <p className="text-sm text-muted-foreground">კონკურენტების მონაცემები არ არის.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.company.competitors.empty')}</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {companyCompetitors.map((competitor) => (
@@ -524,14 +510,14 @@ export function CompanyDashboardSections({
                     >
                       <div className="flex flex-col">
                         <span className="font-medium line-clamp-1">{competitor.name}</span>
-                        <span className="text-xs text-muted-foreground">რეიტინგი: {competitor.rating}</span>
+                        <span className="text-xs text-muted-foreground">{t('dashboard.company.competitors.rating')}: {competitor.rating}</span>
                       </div>
                       <span className="flex items-center gap-1 text-xs">
                         <Icon
                           icon={competitor.trend === 'up' ? 'mdi:trending-up' : 'mdi:trending-down'}
                           className="h-3 w-3"
                         />
-                        {competitor.trend === 'up' ? 'ზრდა' : 'კლება'}
+                        {competitor.trend === 'up' ? t('dashboard.company.competitors.trend_up') : t('dashboard.company.competitors.trend_down')}
                       </span>
                     </li>
                   ))}
@@ -552,12 +538,12 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:alert-outline" className="h-5 w-5" />
-                რისკები და ალერთები
+                {t('dashboard.company.risks.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {companyAlerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ამ დროისთვის რისკები არაა გამოვლენილი.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.company.risks.empty')}</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {companyAlerts.map((alert) => (
@@ -578,7 +564,7 @@ export function CompanyDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:account-cog-outline" className="h-5 w-5" />
-                დილერული ქსელის მართვა
+                {t('dashboard.company.network_actions.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
@@ -606,12 +592,12 @@ export function CompanyDashboardSections({
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Icon icon="mdi:target-account" className="h-5 w-5" />
-              გეგმები და მიზნები
+              {t('dashboard.company.goals.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {companyGoals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">ამ ეტაპზე მიზნები არ არის დაკონფიგურირებული.</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.company.goals.empty')}</p>
             ) : (
               <ul className="space-y-3 text-sm">
                 {companyGoals.map((goal) => (

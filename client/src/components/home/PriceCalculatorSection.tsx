@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ function formatUsd(value: number): string {
 }
 
 export function PriceCalculatorSection() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { updateFilters } = useCompanySearch()
   const shouldReduceMotion = useReducedMotion()
@@ -107,11 +109,10 @@ export function PriceCalculatorSection() {
                 className="h-5 w-5 text-primary"
                 aria-hidden="true"
               />
-              <span>დაანგარიშეთ საერთო ღირებულება</span>
+              <span>{t('home.price_calculator.title')}</span>
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              მონიშნეთ ბიუჯეტის დიაპაზონი და მიიღეთ წარმოდგენა, რამდენი შეიძლება დაგიჯდეთ
-              ავტომობილის იმპორტი აშშ-დან საქართველოში.
+              {t('home.price_calculator.description')}
             </p>
           </CardHeader>
           <CardContent>
@@ -122,7 +123,7 @@ export function PriceCalculatorSection() {
                     htmlFor="price-range"
                     className="text-xs font-medium text-muted-foreground"
                   >
-                    ბიუჯეტი ავტომობილზე, USD
+                    {t('home.price_calculator.budget_label')}
                   </Label>
                   <Slider
                     id="price-range"
@@ -131,7 +132,7 @@ export function PriceCalculatorSection() {
                     step={SLIDER_STEP}
                     value={budgetRange}
                     onValueChange={handleSliderChange}
-                    aria-label="ბიუჯეტის დიაპაზონი ავტომობილზე"
+                    aria-label={t('home.price_calculator.budget_range_aria')}
                   />
                   <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatUsd(minBudget)}</span>
@@ -147,12 +148,11 @@ export function PriceCalculatorSection() {
                     className="h-4 w-4 text-primary"
                     aria-hidden="true"
                   />
-                  <p className="text-sm font-medium">სავარაუდო სრული ღირებულება</p>
+                  <p className="text-sm font-medium">{t('home.price_calculator.estimated_total_label')}</p>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                   <span>
-                    გათვლა მოიცავს მომსახურების საფასურს და საბაჟო გადასახადებს და არის
-                    საგარანტიოდ მიახლოებითი.
+                    {t('home.price_calculator.disclaimer')}
                   </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -165,14 +165,12 @@ export function PriceCalculatorSection() {
                           className="h-3 w-3"
                           aria-hidden="true"
                         />
-                        <span>უსაფრთხო გადახდა</span>
+                        <span>{t('home.price_calculator.secure_payment')}</span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent sideOffset={4}>
                       <p>
-                        მომავალში გადასახდელი თანხა ნაწილებად დაიბლოკება და სრულად გადაეცემა
-                        იმპორტიორს მხოლოდ იმპორტის დადასტურების შემდეგ. მოცემული ინფო
-                        გამოიყენეთ მხოლოდ საჩვენებელი გათვლისთვის.
+                        {t('home.price_calculator.secure_payment_tooltip')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -181,16 +179,15 @@ export function PriceCalculatorSection() {
                   {formatUsd(totalRange[0])} – {formatUsd(totalRange[1])}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ეს არის სავარაუდო გათვლა. რეალური ღირებულება შეიძლება იცვლებოდეს კომპანიების,
-                  კონკრეტული აუქციონის და საბაჟო პირობების მიხედვით.
+                  {t('home.price_calculator.estimate_note')}
                 </p>
                 <Button
                   className="mt-2 w-full"
                   onClick={handleFindCompanies}
                   motionVariant="scale"
                 >
-                  <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" aria-hidden="true" />
-                  მოძებნე კომპანიები ამ ბიუჯეტით
+                  <Icon icon="mdi:magnify" className="me-2 h-4 w-4" aria-hidden="true" />
+                  {t('home.price_calculator.find_btn')}
                 </Button>
               </div>
             </div>

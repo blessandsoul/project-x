@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react/dist/iconify.js'
@@ -9,48 +10,45 @@ import { mockSearchFilters } from '@/mocks/_mockData'
 
 interface PersonaConfig {
   id: string
-  title: string
-  description: string
+  titleKey: string
+  descriptionKey: string
   icon: string
-  ctaLabel: string
+  ctaLabelKey: string
 }
 
 const PERSONAS: PersonaConfig[] = [
   {
     id: 'first-time',
-    title: 'პირველად შემომყავს მანქანა აშშ-დან',
-    description:
-      'გჭირდება მეგზური ეტაპობრივად — აუქციონიდან თბილისში მიწოდებამდე, დოკუმენტებისა და კომუნიკაციის სრული მხარდაჭერით.',
+    titleKey: 'home.audience.first_time.title',
+    descriptionKey: 'home.audience.first_time.description',
     icon: 'mdi:account-star',
-    ctaLabel: 'დამწყებისთვის',
+    ctaLabelKey: 'home.audience.first_time.cta',
   },
   {
     id: 'reseller',
-    title: 'სალონებისა და დილერებისთვის',
-    description:
-      'გეძებება სტაბილური პარტნიორი, ვინც შესთავაზებს ჰოლსეილ ფასებს, სწრაფ ლოჯისტიკას და პროგნოზირებად გრაფიკს რეგულარული პარტიებისთვის.',
+    titleKey: 'home.audience.reseller.title',
+    descriptionKey: 'home.audience.reseller.description',
     icon: 'mdi:briefcase',
-    ctaLabel: 'იპოვე პარტნიორი',
+    ctaLabelKey: 'home.audience.reseller.cta',
   },
   {
     id: 'safe-first',
-    title: 'მაქსიმალური სანდოობა და მინიმალური რისკი',
-    description:
-      'გინდა მხოლოდ კარგად შემოწმებული კომპანიები, გამჭვირვალე კონტრაქტები და მაღალი რეიტინგი წინა კლიენტებისგან.',
+    titleKey: 'home.audience.safe_first.title',
+    descriptionKey: 'home.audience.safe_first.description',
     icon: 'mdi:shield-check-outline',
-    ctaLabel: 'ტოპ რეიტინგული კომპანიები',
+    ctaLabelKey: 'home.audience.safe_first.cta',
   },
   {
     id: 'budget',
-    title: 'მინიმალური ბიუჯეტი, მაქსიმალური სარგებელი',
-    description:
-      'შენთვის მთავარი საერთო ბიუჯეტია — მზად ხარ ცოტა მეტხანს დაელოდო, თუ საბოლოო ხარჯი შემცირდება და ფასი უფრო ხელმისაწვდომი იქნება.',
+    titleKey: 'home.audience.budget.title',
+    descriptionKey: 'home.audience.budget.description',
     icon: 'mdi:cash-multiple',
-    ctaLabel: 'ხელმისაწვდომი შეთავაზებები',
+    ctaLabelKey: 'home.audience.budget.cta',
   },
 ]
 
 export function AudienceSegmentationSection() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { updateFilters } = useCompanySearch()
   const shouldReduceMotion = useReducedMotion()
@@ -120,11 +118,10 @@ export function AudienceSegmentationSection() {
               id="home-audience-segmentation-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              ვისთვის არის ეს პლატფორმა
+              {t('home.audience.title')}
             </h2>
             <p className="text-sm text-muted-foreground md:text-base">
-              აირჩიეთ სცენარი, რომელიც ყველაზე მეტად გიგავს, და ჩვენ გაჩვენებთ იმ კომპანიებს,
-              რომლებიც თქვენ საჭიროებებს ერგება.
+              {t('home.audience.description')}
             </p>
           </div>
         </div>
@@ -138,12 +135,12 @@ export function AudienceSegmentationSection() {
                 </div>
                 <div className="space-y-1">
                   <CardTitle className="text-sm font-semibold md:text-base">
-                    {persona.title}
+                    {t(persona.titleKey)}
                   </CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="flex h-full flex-col justify-between gap-4 pt-0 text-sm text-muted-foreground">
-                <p>{persona.description}</p>
+                <p>{t(persona.descriptionKey)}</p>
                 <Button
                   size="sm"
                   className="mt-2 w-full"
@@ -151,8 +148,8 @@ export function AudienceSegmentationSection() {
                   onClick={() => handleSelectPersona(persona.id)}
                   motionVariant="scale"
                 >
-                  <Icon icon="mdi:arrow-right" className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {persona.ctaLabel}
+                  <Icon icon="mdi:arrow-right" className="me-2 h-4 w-4" aria-hidden="true" />
+                  {t(persona.ctaLabelKey)}
                 </Button>
               </CardContent>
             </Card>

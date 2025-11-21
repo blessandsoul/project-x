@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
+import { navigationItems, footerLinks } from '@/config/navigation';
 import { useVinDecode } from '@/hooks/useVinDecode';
 
 const mockReport = {
@@ -45,7 +45,7 @@ const CarfaxPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header
         user={null}
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
       <main
         className="flex-1"
@@ -269,7 +269,7 @@ const CarfaxPage = () => {
           )}
         </div>
       </main>
-      <Footer footerLinks={mockFooterLinks} />
+      <Footer footerLinks={footerLinks} />
     </div>
   );
 };

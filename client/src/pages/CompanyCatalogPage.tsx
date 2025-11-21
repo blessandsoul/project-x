@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -13,14 +14,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
+import { navigationItems, footerLinks } from '@/config/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Slider } from '@/components/ui/slider';
-import type { Company } from '@/mocks/_mockData';
-import { searchCompaniesFromApi } from '@/services/companiesApi';
+import type { Company } from '@/types/api';
+import { fetchCompaniesFromApi } from '@/services/companiesApi';
 
 const CompanyCatalogPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { favorites, toggleFavorite } = useFavorites();
@@ -37,8 +39,7 @@ const CompanyCatalogPage = () => {
   const [page, setPage] = useState(1);
   const pageSize = 9;
 
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -221,82 +222,92 @@ const CompanyCatalogPage = () => {
     navigate,
   ]);
 
+  const loadCompanies = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const companiesFromApi = await fetchCompaniesFromApi();
+      setAllCompanies(companiesFromApi);
+    } catch (err) {
+      setError(t('catalog.error.fetch'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
+
+  const handleRetry = useCallback(() => {
+    void loadCompanies();
+  }, [loadCompanies]);
+
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
+    void loadCompanies();
+  }, [loadCompanies]);
 
-      const [minPrice, maxPrice] = priceRange;
+  const filteredCompanies = useMemo(() => {
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+    const trimmedCity = city.trim().toLowerCase();
 
-      const params: Parameters<typeof searchCompaniesFromApi>[0] = {
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-      };
-
-      const trimmedSearch = searchTerm.trim();
-      if (trimmedSearch.length >= 4) {
-        params.search = trimmedSearch;
+    const filtered = allCompanies.filter((company) => {
+      if (trimmedSearch.length > 0) {
+        const source = `${company.name} ${company.description} ${company.location.city} ${company.location.state}`.toLowerCase();
+        if (!source.includes(trimmedSearch)) {
+          return false;
+        }
       }
 
-      if (minRating > 0) {
-        params.minRating = minRating;
+      if (trimmedCity.length > 0) {
+        if (!company.location.city.toLowerCase().includes(trimmedCity)) {
+          return false;
+        }
       }
 
-      if (minPrice > 1000) {
-        params.minBasePrice = minPrice;
+      if (minRating > 0 && company.rating < minRating) {
+        return false;
       }
 
-      if (maxPrice < 10000) {
-        params.maxBasePrice = maxPrice;
+      if (isVipOnly && !company.vipStatus) {
+        return false;
       }
 
-      if (city.trim().length > 0) {
-        params.city = city.trim();
+      if (onboardingFree && !company.onboarding?.isFree) {
+        return false;
       }
 
-      if (isVipOnly) {
-        params.isVip = true;
+      const companyMinPrice = company.priceRange?.min ?? 0;
+      const companyMaxPrice = company.priceRange?.max ?? 0;
+      if (companyMinPrice < priceRange[0] || companyMaxPrice > priceRange[1]) {
+        return false;
       }
 
-      if (onboardingFree) {
-        params.onboardingFree = true;
-      }
+      return true;
+    });
 
+    const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'rating':
-          params.orderBy = 'rating';
-          params.orderDirection = 'desc';
-          break;
+          return b.rating - a.rating;
         case 'cheapest':
-          params.orderBy = 'cheapest';
-          params.orderDirection = 'asc';
-          break;
+          return (a.priceRange?.min ?? 0) - (b.priceRange?.min ?? 0);
         case 'name':
-          params.orderBy = 'name';
-          params.orderDirection = 'asc';
-          break;
+          return a.name.localeCompare(b.name);
         case 'newest':
         default:
-          break;
+          return b.establishedYear - a.establishedYear;
       }
+    });
 
-      try {
-        const result = await searchCompaniesFromApi(params);
-        setCompanies(result.companies);
-        setTotal(result.total);
-      } catch (e) {
-        setError('Failed to load companies');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    return sorted;
+  }, [allCompanies, searchTerm, city, minRating, isVipOnly, onboardingFree, priceRange, sortBy]);
 
-    void load();
-  }, [searchTerm, minRating, priceRange, city, isVipOnly, onboardingFree, sortBy, page, pageSize]);
-
-  const totalResults = total;
+  const totalResults = filteredCompanies.length;
   const totalPages = totalResults === 0 ? 0 : Math.ceil(totalResults / pageSize);
   const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+
+  const paginatedCompanies = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredCompanies.slice(startIndex, startIndex + pageSize);
+  }, [filteredCompanies, currentPage, pageSize]);
 
   const hasRatingFilter = minRating > 0;
   const hasVipFilter = isVipOnly;
@@ -312,7 +323,7 @@ const CompanyCatalogPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header
         user={null}
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
 
       <main
@@ -322,8 +333,8 @@ const CompanyCatalogPage = () => {
       >
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">კატალოგი იმპორტის კომპანიების</h1>
-            <p className="text-muted-foreground">გაეცანით ყველა ხელმისაწვდომ კომპანიას</p>
+            <h1 className="text-3xl font-bold mb-2">{t('catalog.title')}</h1>
+            <p className="text-muted-foreground">{t('catalog.subtitle')}</p>
           </div>
 
           <div className="grid lg:grid-cols-4 gap-8">
@@ -331,15 +342,15 @@ const CompanyCatalogPage = () => {
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">ფილტრები</CardTitle>
+                  <CardTitle className="text-lg">{t('catalog.filters.title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Geography */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">გეოგრაფია</label>
+                    <label className="text-sm font-medium mb-2 block">{t('catalog.filters.geography')}</label>
                     <div className="space-y-2">
                       <Input
-                        placeholder="ქალაქი (მაგ. თბილისი)"
+                        placeholder={t('catalog.filters.city_placeholder')}
                         value={city}
                         onChange={(event) => setCity(event.target.value)}
                       />
@@ -348,16 +359,16 @@ const CompanyCatalogPage = () => {
 
                   {/* Services */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">მომსახურება</label>
+                    <label className="text-sm font-medium mb-2 block">{t('catalog.filters.services')}</label>
                     <p className="text-xs text-muted-foreground">
-                      მოამატებთ später, როცა იქნება API по услугам.
+                      {t('catalog.filters.services_soon')}
                     </p>
                   </div>
 
                   {/* Price Range */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">
-                      ფასი: ${priceRange[0]} - ${priceRange[1]}
+                      {t('catalog.filters.price')}: ${priceRange[0]} - ${priceRange[1]}
                     </label>
                     <Slider
                       value={priceRange}
@@ -371,7 +382,7 @@ const CompanyCatalogPage = () => {
 
                   {/* Rating */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">მინიმალური რეიტინგი</label>
+                    <label className="text-sm font-medium mb-2 block">{t('catalog.filters.rating')}</label>
                     <Select
                       value={minRating.toString()}
                       onValueChange={(value) => setMinRating(parseInt(value, 10))}
@@ -380,10 +391,10 @@ const CompanyCatalogPage = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">ყველა</SelectItem>
-                        <SelectItem value="3">3+</SelectItem>
-                        <SelectItem value="4">4+</SelectItem>
-                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="0">{t('catalog.filters.rating_all')}</SelectItem>
+                        <SelectItem value="3">{t('catalog.filters.rating_3_plus')}</SelectItem>
+                        <SelectItem value="4">{t('catalog.filters.rating_4_plus')}</SelectItem>
+                        <SelectItem value="5">{t('catalog.filters.rating_5')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -395,7 +406,7 @@ const CompanyCatalogPage = () => {
                       checked={isVipOnly}
                       onCheckedChange={(checked) => setIsVipOnly(!!checked)}
                     />
-                    <label htmlFor="vip" className="text-sm font-medium">მხოლოდ VIP კომპანიები</label>
+                    <label htmlFor="vip" className="text-sm font-medium">{t('catalog.filters.vip_only')}</label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -404,7 +415,7 @@ const CompanyCatalogPage = () => {
                       checked={onboardingFree}
                       onCheckedChange={(checked) => setOnboardingFree(!!checked)}
                     />
-                    <label htmlFor="onboarding-free" className="text-sm font-medium">უფასო ონბორდინგი</label>
+                    <label htmlFor="onboarding-free" className="text-sm font-medium">{t('catalog.filters.free_onboarding')}</label>
                   </div>
                 </CardContent>
               </Card>
@@ -422,7 +433,7 @@ const CompanyCatalogPage = () => {
                   <>
                     <div className="flex-1">
                       <Input
-                        placeholder="მოძებნეთ კომპანიები..."
+                        placeholder={t('catalog.search.placeholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full"
@@ -430,13 +441,13 @@ const CompanyCatalogPage = () => {
                     </div>
                     <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
                       <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="დალაგება" />
+                        <SelectValue placeholder={t('catalog.sort.label')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="newest">უახლესი (ახალი)</SelectItem>
-                        <SelectItem value="rating">რეიტინგით</SelectItem>
-                        <SelectItem value="cheapest">ფასი (იაფი)</SelectItem>
-                        <SelectItem value="name">სახელით</SelectItem>
+                        <SelectItem value="newest">{t('catalog.sort.newest')}</SelectItem>
+                        <SelectItem value="rating">{t('catalog.sort.rating')}</SelectItem>
+                        <SelectItem value="cheapest">{t('catalog.sort.cheapest')}</SelectItem>
+                        <SelectItem value="name">{t('catalog.sort.name')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </>
@@ -450,32 +461,52 @@ const CompanyCatalogPage = () => {
                   role="status"
                   aria-live="polite"
                 >
-                  ნაჩვენებია {companies.length} კომპანია {totalResults}-დან
+                  {t('catalog.results.showing')} {isLoading ? 0 : paginatedCompanies.length} {t('catalog.results.connector')} {totalResults}{t('catalog.results.of')}
                 </p>
               </div>
 
+              {error && !isLoading && (
+                <Card className="mb-6 border-destructive/50" role="alert" aria-live="assertive">
+                  <CardContent className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <Icon icon="mdi:alert-circle" className="h-5 w-5" />
+                      <span>{error}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      onClick={handleRetry}
+                    >
+                      <Icon icon="mdi:refresh" className="me-2 h-4 w-4" />
+                      {t('catalog.error.retry')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               {hasAnyActiveFilter && (
                 <div className="mb-4 flex flex-wrap gap-2 text-xs">
-                  <span className="text-muted-foreground">aktiuri filt'rebi:</span>
+                  <span className="text-muted-foreground">{t('catalog.tags.active')}</span>
                   {searchTerm.trim().length > 0 && (
-                    <FilterTag>ძიება: {searchTerm}</FilterTag>
+                    <FilterTag>{t('catalog.tags.search')} {searchTerm}</FilterTag>
                   )}
                   {sortBy !== 'newest' && (
                     <FilterTag>
-                      დალაგება: {sortBy === 'rating' ? 'რეიტინგით' : sortBy === 'cheapest' ? 'ფასი (იაფი)' : 'სახელით'}
+                      {t('catalog.tags.sort')} {sortBy === 'rating' ? t('catalog.sort.rating') : sortBy === 'cheapest' ? t('catalog.sort.cheapest') : t('catalog.sort.name')}
                     </FilterTag>
                   )}
                   {hasRatingFilter && (
-                    <FilterTag>რეიტინგი {minRating}+</FilterTag>
+                    <FilterTag>{t('catalog.filters.rating')} {minRating}+</FilterTag>
                   )}
                   {hasPriceFilter && (
                     <FilterTag>
-                      ფასი ${priceRange[0]} - ${priceRange[1]}
+                      {t('catalog.filters.price')} ${priceRange[0]} - ${priceRange[1]}
                     </FilterTag>
                   )}
                   {hasVipFilter && <FilterTag>VIP</FilterTag>}
                   {hasCityFilter && <FilterTag>{city}</FilterTag>}
-                  {hasOnboardingFilter && <FilterTag>უფასო ონბორდინგი</FilterTag>}
+                  {hasOnboardingFilter && <FilterTag>{t('catalog.filters.free_onboarding')}</FilterTag>}
                 </div>
               )}
 
@@ -504,7 +535,7 @@ const CompanyCatalogPage = () => {
                         </CardContent>
                       </Card>
                     ))
-                  : companies.map((company, index) => (
+                  : paginatedCompanies.map((company, index) => (
                       <motion.article
                         key={company.id}
                         {...getCardMotionProps(index)}
@@ -534,7 +565,7 @@ const CompanyCatalogPage = () => {
                                     toggleFavorite(company.id);
                                   }}
                                   aria-pressed={favorites.includes(company.id)}
-                                  aria-label={favorites.includes(company.id) ? 'საყვარელი სიიდან ამოღება' : 'დამატება რჩეულებში'}
+                                  aria-label={favorites.includes(company.id) ? t('catalog.card.remove_favorite') : t('catalog.card.add_favorite')}
                                 >
                                   <Icon
                                     icon={favorites.includes(company.id) ? 'mdi:heart' : 'mdi:heart-outline'}
@@ -554,11 +585,11 @@ const CompanyCatalogPage = () => {
                                 </span>
                               </div>
                               <div className="flex items-center text-sm text-muted-foreground">
-                                <Icon icon="mdi:map-marker" className="h-4 w-4 mr-1" />
+                                <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
                                 {company.location.city}, {company.location.state}
                               </div>
                               <div className="flex items-center text-sm">
-                                <Icon icon="mdi:cash" className="h-4 w-4 mr-1 text-primary" />
+                                <Icon icon="mdi:cash" className="h-4 w-4 me-1 text-primary" />
                                 <span className="font-medium">
                                   ${company.priceRange.min} - ${company.priceRange.max}
                                 </span>
@@ -574,12 +605,12 @@ const CompanyCatalogPage = () => {
                                 ))}
                                 {company.services.length > 2 && (
                                   <span className="text-xs text-muted-foreground">
-                                    +{company.services.length - 2} მეტი
+                                    +{company.services.length - 2} more
                                   </span>
                                 )}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                დაფუძნებული: {company.establishedYear}
+                                {t('catalog.card.founded')} {company.establishedYear}
                               </div>
                             </div>
                           </CardContent>
@@ -591,7 +622,7 @@ const CompanyCatalogPage = () => {
               {!isLoading && totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-between gap-4">
                   <p className="text-xs text-muted-foreground">
-                    გვერდი {currentPage} / {totalPages}
+                    {t('catalog.pagination.page')} {currentPage} / {totalPages}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -599,22 +630,22 @@ const CompanyCatalogPage = () => {
                       size="sm"
                       onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      aria-label="წინა გვერდი"
+                      aria-label={t('catalog.pagination.prev')}
                       motionVariant="scale"
                     >
-                      <Icon icon="mdi:chevron-left" className="mr-1 h-4 w-4" />
-                      უკან
+                      <Icon icon="mdi:chevron-left" className="me-1 h-4 w-4" />
+                      {t('catalog.pagination.prev')}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      aria-label="შემდეგი გვერდი"
+                      aria-label={t('catalog.pagination.next')}
                       motionVariant="scale"
                     >
-                      შემდეგი
-                      <Icon icon="mdi:chevron-right" className="ml-1 h-4 w-4" />
+                      {t('catalog.pagination.next')}
+                      <Icon icon="mdi:chevron-right" className="ms-1 h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -624,14 +655,14 @@ const CompanyCatalogPage = () => {
                 <Card className="mt-6 p-12">
                   <EmptyState
                     icon="mdi:magnify-remove"
-                    title="კომპანიები არ მოიძებნა"
-                    description="სცადეთ სხვა საძიებო სიტყვები ან გაასუფთავეთ ფილტრები"
+                    title={t('catalog.results.empty_title')}
+                    description={t('catalog.results.empty_description')}
                     action={(
                       <Button
                         onClick={() => setSearchTerm('')}
                         motionVariant="scale"
                       >
-                        გაასუფთავეთ საძიებო
+                        {t('catalog.search.clear')}
                       </Button>
                     )}
                   />
@@ -642,7 +673,7 @@ const CompanyCatalogPage = () => {
         </div>
       </main>
 
-      <Footer footerLinks={mockFooterLinks} />
+      <Footer footerLinks={footerLinks} />
     </div>
   );
 };

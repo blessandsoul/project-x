@@ -38,8 +38,29 @@ export interface FooterLink {
   href: string;
 }
 
+export interface CompanySocialLink {
+  id: string;
+  url: string;
+  label: string;
+  icon?: string;
+}
+
+export interface CompanyFees {
+  base: number;
+  pricePerMile: number;
+  customs: number;
+  service: number;
+  broker: number;
+}
+
+export interface CompanyOnboarding {
+  isFree: boolean;
+  endsAt: string | null;
+}
+
 export interface Company {
   id: string;
+  slug: string;
   name: string;
   logo: string;
   description: string;
@@ -49,9 +70,12 @@ export interface Company {
     max: number;
     currency: string;
   };
+  fees: CompanyFees;
+  pricingFormula: Record<string, unknown> | null;
   rating: number;
   reviewCount: number;
   vipStatus: boolean;
+  onboarding: CompanyOnboarding;
   location: {
     state: string;
     city: string;
@@ -61,6 +85,7 @@ export interface Company {
     phone: string;
     website: string;
   };
+  socialLinks: CompanySocialLink[];
   establishedYear: number;
   reviews: Review[];
 }
@@ -97,9 +122,7 @@ export interface SearchFilters {
 }
 
 export declare const mockUser: User;
-export declare const mockNavigationItems: NavigationItem[];
 export declare const mockContent: ContentData;
-export declare const mockFooterLinks: FooterLink[];
 export declare const mockCompanies: Company[];
 export declare const mockSearchFilters: SearchFilters;
 export declare const mockCars: Car[];

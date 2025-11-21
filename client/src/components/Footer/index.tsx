@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -14,47 +15,9 @@ interface FooterProps {
   footerLinks: FooterLink[];
 }
 
-// TODO-FX: Connect to i18n library.
-const translations: Record<string, string> = {
-  'footer.brand': 'TrustedImporters.Ge',
-  'footer.description': 'საიტი გეხმარებათ შეარჩიოთ სანდო ავტოიმპორტიორი მისაღები ფასებით და მომსახურებით — ყველა შეთავაზება და ფასი ერთ სივრცეში, მარტივად შესადარებლად.',
-  'footer.company': 'კომპანია',
-  'footer.support': 'დახმარება',
-  'footer.connect': 'დაკავშირება',
-  'footer.help': 'დახმარების ცენტრი',
-  'footer.contact': 'კონტაქტი',
-  'footer.privacy': 'კონფიდენციალურობის პოლიტიკა',
-  'footer.terms': 'წესები და პირობები',
-  'footer.twitter': 'Twitter',
-  'footer.github': 'GitHub',
-  'footer.linkedin': 'LinkedIn',
-  'footer.stats.cars': '1000+ იმპორტირებული ავტომობილი',
-  'footer.stats.years': '10+ წელი გამოცდილება',
-  'footer.cta.title': 'გჭირდებათ კონსულტაცია?',
-  'footer.cta.subtitle': 'მიიღეთ პერსონალური რჩევა თქვენი შემდეგი ავტომობილის იმპორტზე.',
-  'footer.cta.button': 'კონსულტაციის მიღება',
-  'footer.stats.region': 'აშშ-დან საქართველოში ავტომობილების იმპორტი',
-  'footer.copyright': 'ყველა უფლება დაცულია.',
-};
-
-const t = (key: string) => translations[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
 const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
-
-  // TODO-FX: Replace with real API call.
-  // API Endpoint: GET /api/footer/links
-  // Expected Data:
-  // type: array
-  // items:
-  //   type: object
-  //   properties:
-  //     id:
-  //       type: string
-  //     label:
-  //       type: string
-  //     href:
-  //       type: string
 
   return (
     <footer className="border-t bg-background" role="contentinfo">
@@ -93,7 +56,7 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
                 <Link
                   key={link.id}
                   to={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-start"
                 >
                   {t(`footer.${link.id}`)}
                 </Link>

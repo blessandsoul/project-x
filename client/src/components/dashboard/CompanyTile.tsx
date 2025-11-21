@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '@iconify/react/dist/iconify.js'
 
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 
 type CompanyTileProps = {
   company: Company

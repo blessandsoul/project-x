@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -109,6 +110,7 @@ export function DealerDashboardSections({
   dealerComparisonStats,
   getSectionMotionProps,
 }: DealerDashboardSectionsProps) {
+  const { t } = useTranslation()
   const animatedTodayNew = useAnimatedValue(dealerLeadsStats.todayNew)
   const animatedWeekNew = useAnimatedValue(dealerLeadsStats.weekNew)
   const animatedInProgress = useAnimatedValue(dealerLeadsStats.inProgress)
@@ -126,6 +128,7 @@ export function DealerDashboardSections({
   const animatedLeadsDelta = useAnimatedValue(dealerComparisonStats.leadsDeltaPercent)
   const animatedConversionDelta = useAnimatedValue(dealerComparisonStats.conversionDeltaPercent)
   const animatedMarginDelta = useAnimatedValue(dealerComparisonStats.marginDeltaPercent)
+
   return (
     <>
       <motion.div
@@ -138,25 +141,25 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:account-group" className="h-5 w-5" />
-                ლიდების პანელი
+                {t('dashboard.dealer.leads.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">ახალი დღეს</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.today_new')}</p>
                   <p className="text-xl font-semibold">{animatedTodayNew}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">ახალი ამ კვირაში</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.week_new')}</p>
                   <p className="text-xl font-semibold">{animatedWeekNew}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">მუშავდება</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.in_progress')}</p>
                   <p className="text-xl font-semibold">{animatedInProgress}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">დახურული</p>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.closed')}</p>
                   <p className="text-xl font-semibold">{animatedClosed}</p>
                 </div>
               </div>
@@ -167,21 +170,21 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:chart-timeline-variant" className="h-5 w-5" />
-                გაყიდვების ვორონკა
+                {t('dashboard.dealer.funnel.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">პროფილის ნახვები</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.views')}</span>
                   <span className="font-medium">{animatedProfileViews}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">მოთხოვნები</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.requests')}</span>
                   <span className="font-medium">{animatedRequests}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">დადებული გარიგებები</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.deals')}</span>
                   <span className="font-medium">{animatedDeals}</span>
                 </div>
               </div>
@@ -192,26 +195,26 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:flash" className="h-5 w-5" />
-                სწრაფი მოქმედებები
+                {t('dashboard.dealer.actions.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm">
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/catalog">
                   <Icon icon="mdi:plus-circle-outline" className="h-4 w-4" />
-                  ახალი შეთავაზების დამატება
+                  {t('dashboard.dealer.actions.add_offer')}
                 </Link>
               </Button>
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/dashboard">
                   <Icon icon="mdi:bullhorn-outline" className="h-4 w-4" />
-                  აქციის გაშვება
+                  {t('dashboard.dealer.actions.launch_promo')}
                 </Link>
               </Button>
               <Button asChild className="justify-start gap-2" variant="outline">
                 <Link to="/catalog">
                   <Icon icon="mdi:cash-sync" className="h-4 w-4" />
-                  ფასების განახლება
+                  {t('dashboard.dealer.actions.update_prices')}
                 </Link>
               </Button>
             </CardContent>
@@ -229,13 +232,13 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:inbox-arrow-down" className="h-5 w-5" />
-                ახალი კლიენტების მოთხოვნები
+                {t('dashboard.dealer.requests.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {dealerRequests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  ამ ეტაპზე არ გაქვთ ახალი მოთხოვნები.
+                  {t('dashboard.dealer.requests.empty')}
                 </p>
               ) : (
                 <div className="space-y-2 text-sm">
@@ -249,16 +252,16 @@ export function DealerDashboardSections({
                         <span className="text-xs text-muted-foreground line-clamp-1">
                           {request.companyName}
                         </span>
-                        <span className="text-xs text-muted-foreground">სტატუსი: {request.status}</span>
+                        <span className="text-xs text-muted-foreground">{t('common.status')}: {request.status}</span>
                       </div>
                       <div className="flex flex-col gap-1">
                         <Button size="sm" variant="outline" className="flex items-center gap-1">
                           <Icon icon="mdi:reply-outline" className="h-3 w-3" />
-                          პასუხის გაცემა
+                          {t('dashboard.dealer.requests.reply')}
                         </Button>
                         <Button size="sm" variant="ghost" className="flex items-center gap-1">
                           <Icon icon="mdi:check-circle-outline" className="h-3 w-3" />
-                          დამუშავებულია
+                          {t('dashboard.dealer.requests.processed')}
                         </Button>
                       </div>
                     </div>
@@ -272,13 +275,13 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:bell-outline" className="h-5 w-5" />
-                შეხსენებები ლიდებზე
+                {t('dashboard.dealer.reminders.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {dealerLeadReminders.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  ამ დროისთვის არ გაქვთ კრიტიკული შეხსენებები.
+                  {t('dashboard.dealer.reminders.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -308,13 +311,13 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:star-circle-outline" className="h-5 w-5" />
-                ტოპ შეთავაზებები / პოზიციები
+                {t('dashboard.dealer.top_offers.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {dealerTopPromoted.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  ჯერ არ გაქვთ გამოკვეთილი ტოპ შეთავაზებები.
+                  {t('dashboard.dealer.top_offers.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -325,7 +328,7 @@ export function DealerDashboardSections({
                     >
                       <span className="line-clamp-1">{item.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {item.responses} გამოხმაურება
+                        {item.responses} {t('common.reviews')}
                       </span>
                     </li>
                   ))}
@@ -338,19 +341,19 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:star-outline" className="h-5 w-5" />
-                კლიენტების შეფასებები
+                {t('dashboard.dealer.reviews.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold">{dealerReviewsSummary.averageRating}</span>
                 <span className="text-xs text-muted-foreground">
-                  / 5 ({dealerReviewsSummary.totalReviews} შეფასება)
+                  / 5 ({dealerReviewsSummary.totalReviews} {t('common.reviews')})
                 </span>
               </div>
               {dealerReviewsSummary.latestReviews.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  ჯერ არ გაქვთ შეფასებები.
+                  {t('dashboard.dealer.reviews.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -376,7 +379,7 @@ export function DealerDashboardSections({
               <div className="mt-3 flex justify-end">
                 <Button size="sm" variant="outline" className="flex items-center gap-1">
                   <Icon icon="mdi:comment-edit-outline" className="h-3 w-3" />
-                  შეფასებების მართვა
+                  {t('dashboard.dealer.reviews.manage')}
                 </Button>
               </div>
             </CardContent>
@@ -394,25 +397,25 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:chart-areaspline" className="h-5 w-5" />
-                ტრაფიკი დილერის პროფილზე
+                {t('dashboard.dealer.traffic.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">სულ ნახვები</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.total')}</span>
                   <span className="font-medium">{animatedTrafficTotal}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">ძიების ბლოკიდან</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.search')}</span>
                   <span className="font-medium">{animatedTrafficSearch}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">კატალოგიდან</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.catalog')}</span>
                   <span className="font-medium">{animatedTrafficCatalog}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">აქციებიდან / შეთავაზებებიდან</span>
+                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.offers')}</span>
                   <span className="font-medium">{animatedTrafficOffers}</span>
                 </div>
               </div>
@@ -423,12 +426,12 @@ export function DealerDashboardSections({
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Icon icon="mdi:checklist" className="h-5 w-5" />
-                დღევანდელი ამოცანები
+                {t('dashboard.dealer.tasks.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {dealerTasksToday.length === 0 ? (
-                <p className="text-sm text-muted-foreground">დღევანდელი ამოცანები არ არის დამატებული.</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.dealer.tasks.empty')}</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {dealerTasksToday.map((task) => (
@@ -456,27 +459,27 @@ export function DealerDashboardSections({
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Icon icon="mdi:chart-box-outline" className="h-5 w-5" />
-              შედარება წინა პერიოდთან
+              {t('dashboard.dealer.comparison.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">ლიდების რაოდენობა</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.leads_count')}</p>
                 <p className="text-lg font-semibold">
                   {animatedLeadsDelta > 0 ? '+' : ''}
                   {animatedLeadsDelta}%
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">კონვერსია გარიგებებში</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.conversion')}</p>
                 <p className="text-lg font-semibold">
                   {animatedConversionDelta > 0 ? '+' : ''}
                   {animatedConversionDelta}%
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">საშ. მარჟა</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.margin')}</p>
                 <p className="text-lg font-semibold">
                   {animatedMarginDelta > 0 ? '+' : ''}
                   {animatedMarginDelta}%

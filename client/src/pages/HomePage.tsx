@@ -4,7 +4,7 @@ import { MobileStickyCta } from '@/components/home/MobileStickyCta';
 import { HomePageSkeleton } from '@/components/home/HomePageSkeleton';
 import { HomePageContent } from '@/components/home/HomePageContent';
 import { useHomePageState } from '@/hooks/useHomePageState';
-import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
+import { navigationItems, footerLinks } from '@/config/navigation';
 
 const HomePage = () => {
   // Simulate loading state
@@ -13,13 +13,13 @@ const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
 
       {loading ? <HomePageSkeleton /> : <HomePageContent />}
 
       <Footer
-        footerLinks={mockFooterLinks}
+        footerLinks={footerLinks}
       />
       {isStickyCtaVisible && <MobileStickyCta />}
     </div>

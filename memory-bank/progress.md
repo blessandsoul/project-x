@@ -1,7 +1,7 @@
 # Progress
 
 This file tracks the project's progress using a task list format.
-2025-11-13 21:24:48 - Log of updates made.
+2025-11-21 16:45:00 - Log of updates made.
 
 *
 
@@ -18,11 +18,13 @@ This file tracks the project's progress using a task list format.
 * Ensure all components are accessible with proper ARIA labels, keyboard navigation, and screen reader support
 * Update DashboardPage for user management of searches, favorites, and import tracking
 * Add routing for all new pages (search, catalog, profile) in App.tsx
+* [2025-11-21 16:20:45] - 🐛 Bug fix completed: Fixed Dialog animation centering issue and localization text in CompanyCatalogPage.
+* [2025-11-21 16:45:00] - 🌐 Feature completed: Implemented full i18n support (KA, EN, RU, AR).
 
 ## Current Tasks
 
-*   
+*
 
 ## Next Steps
 
-*   
+*

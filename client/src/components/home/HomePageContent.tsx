@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { useTranslation } from 'react-i18next'
 import { HeroSection } from '@/components/home/HeroSection'
 import { LeadCaptureSection } from '@/components/home/LeadCaptureSection'
 import { QuickSearchSection } from '@/components/home/QuickSearchSection'
@@ -42,6 +43,7 @@ const MiniBlogSectionLazy = lazy(() =>
 )
 
 export const HomePageContent = () => {
+  const { t } = useTranslation()
   const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
   const stats = useCompanyStats(companies)
 
@@ -55,7 +57,7 @@ export const HomePageContent = () => {
         {/* Block 1: Find a company */}
         <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            ნაბიჯი 1 — მოიძიე სანდო კომპანია
+            {t('home.steps.step1')}
           </h2>
         </div>
         <QuickSearchSection />
@@ -66,7 +68,7 @@ export const HomePageContent = () => {
         {/* Block 2: Why users trust the platform */}
         <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            ნაბიჯი 2 — რატომ გვენდობა მომხმარებლებს
+            {t('home.steps.step2')}
           </h2>
         </div>
         <HowItWorksSection />
@@ -88,7 +90,7 @@ export const HomePageContent = () => {
         {/* Block 3: Stories & learning */}
         <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            ნაბიჯი 3 — ისტორიები და ცოდნა
+            {t('home.steps.step3')}
           </h2>
         </div>
         <CarCasesSection />
@@ -105,7 +107,7 @@ export const HomePageContent = () => {
         {/* Block 4: Final CTA */}
         <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            ნაბიჯი 4 — საბოლოო ნაბიჯი
+            {t('home.steps.step4')}
           </h2>
         </div>
         <FinalCTASection />
@@ -113,8 +115,8 @@ export const HomePageContent = () => {
           <Card className="mt-8">
             <EmptyState
               icon="mdi:alert-circle-outline"
-              title="დაფიქსირდა პრობლემა კომპანიის მონაცემებთან"
-              description="ვაჩვენებთ დროებით მონაცემებს, სანამ რეალური კომპანიების სია ვერ იტვირთება. სცადეთ მოგვიანებით ან გადადით კატალოგში სრულადი სიის სანახავად."
+              title={t('home.error.companies_load')}
+              description={t('home.error.companies_load_desc')}
               action={null}
             />
           </Card>
@@ -123,8 +125,8 @@ export const HomePageContent = () => {
           <Card className="mt-8">
             <EmptyState
               icon="mdi:magnify-remove"
-              title="კომპანიები ჯერ არ არის დამატებული"
-              description="მალე აქ გამოჩნდება ვერიფიცირებული იმპორტის კომპანიები. ამ ეტაპზე შეგიძლიათ გაიცნოთ პლატფორმის შესაძლებლობები და მომავალი ინტეგრაცია რეალურ მონაცემებთან."
+              title={t('home.empty.no_companies')}
+              description={t('home.empty.no_companies_desc')}
               action={null}
             />
           </Card>

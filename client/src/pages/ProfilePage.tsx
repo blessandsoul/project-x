@@ -1,5 +1,6 @@
- import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { Icon } from '@iconify/react/dist/iconify.js'
 import { useAuth } from '@/hooks/useAuth'
 
 const ProfilePage = () => {
+  const { t } = useTranslation()
   const { user, isLoading, updateProfile, deleteAccount } = useAuth()
   const navigate = useNavigate()
 
@@ -33,19 +35,19 @@ const ProfilePage = () => {
       })
 
       setPassword('')
-      setSuccess('პროფილი წარმატებით განახლდა')
+      setSuccess(t('profile.success'))
     } catch (err) {
       const message =
         err instanceof Error && err.message
           ? err.message
-          : 'პროფილის განახლების დროს მოხდა შეცდომა'
+          : t('profile.error.update')
 
       setError(message)
     }
   }
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm('დარწმუნებული ხართ, რომ გსურთ ანგარიშის წაშლა?')) {
+    if (!window.confirm(t('profile.delete_confirm'))) {
       return
     }
 
@@ -60,7 +62,7 @@ const ProfilePage = () => {
       const message =
         err instanceof Error && err.message
           ? err.message
-          : 'ანგარიშის წაშლის დროს მოხდა შეცდომა'
+          : t('profile.error.delete')
 
       setError(message)
     } finally {
@@ -71,7 +73,7 @@ const ProfilePage = () => {
   if (!user && isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-        <Card className="w-full max-w-md" aria-label="პროფილის ჩატვირთვა">
+        <Card className="w-full max-w-md" aria-label={t('profile.loading')}>
           <CardHeader>
             <Skeleton className="h-6 w-32" />
           </CardHeader>
@@ -90,15 +92,15 @@ const ProfilePage = () => {
       <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
         <Card className="w-full max-w-md text-center p-6" role="alert" aria-live="polite">
           <CardHeader>
-            <CardTitle>პროფილი ვერ მოიძებნა</CardTitle>
+            <CardTitle>{t('profile.not_found')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              გთხოვთ, ხელახლა შეხვიდეთ სისტემაში, რომ ნახოთ თქვენი პროფილი.
+              {t('profile.login_again')}
             </p>
             <Button onClick={() => navigate('/login')} className="w-full">
-              <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
-              დაბრუნება ავტორიზაციაზე
+              <Icon icon="mdi:login" className="me-2 h-4 w-4" />
+              {t('profile.back_to_login')}
             </Button>
           </CardContent>
         </Card>
@@ -108,24 +110,24 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-md" role="form" aria-label="პროფილის რედაქტირება">
+      <Card className="w-full max-w-md" role="form" aria-label={t('profile.edit')}>
         <CardHeader className="space-y-2 text-center">
           <Icon icon="mdi:account-circle" className="mx-auto h-10 w-10 text-primary" />
-          <CardTitle className="text-2xl font-bold">პროფილი</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('profile.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>
             <div className="space-y-2">
-              <Label htmlFor="username">მომხმარებლის სახელი</Label>
+              <Label htmlFor="username">{t('profile.username')}</Label>
               <Input
                 id="username"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
-                placeholder="მომხმარებლის სახელი"
+                placeholder={t('profile.username')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">ელ-ფოსტა</Label>
+              <Label htmlFor="email">{t('profile.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -135,13 +137,13 @@ const ProfilePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">ახალი პაროლი</Label>
+              <Label htmlFor="password">{t('profile.new_password')}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
+                placeholder={t('profile.password_placeholder')}
               />
             </div>
             {error && (
@@ -161,8 +163,8 @@ const ProfilePage = () => {
                 disabled={isLoading}
                 aria-disabled={isLoading}
               >
-                <Icon icon="mdi:content-save" className="mr-2 h-4 w-4" />
-                {isLoading ? 'შენახვა...' : 'შენახვა'}
+                <Icon icon="mdi:content-save" className="me-2 h-4 w-4" />
+                {isLoading ? t('profile.saving') : t('profile.save')}
               </Button>
               <Button
                 type="button"
@@ -172,8 +174,8 @@ const ProfilePage = () => {
                 aria-disabled={isDeleting || isLoading}
                 onClick={handleDeleteAccount}
               >
-                <Icon icon="mdi:delete" className="mr-2 h-4 w-4" />
-                {isDeleting ? 'ანგარიშის წაშლა...' : 'ანგარიშის წაშლა'}
+                <Icon icon="mdi:delete" className="me-2 h-4 w-4" />
+                {isDeleting ? t('profile.deleting') : t('profile.delete_account')}
               </Button>
             </div>
           </form>

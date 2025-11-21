@@ -4,6 +4,30 @@
 
 import { faker } from '@faker-js/faker';
 
+const socialPlatforms = [
+  { label: 'Facebook', domain: 'facebook.com', icon: 'mdi:facebook' },
+  { label: 'Instagram', domain: 'instagram.com', icon: 'mdi:instagram' },
+  { label: 'LinkedIn', domain: 'linkedin.com', icon: 'mdi:linkedin' },
+  { label: 'YouTube', domain: 'youtube.com', icon: 'mdi:youtube' },
+  { label: 'TikTok', domain: 'tiktok.com', icon: 'mdi:tiktok' }
+];
+
+const generateSocialLinks = () => {
+  const count = faker.number.int({ min: 1, max: 3 });
+
+  return Array.from({ length: count }).map(() => {
+    const platform = faker.helpers.arrayElement(socialPlatforms);
+    const handle = faker.internet.username().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    return {
+      id: faker.string.uuid(),
+      label: platform.label,
+      url: `https://${platform.domain}/${handle}`,
+      icon: platform.icon
+    };
+  });
+};
+
 // Generate mock companies
 const generateCompanies = (count = 20) => {
   const services = [
@@ -17,6 +41,14 @@ const generateCompanies = (count = 20) => {
   ];
 
   return Array.from({ length: count }, (_, i) => {
+    const companyName = `${faker.company.name()} Auto Import`;
+    const slug = faker.helpers.slugify(companyName).toLowerCase();
+    const baseFee = faker.number.int({ min: 800, max: 2000 });
+    const customsFee = faker.number.int({ min: 400, max: 1200 });
+    const serviceFee = faker.number.int({ min: 300, max: 1500 });
+    const brokerFee = faker.number.int({ min: 150, max: 600 });
+    const pricePerMile = faker.number.int({ min: 5, max: 25 }) / 100;
+
     const reviewCount = faker.number.int({ min: 5, max: 100 });
     const reviews = Array.from({ length: Math.min(reviewCount, 10) }, () => ({
       id: faker.string.uuid(),
@@ -27,21 +59,39 @@ const generateCompanies = (count = 20) => {
     }));
 
     const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    const onboardingEndsAt = faker.datatype.boolean({ probability: 0.3 })
+      ? faker.date.future({ years: 1 }).toISOString()
+      : null;
+    const minPrice = baseFee + customsFee + serviceFee + brokerFee;
+    const maxPrice = minPrice + pricePerMile * 1000;
 
     return {
       id: (i + 1).toString(),
-      name: faker.company.name() + ' Auto Import',
+      slug,
+      name: companyName,
       logo: `https://api.dicebear.com/7.x/initials/svg?seed=${faker.company.name()}`,
       description: faker.lorem.sentences({ min: 2, max: 4 }),
       services: faker.helpers.arrayElements(services, { min: 2, max: 5 }),
       priceRange: {
-        min: faker.number.int({ min: 1000, max: 3000 }),
-        max: faker.number.int({ min: 4000, max: 10000 }),
+        min: minPrice,
+        max: maxPrice,
         currency: 'USD'
       },
+      fees: {
+        base: baseFee,
+        pricePerMile,
+        customs: customsFee,
+        service: serviceFee,
+        broker: brokerFee
+      },
+      pricingFormula: null,
       rating: Math.round(avgRating * 10) / 10,
       reviewCount,
       vipStatus: faker.datatype.boolean({ probability: 0.3 }),
+      onboarding: {
+        isFree: faker.datatype.boolean({ probability: 0.4 }),
+        endsAt: onboardingEndsAt
+      },
       location: {
         state: faker.helpers.arrayElement(states),
         city: faker.location.city()
@@ -51,6 +101,7 @@ const generateCompanies = (count = 20) => {
         phone: faker.phone.number(),
         website: faker.internet.url()
       },
+      socialLinks: generateSocialLinks(),
       establishedYear: faker.number.int({ min: 1990, max: 2020 }),
       reviews
     };
@@ -207,28 +258,8 @@ export const mockUser = {
 //       type: string
 //       format: uri
 
-export const mockNavigationItems = [
-  { id: 'home', label: '\u10db\u10d7\u10d0\u10d5\u10d0\u10e0\u10d8', href: '/' },
-  { id: 'catalog', label: '\u10d9\u10d0\u10e2\u10d0\u10da\u10dd\u10d2\u10d8', href: '/catalog' },
-  { id: 'dashboard', label: '\u10d3\u10d0\u10e4\u10d0', href: '/dashboard' },
-  { id: 'auctionListings', label: '\u10d0\u10e5\u10e2\u10d8\u10e3\u10e0\u10d8 \u10d0\u10e3\u10e5\u10ea\u10d8\u10dd\u10dc\u10d4\u10d1\u10d8', href: '/auction-listings' },
-  { id: 'carfax', label: 'VIN \u10e8\u10d4\u10db\u10dd\u10ec\u10db\u10d4\u10d1\u10d0', href: '/vin' }
-];
+// Navigation and Footer are now in client/src/config/navigation.ts
 
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/navigation
-// Expected Data:
-//   type: array
-//   items:
-//     type: object
-//     properties:
-//       id:
-//         type: string
-//       label:
-//         type: string
-//       href:
-//         type: string
-//         format: uri
 
 export const mockContent = {
   title: 'იმპორტირება აშშ-დან საქართველოში',
@@ -276,26 +307,8 @@ export const mockContent = {
 //           description:
 //             type: string
 
-export const mockFooterLinks = [
-  { id: 'privacy', label: 'კონფიდენციალურობა', href: '/privacy' },
-  { id: 'terms', label: 'წესები', href: '/terms' },
-  { id: 'support', label: 'დახმარება', href: '/support' }
-];
+// Footer links are now in client/src/config/navigation.ts
 
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/footer/links
-// Expected Data:
-//   type: array
-//   items:
-//     type: object
-//     properties:
-//       id:
-//         type: string
-//       label:
-//         type: string
-//       href:
-//         type: string
-//       format: uri
 
 export const mockSearchFilters = {
   geography: ['California', 'Texas', 'Florida', 'New York', 'Georgia'],

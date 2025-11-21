@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { motion } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
@@ -14,18 +13,16 @@ const DialogClose = DialogPrimitive.Close
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className }, _ref) => (
-  <DialogPrimitive.Overlay asChild>
-    <motion.div
-      className={cn(
-        "fixed inset-0 z-50 bg-background/80",
-        className,
-      )}
-      initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-      animate={{ opacity: 1, backdropFilter: "blur(6px)" }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-    />
-  </DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    forceMount
+    className={cn(
+      "dialog-overlay fixed inset-0 z-50 bg-background/80",
+      className,
+    )}
+    {...props}
+  />
 ))
 
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
@@ -36,16 +33,19 @@ const DialogContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 border bg-background p-4 shadow-lg sm:rounded-lg sm:p-6 w-auto max-w-[min(100vw-2rem,32rem)]",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </DialogPrimitive.Content>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <DialogPrimitive.Content
+        ref={ref}
+        forceMount
+        className={cn(
+          "dialog-content w-full max-w-[min(100vw-2rem,32rem)] rounded-lg border bg-background p-4 shadow-lg sm:p-6",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Content>
+    </div>
   </DialogPortal>
 ))
 
@@ -89,6 +89,18 @@ const DialogDescription = React.forwardRef<
 
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 sm:space-y-0",
+      className,
+    )}
+    {...props}
+  />
+)
+
+DialogFooter.displayName = "DialogFooter"
+
 export {
   Dialog,
   DialogPortal,
@@ -99,4 +111,5 @@ export {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 }

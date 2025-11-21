@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,7 @@ interface LocationState {
 }
 
 const LoginPage = () => {
+  const { t } = useTranslation()
   const { login, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -29,7 +31,7 @@ const LoginPage = () => {
     setError('')
 
     if (!email || !password) {
-      setError('გთხოვთ შეიყვანოთ ელ-ფოსტა და პაროლი')
+      setError(t('auth.login.error.required'))
       return
     }
 
@@ -41,7 +43,7 @@ const LoginPage = () => {
       const message =
         err instanceof Error && err.message
           ? err.message
-          : 'ავტორიზაციის დროს მოხდა შეცდომა'
+          : t('auth.login.error.generic')
 
       setError(message)
     }
@@ -49,15 +51,15 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-md" role="form" aria-label="ავტორიზაცია">
+      <Card className="w-full max-w-md" role="form" aria-label={t('auth.login.title')}>
         <CardHeader className="space-y-2 text-center">
           <Icon icon="mdi:car" className="mx-auto h-10 w-10 text-primary" />
-          <CardTitle className="text-2xl font-bold">ავტორიზაცია</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('auth.login.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>
             <div className="space-y-2">
-              <Label htmlFor="email">ელ-ფოსტა</Label>
+              <Label htmlFor="email">{t('auth.login.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -68,7 +70,7 @@ const LoginPage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">პაროლი</Label>
+              <Label htmlFor="password">{t('auth.login.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -89,15 +91,15 @@ const LoginPage = () => {
               disabled={isLoading}
               aria-disabled={isLoading}
             >
-              <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
-              {isLoading ? 'შესვლა...' : 'შესვლა'}
+              <Icon icon="mdi:login" className="me-2 h-4 w-4" />
+              {isLoading ? t('auth.login.loading') : t('auth.login.submit')}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            არ გაქვთ ანგარიში?{' '}
+            {t('auth.login.no_account')}{' '}
             <Link to="/register" className="text-primary underline-offset-4 hover:underline">
-              რეგისტრაცია
+              {t('auth.login.register_link')}
             </Link>
           </p>
         </CardContent>

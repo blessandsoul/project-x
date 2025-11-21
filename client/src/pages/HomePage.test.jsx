@@ -24,9 +24,7 @@ jest.mock('../components/Footer', () => {
 // Mock the mock data
 jest.mock('../mocks/_mockData', () => ({
   mockUser: { id: '1', name: 'John Doe' },
-  mockNavigationItems: [{ id: 'home', label: 'Home', href: '/' }],
   mockContent: { title: 'Test Title' },
-  mockFooterLinks: [{ id: 'privacy', label: 'Privacy', href: '/privacy' }]
 }));
 
 describe('HomePage', () => {

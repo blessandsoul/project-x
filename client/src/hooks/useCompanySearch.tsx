@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
 import { mockSearchFilters } from '@/mocks/_mockData'
-import type { SearchFilters } from '@/mocks/_mockData'
+import type { SearchFilters } from '@/types/api'
 
 interface SearchState {
   filters: SearchFilters

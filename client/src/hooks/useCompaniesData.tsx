@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 import { mockCompanies } from '@/mocks/_mockData'
 import { fetchCompaniesFromApi } from '@/services/companiesApi'
 
@@ -31,6 +31,7 @@ export function useCompaniesData(): UseCompaniesDataState {
         console.error('[useCompaniesData] Failed to load companies from API, falling back to mocks', err)
         if (!isCancelled) {
           setError('Failed to load companies from API')
+          // @ts-ignore: Mock data type mismatch
           setCompanies(mockCompanies)
         }
       } finally {

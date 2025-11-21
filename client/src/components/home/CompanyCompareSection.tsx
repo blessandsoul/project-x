@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { type Company } from '@/mocks/_mockData'
+import { type Company } from '@/types/api'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { VipBadge } from '@/components/company/VipBadge'
 import { CompanyRating } from '@/components/company/CompanyRating'

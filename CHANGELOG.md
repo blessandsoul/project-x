@@ -1,31 +1,6 @@
+### Fixed
+- Fixed Dialog animation centering issue in `client/src/index.css`
+- Fixed localization text in `client/src/pages/CompanyCatalogPage.tsx`
+- Fixed "Invalid hook call" error by moving i18n dependencies to client package and configuring Vite dedupe.
 ### Added
-- New component <HomePage> with header, content, and footer layout
-- New component <Header> with navigation and user profile
-- New component <Content> with hero section and feature cards
-- New component <Footer> with links and social media
-- shadcn-ui component library setup with Button, Card, and Separator
-- Tailwind CSS configuration with custom theme variables
-- Internationalization ready with translation files
-- Comprehensive test suite for all components
-- TypeScript interfaces and type safety
-- Car import platform mock data with faker.js
-- Company search page with filters (geography, services, price, rating, VIP)
-- Company catalog page with sorting and search
-- Company profile pages with detailed information and reviews
-- Routing system for all pages
-- Custom green theme with Georgian font
-- Accessibility features with ARIA labels and keyboard navigation
-- Root npm script "code-graph-rag-mcp" and updated start-dev.bat for one-click dev startup
-- Real user authentication flow using /register and /login API endpoints with JWT persistence
-- Root-level README.md documenting project overview, setup, and API documentation links
-- Shared search filter context, skeleton loading on company search/catalog pages, and favorites integration across search, catalog, profile, and dashboard
-- Recently viewed tracking, mock car data and imported cars section in company profiles, client-side pagination in catalog, and basic tests for company search/catalog pages
-- Home QuickSearch integrated with shared SearchContext, persisted search filters in localStorage, contact sheet on company profile, accessibility tweaks for search/catalog results, active filter badges, and dashboard tests for favorites and recently viewed
-- Improved main Header and SiteHeader clickability and added a mobile navigation sheet for small screens
-- Rebranded the platform as TrustedImporters.Ge, updated global fonts (Inter + Noto Sans Georgian), and refreshed header/footer branding and marketing copy
-- Integrated /vehicle/:id page with backend vehicles API using GET /vehicles/:id, /vehicles/:id/photos, and /vehicles/:vehicleId/quotes for vehicle details, photos, and import quotes
-- Expanded root README.md overview with target audience and key business problems the platform solves
-- Added AuthDrawer component with tabbed login/register forms and wired the main Header sign-in button to open the authentication drawer instead of navigating to a standalone auth page
-- Improved Vite dev server configuration (host/port/polling) for more reliable HMR in the client React app
-- Added a Vite HMR fallback in client/src/main.tsx to force full-page reloads on module updates when React Fast Refresh is disabled by external shims
-- Added smooth animations to compare/cancel and close buttons in the vehicle comparison modal
+- Implemented full i18n support with 4 languages (KA, EN, RU, AR) and RTL support.

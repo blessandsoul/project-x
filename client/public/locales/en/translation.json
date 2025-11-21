@@ -1,67 +1,664 @@
 {
+  "common": {
+    "min": "min",
+    "reviews": "reviews",
+    "days": "days",
+    "status": "Status",
+    "view_all": "View All",
+    "save": "Save",
+    "cancel": "Cancel",
+    "user": "User"
+  },
   "header": {
     "brand": "TrustedImporters.Ge",
     "menu": "Menu",
-    "avatar_alt": "User avatar",
     "sign_in": "Sign In",
-    "sign_out": "Sign Out",
     "profile": "Profile",
-    "open_profile_menu": "Open profile menu",
-    "dashboard": "Dashboard",
-    "catalog": "Catalog"
+    "sign_out": "Sign Out",
+    "language": "Language"
   },
   "navigation": {
     "home": "Home",
-    "about": "About",
-    "contact": "Contact"
+    "search": "Search",
+    "catalog": "Catalog",
+    "dashboard": "Dashboard",
+    "logisticsRadar": "Logistics Radar",
+    "auctionListings": "Active Auctions",
+    "carfax": "VIN Check"
   },
   "content": {
-    "get_started": "Get Started",
-    "learn_more": "Learn More",
+    "title": "Find a Trusted Importer",
+    "subtitle": "Your guide to the world of auto imports",
+    "description": "We help you connect with the best auto importers, compare prices, and make the best decision.",
+    "find_companies": "Find Companies",
+    "view_catalog": "View Catalog",
     "ready_to_start": "Ready to Start?",
-    "join_thousands": "Join thousands of users building amazing things.",
-    "sign_up_now": "Sign Up Now"
+    "join_thousands": "Join thousands of users who already enjoy our service.",
+    "start_import": "Start Import",
+    "features": {
+      "delivery": {
+        "title": "Fast Delivery",
+        "description": "Our partners ensure timely and safe vehicle transportation."
+      },
+      "security": {
+        "title": "Security",
+        "description": "All companies are verified and hold a high reputation in the market."
+      },
+      "price": {
+        "title": "Best Prices",
+        "description": "Get competitive offers and save money."
+      }
+    }
   },
   "footer": {
-    "brand": "TrustedImporters.Ge",
-    "description": "A trusted platform that helps you find reliable car importers from the USA to Georgia, with transparent prices and service offers in one place.",
+    "description": "The site helps you select a reliable auto importer with reasonable prices and services — all offers and prices in one place for easy comparison.",
+    "stats": {
+      "region": "Importing cars from USA to Georgia",
+      "cars": "1000+ Imported Cars",
+      "years": "10+ Years Experience"
+    },
     "company": "Company",
     "support": "Support",
     "connect": "Connect",
     "help": "Help Center",
-    "contact": "Contact Us",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "copyright": "All rights reserved.",
+    "cta": {
+      "title": "Need Consultation?",
+      "subtitle": "Get personal advice on your next vehicle import.",
+      "button": "Get Consultation"
+    },
     "twitter": "Twitter",
     "github": "GitHub",
-    "linkedin": "LinkedIn",
-    "privacy": "Privacy Policy",
-    "terms": "Terms of Service",
-    "copyright": "All rights reserved."
+    "linkedin": "LinkedIn"
   },
-  "dashboard": {
-    "company": {
-      "leads_bubble": {
-        "title": "New client requests",
-        "subtitle": "Requests from users for specific vehicles",
-        "empty": "You have no new client requests right now.",
-        "status_new": "New",
-        "status_offer_sent": "Offer sent",
-        "status_won": "Won",
-        "status_lost": "Lost",
-        "status_expired": "Expired",
-        "badge_priority_price": "Priority: price",
-        "badge_priority_speed": "Priority: speed",
-        "badge_priority_premium_service": "Priority: premium service"
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "loading": "Signing in...",
+      "no_account": "Don't have an account?",
+      "register_link": "Register",
+      "error": {
+        "required": "Please enter email and password",
+        "generic": "An error occurred during login"
+      }
+    },
+    "register": {
+      "title": "Register",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Register",
+      "loading": "Registering...",
+      "has_account": "Already have an account?",
+      "login_link": "Sign In",
+      "error": {
+        "required": "Please fill all fields",
+        "generic": "An error occurred during registration"
       }
     }
   },
-  "reviews": {
-    "write_review": "Write a review",
-    "rating_label": "Rating",
-    "comment_label": "Your review",
-    "comment_placeholder": "Please share your experience...",
-    "submit_button": "Submit",
-    "cancel_button": "Cancel",
-    "submit_error": "Failed to submit review. Please try again.",
-    "comment_required": "Please write a review"
+  "catalog": {
+    "title": "Import Companies Catalog",
+    "subtitle": "Explore all available companies",
+    "filters": {
+      "title": "Filters",
+      "geography": "Geography",
+      "city_placeholder": "City (e.g. Tbilisi)",
+      "services": "Services",
+      "services_soon": "Service filters coming soon",
+      "price": "Price",
+      "rating": "Minimum Rating",
+      "rating_all": "All",
+      "rating_3_plus": "3+",
+      "rating_4_plus": "4+",
+      "rating_5": "5",
+      "vip_only": "VIP Companies Only",
+      "free_onboarding": "Free Onboarding"
+    },
+    "search": {
+      "placeholder": "Search companies...",
+      "clear": "Clear Search"
+    },
+    "sort": {
+      "label": "Sort",
+      "newest": "Newest",
+      "rating": "By Rating",
+      "cheapest": "Price (Low to High)",
+      "name": "By Name"
+    },
+    "results": {
+      "showing": "Showing",
+      "connector": "companies",
+      "of": "of",
+      "empty_title": "No companies found",
+      "empty_description": "Try different keywords or clear filters"
+    },
+    "card": {
+      "add_favorite": "Add to favorites",
+      "remove_favorite": "Remove from favorites",
+      "founded": "Founded:"
+    },
+    "pagination": {
+      "page": "Page",
+      "prev": "Back",
+      "next": "Next"
+    },
+    "tags": {
+      "active": "Active filters:",
+      "search": "Search:",
+      "sort": "Sort:"
+    },
+    "error": {
+      "fetch": "Failed to load companies. Please try again.",
+      "retry": "Retry"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "roles": {
+      "user": "User",
+      "dealer": "Dealer",
+      "company": "Company"
+    },
+    "error": {
+      "load": "Failed to load dashboard. Please try again later.",
+      "quotes": "Failed to load quotes. Please try again later.",
+      "leads": "Failed to load leads. Please try again later."
+    },
+    "cards": {
+      "leads": "Leads",
+      "listings": "Listings",
+      "deals": "Deals",
+      "margin": "Margin",
+      "views": "Views",
+      "quotes": "Quotes",
+      "conversion": "Conv.",
+      "rating": "Rating",
+      "total": "Total",
+      "new": "New",
+      "accounts": "Accounts",
+      "growth": "Growth"
+    },
+    "user": {
+      "quotes": {
+        "title": "Open Requests / Quotes",
+        "empty": "You have no open requests at this moment. Start cooperation from a company page.",
+        "rating": "Rating",
+        "deals": "deals",
+        "budget": "Total Budget",
+        "service_fee": "Service Fee",
+        "duration_label": "Estimated Duration",
+        "duration": "{{count}} days",
+        "view_dialog": "View Dialog",
+        "compare": "Compare",
+        "remove_compare": "Remove Compare",
+        "compare_selected": "Compare Offers ({{count}}/3)",
+        "dialog": {
+            "description": "Detailed information about company offer and terms.",
+            "company": "Company",
+            "financials": "Financial Terms",
+            "terms": "Terms & Conditions",
+            "tech_details": "Technical Details",
+            "comment": "Company Comment",
+            "demo_actions_hint": "Demo buttons for future actions.",
+            "action": {
+                "message": "Write Message",
+                "contact": "Share Contact",
+                "questions": "Send Additional Questions",
+                "accept": "Accept Offer",
+                "reject": "Reject Offer"
+            }
+        }
+      },
+      "compare": {
+          "title": "Compare Offers",
+          "description": "Max 3 offers for comparison. This is a demo view.",
+          "headers": {
+              "company": "Company",
+              "budget": "Budget",
+              "service_fee": "Service Fee",
+              "duration": "Duration",
+              "status": "Status"
+          }
+      },
+      "offers": {
+          "title": "Special Offers",
+          "empty": "No special offers at this moment.",
+          "view": "View",
+          "status": {
+              "selected": "Selected",
+              "pending": "Pending",
+              "rejected": "Rejected",
+              "expired": "Expired",
+              "accepted": "Accepted"
+          }
+      },
+      "quick_search": {
+          "title": "Quick Search by Company",
+          "service": "Service Category",
+          "any": "Any",
+          "geography": "State / Region",
+          "budget": "Budget",
+          "submit": "Find Company"
+      },
+      "actions": {
+          "title": "Quick Actions",
+          "new_search": "Start New Search",
+          "fill_brief": "Fill Common Brief",
+          "go_to_requests": "Go to Your Requests"
+      },
+      "favorites": {
+          "title": "Favorite Companies",
+          "clear": "Clear",
+          "empty": "No favorite companies added yet."
+      },
+      "recent": {
+          "title": "Recently Viewed Companies",
+          "clear": "Clear",
+          "empty": "No history in this session."
+      },
+      "stats": {
+          "title": "Your Activity Stats",
+          "viewed": "Viewed Companies",
+          "favorites": "Favorites",
+          "requests": "Sent Requests"
+      },
+      "guides": {
+          "title": "Useful Guides & Articles",
+          "empty": "Guides coming soon.",
+          "read": "Read"
+      },
+      "reminders": {
+          "title": "Reminders",
+          "empty": "No active reminders."
+      }
+    },
+    "company": {
+      "leads_bubble": {
+        "title": "New Client Requests",
+        "subtitle": "Requests from users for specific vehicles",
+        "empty": "You have no new client requests right now.",
+        "status": {
+            "new": "New",
+            "offer_sent": "Offer Sent",
+            "won": "Won",
+            "lost": "Lost",
+            "expired": "Expired"
+        },
+        "expired": "Expired",
+        "minutes_left": "{{count}} min left",
+        "hours_left": "{{hours}}h {{minutes}}m left",
+        "budget_not_specified": "Budget not specified",
+        "priority": {
+            "price": "Priority: price",
+            "speed": "Priority: speed",
+            "premium": "Priority: premium service"
+        }
+      },
+      "stats": {
+          "title": "Network Statistics",
+          "profile_views": "Profile Views",
+          "active_dealers": "Active Dealers",
+          "active_companies": "Active Companies"
+      },
+      "dealer_activity": {
+          "title": "Dealer Activity by State",
+          "empty": "No activity data yet.",
+          "leads_label": "leads / activity"
+      },
+      "brand_health": {
+          "title": "Brand Health",
+          "description": "Overall brand perception across all network dealers."
+      },
+      "service_quality": {
+          "title": "Service Quality",
+          "reply_time": "Avg. Reply Time",
+          "handled_requests": "Handled Requests",
+          "description": "Data is illustrated, will be replaced with real API data."
+      },
+      "campaigns": {
+          "title": "Marketing Campaigns",
+          "empty": "No active campaigns."
+      },
+      "segments": {
+          "title": "Audience Segments",
+          "empty": "No segmentation data."
+      },
+      "competitors": {
+          "title": "Competitor Monitoring",
+          "empty": "No competitor data.",
+          "rating": "Rating",
+          "trend_up": "Growth",
+          "trend_down": "Decline"
+      },
+      "risks": {
+          "title": "Risks & Alerts",
+          "empty": "No risks detected."
+      },
+      "network_actions": {
+          "title": "Dealer Network Management"
+      },
+      "goals": {
+          "title": "Plans & Goals",
+          "empty": "Goals not configured."
+      }
+    },
+    "dealer": {
+      "leads": {
+          "title": "Leads Panel",
+          "today_new": "New Today",
+          "week_new": "New This Week",
+          "in_progress": "In Progress",
+          "closed": "Closed"
+      },
+      "funnel": {
+          "title": "Sales Funnel",
+          "views": "Profile Views",
+          "requests": "Requests",
+          "deals": "Deals"
+      },
+      "actions": {
+          "title": "Quick Actions",
+          "add_offer": "Add New Offer",
+          "launch_promo": "Launch Promo",
+          "update_prices": "Update Prices"
+      },
+      "requests": {
+          "title": "New Client Requests",
+          "empty": "No new requests.",
+          "reply": "Reply",
+          "processed": "Processed"
+      },
+      "reminders": {
+          "title": "Lead Reminders",
+          "empty": "No critical reminders."
+      },
+      "top_offers": {
+          "title": "Top Offers / Positions",
+          "empty": "No top offers."
+      },
+      "reviews": {
+          "title": "Client Reviews",
+          "empty": "No reviews yet.",
+          "manage": "Manage Reviews"
+      },
+      "traffic": {
+          "title": "Dealer Profile Traffic",
+          "total": "Total Views",
+          "search": "From Search",
+          "catalog": "From Catalog",
+          "offers": "From Offers"
+      },
+      "tasks": {
+          "title": "Today's Tasks",
+          "empty": "No tasks for today."
+      },
+      "comparison": {
+          "title": "Comparison vs Previous Period",
+          "leads_count": "Leads Count",
+          "conversion": "Conversion",
+          "margin": "Avg. Margin"
+      }
+    }
+  },
+  "home": {
+    "steps": {
+      "step1": "Step 1 — Find a Trusted Company",
+      "step2": "Step 2 — Why Users Trust Us",
+      "step3": "Step 3 — Stories and Knowledge",
+      "step4": "Step 4 — Final Step"
+    },
+    "hero": {
+      "badge": "Trusted import platform from USA to Georgia",
+      "title_prefix": "Find Trusted Companies",
+      "title_suffix": "for Import from USA",
+      "vehicle_types": {
+        "cars": "Cars",
+        "motorcycles": "Motorcycles",
+        "atvs": "ATVs"
+      },
+      "description": "Compare prices, ratings, and services in one place. Transparent terms, verified importers, and support in your language.",
+      "how_it_works_title": "How it works: 3 simple steps",
+      "step1": "Choose budget and origin.",
+      "step2": "Specify desired type: sedan, SUV, premium, etc.",
+      "step3": "Get matched with suitable import companies.",
+      "cta_find": "Find Company",
+      "cta_catalog": "View Catalog",
+      "promise": "In a few minutes we will get at least 3 trusted company options based on your requirements.",
+      "verified": "Verified Importers",
+      "transparent": "Transparent Prices",
+      "support": "Support in your language",
+      "card": {
+        "successful_imports": "Successful Imports",
+        "buyer_protection": "Buyer Protection",
+        "stats_title": "Platform Statistics",
+        "company": "Company",
+        "vip_importer": "VIP Importer",
+        "avg_rating": "Average Rating",
+        "examples_title": "Some examples of companies presented on the platform:",
+        "data_source": "Data is based on import companies in the catalog and their user reviews.",
+        "viewing_companies": "Currently {{count}} users are viewing import companies.",
+        "viewing_vehicles": "Currently {{count}} users are viewing vehicle lots."
+      }
+    },
+    "error": {
+      "companies_load": "Problem loading company data",
+      "companies_load_desc": "Showing temporary data while real list cannot be loaded. Try again later or view full catalog."
+    },
+    "empty": {
+      "no_companies": "No companies added yet",
+      "no_companies_desc": "Verified import companies will appear here soon. For now, explore platform features."
+    },
+    "lead_capture": {
+      "title": "Didn't find what you were looking for?",
+      "description": "Leave a request and companies will contact you themselves with the best offers.",
+      "response_time": "Avg. response time: 15 min",
+      "privacy_guarantee": "Your data is protected",
+      "form_title": "Request for Auto Import",
+      "name_label": "Your Name",
+      "contact_label": "Contact Number or Email",
+      "contact_placeholder": "+995 555 00 00 00",
+      "budget_label": "Max Budget (USD)",
+      "car_type_label": "Vehicle Type",
+      "car_type_placeholder": "Select Type",
+      "car_type_any": "Any",
+      "car_type_sedan": "Sedan",
+      "car_type_suv": "Jeep / SUV",
+      "car_type_hatchback": "Hatchback",
+      "car_type_premium": "Premium",
+      "auction_source_label": "Auction",
+      "auction_source_placeholder": "Select Source",
+      "auction_source_any": "Any",
+      "message_label": "Additional Details",
+      "message_placeholder": "e.g. specific model, year, color...",
+      "priority_label": "What is most important?",
+      "priority_placeholder": "Select Priority",
+      "priority_price": "Low Price",
+      "priority_speed": "Fast Delivery",
+      "priority_premium": "Premium Service",
+      "advanced_show": "Show advanced parameters",
+      "advanced_hide": "Hide advanced parameters",
+      "advanced_hint": "Optional parameters for more precise search",
+      "brand_label": "Brand",
+      "brand_placeholder": "e.g. Toyota",
+      "model_label": "Model",
+      "model_placeholder": "e.g. Camry",
+      "year_from_label": "Year From",
+      "year_from_placeholder": "2015",
+      "color_label": "Color",
+      "color_placeholder": "Any",
+      "color_any": "Any",
+      "color_white": "White",
+      "color_black": "Black",
+      "color_grey": "Grey",
+      "color_blue": "Blue",
+      "color_red": "Red",
+      "consent_label": "I agree to the processing of my personal data",
+      "submit_btn": "Send Request",
+      "submitting_btn": "Sending...",
+      "success_message": "Request sent successfully!",
+      "validation": {
+        "name_required": "Name is required",
+        "contact_required": "Contact is required",
+        "car_type_required": "Car type is required",
+        "auction_source_required": "Auction source is required",
+        "priority_required": "Priority is required",
+        "consent_required": "Consent is required"
+      }
+    },
+    "quick_search": {
+      "title": "Quick Company Search",
+      "state_label": "State in USA",
+      "state_placeholder": "Select State",
+      "service_label": "Service",
+      "service_placeholder": "Select Service",
+      "rating_label": "Min. Rating",
+      "rating_all": "All",
+      "vip_only": "VIP Companies Only",
+      "search_btn": "Find Trusted Companies",
+      "reset_btn": "Clear Filters",
+      "presets_title": "Popular Scenarios",
+      "presets_description": "Choose common combinations for quick results.",
+      "preset_1": "High Rating • California • VIP",
+      "preset_2": "Budget Sedan • Florida • 3+",
+      "preset_3": "Premium • Georgia • 5★ • VIP"
+    },
+    "price_calculator": {
+      "title": "Calculate Total Cost",
+      "description": "Select a budget range to estimate the cost of importing a car from USA to Georgia.",
+      "budget_label": "Car Budget, USD",
+      "budget_range_aria": "Car budget range",
+      "estimated_total_label": "Estimated Total Cost",
+      "disclaimer": "Calculation includes service fees and customs duties and is approximate.",
+      "secure_payment": "Secure Payment",
+      "secure_payment_tooltip": "Funds are blocked in parts and released to the importer only after confirmation. Use for reference only.",
+      "estimate_note": "This is an estimate. Actual cost may vary by company, auction, and customs.",
+      "find_btn": "Find Companies for this Budget"
+    },
+    "audience": {
+      "title": "Who is this platform for?",
+      "description": "Choose the scenario that fits you best to see relevant companies.",
+      "first_time": {
+        "title": "First Time Importing",
+        "description": "Need a step-by-step guide — from auction to delivery, with full document and communication support.",
+        "cta": "For Beginners"
+      },
+      "reseller": {
+        "title": "Dealers & Resellers",
+        "description": "Looking for a stable partner with wholesale prices, fast logistics, and predictable schedule.",
+        "cta": "Find Partner"
+      },
+      "safe_first": {
+        "title": "Max Reliability, Min Risk",
+        "description": "Want only verified companies, transparent contracts, and high ratings from past clients.",
+        "cta": "Top Rated Companies"
+      },
+      "budget": {
+        "title": "Min Budget, Max Value",
+        "description": "Budget is key — willing to wait longer for a better price.",
+        "cta": "Affordable Offers"
+      }
+    }
+  },
+  "company_profile": {
+    "not_found": {
+      "title": "Company Not Found",
+      "description": "The requested company does not exist.",
+      "back_to_catalog": "Back to Catalog"
+    },
+    "back": "Back",
+    "reviews_count": "reviews",
+    "founded": "Founded",
+    "contact_btn": "Contact",
+    "contact": {
+      "title": "Contact Company",
+      "description": "Fill out the form to send a question to {{name}}.",
+      "name": "Your Name",
+      "email": "Email",
+      "message": "Message",
+      "submit": "Send",
+      "loading": "Sending..."
+    },
+    "email_btn": "Email",
+    "website_btn": "Website",
+    "service_cost": "Service Cost",
+    "services": {
+      "title": "Services"
+    },
+    "cars": {
+      "title": "Imported Car Examples",
+      "mileage": "Mileage"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "write": "Write Review",
+      "your_rating": "Your Rating",
+      "comment_label": "Comment",
+      "comment_placeholder": "Please tell us about your experience...",
+      "submit": "Send",
+      "cancel": "Cancel",
+      "empty": "This company has no reviews yet.",
+      "prev": "Prev",
+      "next": "Next",
+      "delete_confirm": "Are you sure you want to delete this review?"
+    },
+    "contact_info": {
+      "title": "Contact Information"
+    },
+    "stats": {
+      "title": "Statistics",
+      "rating": "Rating",
+      "reviews": "Reviews",
+      "founded": "Founded",
+      "services": "Services"
+    },
+    "cta": {
+      "title": "Interested?",
+      "description": "Contact the company for details",
+      "button": "Send Message"
+    },
+    "error": {
+      "reviews_load": "Failed to load reviews",
+      "review_submit": "Failed to submit review. Please try again.",
+      "review_length": "Review must be at least 10 characters"
+    },
+    "favorites": {
+      "add": "Add to Favorites",
+      "remove": "Remove from Favorites"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit Profile",
+    "not_found": "Profile not found",
+    "not_found_title": "Profile not found",
+    "not_found_description": "We could not find your profile. Please log in again.",
+    "not_found_login_btn": "Back to Login",
+    "loading": "Loading profile...",
+    "login_again": "Please log in again to view your profile.",
+    "back_to_login": "Back to Login",
+    "username_label": "Username",
+    "username_placeholder": "Your username",
+    "email_label": "Email",
+    "new_password_label": "New Password",
+    "password_placeholder": "••••••••",
+    "success": {
+        "update": "Profile updated successfully"
+    },
+    "error": {
+      "update_generic": "An error occurred while updating the profile",
+      "delete_generic": "An error occurred while deleting the account"
+    },
+    "delete_confirm": "Are you sure you want to delete your account?",
+    "save_btn": "Save Changes",
+    "saving_btn": "Saving...",
+    "delete_btn": "Delete Account",
+    "deleting_btn": "Deleting account..."
   }
 }

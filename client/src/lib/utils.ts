@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Company, SearchFilters } from "@/mocks/_mockData"
+import type { Company, SearchFilters } from "@/types/api"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

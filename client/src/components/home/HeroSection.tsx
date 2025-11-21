@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import type { CompanyStats } from '@/hooks/useCompanyStats'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 import { trackHeroCtaClick } from '@/lib/homePageEvents'
 
 type HeroSectionProps = {
@@ -55,6 +56,7 @@ function useAnimatedNumber(value: number, shouldAnimate: boolean, durationMs = A
 }
 
 export function HeroSection({ stats, companies }: HeroSectionProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const shouldReduceMotion = useReducedMotion()
   const estimatedDeals = Math.max(stats.total * 10, 20)
@@ -69,7 +71,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
   const animatedCompanyViewers = useAnimatedNumber(activeCompanyViewers, animationEnabled)
   const animatedVehicleViewers = useAnimatedNumber(activeVehicleViewers, animationEnabled)
   const [currentCompanyIndex, setCurrentCompanyIndex] = useState<number>(0)
-  const vehicleTypes = ['ავტომობილების', 'მოტოციკლების', 'კვადროიცკლების'] as const
+  const vehicleTypes = ['cars', 'motorcycles', 'atvs'] as const
   const [currentVehicleTypeIndex, setCurrentVehicleTypeIndex] = useState<number>(0)
 
   useEffect(() => {
@@ -157,20 +159,20 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
             transition={{ duration: 0.4, ease: 'easeOut' as const }}
           >
             <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Icon icon="mdi:shield-check" className="mr-1 h-3 w-3" />
-              სანდო იმპორტის პლატფორმა აშშ-დან საქართველოში
+              <Icon icon="mdi:shield-check" className="me-1 h-3 w-3" />
+              {t('home.hero.badge')}
             </div>
             <div className="space-y-4">
               <h1
                 id="home-hero-heading"
                 className="pt-1 text-3xl font-bold tracking-tight md:text-5xl font-homepage-hero leading-[1.25]"
               >
-                <span className="sr-only">იპოვეთ სანდო კომპანიები ავტომობილების იმპორტისთვის აშშ-დან</span>
+                <span className="sr-only">{t('home.hero.title_prefix')} {t('home.hero.title_suffix')}</span>
                 <span
                   aria-hidden="true"
                   className="inline-flex flex-wrap items-baseline gap-1 bg-gradient-to-r from-[#FF8A00] to-[#FF4B00] bg-clip-text text-transparent"
                 >
-                  <span>იპოვეთ სანდო კომპანიები</span>
+                  <span>{t('home.hero.title_prefix')}</span>
                   <span className="relative inline-flex h-[2.1em] min-w-[13ch] items-center justify-center overflow-hidden">
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -181,21 +183,19 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                         transition={{ duration: 0.45, ease: 'easeOut' }}
                         className="inline-block whitespace-nowrap rounded-full bg-primary/10 px-2 py-0.5 text-primary"
                       >
-                        {vehicleTypes[currentVehicleTypeIndex]}
+                        {t(`home.hero.vehicle_types.${vehicleTypes[currentVehicleTypeIndex]}`)}
                       </motion.span>
                     </AnimatePresence>
                   </span>
-                  <span>იმპორტისთვის აშშ-დან</span>
+                  <span>{t('home.hero.title_suffix')}</span>
                 </span>
               </h1>
               <p className="text-base text-muted-foreground md:text-lg">
-                შეადარეთ ფასები, რეიტინგები და მომსახურება ერთ სივრცეში.
-                გამჭვირვალე პირობები, ვერიფიცირებული იმპორტიორები და
-                მხარდაჭერა ქართულ ენაზე.
+                {t('home.hero.description')}
               </p>
               <div className="mt-2 space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  როგორ მუშაობს: 3 მარტივი ნაბიჯი
+                  {t('home.hero.how_it_works_title')}
                 </p>
                 <ol className="mt-1 space-y-1 text-xs text-muted-foreground">
                   <li className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
                         1
                       </span>
-                      <span>აირჩიე ბიუჯეტი და საიდან გინდა მანქანა.</span>
+                      <span>{t('home.hero.step1')}</span>
                     </button>
                   </li>
                   <li className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
                         2
                       </span>
-                      <span>მიუთითე სასურველი ტიპი: sedan, SUV, პრემიუმი და ა.შ.</span>
+                      <span>{t('home.hero.step2')}</span>
                     </button>
                   </li>
                   <li className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
                         3
                       </span>
-                      <span>მიიღე შესაფერისი იმპორტის კომპანიების подборი.</span>
+                      <span>{t('home.hero.step3')}</span>
                     </button>
                   </li>
                 </ol>
@@ -245,8 +245,8 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   navigate('/catalog')
                 }}
               >
-                <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" />
-                იპოვე კომპანია
+                <Icon icon="mdi:magnify" className="me-2 h-4 w-4" />
+                {t('home.hero.cta_find')}
               </Button>
               <Button
                 size="lg"
@@ -256,13 +256,12 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   navigate('/catalog')
                 }}
               >
-                <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
-                კატალოგის ნახვა
+                <Icon icon="mdi:view-grid" className="me-2 h-4 w-4" />
+                {t('home.hero.cta_catalog')}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              რამდენიმე წუთში მივიღებთ მინიმუმ 3 სანდო კომპანიის ვარიანტს თქვენი მოთხოვნების
-              მიხედვით.
+              {t('home.hero.promise')}
             </p>
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -271,7 +270,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   className="h-4 w-4 text-primary"
                   aria-hidden="true"
                 />
-                <span>ვერიფიცირებული იმპორტიორები</span>
+                <span>{t('home.hero.verified')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Icon
@@ -279,7 +278,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   className="h-4 w-4 text-primary"
                   aria-hidden="true"
                 />
-                <span>გამჭვირვალე ფასები</span>
+                <span>{t('home.hero.transparent')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Icon
@@ -287,7 +286,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   className="h-4 w-4 text-primary"
                   aria-hidden="true"
                 />
-                <span>მხარდაჭერა ქართულ ენაზე</span>
+                <span>{t('home.hero.support')}</span>
               </div>
             </div>
           </motion.div>
@@ -307,30 +306,30 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       <span className="font-normal">Importers.Ge</span>
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      ({estimatedDeals}+ წარმატებული იმპორტი)
+                      ({estimatedDeals}+ {t('home.hero.card.successful_imports')})
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1 text-[10px] text-primary">
                     <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5">
                       <Icon
                         icon="mdi:shield-check-outline"
-                        className="mr-1 h-3 w-3"
+                        className="me-1 h-3 w-3"
                         aria-hidden="true"
                       />
-                      <span>მყიდველის დაცვა</span>
+                      <span>{t('home.hero.card.buyer_protection')}</span>
                     </span>
                     <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5">
                       <Icon
                         icon="mdi:check-decagram"
-                        className="mr-1 h-3 w-3"
+                        className="me-1 h-3 w-3"
                         aria-hidden="true"
                       />
-                      <span>ვერიფიცირებული იმპორტიორები</span>
+                      <span>{t('home.hero.verified')}</span>
                     </span>
                   </div>
                 </div>
                 <p className="text-xs font-medium text-muted-foreground">
-                  სტატისტიკა პლატფორმაზე
+                  {t('home.hero.card.stats_title')}
                 </p>
                 <div className="grid grid-cols-3 gap-4 text-center text-sm">
                   <div>
@@ -338,7 +337,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       {animatedTotalCompanies}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      კომპანია
+                      {t('home.hero.card.company')}
                     </div>
                   </div>
                   <div>
@@ -346,7 +345,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       {animatedVipCompanies}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      VIP იმპორტიორი
+                      {t('home.hero.card.vip_importer')}
                     </div>
                   </div>
                   <div>
@@ -354,14 +353,14 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       {animatedAvgRating.toFixed(1)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      საშუალო რეიტინგი
+                      {t('home.hero.card.avg_rating')}
                     </div>
                   </div>
                 </div>
                 {companies && companies.length > 0 && (
                   <div className="mt-2 space-y-1">
                     <p className="text-[11px] font-medium text-muted-foreground">
-                      პლატფორმაზე წარმოდგენილი კომპანიებიდან რამდენიმე მაგალითი:
+                      {t('home.hero.card.examples_title')}
                     </p>
                     <div className="overflow-hidden">
                       {(() => {
@@ -456,8 +455,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                   </div>
                 )}
                 <p className="text-[11px] text-muted-foreground">
-                  მონაცემები ეფუძნება კატალოგში არსებულ იმპორტის კომპანიებს და მათ მომხმარებელთა
-                  შეფასებებს.
+                  {t('home.hero.card.data_source')}
                 </p>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -467,7 +465,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       aria-hidden="true"
                     />
                     <p>
-                      ახლა {animatedCompanyViewers} მომხმარებელი ათვალიერებს იმპორტის კომპანიებს.
+                      {t('home.hero.card.viewing_companies', { count: animatedCompanyViewers })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -477,7 +475,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                       aria-hidden="true"
                     />
                     <p>
-                      ახლა {animatedVehicleViewers} მომხმარებელი ათვალიერებს ავტომობილების ლოტებს.
+                      {t('home.hero.card.viewing_vehicles', { count: animatedVehicleViewers })}
                     </p>
                   </div>
                 </div>

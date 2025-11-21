@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import Header from '@/components/Header/index.tsx'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
@@ -17,12 +18,11 @@ import { SectionCards } from '@/components/section-cards'
 import { DealerDashboardSections } from '@/components/dashboard/DealerDashboardSections'
 import { CompanyDashboardSections, type CompanyLeadBubble } from '@/components/dashboard/CompanyDashboardSections'
 import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Icon } from '@iconify/react/dist/iconify.js'
-import { mockCompanies, mockNavigationItems, mockCars } from '@/mocks/_mockData'
-import type { UserRole } from '@/mocks/_mockData'
+import { Button } from '@/components/ui/button'
+import { navigationItems } from '@/config/navigation'
+import { mockCompanies } from '@/mocks/_mockData'
+import type { UserRole } from '@/types/api'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,6 +31,7 @@ import { fetchUserLeadOffers, type UserLeadOffer } from '@/api/userLeads'
 import { fetchCompanyLeads } from '@/api/companyLeads'
 
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const { favorites, clearFavorites } = useFavorites()
   const favoriteCompanies = mockCompanies.filter((company) => favorites.includes(company.id))
   const { recentlyViewed, clearRecentlyViewed } = useRecentlyViewed()
@@ -76,7 +77,7 @@ export default function DashboardPage() {
         if (!isMounted) return
         // eslint-disable-next-line no-console
         console.error('[dashboard] fetchUserLeadOffers:error', error)
-        setUserLeadOffersError('ვერ ჩაიტვირთა თქვენი ფასის კოტაციები. სცადეთ მოგვიანებით.')
+        setUserLeadOffersError(t('dashboard.error.quotes'))
       } finally {
         if (isMounted) {
           setIsUserLeadOffersLoading(false)
@@ -89,7 +90,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false
     }
-  }, [role])
+  }, [role, t])
 
   useEffect(() => {
     if (role !== 'company') {
@@ -141,7 +142,7 @@ export default function DashboardPage() {
         if (!isMounted) return
         // eslint-disable-next-line no-console
         console.error('[dashboard] fetchCompanyLeads:error', error)
-        setCompanyLeadsError('ვერ ჩაიტვირთა ახალი მოთხოვნები. სცადეთ მოგვიანებით.')
+        setCompanyLeadsError(t('dashboard.error.leads'))
       } finally {
         if (isMounted) {
           setIsCompanyLeadsLoading(false)
@@ -154,7 +155,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false
     }
-  }, [role])
+  }, [role, t])
 
   const handleQuickSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -385,8 +386,6 @@ export default function DashboardPage() {
     [],
   )
 
-  // companyLeads are now loaded from real API (/company/leads) for company role.
-
   const companyDealerActivityByState = useMemo(
     () => {
       const byState = new Map<string, number>()
@@ -401,7 +400,7 @@ export default function DashboardPage() {
         .map(([state, leads]) => ({ state, leads }))
         .sort((a, b) => b.leads - a.leads)
         .slice(0, 5)
-    },
+      },
     [],
   )
 
@@ -654,7 +653,7 @@ export default function DashboardPage() {
     <div className="min-h-screen flex flex-col">
       <Header
         user={null}
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
       <SidebarProvider>
         <AppSidebar className="top-14" />
@@ -676,7 +675,7 @@ export default function DashboardPage() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage>{t('dashboard.title')}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -700,7 +699,7 @@ export default function DashboardPage() {
                   }
                 }}
               >
-                მომხმარებელი
+                {t('dashboard.roles.user')}
               </Button>
               <Button
                 variant={role === 'dealer' ? 'default' : 'outline'}
@@ -717,7 +716,7 @@ export default function DashboardPage() {
                   }
                 }}
               >
-                დილერი
+                {t('dashboard.roles.dealer')}
               </Button>
               <Button
                 variant={role === 'company' ? 'default' : 'outline'}
@@ -734,7 +733,7 @@ export default function DashboardPage() {
                   }
                 }}
               >
-                კომპანია
+                {t('dashboard.roles.company')}
               </Button>
             </div>
             {(() => {
@@ -742,7 +741,7 @@ export default function DashboardPage() {
                 return (
                   <div className="flex flex-1 items-center justify-center p-4">
                     <p className="text-sm text-red-500 text-center max-w-md">
-                      ვერ მოხერხდა დეშბორდის ჩატვირთვა. სცადეთ მოგვიანებით.
+                      {t('dashboard.error.load')}
                     </p>
                   </div>
                 )

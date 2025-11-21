@@ -18,7 +18,7 @@ This document does **not** list endpoints that already exist (`/vehicles/*`, `/c
 
 **Current state**
 
-- The frontend uses `mockNavigationItems` from `client/src/mocks/_mockData.js` to render the header navigation on all pages.
+- The frontend uses configuration from `client/src/config/navigation.ts` (formerly `mockNavigationItems` from `client/src/mocks/_mockData.js`) to render the header navigation on all pages.
 
 **Goal**
 
@@ -127,7 +127,7 @@ This document does **not** list endpoints that already exist (`/vehicles/*`, `/c
 
 **Current state**
 
-- `mockFooterLinks` from `_mockData.js` are used by the `Footer` component on all pages.
+- `footerLinks` from `client/src/config/navigation.ts` (formerly `mockFooterLinks` from `_mockData.js`) are used by the `Footer` component on all pages.
 
 **Goal**
 

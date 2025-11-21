@@ -32,8 +32,6 @@ jest.mock('@/hooks/useRecentlyViewed', () => ({
 }))
 
 jest.mock('@/mocks/_mockData', () => ({
-  mockNavigationItems: [{ id: 'catalog', label: 'Catalog', href: '/catalog' }],
-  mockFooterLinks: [],
   mockCompanies: [
     {
       id: '1',

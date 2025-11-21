@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FilterTag } from '@/components/company/FilterTag'
@@ -38,6 +39,7 @@ function loadInitialFilters(): QuickFiltersState {
 }
 
 export function QuickSearchSection() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [filters, setFilters] = useState<QuickFiltersState>(() => loadInitialFilters())
 
@@ -125,7 +127,7 @@ export function QuickSearchSection() {
               </div>
               <div>
                 <CardTitle id="home-quick-search-heading" className="text-lg font-semibold">
-                  სწრაფი ძიება კომპანიის მიხედვით
+                  {t('home.quick_search.title')}
                 </CardTitle>
               </div>
             </div>
@@ -136,7 +138,7 @@ export function QuickSearchSection() {
                 <div className="flex flex-col gap-3 md:flex-row md:flex-nowrap md:gap-3 md:items-end">
                   <div className="space-y-1 md:flex-1">
                     <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-state">
-                      შტატი აშშ-ში
+                      {t('home.quick_search.state_label')}
                     </label>
                     <Select
                       value={filters.geography}
@@ -145,7 +147,7 @@ export function QuickSearchSection() {
                       }
                     >
                       <SelectTrigger id="quick-state" className="w-full">
-                        <SelectValue placeholder="აირჩიეთ შტატი" />
+                        <SelectValue placeholder={t('home.quick_search.state_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {mockSearchFilters.geography.map((g) => (
@@ -159,7 +161,7 @@ export function QuickSearchSection() {
 
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-service">
-                      მომსახურება
+                      {t('home.quick_search.service_label')}
                     </label>
                     <Select
                       value={filters.service}
@@ -168,7 +170,7 @@ export function QuickSearchSection() {
                       }
                     >
                       <SelectTrigger id="quick-service" className="w-full">
-                        <SelectValue placeholder="აირჩიეთ მომსახურება" />
+                        <SelectValue placeholder={t('home.quick_search.service_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {mockSearchFilters.services.map((s) => (
@@ -182,7 +184,7 @@ export function QuickSearchSection() {
 
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground" htmlFor="quick-rating">
-                      მინ. რეიტინგი
+                      {t('home.quick_search.rating_label')}
                     </label>
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <Select
@@ -195,7 +197,7 @@ export function QuickSearchSection() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">ყველა</SelectItem>
+                          <SelectItem value="0">{t('home.quick_search.rating_all')}</SelectItem>
                           <SelectItem value="3">3+</SelectItem>
                           <SelectItem value="4">4+</SelectItem>
                           <SelectItem value="5">5</SelectItem>
@@ -211,7 +213,7 @@ export function QuickSearchSection() {
                             }
                           />
                           <label htmlFor="quick-vip" className="text-xs text-muted-foreground">
-                            მხოლოდ VIP კომპანიები
+                            {t('home.quick_search.vip_only')}
                           </label>
                         </div>
                       </div>
@@ -224,14 +226,14 @@ export function QuickSearchSection() {
                       onClick={handleSearch}
                       motionVariant="scale"
                     >
-                      <Icon icon="mdi:magnify" className="mr-2 h-4 w-4" />
-                      იპოვე სანდო კომპანიები
+                      <Icon icon="mdi:magnify" className="me-2 h-4 w-4" />
+                      {t('home.quick_search.search_btn')}
                     </Button>
                     <button
                       type="button"
                       onClick={handleReset}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                      aria-label="ფილტრების გასუფთავება"
+                      aria-label={t('home.quick_search.reset_btn')}
                     >
                       <Icon icon="mdi:close-circle-outline" className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -246,11 +248,10 @@ export function QuickSearchSection() {
                     className="h-4 w-4 text-primary"
                     aria-hidden="true"
                   />
-                  <span>პოპულარული სცენარები ერთ დაჭერაში</span>
+                  <span>{t('home.quick_search.presets_title')}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  აირჩიეთ ყველაზე გავრცელებული კომბინაციებიდან და გადავუხტეთ პირდაპირ
-                  შედეგებს.
+                  {t('home.quick_search.presets_description')}
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <FilterTag
@@ -263,7 +264,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    მაღალი რეიტინგი • კალიფორნია • VIP
+                    {t('home.quick_search.preset_1')}
                   </FilterTag>
                   <FilterTag
                     onClick={() =>
@@ -275,7 +276,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    ბიუჯეტური სედანი • ფლორიდა • 3+ ★
+                    {t('home.quick_search.preset_2')}
                   </FilterTag>
                   <FilterTag
                     onClick={() =>
@@ -287,7 +288,7 @@ export function QuickSearchSection() {
                       })
                     }
                   >
-                    პრემიუმ პაკეტი • ჯორჯია • 5★ • VIP
+                    {t('home.quick_search.preset_3')}
                   </FilterTag>
                 </div>
               </div>

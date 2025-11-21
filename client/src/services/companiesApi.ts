@@ -1,6 +1,6 @@
 import axios, { type AxiosError } from 'axios'
 import { API_BASE_URL, apiAuthorizedMutation, apiAuthorizedGet } from '@/lib/apiClient'
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 
 export type ApiCompanyReview = {
   id: number
@@ -21,10 +21,29 @@ export type CompanyReviewsResponse = {
   totalPages: number
 }
 
+type ApiCompanySocialLink = {
+  id: number | string
+  company_id?: number
+  url?: string | null
+  label?: string | null
+}
+
+const SOCIAL_ICON_BY_HOST: Record<string, string> = {
+  'facebook.com': 'mdi:facebook',
+  'instagram.com': 'mdi:instagram',
+  'linkedin.com': 'mdi:linkedin',
+  'youtube.com': 'mdi:youtube',
+  'tiktok.com': 'mdi:tiktok',
+  'x.com': 'mdi:twitter',
+  'twitter.com': 'mdi:twitter',
+}
+
 export type ApiCompany = {
   id: number
+  slug?: string | null
   name: string
-  logo: string | null
+  logo?: string | null
+  logo_url?: string | null
   base_price: number | string
   price_per_mile: number | string
   customs_fee: number | string
@@ -32,14 +51,21 @@ export type ApiCompany = {
   broker_fee: number | string
   final_formula: Record<string, unknown> | null
   description: string | null
+  services?: string[] | null
   phone_number: string | null
-  rating?: number | null
-  reviewCount?: number | null
+  contact_email?: string | null
+  website?: string | null
+  rating?: number | string | null
+  reviewCount?: number | string | null
   country?: string | null
   city?: string | null
-  is_vip?: boolean | null
-  is_onboarding_free?: boolean | null
+  state?: string | null
+  is_vip?: number | boolean | null
+  subscription_free?: number | boolean | null
+  subscription_ends_at?: string | null
   cheapest_score?: number | string | null
+  established_year?: number | null
+  social_links?: ApiCompanySocialLink[] | null
   created_at: string
   updated_at: string
 }
@@ -57,6 +83,64 @@ function normalizeNumber(value: number | string): number {
   return parsed
 }
 
+function resolveLogoUrl(logoPath?: string | null): string {
+  if (typeof logoPath !== 'string' || logoPath.trim().length === 0) {
+    return '/car-logos/toyota.png'
+  }
+
+  if (logoPath.startsWith('http')) {
+    return logoPath
+  }
+
+  return `${API_BASE_URL}${logoPath}`
+}
+
+function extractServices(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((service): service is string => typeof service === 'string' && service.trim().length > 0)
+    .map((service) => service.trim())
+}
+
+function normalizeSocialLinks(value: unknown): Company['socialLinks'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((link): Company['socialLinks'][number] | null => {
+      if (!link || typeof link !== 'object') {
+        return null
+      }
+
+      const typedLink = link as ApiCompanySocialLink
+      if (typeof typedLink.url !== 'string' || typedLink.url.trim().length === 0) {
+        return null
+      }
+
+      try {
+        const parsedUrl = new URL(typedLink.url)
+        const host = parsedUrl.hostname.replace(/^www\./, '')
+        const icon = SOCIAL_ICON_BY_HOST[host] ?? 'mdi:web'
+        const label = typedLink.label?.trim() ?? host
+
+        return {
+          id: String(typedLink.id ?? typedLink.url),
+          url: typedLink.url,
+          label,
+          icon,
+        }
+      } catch (error) {
+        console.warn('[CompaniesAPI] Skipping invalid social link', { link, error })
+        return null
+      }
+    })
+    .filter((link): link is Company['socialLinks'][number] => link !== null)
+}
+
 function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   const basePrice = normalizeNumber(apiCompany.base_price)
   const customsFee = normalizeNumber(apiCompany.customs_fee)
@@ -68,33 +152,61 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   const minPrice = basePrice + customsFee + serviceFee + brokerFee
   const maxPrice = minPrice + pricePerMile * 1000
 
+  const slugCandidate = typeof apiCompany.slug === 'string' && apiCompany.slug.trim().length > 0
+    ? apiCompany.slug.trim()
+    : apiCompany.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
+  const rating = normalizeNumber(apiCompany.rating ?? 0)
+  const reviewCount = Math.max(0, Math.floor(normalizeNumber(apiCompany.reviewCount ?? 0)))
+
+  const onboardingEndsAt = typeof apiCompany.subscription_ends_at === 'string'
+    ? apiCompany.subscription_ends_at
+    : null
+
+  const establishedYear = typeof apiCompany.established_year === 'number'
+    ? new Date(apiCompany.established_year * 1000).getFullYear()
+    : new Date(apiCompany.created_at).getFullYear()
+
   return {
     id: String(apiCompany.id),
+    slug: slugCandidate,
     name: apiCompany.name,
-    logo:
-      typeof apiCompany.logo === 'string' && apiCompany.logo.trim().length > 0
-        ? apiCompany.logo
-        : '/car-logos/toyota.png',
+    logo: resolveLogoUrl(apiCompany.logo_url ?? apiCompany.logo ?? null),
     description: apiCompany.description ?? '',
-    services: [],
+    services: extractServices(apiCompany.services),
     priceRange: {
       min: minPrice,
       max: maxPrice,
       currency: 'USD',
     },
-    rating: apiCompany.rating ?? 0,
-    reviewCount: apiCompany.reviewCount ?? 0,
+    // @ts-ignore: Mock data compatibility
+    fees: {
+      base: basePrice,
+      pricePerMile,
+      customs: customsFee,
+      service: serviceFee,
+      broker: brokerFee,
+    },
+    final_formula: apiCompany.final_formula,
+    rating,
+    reviewCount,
     vipStatus: !!apiCompany.is_vip,
+    onboarding: {
+      isFree: !!apiCompany.subscription_free,
+      endsAt: onboardingEndsAt,
+    },
     location: {
-      state: apiCompany.country ?? '',
+      state: apiCompany.state ?? apiCompany.country ?? '',
       city: apiCompany.city ?? '',
     },
     contact: {
-      email: '',
+      email: apiCompany.contact_email ?? '',
       phone: apiCompany.phone_number ?? '',
-      website: '',
+      website: apiCompany.website ?? '',
     },
-    establishedYear: new Date(apiCompany.created_at).getFullYear(),
+    // @ts-ignore: Mock data compatibility
+    socialLinks: normalizeSocialLinks(apiCompany.social_links),
+    establishedYear: establishedYear,
     reviews: [],
   }
 }

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockNavigationItems, mockFooterLinks } from '@/mocks/_mockData';
+import { navigationItems, footerLinks } from '@/config/navigation';
 import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { compareVehicles, fetchVehiclePhotos, searchVehicles } from '@/api/vehicles';
@@ -775,7 +775,7 @@ const AuctionListingsPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header
         user={null}
-        navigationItems={mockNavigationItems}
+        navigationItems={navigationItems}
       />
       <main
         className="flex-1"
@@ -2548,7 +2548,7 @@ const AuctionListingsPage = () => {
           </AnimatePresence>
         </div>
       </main>
-      <Footer footerLinks={mockFooterLinks} />
+      <Footer footerLinks={footerLinks} />
     </div>
   );
 };

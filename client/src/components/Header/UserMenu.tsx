@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,21 +27,9 @@ interface UserMenuProps {
   onLogout?: () => void;
 }
 
-// TODO-FX: Replace with real i18n implementation.
-const USER_MENU_MESSAGES: Record<string, string> = {
-  'header.open_profile_menu': 'პროფილის მენიუს გახსნა',
-  'header.avatar_alt': 'მომხმარებლის ავატარი',
-  'header.dashboard': 'დაფა',
-  'header.catalog': 'კატალოგი',
-  'header.profile': 'პროფილი',
-  'header.sign_out': 'გასვლა',
-};
-
-const t = (key: string): string => USER_MENU_MESSAGES[key] ?? key;
-
 const userMenuNavigationItems = [
-  { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'header.dashboard', href: '/dashboard' },
-  { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'header.catalog', href: '/catalog' },
+  { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
+  { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'navigation.catalog', href: '/catalog' },
 ];
 
 const getInitials = (name: string): string => {
@@ -52,6 +41,7 @@ const getInitials = (name: string): string => {
 };
 
 const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
+  const { t } = useTranslation();
   const initials = getInitials(user.name);
   const navigate = useNavigate();
 
@@ -99,7 +89,7 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
                 navigate(item.href);
               }}
             >
-              <Icon icon={item.icon} className="mr-2 h-4 w-4" />
+              <Icon icon={item.icon} className="me-2 h-4 w-4" />
               <span>{t(item.labelKey)}</span>
             </DropdownMenuItem>
           ))}
@@ -110,7 +100,7 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
               navigate('/profile');
             }}
           >
-            <Icon icon="mdi:account-circle" className="mr-2 h-4 w-4" />
+            <Icon icon="mdi:account-circle" className="me-2 h-4 w-4" />
             <span>{t('header.profile')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -122,7 +112,7 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
               }
             }}
           >
-            <Icon icon="mdi:logout" className="mr-2 h-4 w-4" />
+            <Icon icon="mdi:logout" className="me-2 h-4 w-4" />
             <span>{t('header.sign_out')}</span>
           </DropdownMenuItem>
         </motion.div>

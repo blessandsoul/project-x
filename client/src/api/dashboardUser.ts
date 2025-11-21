@@ -1,4 +1,4 @@
-import type { Company } from '@/mocks/_mockData'
+import type { Company } from '@/types/api'
 
 // Frontend-only API client for User Dashboard.
 // Currently returns MOCK DATA only. Shapes are aligned with planned backend endpoints
