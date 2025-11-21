@@ -5,6 +5,10 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyCookie from '@fastify/cookie';
 import fastifySensible from '@fastify/sensible';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import cron from 'node-cron';
 import { databasePlugin } from './config/database.js';
@@ -40,6 +44,9 @@ import { CatalogModel } from './models/CatalogModel.js';
  */
 const isProd = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProd ? 'info' : 'debug');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const fastify = Fastify({
   logger: isProd
@@ -111,6 +118,18 @@ await fastify.register(cors, {
 
 await fastify.register(fastifyCookie);
 await fastify.register(fastifySensible);
+
+await fastify.register(fastifyMultipart, {
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2 MiB max per file
+    files: 1,
+  },
+});
+
+await fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '..', 'uploads'),
+  prefix: '/uploads/',
+});
 
 await fastify.register(rateLimit, {
   max: globalRateLimitMax,

@@ -1,4 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
+import fs from 'fs/promises';
+import path from 'path';
+import sharp from 'sharp';
 import { CompanyController } from '../controllers/companyController.js';
 import {
   CompanyCreate,
@@ -175,12 +178,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['name', 'base_price', 'price_per_mile', 'customs_fee', 'service_fee', 'broker_fee'],
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 255 },
-          logo: {
-            type: ['string', 'null'],
-            maxLength: 500,
-            format: 'uri',
-            pattern: '^https?://',
-          },
           base_price: { type: 'number', minimum: 0 },
           price_per_mile: { type: 'number', minimum: 0 },
           customs_fee: { type: 'number', minimum: 0 },
@@ -218,12 +215,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 255 },
-          logo: {
-            type: ['string', 'null'],
-            maxLength: 500,
-            format: 'uri',
-            pattern: '^https?://',
-          },
           base_price: { type: 'number', minimum: 0 },
           price_per_mile: { type: 'number', minimum: 0 },
           customs_fee: { type: 'number', minimum: 0 },
@@ -244,6 +235,20 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const companyId = parseInt(id, 10);
     if (!Number.isFinite(companyId) || companyId <= 0) {
       throw new ValidationError('Invalid company id');
+    }
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to update company');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === companyId;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to update this company');
     }
 
     const updates = request.body as CompanyUpdate;
@@ -267,8 +272,135 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Invalid company id');
     }
 
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to delete company');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === companyId;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to delete this company');
+    }
+
     await controller.deleteCompany(companyId);
     return reply.code(204).send();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Company Social Links: optional, dependent on company_id
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /companies/:id/logo
+   *
+   * Upload or replace a company logo. The logo is stored on disk under
+   * /uploads/logos with a filename derived from the company slug (or name
+   * if slug is not set), so that files remain human-readable and
+   * SEO-friendly.
+   */
+  fastify.post('/companies/:id/logo', {
+    preHandler: fastify.authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const companyId = parseInt(id, 10);
+    if (!Number.isFinite(companyId) || companyId <= 0) {
+      throw new ValidationError('Invalid company id');
+    }
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to upload company logos');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === companyId;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to upload logo for this company');
+    }
+
+    const file = await (request as any).file();
+    if (!file) {
+      throw new ValidationError('Logo file is required');
+    }
+
+    const mime = file.mimetype as string | undefined;
+    if (!mime || !mime.startsWith('image/')) {
+      throw new ValidationError('Logo must be an image file');
+    }
+
+    const company = await controller.getCompanyById(companyId);
+
+    const baseNameSource = (company.slug && company.slug.trim().length > 0)
+      ? company.slug
+      : company.name;
+
+    const safeSlug = baseNameSource
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    let ext = 'png';
+    if (mime === 'image/jpeg' || mime === 'image/jpg') {
+      ext = 'jpg';
+    } else if (mime === 'image/webp') {
+      ext = 'webp';
+    }
+
+    const uploadsRoot = path.join(process.cwd(), 'uploads', 'companies', safeSlug, 'logos');
+    await fs.mkdir(uploadsRoot, { recursive: true });
+
+    const originalFilename = `logo-original.${ext}`;
+    const originalFilePath = path.join(uploadsRoot, originalFilename);
+
+    const resizedFilename = `logo.${ext}`;
+    const resizedFilePath = path.join(uploadsRoot, resizedFilename);
+
+    const originalBuffer = await file.toBuffer();
+
+    // Resize to a typical square logo dimension (256x256) while preserving aspect ratio
+    // and avoiding upscaling very small images.
+    let pipeline = sharp(originalBuffer).resize(256, 256, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
+    if (ext === 'jpg') {
+      pipeline = pipeline.jpeg({ quality: 90 });
+    } else if (ext === 'webp') {
+      pipeline = pipeline.webp({ quality: 90 });
+    } else {
+      pipeline = pipeline.png({ compressionLevel: 9 });
+    }
+
+    // Save original as uploaded
+    await fs.writeFile(originalFilePath, originalBuffer);
+
+    const buffer = await pipeline.toBuffer();
+    await fs.writeFile(resizedFilePath, buffer);
+
+    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
+    const resizedPublicPath = `/uploads/companies/${safeSlug}/logos/${resizedFilename}`;
+    const originalPublicPath = `/uploads/companies/${safeSlug}/logos/${originalFilename}`;
+
+    const logoUrl = baseUrlEnv && baseUrlEnv.trim().length > 0
+      ? `${baseUrlEnv.replace(/\/$/, '')}${resizedPublicPath}`
+      : resizedPublicPath;
+
+    const originalLogoUrl = baseUrlEnv && baseUrlEnv.trim().length > 0
+      ? `${baseUrlEnv.replace(/\/$/, '')}${originalPublicPath}`
+      : originalPublicPath;
+
+    return reply.code(201).send({
+      logoUrl,
+      originalLogoUrl,
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -322,6 +454,20 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const id = parseInt(companyId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid company id');
+    }
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to modify company social links');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === id;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to modify social links for this company');
     }
 
     const body = request.body as { url: string };

@@ -45,13 +45,14 @@ export interface AuthUser {
   email: string;
   username: string;
   role?: UserRole; // optional for backward compatibility
+  company_id?: number | null;
 }
 
 export interface JWTPayload {
   userId: number;
   email: string;
   username: string;
-   role?: UserRole;
+  role?: UserRole;
   iat?: number;
   exp?: number;
 }

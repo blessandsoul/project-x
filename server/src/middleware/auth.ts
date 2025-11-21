@@ -105,12 +105,13 @@ const authPlugin = fp(async (fastify) => {
 	        throw new AuthenticationError('Account is blocked');
 	      }
 
-      // Add user to request object (including role for authorization checks).
+      // Add user to request object (including role and company_id for authorization checks).
       request.user = {
         id: dbUser.id,
         email: dbUser.email,
         username: dbUser.username,
         role: dbUser.role,
+        company_id: dbUser.company_id,
       };
 
     } catch (error) {

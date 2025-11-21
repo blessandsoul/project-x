@@ -310,27 +310,70 @@ export class ShippingQuoteService {
           ? (company.final_formula as any)
           : null;
 
+      // Guard: skip companies that effectively have no pricing configured.
+      // Newly created companies from registration currently persist all
+      // fee fields as 0 by default. Using them in calculations would
+      // produce misleading 0$ quotes. We consider a company "unpriced"
+      // when all fee components resolve to 0 and there is no meaningful
+      // override provided via final_formula.
+      const rawBasePrice = formulaOverrides?.base_price ?? company.base_price;
+      const rawPricePerMile =
+        formulaOverrides?.price_per_mile ?? company.price_per_mile;
+      const rawCustomsFee =
+        formulaOverrides?.customs_fee ?? company.customs_fee;
+      const rawServiceFee =
+        formulaOverrides?.service_fee ?? company.service_fee;
+      const rawBrokerFee =
+        formulaOverrides?.broker_fee ?? company.broker_fee;
+
+      const numericBasePrice =
+        typeof rawBasePrice === 'number' ? rawBasePrice : Number(rawBasePrice ?? 0);
+      const numericPricePerMile =
+        typeof rawPricePerMile === 'number'
+          ? rawPricePerMile
+          : Number(rawPricePerMile ?? 0);
+      const numericCustomsFee =
+        typeof rawCustomsFee === 'number' ? rawCustomsFee : Number(rawCustomsFee ?? 0);
+      const numericServiceFee =
+        typeof rawServiceFee === 'number'
+          ? rawServiceFee
+          : Number(rawServiceFee ?? 0);
+      const numericBrokerFee =
+        typeof rawBrokerFee === 'number' ? rawBrokerFee : Number(rawBrokerFee ?? 0);
+
+      const allFeesZero =
+        numericBasePrice === 0 &&
+        numericPricePerMile === 0 &&
+        numericCustomsFee === 0 &&
+        numericServiceFee === 0 &&
+        numericBrokerFee === 0;
+
+      if (allFeesZero) {
+        // Skip this company entirely – it has no usable pricing yet.
+        continue;
+      }
+
       // Normalize all fee components to numbers before calculation to
       // avoid string concatenation (DECIMAL fields from MySQL are often
       // returned as strings).
       const basePrice: number = this.toNumber(
-        formulaOverrides?.base_price ?? company.base_price,
+        rawBasePrice,
         'base_price',
       );
       const pricePerMile: number = this.toNumber(
-        formulaOverrides?.price_per_mile ?? company.price_per_mile,
+        rawPricePerMile,
         'price_per_mile',
       );
       const customsFee: number = this.toNumber(
-        formulaOverrides?.customs_fee ?? company.customs_fee,
+        rawCustomsFee,
         'customs_fee',
       );
       const serviceFee: number = this.toNumber(
-        formulaOverrides?.service_fee ?? company.service_fee,
+        rawServiceFee,
         'service_fee',
       );
       const brokerFee: number = this.toNumber(
-        formulaOverrides?.broker_fee ?? company.broker_fee,
+        rawBrokerFee,
         'broker_fee',
       );
       const deliveryTimeDays: number | null =

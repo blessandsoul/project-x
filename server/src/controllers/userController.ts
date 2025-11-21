@@ -40,7 +40,14 @@ export class UserController {
    */
   async register(
     userData: UserCreate & {
+      /**
+       * @deprecated Use `name` for company name instead. Kept for backward compatibility.
+       */
       companyName?: string;
+      /**
+       * Public-facing company name used when role = "company".
+       */
+      name?: string;
       companyPhone?: string;
       basePrice?: number;
       pricePerMile?: number;
@@ -55,6 +62,7 @@ export class UserController {
       password,
       role,
       companyName,
+      name,
       companyPhone,
       basePrice,
       pricePerMile,
@@ -89,14 +97,18 @@ export class UserController {
 
     let finalCompanyId: number | null = null;
     if (finalRole === 'company') {
+      // Prefer `name` for company name, fall back to legacy `companyName` if provided
+      const rawCompanyName = (typeof name === 'string' && name.trim().length > 0)
+        ? name
+        : companyName;
+
       // Validate required company fields
-      if (!companyName || typeof companyName !== 'string' || companyName.trim().length === 0) {
-        throw new ValidationError('companyName is required when role = "company"');
+      if (!rawCompanyName || typeof rawCompanyName !== 'string' || rawCompanyName.trim().length === 0) {
+        throw new ValidationError('name is required when role = "company"');
       }
 
       const createdCompany = await this.companyModel.create({
-        name: companyName.trim(),
-        logo: null,
+        name: rawCompanyName.trim(),
         ...(typeof basePrice === 'number' ? { base_price: basePrice } : {}),
         ...(typeof pricePerMile === 'number' ? { price_per_mile: pricePerMile } : {}),
         ...(typeof customsFee === 'number' ? { customs_fee: customsFee } : {}),

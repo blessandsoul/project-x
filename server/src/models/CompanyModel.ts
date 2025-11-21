@@ -23,7 +23,6 @@ export class CompanyModel extends BaseModel {
     const {
       name,
       slug,
-      logo = null,
       base_price = 0,
       price_per_mile = 0,
       customs_fee = 0,
@@ -31,7 +30,18 @@ export class CompanyModel extends BaseModel {
       broker_fee = 0,
       final_formula = null,
       description = null,
+      country = null,
+      city = null,
+      state = null,
+      rating = 0,
+      is_vip = false,
+      is_onboarding_free = true,
+      onboarding_ends_at = null,
+      services = null,
       phone_number = null,
+      contact_email = null,
+      website = null,
+      established_year = null,
     } = companyData;
 
     const baseSlug = (slug ?? name)
@@ -48,11 +58,10 @@ export class CompanyModel extends BaseModel {
       (broker_fee ?? 0);
 
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, slug, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
         name,
         computedSlug,
-        logo,
         base_price,
         price_per_mile,
         customs_fee,
@@ -75,7 +84,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, rating, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, is_onboarding_free, onboarding_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -93,12 +102,20 @@ export class CompanyModel extends BaseModel {
       }
     }
 
+    if (row.services) {
+      try {
+        row.services = JSON.parse(row.services as string);
+      } catch {
+        // leave as-is if parse fails
+      }
+    }
+
     return row as Company;
   }
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
     const rows = await this.executeQuery(
-      'SELECT id, name, logo, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, phone_number, rating, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, is_onboarding_free, onboarding_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset],
     );
 
@@ -106,6 +123,14 @@ export class CompanyModel extends BaseModel {
       if (row.final_formula) {
         try {
           row.final_formula = JSON.parse(row.final_formula as string);
+        } catch {
+          // ignore parse error
+        }
+      }
+
+      if (row.services) {
+        try {
+          row.services = JSON.parse(row.services as string);
         } catch {
           // ignore parse error
         }
@@ -122,10 +147,6 @@ export class CompanyModel extends BaseModel {
     if (updates.name !== undefined) {
       fields.push('name = ?');
       values.push(updates.name);
-    }
-    if (updates.logo !== undefined) {
-      fields.push('logo = ?');
-      values.push(updates.logo);
     }
     if (updates.base_price !== undefined) {
       fields.push('base_price = ?');
@@ -155,9 +176,53 @@ export class CompanyModel extends BaseModel {
       fields.push('description = ?');
       values.push(updates.description);
     }
+    if (updates.country !== undefined) {
+      fields.push('country = ?');
+      values.push(updates.country);
+    }
+    if (updates.city !== undefined) {
+      fields.push('city = ?');
+      values.push(updates.city);
+    }
+    if (updates.state !== undefined) {
+      fields.push('state = ?');
+      values.push(updates.state);
+    }
+    if (updates.rating !== undefined) {
+      fields.push('rating = ?');
+      values.push(updates.rating);
+    }
+    if (updates.is_vip !== undefined) {
+      fields.push('is_vip = ?');
+      values.push(updates.is_vip ? 1 : 0);
+    }
+    if (updates.is_onboarding_free !== undefined) {
+      fields.push('is_onboarding_free = ?');
+      values.push(updates.is_onboarding_free ? 1 : 0);
+    }
+    if (updates.onboarding_ends_at !== undefined) {
+      fields.push('onboarding_ends_at = ?');
+      values.push(updates.onboarding_ends_at);
+    }
+    if (updates.services !== undefined) {
+      fields.push('services = ?');
+      values.push(updates.services ? JSON.stringify(updates.services) : null);
+    }
     if (updates.phone_number !== undefined) {
       fields.push('phone_number = ?');
       values.push(updates.phone_number);
+    }
+    if (updates.contact_email !== undefined) {
+      fields.push('contact_email = ?');
+      values.push(updates.contact_email);
+    }
+    if (updates.website !== undefined) {
+      fields.push('website = ?');
+      values.push(updates.website);
+    }
+    if (updates.established_year !== undefined) {
+      fields.push('established_year = ?');
+      values.push(updates.established_year);
     }
 
     if (fields.length === 0) {
@@ -515,12 +580,12 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.name, c.logo, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.phone_number, c.rating, c.country, c.city, c.is_vip, c.is_onboarding_free, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.name, c.slug, c.logo, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.is_onboarding_free, c.onboarding_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
-       LEFT JOIN (
-         SELECT company_id, COUNT(*) AS review_count
-         FROM company_reviews
-         GROUP BY company_id
+        LEFT JOIN (
+          SELECT company_id, COUNT(*) AS review_count
+          FROM company_reviews
+          GROUP BY company_id
        ) r ON r.company_id = c.id
        ${whereSql} ${orderSql} LIMIT ? OFFSET ?`,
       [...queryParams, safeLimit, safeOffset],
@@ -530,6 +595,14 @@ export class CompanyModel extends BaseModel {
       if (row.final_formula) {
         try {
           row.final_formula = JSON.parse(row.final_formula as string);
+        } catch {
+          // ignore parse error
+        }
+      }
+
+      if (row.services) {
+        try {
+          row.services = JSON.parse(row.services as string);
         } catch {
           // ignore parse error
         }

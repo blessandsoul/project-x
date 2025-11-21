@@ -1,4 +1,6 @@
 import { FastifyInstance } from 'fastify';
+import fs from 'fs/promises';
+import path from 'path';
 import {
   Company,
   CompanyCreate,
@@ -65,6 +67,43 @@ export class CompanyController {
     this.fxRateService = new FxRateService(fastify);
   }
 
+  private async computeLogoUrl(slug: string): Promise<string | null> {
+    const safeSlug = slug
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const uploadsRoot = path.join(
+      process.cwd(),
+      'uploads',
+      'companies',
+      safeSlug,
+      'logos',
+    );
+
+    let files: string[];
+    try {
+      files = await fs.readdir(uploadsRoot);
+    } catch {
+      return null;
+    }
+
+    const logoFile = files.find((f) => f.startsWith('logo.'));
+    if (!logoFile) {
+      return null;
+    }
+
+    const publicPath = `/uploads/companies/${safeSlug}/logos/${logoFile}`;
+    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
+
+    if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
+      return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
+    }
+
+    return publicPath;
+  }
+
   // ---------------------------------------------------------------------------
   // Companies (core, independent entities)
   // ---------------------------------------------------------------------------
@@ -73,7 +112,7 @@ export class CompanyController {
     return this.companyModel.create(data);
   }
 
-  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number }> {
+  async getCompanyById(id: number): Promise<Company & { social_links: CompanySocialLink[]; reviewCount: number; logo_url: string | null }> {
     const withRelations = await this.companyModel.getWithRelations(id);
     if (!withRelations) {
       throw new NotFoundError('Company');
@@ -82,6 +121,8 @@ export class CompanyController {
     const { social_links, quotes: _quotes, ...company } = withRelations;
     const agg = await this.companyReviewModel.getAggregatedRating(id);
 
+    const logo_url = await this.computeLogoUrl(company.slug);
+
     return {
       ...(company as Company),
       social_links,
@@ -89,10 +130,11 @@ export class CompanyController {
       // updateCompanyRating; reviewCount is derived from the
       // aggregation so the frontend can show "X reviews".
       reviewCount: agg.count,
+      logo_url,
     };
   }
 
-  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number }>> {
+  async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number; logo_url: string | null }>> {
     const companies = await this.companyModel.findAll(limit, offset);
     if (!companies.length) {
       return [];
@@ -100,10 +142,14 @@ export class CompanyController {
 
     const ids = companies.map((c) => c.id);
     const counts = await this.companyReviewModel.countByCompanyIds(ids);
+    const logoUrls = await Promise.all(
+      companies.map((c) => this.computeLogoUrl(c.slug)),
+    );
 
-    return companies.map((c) => ({
+    return companies.map((c, index) => ({
       ...c,
       reviewCount: counts[c.id] ?? 0,
+      logo_url: logoUrls[index] ?? null,
     }));
   }
 
@@ -121,7 +167,7 @@ export class CompanyController {
     search?: string | undefined;
     orderBy?: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
     orderDirection?: 'asc' | 'desc' | undefined;
-  }): Promise<{ items: Array<Company & { reviewCount: number }>; total: number; limit: number; offset: number }> {
+  }): Promise<{ items: Array<Company & { reviewCount: number; logo_url: string | null }>; total: number; limit: number; offset: number }> {
     const {
       limit = 20,
       offset = 0,
@@ -163,10 +209,14 @@ export class CompanyController {
 
     const ids = items.map((c) => c.id);
     const counts = await this.companyReviewModel.countByCompanyIds(ids);
+    const logoUrls = await Promise.all(
+      items.map((c) => this.computeLogoUrl(c.slug)),
+    );
 
-    const withCounts = items.map((c) => ({
+    const withCounts = items.map((c, index) => ({
       ...c,
       reviewCount: counts[c.id] ?? 0,
+      logo_url: logoUrls[index] ?? null,
     }));
 
     return { items: withCounts, total, limit: safeLimit, offset: safeOffset };

@@ -2,7 +2,6 @@ export interface Company {
   id: number;
   name: string;
   slug: string;
-  logo: string | null;
   base_price: number;
   price_per_mile: number;
   customs_fee: number;
@@ -17,7 +16,11 @@ export interface Company {
   is_vip: boolean;
   is_onboarding_free: boolean;
   onboarding_ends_at: Date | null;
+  services: string[] | null;
   phone_number: string | null;
+  contact_email: string | null;
+  website: string | null;
+  established_year: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -25,7 +28,6 @@ export interface Company {
 export interface CompanyCreate {
   name: string;
   slug?: string; // if omitted, will be auto-generated from name
-  logo?: string | null;
   base_price?: number;
   price_per_mile?: number;
   customs_fee?: number;
@@ -40,13 +42,16 @@ export interface CompanyCreate {
   is_vip?: boolean; // defaults to false
   is_onboarding_free?: boolean; // defaults to true
   onboarding_ends_at?: Date | null;
+  services?: string[] | null;
   phone_number?: string | null;
+  contact_email?: string | null;
+  website?: string | null;
+  established_year?: number | null;
 }
 
 export interface CompanyUpdate {
   name?: string;
   slug?: string;
-  logo?: string | null;
   base_price?: number;
   price_per_mile?: number;
   customs_fee?: number;
@@ -61,7 +66,11 @@ export interface CompanyUpdate {
   is_vip?: boolean;
   is_onboarding_free?: boolean;
   onboarding_ends_at?: Date | null;
+  services?: string[] | null;
   phone_number?: string | null;
+  contact_email?: string | null;
+  website?: string | null;
+  established_year?: number | null;
 }
 
 export interface CompanySocialLink {
