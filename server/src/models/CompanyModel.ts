@@ -35,8 +35,8 @@ export class CompanyModel extends BaseModel {
       state = null,
       rating = 0,
       is_vip = false,
-      is_onboarding_free = true,
-      onboarding_ends_at = null,
+      subscription_free = true,
+      subscription_ends_at = null,
       services = null,
       phone_number = null,
       contact_email = null,
@@ -84,7 +84,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, is_onboarding_free, onboarding_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -115,7 +115,7 @@ export class CompanyModel extends BaseModel {
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, is_onboarding_free, onboarding_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset],
     );
 
@@ -196,13 +196,13 @@ export class CompanyModel extends BaseModel {
       fields.push('is_vip = ?');
       values.push(updates.is_vip ? 1 : 0);
     }
-    if (updates.is_onboarding_free !== undefined) {
-      fields.push('is_onboarding_free = ?');
-      values.push(updates.is_onboarding_free ? 1 : 0);
+    if (updates.subscription_free !== undefined) {
+      fields.push('subscription_free = ?');
+      values.push(updates.subscription_free ? 1 : 0);
     }
-    if (updates.onboarding_ends_at !== undefined) {
-      fields.push('onboarding_ends_at = ?');
-      values.push(updates.onboarding_ends_at);
+    if (updates.subscription_ends_at !== undefined) {
+      fields.push('subscription_ends_at = ?');
+      values.push(updates.subscription_ends_at);
     }
     if (updates.services !== undefined) {
       fields.push('services = ?');
@@ -526,7 +526,7 @@ export class CompanyModel extends BaseModel {
       queryParams.push(isVip ? 1 : 0);
     }
     if (typeof isOnboardingFree === 'boolean') {
-      whereClauses.push('c.is_onboarding_free = ?');
+      whereClauses.push('c.subscription_free = ?');
       queryParams.push(isOnboardingFree ? 1 : 0);
     }
     if (typeof search === 'string' && search.trim().length > 0) {
@@ -580,7 +580,7 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.name, c.slug, c.logo, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.is_onboarding_free, c.onboarding_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count

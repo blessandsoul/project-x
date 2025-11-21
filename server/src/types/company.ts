@@ -14,8 +14,8 @@ export interface Company {
   state: string | null;
   rating: number;
   is_vip: boolean;
-  is_onboarding_free: boolean;
-  onboarding_ends_at: Date | null;
+  subscription_free: boolean;
+  subscription_ends_at: Date | null;
   services: string[] | null;
   phone_number: string | null;
   contact_email: string | null;
@@ -40,8 +40,8 @@ export interface CompanyCreate {
   state?: string | null;
   rating?: number; // defaults to 0.0
   is_vip?: boolean; // defaults to false
-  is_onboarding_free?: boolean; // defaults to true
-  onboarding_ends_at?: Date | null;
+  subscription_free?: boolean; // defaults to true
+  subscription_ends_at?: Date | null;
   services?: string[] | null;
   phone_number?: string | null;
   contact_email?: string | null;
@@ -64,8 +64,8 @@ export interface CompanyUpdate {
   state?: string | null;
   rating?: number;
   is_vip?: boolean;
-  is_onboarding_free?: boolean;
-  onboarding_ends_at?: Date | null;
+  subscription_free?: boolean;
+  subscription_ends_at?: Date | null;
   services?: string[] | null;
   phone_number?: string | null;
   contact_email?: string | null;
