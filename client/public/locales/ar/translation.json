@@ -311,11 +311,13 @@
       "guides": {
           "title": "أدلة ومقالات مفيدة",
           "empty": "الأدلة قادمة قريباً.",
-          "read": "اقرأ"
+          "read": "اقرأ",
+          "guide1": "كيفية اختيار مستورد موثوق من الولايات المتحدة"
       },
       "reminders": {
           "title": "تذكيرات",
-          "empty": "لا توجد تذكيرات نشطة."
+          "empty": "لا توجد تذكيرات نشطة.",
+          "reviews": "لم تشاهد جميع مراجعات الشركات التي تم عرضها مؤخراً."
       }
     },
     "company": {
@@ -412,7 +414,12 @@
           "title": "طلبات العملاء الجديدة",
           "empty": "لا توجد طلبات جديدة.",
           "reply": "رد",
-          "processed": "تمت المعالجة"
+          "processed": "تمت المعالجة",
+          "status": {
+              "new": "جديد",
+              "processing": "قيد المعالجة",
+              "closed": "مغلق"
+          }
       },
       "reminders": {
           "title": "تذكيرات العملاء المحتملين",
@@ -678,7 +685,8 @@
       "response_time": "متوسط الرد: {{hours}} س",
       "response_time_tooltip": "متوسط الوقت الذي تستغرقه الشركة للرد على الرسالة الأولى.",
       "avg_response_time": "متوسط وقت الرد",
-      "avg_response_time_tooltip": "متوسط الوقت الذي تستغرقه الشركة للرد."
+      "avg_response_time_tooltip": "متوسط الوقت الذي تستغرقه الشركة للرد.",
+      "avg_reply": "متوسط وقت الرد"
     },
     "benefits": {
       "title": "لماذا منصتنا",
@@ -999,7 +1007,144 @@
     }
   },
     "vehicle_details": {
-      "title": "تفاصيل المركبة"
+      "title": "تفاصيل المركبة",
+      "errors": {
+        "not_found": "لم يتم العثور على معرف المركبة.",
+        "fill_name_phone": "يرجى ملء الاسم ورقم الهاتف.",
+        "phone_min_length": "يجب أن يتكون رقم الهاتف من 3 أحرف على الأقل.",
+        "select_min_one_company": "اختر شركة واحدة على الأقل للطلب.",
+        "company_id_failed": "فشل في تحديد الشركات المختارة.",
+        "request_failed": "فشل في إرسال الطلب. يرجى المحاولة مرة أخرى."
+      },
+      "support_modal": {
+        "aria_label": "اختر المزيد من الشركات للدعم",
+        "close_aria": "إغلاق نافذة الدعم",
+        "title": "فتح الخيار حتى 5 شركات",
+        "description": "أعجب بمشروعنا على الشبكات الاجتماعية واكتب مراجعة قصيرة لإرسال طلب إلى عدة شركات في وقت واحد.",
+        "liked_project": "لقد دعمت المشروع على الشبكات الاجتماعية",
+        "ready_to_review": "أنا مستعد لمشاركة مراجعة قصيرة",
+        "your_review_label": "مراجعتك القصيرة",
+        "unlock_btn": "فتح الخيار حتى 5 شركات"
+      },
+      "request_modal": {
+        "aria_label": "طلب مشترك لعدة شركات",
+        "close_aria": "إغلاق نافذة الطلب المشترك",
+        "title": "طلب مشترك لعدة شركات",
+        "selected_companies": "الشركات المختارة: {{names}}",
+        "comment_label": "تعليق / رغبات إضافية",
+        "min_budget": "الحد الأدنى للميزانية (USD)",
+        "max_budget": "الحد الأقصى للميزانية (USD)",
+        "desired_time": "الوقت المطلوب (أيام)",
+        "max_time": "أقصى وقت مقبول (أيام)",
+        "damage_tolerance": {
+          "title": "تحمل الضرر",
+          "minimal": "الحد الأدنى",
+          "average": "متوسط",
+          "any": "أي"
+        },
+        "additional_services": {
+          "title": "خدمات إضافية",
+          "full_documents": "وثائق كاملة",
+          "door_delivery": "توصيل للباب",
+          "customs_support": "دعم جمركي"
+        },
+        "contact_channel": {
+          "title": "قناة الاتصال المفضلة",
+          "call": "مكالمة"
+        },
+        "priority": "الأولوية",
+        "send_btn": "إرسال",
+        "send_request_btn": "إرسال الطلب"
+      },
+      "gallery": {
+        "zoom_aria": "تكبير الصورة الرئيسية لملء الشاشة",
+        "prev_aria": "الصور السابقة",
+        "select_zoom_aria": "اختر هذه الصورة للتكبير",
+        "next_aria": "الصور التالية",
+        "unavailable": "الصور غير متاحة"
+      },
+      "info": {
+        "basic_data": "البيانات الأساسية",
+        "engine_transmission": "المحرك / ناقل الحركة",
+        "color_condition": "اللون / الحالة",
+        "damages": "الأضرار",
+        "keys_run_drive": "المفاتيح / التشغيل والقيادة",
+        "cylinders_equipment": "الاسطوانات / المعدات",
+        "docs_auction": "المستندات والمزاد",
+        "yard_location": "ساحة المزاد / الموقع",
+        "market_repair_value": "القيمة السوقية / الإصلاح",
+        "calculated_price": "السعر المحسوب",
+        "seller": "البائع",
+        "title_doc": "TITLE / الوثيقة",
+        "sale_date": "تاريخ البيع",
+        "created_updated": "تم الإنشاء / التحديث",
+        "api_fields": "حقول API إضافية (معلومات مساعدة)"
+      },
+      "offers": {
+        "title": "عروض الشركات لهذه المركبة",
+        "recalculating": "جاري إعادة الحساب...",
+        "recalculate": "إعادة حساب",
+        "compare_text": "قارن إجمالي سعر الاستيراد ووقت التسليم من مختلف الشركات الموثوقة من الولايات المتحدة إلى جورجيا.",
+        "distance_to_poti": "المسافة إلى بوتي",
+        "total_price_disclaimer": "يشمل السعر الإجمالي سعر السيارة والنقل والخدمة ورسوم الوساطة، والرسوم الجمركية وغيرها تقريبية.",
+        "no_offers": "لم يتم العثور على عروض استيراد مركبة في هذه المرحلة. حاول إعادة الحساب أو العودة لاحقاً، أو ابحث عن مركبة أخرى للاستيراد.",
+        "back_to_catalog": "العودة إلى الكتالوج",
+        "find_other": "ابحث عن مركبة أخرى",
+        "best_shipping": "أفضل سعر شحن",
+        "shipping_desc": "النقل من الولايات المتحدة إلى ميناء جورجيا (يتم حساب الخدمات الأخرى بشكل منفصل)",
+        "full_service_desc": "خدمة كاملة: شراء، وثائق، نقل",
+        "company_filter": "تصفية الشركات",
+        "fast_delivery": "توصيل سريع",
+        "list_aria": "قائمة عروض الشركات",
+        "premium_vip": "عروض Premium / VIP",
+        "standard": "عروض قياسية - سعر أقل",
+        "discount": "خصم",
+        "approx_savings": "توفير تقريبي",
+        "individual_calc": "حساب فردي",
+        "discount_disclaimer": "الخصم ذو صلة بالحساب الحالي وقد يتغير.",
+        "trusted_partner": "شريك موثوق",
+        "trusted_partner_desc": "شريك موثوق — مستورد مختار بناءً على تقييمنا الداخلي ومراجعات المستخدمين.",
+        "secure_payment": "دفع آمن",
+        "secure_payment_desc": "دفع آمن — يتم تثبيت المبلغ عبر قناة موثوقة حتى يؤكد المستورد الخدمة.",
+        "documents_full": "وثائق كاملة",
+        "documents_full_desc": "وثائق كاملة — يوفر المستورد جميع وثائق الاستيراد والتسجيل اللازمة.",
+        "documents": "وثائق",
+        "transport": "نقل",
+        "customs": "جمارك",
+        "select_fee_aria": "اختر رسوم لهذا العرض",
+        "select_offer_aria": "اختر هذا العرض أو قم بإلغاء التحديد",
+        "add_to_common_aria": "إضافة إلى الطلب المشترك لهذه الشركة",
+        "selected": "محدد",
+        "selected_common": "محدد للطلب المشترك",
+        "select": "تحديد",
+        "recent_imports": "أمثلة استيراد ناجحة حديثة",
+        "import_completed_in": "اكتمل الاستيراد في {{days}} يوماً",
+        "see_other_auctions": "شاهد المزادات النشطة الأخرى",
+        "not_found_msg": "المركبة غير موجودة. حاول مرة أخرى أو عد للبحث.",
+        "continue_working": "مواصلة العمل مع العروض",
+        "compare_desc": "قارن الشركات، اختر الأفضل وعد للكتالوج لرؤية مركبة جديدة.",
+        "back_to_catalog_aria": "العودة لكتالوج الشركات",
+        "go_to_offers_aria": "الذهاب لقسم عروض الشركات",
+        "see_offers": "شاهد العروض",
+        "send_request_aria": "إرسال طلب للشركات المختارة"
+      },
+      "checkout": {
+        "aria_label": "إتمام الطلب - {{company}}",
+        "close_aria": "إغلاق نافذة إتمام الطلب",
+        "title": "إتمام الطلب",
+        "total_import_price": "إجمالي سعر الاستيراد",
+        "send_application": "إرسال الطلب",
+        "received_aria": "تم استلام الطلب - {{company}}",
+        "close_confirmation_aria": "إغلاق نافذة التأكيد",
+        "received_title": "تم استلام الطلب",
+        "received_desc": "سننقل طلبك إلى المستورد وسيتصلون بك في يوم العمل التالي.",
+        "contact_importer": "اتصل بالمستورد",
+        "go_to_company": "الذهاب لصفحة الشركة",
+        "detailed_price_aria": "سعر مفصل - {{company}}",
+        "close_price_check_aria": "إغلاق فحص السعر",
+        "fullscreen_photo_aria": "عرض الصورة ملء الشاشة",
+        "close": "إغلاق"
+      }
     }
   },
   "company_profile": {

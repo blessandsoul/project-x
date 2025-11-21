@@ -1189,10 +1189,6 @@ const VehicleDetailsPage = () => {
                           </div>
                         </div>
                       </motion.div>
-                            </form>
-                          </div>
-                        </div>
-                      </motion.div>
                     )}
                   </AnimatePresence>
               </CardContent>

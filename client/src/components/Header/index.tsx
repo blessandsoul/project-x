@@ -19,7 +19,7 @@ interface User {
 
 interface NavigationItem {
   id: string;
-  label: string; // This is actually not used for display anymore, we use id for translation key
+  label: string;
   href: string;
 }
 
@@ -75,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                     : 'transition-colors text-foreground/60 hover:text-foreground/80'
                 }
               >
-                {t(`navigation.${item.id}`)}
+                {t(item.label)}
               </NavLink>
             ))}
           </nav>
@@ -115,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                             : 'flex items-center rounded-md px-2 py-1.5 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-muted'
                         }
                       >
-                        {t(`navigation.${item.id}`)}
+                        {t(item.label)}
                       </NavLink>
                     </SheetClose>
                   ))}

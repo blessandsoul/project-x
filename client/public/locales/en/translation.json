@@ -327,6 +327,11 @@
         "any": "Any",
         "geography": "State / Region",
         "budget": "Budget",
+        "budget_ranges": {
+          "low": "< 4 000$",
+          "medium": "4 000–8 000$",
+          "high": "> 8 000$"
+        },
         "submit": "Find Company"
       },
       "actions": {

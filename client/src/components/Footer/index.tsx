@@ -58,7 +58,7 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
                   to={link.href}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors text-start"
                 >
-                  {t(`footer.${link.id}`)}
+                  {t(link.label)}
                 </Link>
               ))}
             </nav>
