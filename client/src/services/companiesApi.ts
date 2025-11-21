@@ -211,6 +211,29 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   }
 }
 
+export async function uploadCompanyLogoFromApi(
+  companyId: string | number,
+  file: File,
+): Promise<{ logoUrl: string; originalLogoUrl: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const token = window.localStorage.getItem('projectx_auth_token')
+
+  const response = await axios.post<{ logoUrl: string; originalLogoUrl: string }>(
+    `${API_BASE_URL}/companies/${companyId}/logo`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    },
+  )
+
+  return response.data
+}
+
 export async function fetchCompaniesFromApi(): Promise<Company[]> {
   try {
     const response = await axios.get<ApiCompany[]>(`${API_BASE_URL}/companies`)
@@ -256,6 +279,16 @@ export async function updateCompanyFromApi(
   )
 
   return response
+}
+
+export async function deleteCompanySocialLinkFromApi(
+  socialLinkId: string | number,
+): Promise<void> {
+  await apiAuthorizedMutation<unknown>(
+    'DELETE',
+    `/social-links/${socialLinkId}`,
+    undefined as any,
+  )
 }
 
 export async function createCompanySocialLinkFromApi(

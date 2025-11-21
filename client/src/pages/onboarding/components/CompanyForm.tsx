@@ -19,14 +19,18 @@ import { Icon } from "@iconify/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SERVICES } from "@/constants/onboarding"
 import { useOnboardingForm } from "@/hooks/useOnboardingForm"
+import { API_BASE_URL } from "@/lib/apiClient"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "@/hooks/useAuth"
-import { fetchRawCompanyByIdFromApi, updateCompanyFromApi, createCompanySocialLinkFromApi } from "@/services/companiesApi"
+import { fetchRawCompanyByIdFromApi, updateCompanyFromApi, createCompanySocialLinkFromApi, uploadCompanyLogoFromApi, deleteCompanySocialLinkFromApi } from "@/services/companiesApi"
 
 export function CompanyForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
   const [isPrefilling, setIsPrefilling] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null)
+  const [initialSocialLinks, setInitialSocialLinks] = useState<string[]>([])
   const { isAuthenticated, userRole, companyId } = useAuth();
   const navigate = useNavigate()
 
@@ -46,7 +50,10 @@ export function CompanyForm() {
     established_year: z.coerce.number().optional(),
     phone_number: z.string().optional(),
     services: z.array(z.string()).optional(),
-    social_links: z.array(z.object({ url: z.string().url() })).optional(),
+    social_links: z.array(z.object({
+      id: z.union([z.string(), z.number()]).optional(),
+      url: z.string().url(),
+    })).optional(),
   })
 
   type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -102,6 +109,42 @@ export function CompanyForm() {
           ? new Date(company.established_year * 1000).getFullYear()
           : new Date(company.created_at).getFullYear()
 
+        const normalizedSocialLinks = socialLinksArray
+          .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
+          .map((link) => ({ id: link.id, url: (link.url ?? '').trim() }))
+
+        setInitialSocialLinks(normalizedSocialLinks.map((link) => link.url))
+
+        let logoUrl: string | null = null
+        const rawLogo =
+          (typeof company.logo_url === 'string' && company.logo_url.trim().length > 0
+            ? company.logo_url.trim()
+            : typeof (company as any).logo === 'string' && (company as any).logo.trim().length > 0
+              ? (company as any).logo.trim()
+              : null)
+
+        // Normalize logo URL to avoid CORP:
+        // - If it's absolute and matches API_BASE_URL, strip the origin so the
+        //   browser requests it from the frontend origin (dev proxy can handle it).
+        // - If it's another absolute URL, use as-is.
+        // - If it's relative, use as-is.
+        if (rawLogo) {
+          if (rawLogo.startsWith(API_BASE_URL)) {
+            logoUrl = rawLogo.slice(API_BASE_URL.length) || '/'
+          } else {
+            logoUrl = rawLogo
+          }
+        }
+
+        // Debug: verify what URL we are trying to load
+        console.log('[CompanyOnboarding] Resolved logo URL', {
+          logo_url: company.logo_url,
+          logo: (company as any).logo,
+          resolved: logoUrl,
+        })
+
+        setCurrentLogoUrl(logoUrl)
+
         form.reset({
           name: company.name || "",
           slug: company.slug || "",
@@ -118,9 +161,7 @@ export function CompanyForm() {
           website: company.website || "",
           established_year: establishedYear,
           services,
-          social_links: socialLinksArray
-            .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
-            .map((link) => ({ url: (link.url ?? '').trim() })),
+          social_links: normalizedSocialLinks,
         })
       })
       .catch((error) => {
@@ -180,12 +221,24 @@ export function CompanyForm() {
 
       await updateCompanyFromApi(companyId, payload)
 
-      if (socialLinks.length > 0) {
+      const newSocialLinks = socialLinks.filter((link) => !link.id)
+
+      if (newSocialLinks.length > 0) {
         await Promise.all(
-          socialLinks.map((link) =>
+          newSocialLinks.map((link) =>
             createCompanySocialLinkFromApi(companyId, link.url.trim()),
           ),
         )
+      }
+
+      if (logoFile) {
+        try {
+          await uploadCompanyLogoFromApi(companyId, logoFile)
+        } catch (error) {
+          console.error('[CompanyOnboarding] Logo upload failed', error)
+          toast.error(t('onboarding.company.failure'))
+          return
+        }
       }
 
       toast.success(t('onboarding.company.success'))
@@ -237,6 +290,33 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FormLabel>Company Logo</FormLabel>
+                {currentLogoUrl && (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={currentLogoUrl}
+                      alt="Current company logo"
+                      className="h-12 w-12 rounded-md object-contain border"
+                    />
+                    <span className="text-sm text-muted-foreground">Current logo</span>
+                  </div>
+                )}
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null
+                      setLogoFile(file)
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -465,9 +545,41 @@ export function CompanyForm() {
                         name={`social_links.${index}.url`}
                         render={({ field }) => (
                             <FormItem>
-                                <FormControl>
-                                    <Input placeholder="https://social.com/..." {...field} />
-                                </FormControl>
+                                <div className="flex items-center gap-2">
+                                  <FormControl>
+                                      <Input placeholder="https://social.com/..." {...field} />
+                                  </FormControl>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={async () => {
+                                      const current = form.getValues("social_links") || [];
+                                      const link = current[index];
+
+                                      form.setValue(
+                                        "social_links",
+                                        current.filter((_, i) => i !== index),
+                                      );
+
+                                      const url = (link?.url ?? "").trim();
+                                      if (url) {
+                                        setInitialSocialLinks((prev) => prev.filter((item) => item !== url));
+                                      }
+
+                                      if (link && link.id) {
+                                        try {
+                                          await deleteCompanySocialLinkFromApi(link.id);
+                                        } catch (error) {
+                                          console.error('[CompanyOnboarding] Failed to delete social link', error);
+                                          toast.error(t('onboarding.company.failure'));
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
+                                  </Button>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )}
