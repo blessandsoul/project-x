@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { useCompanySearch } from '@/hooks/useCompanySearch'
@@ -9,30 +10,20 @@ import { FilterTag } from '@/components/company/FilterTag'
 
 interface ScenarioConfig {
   id: string
-  label: string
-  description: string
 }
 
 const SCENARIOS: ScenarioConfig[] = [
   {
     id: 'budget-10k',
-    label: 'ბიუჯეტი • 10 000$-მდე',
-    description: 'მოსახერხებელი ვარიანტები პირველი ან საყოფაცხოვრებო მანქანისთვის.',
   },
   {
     id: 'family-suv',
-    label: 'ოჯახური SUV',
-    description: 'კომფორტული და უსაფრთხო SUV-ები ოჯახისთვის.',
   },
   {
     id: 'premium-25k',
-    label: 'პრემიუმი • 25 000$-მდე',
-    description: 'ბალანსი პრემიუმ კლასს და გონივრულ ბიუჯეტს შორის.',
   },
   {
     id: 'for-resale',
-    label: 'გაყიდვაზე ორიენტირებული',
-    description: 'კომპანიები, რომლებსაც აქვთ გამოცდილება გადამყიდველებთან.',
   },
 ]
 
@@ -40,6 +31,7 @@ export function ReadyScenariosSection() {
   const navigate = useNavigate()
   const { updateFilters } = useCompanySearch()
   const shouldReduceMotion = useReducedMotion()
+  const { t } = useTranslation()
 
   const defaultSectionMotionProps = {
     initial: { opacity: 0, y: 12 },
@@ -109,14 +101,13 @@ export function ReadyScenariosSection() {
                 className="text-lg font-semibold"
               >
                 <span className="block text-xs font-semibold uppercase text-primary tracking-wide mb-1">
-                  მინი-ქვიზი
+                  {t('home.ready_scenarios.mini_quiz')}
                 </span>
-                <span>მზად სცენარები ძიებისთვის</span>
+                <span>{t('home.ready_scenarios.title')}</span>
               </CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              აირჩიეთ ის სცენარი, რომელიც ყველაზე ახლოს არის თქვენს საჭიროებებთან. ფილტრები
-              ავტომატურად მოერგება.
+              {t('home.ready_scenarios.description')}
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -126,7 +117,7 @@ export function ReadyScenariosSection() {
                   key={scenario.id}
                   onClick={() => handleScenarioClick(scenario.id)}
                 >
-                  {scenario.label}
+                  {t(`home.ready_scenarios.scenarios.${scenario.id}.label`)}
                 </FilterTag>
               ))}
             </div>
@@ -134,7 +125,9 @@ export function ReadyScenariosSection() {
               {SCENARIOS.map((scenario) => (
                 <li key={`${scenario.id}-description`} className="flex items-start gap-2">
                   <Icon icon="mdi:information-outline" className="mt-0.5 h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{scenario.description}</span>
+                  <span>
+                    {t(`home.ready_scenarios.scenarios.${scenario.id}.description`)}
+                  </span>
                 </li>
               ))}
             </ul>

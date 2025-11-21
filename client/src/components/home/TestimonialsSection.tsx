@@ -68,7 +68,7 @@ export function TestimonialsSection() {
         setTestimonials(mapped.slice(0, 6))
       } catch (err) {
         if (!isCancelled) {
-          setError('Failed to load reviews')
+          setError(t('home.testimonials.error'))
           setTestimonials([])
         }
       } finally {

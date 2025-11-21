@@ -90,6 +90,16 @@
         "title": "Fast Delivery",
         "description": "Our partners ensure timely and safe vehicle transportation."
       },
+    "trust": {
+      "title": "Why users trust TrustedImporters.Ge",
+      "description": "Key reasons why users choose our platform and recommend it to others.",
+      "items": {
+        "experience": "Verified experience in US to Georgia imports",
+        "reviews": "Real reviews and transparent ratings",
+        "docs": "Support with documents and process",
+        "privacy": "Respect for your privacy and data"
+      }
+    },
       "security": {
         "title": "Security",
         "description": "All companies are verified and hold a high reputation in the market."
@@ -98,6 +108,13 @@
         "title": "Best Prices",
         "description": "Get competitive offers and save money."
       }
+    }
+  },
+  "system": {
+    "errors": {
+      "sidebar_provider": "useSidebar must be used within a SidebarProvider.",
+      "form_field": "useFormField should be used within <FormField>",
+      "chart_container": "useChart must be used within a <ChartContainer />"
     }
   },
   "footer": {
@@ -125,6 +142,24 @@
     "linkedin": "LinkedIn"
   },
   "auth": {
+    "error": {
+      "profile_response": "Invalid server response for profile",
+      "profile_load": "An error occurred while loading profile",
+      "not_authorized": "User is not authorized",
+      "profile_update_response": "Invalid server response for profile update",
+      "profile_invalid": "Profile data is invalid",
+      "profile_update": "An error occurred while updating profile",
+      "delete_request_invalid": "Invalid profile delete request",
+      "delete_account": "An error occurred while deleting account",
+      "login_invalid": "Invalid login credentials",
+      "email_password_incorrect": "Incorrect email or password",
+      "login_generic": "An error occurred during login",
+      "login_response": "Invalid server response for login",
+      "register_response": "Invalid server response for registration",
+      "register_invalid": "Invalid registration data",
+      "conflict": "This email or username is already in use",
+      "register_generic": "An error occurred during registration"
+    },
     "login": {
       "title": "Sign In",
       "email": "Email",
@@ -691,25 +726,37 @@
     "ready_scenarios": {
       "title": "Ready Search Scenarios",
       "subtitle": "Mini Quiz",
+      "mini_quiz": "Mini Quiz",
       "description": "Choose the scenario closest to your needs. Filters will adjust automatically.",
       "scenarios": {
-        "budget_10k": {
+        "budget-10k": {
           "label": "Budget • Under $10k",
           "description": "Convenient options for a first or daily car."
         },
-        "family_suv": {
+        "family-suv": {
           "label": "Family SUV",
           "description": "Comfortable and safe SUVs for the family."
         },
-        "premium_25k": {
+        "premium-25k": {
           "label": "Premium • Under $25k",
           "description": "Balance between premium class and reasonable budget."
         },
-        "for_resale": {
+        "for-resale": {
           "label": "For Resale",
           "description": "Companies experienced with resellers."
         }
       }
+    },
+    "testimonials": {
+      "title": "What clients say about importers",
+      "description": "Real feedback and ratings for import companies on TrustedImporters.Ge.",
+      "ticker_message": "{{user}} rated {{company}} {{rating}}★ on TrustedImporters.Ge",
+      "empty": {
+        "title": "No reviews loaded yet",
+        "description": "We will show real client reviews here as soon as they are available."
+      },
+      "view_catalog_btn": "View Catalog",
+      "error": "Failed to load reviews. Please try again later."
     },
     "how_it_works": {
       "title": "How It Works",
@@ -743,6 +790,11 @@
       "vip_diamond": "Diamond VIP",
       "vip_gold": "Gold VIP",
       "vip_silver": "Silver VIP",
+      "vip_labels": {
+        "diamond": "Diamond VIP",
+        "gold": "Gold VIP",
+        "silver": "Silver VIP"
+      },
       "reviews_count": "({{count}} reviews)",
       "full_cycle": "USA → GEO Full Cycle",
       "docs_customs": "Docs / Customs / Delivery",
@@ -776,6 +828,16 @@
           "title": "Support in Your Language",
           "description": "Our team helps clarify unclear issues and make the right choice."
         }
+      }
+    },
+    "trust": {
+      "title": "Reliability & Safety",
+      "description": "We focus on your peace of mind.",
+      "items": {
+        "experience": "Verified experience in US to Georgia imports",
+        "reviews": "Real reviews and transparent ratings",
+        "docs": "Support with documents and process",
+        "privacy": "Respect for your privacy and data"
       }
     },
     "brands": {
@@ -824,11 +886,55 @@
         }
       }
     },
+    "car_cases": {
+      "title": "Real Import Examples",
+      "description": "Several typical cases with price and estimated savings.",
+      "view_catalog_btn": "View Catalog",
+      "empty": {
+        "title": "Import Examples Not Shown Yet",
+        "description": "Real import examples will appear here soon. For now, you can explore import companies in the catalog."
+      },
+      "demo_case_badge": "Demo Case",
+      "before_label": "Before",
+      "after_label": "After",
+      "cases": {
+        "case1": {
+          "title": "BMW X5, 2018",
+          "subtitle": "California → Georgia",
+          "price": "$19,800",
+          "saved": "$1,200 vs Auction Avg",
+          "before": "Family spent over 6 months looking for a safe SUV locally, but prices always exceeded budget.",
+          "after": "Through TrustedImporters.Ge, they got an X5 in 6 weeks via full import and saved enough for maintenance.",
+          "quote": "\"We thought X5 was just a dream, now it's our family car.\""
+        },
+        "case2": {
+          "title": "Toyota Camry, 2019",
+          "subtitle": "Florida → Georgia",
+          "price": "$12,400",
+          "saved": "$900 vs Local Market",
+          "before": "Buyer needed a reliable sedan for daily work and family trips but couldn't find a good option.",
+          "after": "Platform showed several trusted importers, and Camry arrived with minimal mileage and clear history.",
+          "quote": "\"Choosing a first car was scary, but the process was much easier than expected.\""
+        },
+        "case3": {
+          "title": "Mercedes-Benz C-Class, 2017",
+          "subtitle": "New York → Georgia",
+          "price": "$17,300",
+          "saved": "$1,500 vs Dealer Offer",
+          "before": "Local dealer's premium sedan offer required upfront payment and had hidden fees.",
+          "after": "TrustedImporters.Ge showed an alternative via US import where client knew exactly what they were paying for.",
+          "quote": "\"Knowing we controlled every step made us feel much calmer.\""
+        }
+      }
+    },
     "compare": {
       "title": "Compare Importers",
+      "description": "Reputation, price, and service in one overview.",
       "subtitle": "Reputation, price, and service in one overview.",
       "vip_offers": "Premium / VIP Offers",
+      "vip_offers_title": "Premium / VIP Offers",
       "standard_offers": "Standard Offers",
+      "standard_offers_title": "Standard Offers",
       "shipping_price_label": "Shipping price from USA to Georgia port",
       "trusted_partner": "Trusted Partner",
       "trusted_partner_tooltip": "Trusted Partner — selected based on our internal evaluation and user feedback.",
@@ -836,15 +942,37 @@
       "secure_payment_tooltip": "Secure Payment — funds are held via a secure channel until the importer confirms the service.",
       "full_docs": "Full Docs",
       "full_docs_tooltip": "Full Docs — importer ensures preparation of all necessary import and registration documents.",
+      "list_aria_label": "Comparison list of import companies",
+      "vip_list_aria_label": "VIP importers list",
+      "standard_list_aria_label": "Standard offers list",
+      "badges": {
+        "trusted": "Trusted",
+        "trusted_tooltip": "Trusted importer based on platform checks and user feedback.",
+        "secure": "Secure Payment",
+        "secure_tooltip": "Secure payment flow with funds released after confirmation.",
+        "docs": "Full Docs",
+        "docs_tooltip": "Importer helps with all import-related documentation."
+      },
+      "services": {
+        "documents": "Documents",
+        "shipping": "Transport",
+        "customs": "Customs"
+      },
       "features": {
         "documents": "Documents",
         "transport": "Transport",
         "customs": "Customs"
+      },
+      "vip_labels": {
+        "diamond": "Diamond VIP",
+        "gold": "Gold VIP",
+        "silver": "Silver VIP"
       }
     },
     "faq": {
       "title": "FAQ",
       "subtitle": "Answers to common questions about the import process.",
+      "description": "Answers to common questions about the import process.",
       "items": {
         "1": {
           "question": "How much does it cost to import a car from USA?",
@@ -863,6 +991,45 @@
           "answer": "Yes, you can compare prices, services, and ratings across different companies."
         }
       }
+    },
+    "blog": {
+      "title": "Blog",
+      "description": "Stories and tips about importing cars from USA to Georgia.",
+      "coming_soon_badge": "Coming soon",
+      "popular_badge": "Popular",
+      "read_time": "{{minutes}} min read",
+      "views": "{{count}} views",
+      "overlay_message": "Blog section is in demo mode. Articles will be published soon.",
+      "empty": {
+        "title": "No articles yet",
+        "description": "We are preparing useful content about import. Please check back later.",
+        "view_catalog_btn": "View Catalog"
+      },
+      "posts": {
+        "blog": {
+          "post1": {
+            "tag": "Guides",
+            "title": "How to choose a car at auction?",
+            "description": "Key checks before bidding and how to avoid common mistakes."
+          },
+          "post2": {
+            "tag": "Documents",
+            "title": "What is important in the import contract?",
+            "description": "Main clauses in the contract with importer you should pay attention to."
+          },
+          "post3": {
+            "tag": "Savings",
+            "title": "How to save on import without extra risk",
+            "description": "Several strategies to optimize total cost and keep the process safe."
+          }
+        }
+      }
+    },
+    "final_cta": {
+      "title": "Ready to get started?",
+      "description": "Find your dream car today.",
+      "dashboard_btn": "Go to Dashboard",
+      "register_btn": "Start Now"
     },
     "carfax": {
       "title": "VIN Check",
@@ -899,7 +1066,16 @@
       "events_history": "Event History",
       "warning_title": "Warning",
       "warning_text_1": "This page uses test data and is not connected to a real VIN check service. Use results for visualization and design evaluation only.",
-      "warning_text_2": "For real history, integration with official VIN service and valid API key is required."
+      "warning_text_2": "For real history, integration with official VIN service and valid API key is required.",
+      "mock": {
+        "damage_summary": "Front part was lightly damaged, front bumper replaced.",
+        "events": {
+          "registration": "First registration in state California.",
+          "service": "Scheduled service at a dealer center.",
+          "accident": "Recorded accident, front bumper replacement.",
+          "inspection": "Technical inspection successfully passed."
+        }
+      }
     },
     "auction": {
       "title": "Auction Vehicles",

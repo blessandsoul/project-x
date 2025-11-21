@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import Header from '@/components/Header/index.tsx'
 import Footer from '@/components/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,6 +72,7 @@ const VehicleDetailsPage = () => {
   const [preferredContactChannel, setPreferredContactChannel] = useState<
     'whatsapp' | 'telegram' | 'phone' | 'email' | ''
   >('')
+  const { t } = useTranslation()
   const vehicleId = useMemo(() => {
     if (!params.id) return null
     const parsed = Number(params.id)

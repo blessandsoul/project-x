@@ -6,30 +6,25 @@ import { useTranslation } from 'react-i18next'
 
 interface FAQItem {
   id: number
-  questionKey: string
-  answerKey: string
+  key: string
 }
 
 const FAQ_ITEMS: FAQItem[] = [
   {
     id: 1,
-    questionKey: 'faq.q1.question',
-    answerKey: 'faq.q1.answer',
+    key: '1',
   },
   {
     id: 2,
-    questionKey: 'faq.q2.question',
-    answerKey: 'faq.q2.answer',
+    key: '2',
   },
   {
     id: 3,
-    questionKey: 'faq.q3.question',
-    answerKey: 'faq.q3.answer',
+    key: '3',
   },
   {
     id: 4,
-    questionKey: 'faq.q4.question',
-    answerKey: 'faq.q4.answer',
+    key: '4',
   },
 ]
 
@@ -88,7 +83,7 @@ export function FAQSection() {
                     aria-controls={`faq-panel-${item.id}`}
                   >
                     <span className="text-sm font-medium md:text-base">
-                      {t(`home.faq.items.${item.questionKey}`)}
+                      {t(`home.faq.items.${item.key}.question`)}
                     </span>
                     <motion.span
                       animate={
@@ -124,7 +119,7 @@ export function FAQSection() {
                       >
                         <CardContent className="px-4 pb-4 pt-0">
                           <p className="text-sm text-muted-foreground">
-                            {t(`home.faq.items.${item.answerKey}`)}
+                            {t(`home.faq.items.${item.key}.answer`)}
                           </p>
                         </CardContent>
                       </motion.div>

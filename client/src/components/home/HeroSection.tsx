@@ -165,7 +165,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
             <div className="space-y-4">
               <h1
                 id="home-hero-heading"
-                className="pt-1 text-3xl font-bold tracking-tight md:text-5xl font-homepage-hero leading-[1.25]"
+                className="pt-1 text-3xl font-bold tracking-tight md:text-5xl leading-[1.25]"
               >
                 <span className="sr-only">{t('home.hero.title_prefix')} {t('home.hero.title_suffix')}</span>
                 <span

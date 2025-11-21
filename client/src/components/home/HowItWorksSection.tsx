@@ -1,34 +1,29 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { useTranslation } from 'react-i18next'
 
 const STEPS = [
   {
-    id: 1,
+    id: '1',
     icon: 'mdi:magnify',
-    title: 'აირჩიე კომპანია',
-    description: 'მოძებნე იმპორტიორები ფილტრაციის და რეიტინგების მიხედვით.',
   },
   {
-    id: 2,
+    id: '2',
     icon: 'mdi:message-text',
-    title: 'დაუკავშირდი',
-    description: 'შეათანხმე დეტალები, პირობები და სერვისის მოცულობა.',
   },
   {
-    id: 3,
+    id: '3',
     icon: 'mdi:file-document-check',
-    title: 'დოკუმენტები და გადახდა',
-    description: 'კომპანია გეხმარება დოკუმენტაციაში და გადახდის ორგანიზებაში.',
   },
   {
-    id: 4,
+    id: '4',
     icon: 'mdi:car-multiple',
-    title: 'ავტომობილი საქართველოში',
-    description: 'შეკვეთილი მანქანა ჩამოდის პორტში და გადადის თქვენს ხელში.',
   },
 ]
 
 export function HowItWorksSection() {
+  const { t } = useTranslation()
+
   return (
     <section
       className="border-b bg-background"
@@ -41,10 +36,10 @@ export function HowItWorksSection() {
               id="home-how-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              როგორ მუშაობს
+              {t('home.how_it_works.title')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              სრული პროცესი ერთი გვერდიდან: არჩევიდან საბოლოო მიწოდებამდე.
+              {t('home.how_it_works.description')}
             </p>
           </div>
         </div>
@@ -57,11 +52,13 @@ export function HowItWorksSection() {
                   <Icon icon={step.icon} className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <CardTitle className="text-base font-semibold">
-                  {step.title}
+                  {t(`home.how_it_works.steps.${step.id}.title`)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t(`home.how_it_works.steps.${step.id}.description`)}
+                </p>
               </CardContent>
             </Card>
           ))}

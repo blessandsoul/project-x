@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
 import type { User } from '@/types/api'
@@ -169,6 +170,7 @@ const extractAuthPayload = (payload: unknown): AuthSuccessPayload | null => {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -245,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = extractProfilePayload(payload)
 
       if (!profile) {
-        throw new Error('არასწორი სერვერის პასუხი პროფილზე')
+        throw new Error(t('auth.error.profile_response'))
       }
 
       const nextUser = mapProfileToUser(profile)
@@ -270,7 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           persistSession(null, null)
         }
 
-        throw new Error(message || 'პროფილის ჩატვირთვის დროს მოხდა შეცდომა')
+        throw new Error(message || t('auth.error.profile_load'))
       }
 
       console.error('[Auth][Profile][GET] Unexpected error', error)
@@ -279,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      throw new Error('პროფილის ჩატვირთვის დროს მოხდა შეცდომა')
+      throw new Error(t('auth.error.profile_load'))
     }
   }
 
@@ -301,7 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password?: string
   }) => {
     if (!token) {
-      throw new Error('მომხმარებელი არ არის ავტორიზებული')
+      throw new Error(t('auth.error.not_authorized'))
     }
 
     setIsLoading(true)
@@ -312,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = extractProfilePayload(payload)
 
       if (!profile) {
-        throw new Error('არასწორი სერვერის პასუხი პროფილის განახლებაზე')
+        throw new Error(t('auth.error.profile_update_response'))
       }
 
       const nextUser = mapProfileToUser(profile)
@@ -327,9 +329,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!friendlyMessage) {
           if (code === 'VALIDATION_ERROR') {
-            friendlyMessage = 'პროფილის მონაცემები არასწორია'
+            friendlyMessage = t('auth.error.profile_invalid')
           } else {
-            friendlyMessage = 'პროფილის განახლების დროს მოხდა შეცდომა'
+            friendlyMessage = t('auth.error.profile_update')
           }
         }
 
@@ -357,7 +359,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      throw new Error('პროფილის განახლების დროს მოხდა შეცდომა')
+      throw new Error(t('auth.error.profile_update'))
     } finally {
       setIsLoading(false)
     }
@@ -365,7 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteAccount = async () => {
     if (!token) {
-      throw new Error('მომხმარებელი არ არის ავტორიზებული')
+      throw new Error(t('auth.error.not_authorized'))
     }
 
     setIsLoading(true)
@@ -383,9 +385,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!friendlyMessage) {
           if (code === 'VALIDATION_ERROR') {
-            friendlyMessage = 'პროფილის წაშლის მოთხოვნა არასწორია'
+            friendlyMessage = t('auth.error.delete_request_invalid')
           } else {
-            friendlyMessage = 'ანგარიშის წაშლის დროს მოხდა შეცდომა'
+            friendlyMessage = t('auth.error.delete_account')
           }
         }
 
@@ -413,7 +415,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      throw new Error('ანგარიშის წაშლის დროს მოხდა შეცდომა')
+      throw new Error(t('auth.error.delete_account'))
     } finally {
       setIsLoading(false)
     }
@@ -440,11 +442,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (!friendlyMessage) {
             if (code === 'VALIDATION_ERROR') {
-              friendlyMessage = 'ავტორიზაციის მონაცემები არასწორია'
+              friendlyMessage = t('auth.error.login_invalid')
             } else if (code === 'AUTHENTICATION_ERROR') {
-              friendlyMessage = 'ელ-ფოსტა ან პაროლი არასწორია'
+              friendlyMessage = t('auth.error.email_password_incorrect')
             } else {
-              friendlyMessage = 'ავტორიზაციის დროს მოხდა შეცდომა'
+              friendlyMessage = t('auth.error.login_generic')
             }
           }
 
@@ -466,7 +468,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw error
         }
 
-        throw new Error('ავტორიზაციის დროს მოხდა შეცდომა')
+        throw new Error(t('auth.error.login_generic'))
       }
 
       const authPayload = extractAuthPayload(payload)
@@ -478,7 +480,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        throw new Error('არასწორი სერვერის პასუხი ავტორიზაციაზე')
+        throw new Error(t('auth.error.login_response'))
       }
 
       const backendUser = authPayload.user
@@ -505,7 +507,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      throw new Error('ავტორიზაციის დროს მოხდა შეცდომა')
+      throw new Error(t('auth.error.login_generic'))
     } finally {
       setIsLoading(false)
     }
@@ -524,7 +526,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const authPayload = extractAuthPayload(payload)
 
       if (!authPayload) {
-        throw new Error('არასწორი სერვერის პასუხი რეგისტრაციაზე')
+        throw new Error(t('auth.error.register_response'))
       }
 
       const backendUser = authPayload.user
@@ -548,11 +550,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!friendlyMessage) {
           if (code === 'VALIDATION_ERROR') {
-            friendlyMessage = 'რეგისტრაციის მონაცემები არასწორია'
+            friendlyMessage = t('auth.error.register_invalid')
           } else if (code === 'CONFLICT_ERROR') {
-            friendlyMessage = 'ეს ელ-ფოსტა ან მომხმარებლის სახელი უკვე გამოყენებულია'
+            friendlyMessage = t('auth.error.conflict')
           } else {
-            friendlyMessage = 'რეგისტრაციის დროს მოხდა შეცდომა'
+            friendlyMessage = t('auth.error.register_generic')
           }
         }
 
@@ -574,7 +576,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      throw new Error('რეგისტრაციის დროს მოხდა შეცდომა')
+      throw new Error(t('auth.error.register_generic'))
     } finally {
       setIsLoading(false)
     }

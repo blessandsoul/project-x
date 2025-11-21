@@ -1,5 +1,6 @@
 import { useReducer, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -68,6 +69,7 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
 export function LeadCaptureSection() {
   const shouldReduceMotion = useReducedMotion()
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(leadFormReducer, initialState)
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormState, string>>>({})
@@ -91,27 +93,27 @@ export function LeadCaptureSection() {
     const nextErrors: Partial<Record<keyof LeadFormState, string>> = {}
 
     if (!state.name.trim()) {
-      nextErrors.name = 'გთხოვთ შეიყვანოთ სახელი'
+      nextErrors.name = t('home.lead_capture.validation.name_required')
     }
 
     if (!state.contact.trim()) {
-      nextErrors.contact = 'გთხოვთ მიუთითოთ ტელეფონი ან Telegram'
+      nextErrors.contact = t('home.lead_capture.validation.contact_required')
     }
 
     if (!state.carType.trim()) {
-      nextErrors.carType = 'გთხოვთ აირჩიოთ ავტომობილის ტიპი'
+      nextErrors.carType = t('home.lead_capture.validation.car_type_required')
     }
 
     if (!state.auctionSource.trim()) {
-      nextErrors.auctionSource = 'გთხოვთ მიუთითოთ სასურველი აუქციონი ან აირჩიეთ "არ აქვს მნიშვნელობა"'
+      nextErrors.auctionSource = t('home.lead_capture.validation.auction_source_required')
     }
 
     if (!state.priority.trim()) {
-      nextErrors.priority = 'გთხოვთ მიუთითოთ რომელი კრიტერიუმი არის თქვენთვის მთავარი'
+      nextErrors.priority = t('home.lead_capture.validation.priority_required')
     }
 
     if (!state.consent) {
-      nextErrors.consent = 'აუცილებელია დათანხმება პირობებზე'
+      nextErrors.consent = t('home.lead_capture.validation.consent_required')
     }
 
     setErrors(nextErrors)
@@ -153,20 +155,19 @@ export function LeadCaptureSection() {
               id="home-lead-form-heading"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              მიიღეთ პირადი რეკომენდაცია კომპანიების შესახებ
+              {t('home.lead_capture.title')}
             </h2>
             <p className="text-sm text-muted-foreground md:text-base">
-              შეავსეთ მოკლე ფორმა და მიიღეთ შერჩეული კომპანიების სია, რომლებიც
-              შეესაბამება თქვენს ბიუჯეტსა და მოთხოვნებს.
+              {t('home.lead_capture.description')}
             </p>
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Icon icon="mdi:clock-fast" className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>პასუხი დაახლოებით 1 სამუშაო დღეში</span>
+                <span>{t('home.lead_capture.response_time')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Icon icon="mdi:lock-outline" className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>თქვენი კონტაქტი არ გადაეცემა მესამე მხარეებს</span>
+                <span>{t('home.lead_capture.privacy_guarantee')}</span>
               </div>
             </div>
           </div>
@@ -179,14 +180,14 @@ export function LeadCaptureSection() {
                   className="h-5 w-5 text-primary"
                   aria-hidden="true"
                 />
-                <span>სწრაფი განაცხადი</span>
+                <span>{t('home.lead_capture.form_title')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                 <div className="space-y-1">
                   <Label htmlFor="lead-name" className="text-xs text-muted-foreground">
-                    სახელი
+                    {t('home.lead_capture.name_label')}
                   </Label>
                   <Input
                     id="lead-name"
@@ -207,7 +208,7 @@ export function LeadCaptureSection() {
 
                 <div className="space-y-1">
                   <Label htmlFor="lead-contact" className="text-xs text-muted-foreground">
-                    ტელეფონი ან Telegram
+                    {t('home.lead_capture.contact_label')}
                   </Label>
                   <Input
                     id="lead-contact"
@@ -216,7 +217,7 @@ export function LeadCaptureSection() {
                     onChange={(event) =>
                       dispatch({ type: 'SET_FIELD', field: 'contact', value: event.target.value })
                     }
-                    placeholder="მაგ: +995 5XX XX XX XX ან @username"
+                    placeholder={t('home.lead_capture.placeholders.contact_hint')}
                     aria-invalid={Boolean(errors.contact)}
                     aria-describedby={errors.contact ? 'lead-contact-error' : undefined}
                   />
@@ -229,7 +230,7 @@ export function LeadCaptureSection() {
 
                 <div className="space-y-1">
                   <Label htmlFor="lead-budget" className="text-xs text-muted-foreground">
-                    სასურველი ბიუჯეტი, USD (არასავალდებულო)
+                    {t('home.lead_capture.budget_label')}
                   </Label>
                   <Input
                     id="lead-budget"
@@ -246,7 +247,7 @@ export function LeadCaptureSection() {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      სასურველი ავტომობილის ტიპი
+                      {t('home.lead_capture.car_type_label')}
                     </Label>
                     <Select
                       value={state.carType}
@@ -259,14 +260,14 @@ export function LeadCaptureSection() {
                         aria-invalid={Boolean(errors.carType)}
                         aria-describedby={errors.carType ? 'lead-car-type-error' : undefined}
                       >
-                        <SelectValue placeholder="აირჩიეთ ტიპი" />
+                        <SelectValue placeholder={t('home.lead_capture.car_type_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
-                        <SelectItem value="sedan">სედანი</SelectItem>
-                        <SelectItem value="suv">SUV / ქროსოვერი</SelectItem>
-                        <SelectItem value="hatchback">ჰეჩბეკი / კომპაქტი</SelectItem>
-                        <SelectItem value="premium">პრემიუმ სედანი / კუპე</SelectItem>
+                        <SelectItem value="any">{t('home.lead_capture.car_type_any')}</SelectItem>
+                        <SelectItem value="sedan">{t('home.lead_capture.car_type_sedan')}</SelectItem>
+                        <SelectItem value="suv">{t('home.lead_capture.car_type_suv')}</SelectItem>
+                        <SelectItem value="hatchback">{t('home.lead_capture.car_type_hatchback')}</SelectItem>
+                        <SelectItem value="premium">{t('home.lead_capture.car_type_premium')}</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.carType ? (
@@ -278,7 +279,7 @@ export function LeadCaptureSection() {
 
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      აუქციონი (წყარო)
+                      {t('home.lead_capture.auction_source_label')}
                     </Label>
                     <Select
                       value={state.auctionSource}
@@ -293,10 +294,10 @@ export function LeadCaptureSection() {
                           errors.auctionSource ? 'lead-auction-source-error' : undefined
                         }
                       >
-                        <SelectValue placeholder="აირჩიეთ ან გამოიყენეთ 'არ აქვს მნიშვნელობა'" />
+                        <SelectValue placeholder={t('home.lead_capture.auction_source_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
+                        <SelectItem value="any">{t('home.lead_capture.auction_source_any')}</SelectItem>
                         <SelectItem value="copart">Copart</SelectItem>
                         <SelectItem value="iaai">IAAI</SelectItem>
                         <SelectItem value="manheim">Manheim</SelectItem>
@@ -312,7 +313,7 @@ export function LeadCaptureSection() {
 
                 <div className="space-y-1">
                   <Label htmlFor="lead-message" className="text-xs text-muted-foreground">
-                    დამატებითი ინფორმაცია (არასავალდებულო)
+                    {t('home.lead_capture.message_label')}
                   </Label>
                   <Input
                     id="lead-message"
@@ -321,13 +322,13 @@ export function LeadCaptureSection() {
                     onChange={(event) =>
                       dispatch({ type: 'SET_FIELD', field: 'message', value: event.target.value })
                     }
-                    placeholder="მაგ: მინდა SUV ოჯახისთვის ან მაინტერესებს პრემიუმ სედანი"
+                    placeholder={t('home.lead_capture.message_placeholder')}
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">
-                    რომელი კრიტერიუმი არის თქვენთვის მთავარი?
+                    {t('home.lead_capture.priority_label')}
                   </Label>
                   <Select
                     value={state.priority}
@@ -340,12 +341,12 @@ export function LeadCaptureSection() {
                       aria-invalid={Boolean(errors.priority)}
                       aria-describedby={errors.priority ? 'lead-priority-error' : undefined}
                     >
-                      <SelectValue placeholder="აირჩიეთ პრიორიტეტი" />
+                      <SelectValue placeholder={t('home.lead_capture.priority_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="price">მინიმალური საბოლოო ღირებულება</SelectItem>
-                      <SelectItem value="speed">ყველაზე სწრაფი ვადები</SelectItem>
-                      <SelectItem value="premium_service">პრემიუმ მომსახურება / უფრო მეტი მხარდაჭერა</SelectItem>
+                      <SelectItem value="price">{t('home.lead_capture.priority_price')}</SelectItem>
+                      <SelectItem value="speed">{t('home.lead_capture.priority_speed')}</SelectItem>
+                      <SelectItem value="premium_service">{t('home.lead_capture.priority_premium')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.priority ? (
@@ -366,8 +367,8 @@ export function LeadCaptureSection() {
                     onClick={() => setIsAdvancedOpen((prev) => !prev)}
                   >
                     {isAdvancedOpen
-                      ? 'დამალე დამატებითი დეტალები'
-                      : 'დამატებითი დეტალები: მარკა, მოდელი, წელი, ფერი'}
+                      ? t('home.lead_capture.advanced_hide')
+                      : t('home.lead_capture.advanced_show')}
                   </button>
 
                   <AnimatePresence initial={false}>
@@ -381,13 +382,12 @@ export function LeadCaptureSection() {
                         className="space-y-3 rounded-md border border-dashed border-muted p-3"
                       >
                       <p className="text-[11px] text-muted-foreground">
-                        მითითებული დეტალები დაეხმარება კომპანიებს უფრო სწრაფად და ზუსტად
-                        დაგიბრუნონ შეთავაზება.
+                        {t('home.lead_capture.advanced_hint')}
                       </p>
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-1">
                           <Label htmlFor="lead-brand" className="text-xs text-muted-foreground">
-                            მარკა (არასავალდებულო)
+                            {t('home.lead_capture.brand_label')}
                           </Label>
                           <Input
                             id="lead-brand"
@@ -400,12 +400,12 @@ export function LeadCaptureSection() {
                                 value: event.target.value,
                               })
                             }
-                            placeholder="მაგ: Toyota, BMW, Mercedes-Benz"
+                            placeholder={t('home.lead_capture.placeholders.brands')}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor="lead-model" className="text-xs text-muted-foreground">
-                            მოდელი (არასავალდებულო)
+                            {t('home.lead_capture.model_label')}
                           </Label>
                           <Input
                             id="lead-model"
@@ -418,14 +418,14 @@ export function LeadCaptureSection() {
                                 value: event.target.value,
                               })
                             }
-                            placeholder="მაგ: Camry, X5, C-Class"
+                            placeholder={t('home.lead_capture.placeholders.models')}
                           />
                         </div>
                       </div>
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-1">
                           <Label htmlFor="lead-year-from" className="text-xs text-muted-foreground">
-                            სასურველი გამოშვების წელი მინიმუმ (არასავალდებულო)
+                            {t('home.lead_capture.year_from_label')}
                           </Label>
                           <Input
                             id="lead-year-from"
@@ -441,12 +441,12 @@ export function LeadCaptureSection() {
                                 value: event.target.value,
                               })
                             }
-                            placeholder="მაგ: 2015"
+                            placeholder={t('home.lead_capture.placeholders.year')}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground">
-                            სასურველი ფერი (არასავალდებულო)
+                            {t('home.lead_capture.color_label')}
                           </Label>
                           <Select
                             value={state.color}
@@ -455,15 +455,15 @@ export function LeadCaptureSection() {
                             }
                           >
                             <SelectTrigger size="sm">
-                              <SelectValue placeholder="აირჩიეთ ფერი ან დატოვეთ ცარიელი" />
+                              <SelectValue placeholder={t('home.lead_capture.placeholders.color')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="any">არ აქვს მნიშვნელობა</SelectItem>
-                              <SelectItem value="white">თეთრი / ღია</SelectItem>
-                              <SelectItem value="black">შავი</SelectItem>
-                              <SelectItem value="grey">ვერცხლისფერი / ნაცრისფერი</SelectItem>
-                              <SelectItem value="blue">ლურჯი</SelectItem>
-                              <SelectItem value="red">წითელი / სპორტული ფერი</SelectItem>
+                              <SelectItem value="any">{t('home.lead_capture.color_any')}</SelectItem>
+                              <SelectItem value="white">{t('home.lead_capture.color_white')}</SelectItem>
+                              <SelectItem value="black">{t('home.lead_capture.color_black')}</SelectItem>
+                              <SelectItem value="grey">{t('home.lead_capture.color_grey')}</SelectItem>
+                              <SelectItem value="blue">{t('home.lead_capture.color_blue')}</SelectItem>
+                              <SelectItem value="red">{t('home.lead_capture.color_red')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -485,8 +485,7 @@ export function LeadCaptureSection() {
                   />
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <Label htmlFor="lead-consent" className="cursor-pointer text-xs">
-                      ვეთანხმები დაკავშირებას და პირადი მონაცემების დამუშავებას სერვისის
-                      ფარგლებში
+                      {t('home.lead_capture.consent_label')}
                     </Label>
                     {errors.consent ? (
                       <p id="lead-consent-error" className="text-xs text-destructive">
@@ -510,12 +509,12 @@ export function LeadCaptureSection() {
                         className="mr-2 h-4 w-4 animate-spin"
                         aria-hidden="true"
                       />
-                      იგზავნება...
+                      {t('home.lead_capture.submitting_btn')}
                     </>
                   ) : (
                     <>
                       <Icon icon="mdi:send" className="mr-2 h-4 w-4" aria-hidden="true" />
-                      გაგზავნა განაცხადის
+                      {t('home.lead_capture.submit_btn')}
                     </>
                   )}
                 </Button>
@@ -523,7 +522,7 @@ export function LeadCaptureSection() {
                 {isSuccess ? (
                   <div className="flex items-center gap-2 text-xs text-emerald-600">
                     <Icon icon="mdi:check-circle" className="h-4 w-4" aria-hidden="true" />
-                    <span>განაცხადი მიღებულია, მალე დაგიკავშირდებით.</span>
+                    <span>{t('home.lead_capture.success_message')}</span>
                   </div>
                 ) : null}
                 </motion.div>

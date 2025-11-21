@@ -1,30 +1,15 @@
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useAuth } from '@/hooks/useAuth';
 
 const STORAGE_KEY_USER = 'projectx_auth_user';
 
-// TODO-FX: Replace with real i18n implementation.
-const HEADER_MESSAGES = {
-  'header.brand': 'TrustedImporters.Ge',
-  'header.menu': 'მენიუ',
-  'header.sign_in': 'შესვლა',
-  'header.avatar_alt': 'მომხმარებლის ავატარი',
-};
-
-const NAV_MESSAGES = {
-  'navigation.home': 'მთავარი',
-  'navigation.search': 'ძიება',
-  'navigation.catalog': 'კატალოგი',
-  'navigation.dashboard': 'დაფა',
-};
-
-const t = (key) => HEADER_MESSAGES[key] ?? NAV_MESSAGES[key] ?? key;
-
 const Header = ({ user, navigationItems, onNavigate }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user: authUser } = useAuth();
 
   let storedUser = null;

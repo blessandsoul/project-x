@@ -26,13 +26,13 @@ const CarfaxPage = () => {
     mileage: 82500,
     owners: 2,
     accidents: 1,
-    damageSummary: 'წინა ნაწილი დაზიანდა მსუბუქად, შეცვლილია ბამპერი', // Ideally this should be translated too if it's mock data
+    damageSummary: t('carfax.mock.damage_summary'),
     lease: false,
     events: [
-      { date: '2019-04-12', type: 'registration', description: 'პირველი რეგისტრაცია შტატში California' },
-      { date: '2020-08-03', type: 'service', description: 'გეგმიური სერვისი დილერულ ცენტრში' },
-      { date: '2022-01-17', type: 'accident', description: 'დაფიქსირდა ავარია, წინა ბამპერის ჩანაცვლება' },
-      { date: '2023-05-22', type: 'inspection', description: 'ტექნიკური ინსპექცია გავლილია წარმატებით' },
+      { date: '2019-04-12', type: 'registration', description: t('carfax.mock.events.registration') },
+      { date: '2020-08-03', type: 'service', description: t('carfax.mock.events.service') },
+      { date: '2022-01-17', type: 'accident', description: t('carfax.mock.events.accident') },
+      { date: '2023-05-22', type: 'inspection', description: t('carfax.mock.events.inspection') },
     ],
   };
 
