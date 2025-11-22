@@ -24,38 +24,41 @@ export function useVinDecode(): UseVinDecodeResult {
     setResult(null)
   }, [])
 
-  const submit = useCallback(async (rawVin: string) => {
-    const trimmed = rawVin.trim().toUpperCase()
+  const submit = useCallback(
+    async (rawVin: string) => {
+      const trimmed = rawVin.trim().toUpperCase()
 
-    if (!trimmed) {
-      setError(t('carfax.error_vin_required'))
-      setResult(null)
-      return
-    }
-
-    if (trimmed.length !== 17) {
-      setError(t('carfax.error_vin_length'))
-      setResult(null)
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const decoded = await decodeVin(trimmed)
-      setResult(decoded)
-    } catch (submissionError) {
-      if (submissionError instanceof Error) {
-        setError(submissionError.message || t('carfax.error_decode_failed'))
-      } else {
-        setError(t('carfax.error_decode_failed'))
+      if (!trimmed) {
+        setError(t('vin.error_vin_required'))
+        setResult(null)
+        return
       }
-      setResult(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+
+      if (trimmed.length !== 17) {
+        setError(t('vin.error_vin_length'))
+        setResult(null)
+        return
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const decoded = await decodeVin(trimmed)
+        setResult(decoded)
+      } catch (submissionError) {
+        if (submissionError instanceof Error) {
+          setError(submissionError.message || t('vin.error_decode_failed'))
+        } else {
+          setError(t('vin.error_decode_failed'))
+        }
+        setResult(null)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [t],
+  )
 
   return {
     isLoading,

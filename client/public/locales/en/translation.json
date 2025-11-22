@@ -76,6 +76,22 @@
     "auctionListings": "Active Auctions",
     "carfax": "VIN Check"
   },
+  "vin": {
+    "title": "VIN Check",
+    "subtitle": "Enter VIN to decode basic vehicle information.",
+    "check_card_title": "Check VIN",
+    "vin_label": "VIN Code",
+    "vin_placeholder": "e.g. 1HGCM82633A004352",
+    "vin_hint": "VIN must contain 17 characters (digits and latin letters, except I, O, Q).",
+    "check_btn": "Check",
+    "empty_info": "Enter VIN code to see decode result.",
+    "result_title": "VIN Decode Result",
+    "result_vin_label": "VIN Code",
+    "result_data_label": "Raw Response Data",
+    "error_vin_required": "Please enter VIN code.",
+    "error_vin_length": "VIN must be exactly 17 characters.",
+    "error_decode_failed": "VIN decode failed. Please try again."
+  },
   "content": {
     "title": "Find a Trusted Importer",
     "subtitle": "Your guide to the world of auto imports",
@@ -263,12 +279,14 @@
     "pagination": {
       "page": "Page",
       "prev": "Back",
-      "next": "Next"
+      "next": "Next",
+      "label": "Catalog pages navigation"
     },
     "tags": {
       "active": "Active filters:",
       "search": "Search:",
-      "sort": "Sort:"
+      "sort": "Sort:",
+      "reset_all": "Reset all filters"
     },
     "error": {
       "fetch": "Failed to load companies. Please try again.",
@@ -1030,6 +1048,22 @@
       "description": "Find your dream car today.",
       "dashboard_btn": "Go to Dashboard",
       "register_btn": "Start Now"
+    },
+    "vin": {
+      "title": "VIN Check",
+      "subtitle": "Enter VIN to decode basic vehicle information.",
+      "check_card_title": "Check VIN",
+      "vin_label": "VIN Code",
+      "vin_placeholder": "e.g. 1HGCM82633A004352",
+      "vin_hint": "VIN must contain 17 characters (digits and latin letters, except I, O, Q).",
+      "check_btn": "Check",
+      "empty_info": "Enter VIN code to see decode result.",
+      "result_title": "VIN Decode Result",
+      "result_vin_label": "VIN Code",
+      "result_data_label": "Raw Response Data",
+      "error_vin_required": "Please enter VIN code.",
+      "error_vin_length": "VIN must be exactly 17 characters.",
+      "error_decode_failed": "VIN decode failed. Please try again."
     },
     "carfax": {
       "title": "VIN Check",

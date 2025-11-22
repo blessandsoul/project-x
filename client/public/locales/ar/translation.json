@@ -34,6 +34,28 @@
     "open_profile_menu": "فتح قائمة الملف الشخصي",
     "avatar_alt": "صورة المستخدم"
   },
+  "final_cta": {
+    "title": "جاهز للبدء؟",
+    "description": "اعثر على سيارة أحلامك اليوم.",
+    "dashboard_btn": "اذهب إلى لوحة التحكم",
+    "register_btn": "ابدأ الآن"
+  },
+  "vin": {
+    "title": "فحص VIN",
+    "subtitle": "أدخل رقم VIN للحصول على معلومات أساسية مفككة عن السيارة.",
+    "check_card_title": "فحص VIN",
+    "vin_label": "رقم VIN",
+    "vin_placeholder": "مثال: 1HGCM82633A004352",
+    "vin_hint": "يجب أن يتكون رقم VIN من 17 رمزاً (أرقام وحروف لاتينية بدون I, O, Q).",
+    "check_btn": "تحقق",
+    "empty_info": "أدخل رقم VIN لعرض نتيجة التفكيك.",
+    "result_title": "نتيجة تفكيك VIN",
+    "result_vin_label": "رقم VIN",
+    "result_data_label": "بيانات الاستجابة الخام",
+    "error_vin_required": "يرجى إدخال رقم VIN.",
+    "error_vin_length": "يجب أن يكون رقم VIN مكوناً من 17 رمزاً بالضبط.",
+    "error_decode_failed": "فشل تفكيك رقم VIN. يرجى المحاولة مرة أخرى."
+  },
   "navigation": {
     "home": "الرئيسية",
     "search": "بحث",

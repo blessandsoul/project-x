@@ -34,6 +34,28 @@
     "open_profile_menu": "Открыть меню профиля",
     "avatar_alt": "Аватар пользователя"
   },
+  "final_cta": {
+    "title": "Готовы начать?",
+    "description": "Найдите авто своей мечты уже сегодня.",
+    "dashboard_btn": "Перейти в Кабинет",
+    "register_btn": "Начать"
+  },
+  "vin": {
+    "title": "Проверка VIN",
+    "subtitle": "Введите VIN, чтобы получить базовую декодированную информацию об автомобиле.",
+    "check_card_title": "Проверить VIN",
+    "vin_label": "VIN код",
+    "vin_placeholder": "напр. 1HGCM82633A004352",
+    "vin_hint": "VIN должен содержать 17 символов (цифры и латинские буквы, кроме I, O, Q).",
+    "check_btn": "Проверить",
+    "empty_info": "Введите VIN код, чтобы увидеть результат декодирования.",
+    "result_title": "Результат декодирования VIN",
+    "result_vin_label": "VIN код",
+    "result_data_label": "Исходные данные ответа",
+    "error_vin_required": "Пожалуйста, введите VIN код.",
+    "error_vin_length": "VIN должен состоять ровно из 17 символов.",
+    "error_decode_failed": "Не удалось декодировать VIN. Попробуйте снова."
+  },
   "navigation": {
     "home": "Главная",
     "search": "Поиск",
