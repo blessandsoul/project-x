@@ -279,8 +279,19 @@ const filterAndSortCompanies = (
 
     const companyMinPrice = company.priceRange?.min ?? 0;
     const companyMaxPrice = company.priceRange?.max ?? 0;
-    if (companyMinPrice < options.priceRange[0] || companyMaxPrice > options.priceRange[1]) {
-      return false;
+    const hasCompanyPriceRange = companyMinPrice > 0 || companyMaxPrice > 0;
+
+    const isDefaultPriceRange =
+      options.priceRange[0] === DEFAULT_PRICE_RANGE[0] &&
+      options.priceRange[1] === DEFAULT_PRICE_RANGE[1];
+
+    // Only apply price filtering when the user has changed the slider
+    // from the default range, and only for companies that actually
+    // have a meaningful price range configured.
+    if (!isDefaultPriceRange && hasCompanyPriceRange) {
+      if (companyMinPrice < options.priceRange[0] || companyMaxPrice > options.priceRange[1]) {
+        return false;
+      }
     }
 
     return true;
