@@ -1,45 +1,62 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { navigationItems, footerLinks } from '@/config/navigation';
 import { useVinDecode } from '@/hooks/useVinDecode';
+import VinDecodeResultCard from '@/components/vin/VinDecodeResultCard';
+
+const VIN_HISTORY_STORAGE_KEY = 'trustedimporters.vin.history';
 
 const CarfaxPage = () => {
   const { t } = useTranslation();
   const [vin, setVin] = useState('');
+  const [vinHistory, setVinHistory] = useState<string[]>([]);
   const { isLoading, error, result, submit, reset } = useVinDecode();
-
-  const mockReport = {
-    vin: '1HGCM82633A004352',
-    year: 2019,
-    make: 'Toyota',
-    model: 'Camry SE',
-    engine: '2.5L Gasoline',
-    transmission: 'Automatic',
-    mileage: 82500,
-    owners: 2,
-    accidents: 1,
-    damageSummary: t('carfax.mock.damage_summary'),
-    lease: false,
-    events: [
-      { date: '2019-04-12', type: 'registration', description: t('carfax.mock.events.registration') },
-      { date: '2020-08-03', type: 'service', description: t('carfax.mock.events.service') },
-      { date: '2022-01-17', type: 'accident', description: t('carfax.mock.events.accident') },
-      { date: '2023-05-22', type: 'inspection', description: t('carfax.mock.events.inspection') },
-    ],
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     await submit(vin);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const raw = window.localStorage.getItem(VIN_HISTORY_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setVinHistory(parsed.filter((item): item is string => typeof item === 'string'));
+      }
+    } catch {
+      // ignore history load errors
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!result?.vin) return;
+    if (typeof window === 'undefined') return;
+
+    setVinHistory((prev) => {
+      const nextWithoutCurrent = prev.filter((item) => item !== result.vin);
+      const next = [result.vin, ...nextWithoutCurrent].slice(0, 5);
+
+      try {
+        window.localStorage.setItem(VIN_HISTORY_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore history save errors
+      }
+
+      return next;
+    });
+  }, [result?.vin]);
 
   const hasResult = !!result && !error;
 
@@ -52,19 +69,19 @@ const CarfaxPage = () => {
       <main
         className="flex-1"
         role="main"
-        aria-label={t('carfax.title')}
+        aria-label={t('vin.title')}
       >
         <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8 space-y-6 flex flex-col">
           <div className="flex flex-col gap-2 w-full max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold">{t('carfax.title')}</h1>
+            <h1 className="text-3xl font-bold">{t('vin.title')}</h1>
             <p className="text-muted-foreground">
-              {t('carfax.subtitle')}
+              {t('vin.subtitle')}
             </p>
           </div>
 
           <Card className="w-full max-w-2xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-lg">{t('carfax.check_card_title')}</CardTitle>
+              <CardTitle className="text-lg">{t('vin.check_card_title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -76,196 +93,155 @@ const CarfaxPage = () => {
                     htmlFor="vin"
                     className="text-sm font-medium"
                   >
-                    {t('carfax.vin_label')}
+                    {t('vin.vin_label')}
                   </label>
                   <Input
                     id="vin"
                     value={vin}
+                    autoFocus
                     onChange={(event) => {
+                      let nextValue = event.target.value.toUpperCase();
+                      nextValue = nextValue.replace(/[IOQ]/gi, '');
+                      if (nextValue.length > 17) {
+                        nextValue = nextValue.slice(0, 17);
+                      }
+
                       if (error) {
                         reset();
                       }
-                      setVin(event.target.value);
+
+                      setVin(nextValue);
                     }}
-                    placeholder={t('carfax.vin_placeholder')}
+                    placeholder={t('vin.vin_placeholder')}
                     className="uppercase tracking-[0.1em]"
                     aria-invalid={!!error}
                     aria-describedby={error ? 'vin-error' : undefined}
+                    maxLength={17}
                   />
                   {error && (
                     <p
                       id="vin-error"
                       className="text-xs text-red-600"
+                      role="alert"
                     >
                       {error}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {t('carfax.vin_hint')}
+                    {t('vin.vin_hint')}
                   </p>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                >
-                  <Icon icon="mdi:magnify" className="me-2 h-4 w-4" />
-                  {t('carfax.check_btn')}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    aria-busy={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
+                        {t('vin.check_btn_loading', 'Checking VIN...')}
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="mdi:magnify" className="me-2 h-4 w-4" />
+                        {t('vin.check_btn')}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isLoading && !vin}
+                    onClick={() => {
+                      setVin('');
+                      reset();
+                    }}
+                  >
+                    <Icon icon="mdi:close" className="me-2 h-4 w-4" />
+                    {t('vin.reset_btn', 'Clear')}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
 
-          {!hasResult && !error && (
-            <Card className="border-dashed border-muted w-full max-w-2xl mx-auto">
-              <CardContent className="py-6 flex items-center gap-3 text-sm text-muted-foreground">
-                <Icon icon="mdi:information-outline" className="h-5 w-5" />
-                <span>{t('carfax.empty_info')}</span>
+          {vinHistory.length > 0 && (
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-sm">
+                  {t('vin.history_title', 'Recent VIN checks')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-xs">
+                <p className="text-muted-foreground">
+                  {t('vin.history_hint', 'Click on a VIN to reuse it in the form.')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {vinHistory.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className="text-[0.7rem] uppercase tracking-[0.14em] rounded-full border px-3 py-1 hover:bg-muted transition-colors"
+                      onClick={() => {
+                        setVin(item);
+                        if (error) {
+                          reset();
+                        }
+                      }}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
 
-          {hasResult && (
-            <div className="grid gap-6 lg:grid-cols-[2fr,1fr] items-start">
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Icon icon="mdi:car-info" className="h-5 w-5 text-primary" />
-                      {t('carfax.basic_info.title')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 text-sm md:grid-cols-2">
-                    <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.vin_label')}</span>
-                      <span className="font-medium tracking-[0.1em] uppercase">{result?.vin ?? mockReport.vin}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.year_make_model_label')}</span>
-                      <span className="font-medium">
-                        {mockReport.year} {mockReport.make} {mockReport.model}
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.engine_label')}</span>
-                      <span>{mockReport.engine}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.transmission_label')}</span>
-                      <span>{mockReport.transmission}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="block text-xs text-muted-foreground">{t('carfax.basic_info.mileage_label')}</span>
-                      <span>{mockReport.mileage.toLocaleString()} km</span>
-                    </div>
-                  </CardContent>
-                </Card>
+          {!hasResult && !error && !isLoading && (
+            <Card className="border-dashed border-muted w-full max-w-2xl mx-auto">
+              <CardContent className="py-6 flex items-center gap-3 text-sm text-muted-foreground">
+                <Icon icon="mdi:information-outline" className="h-5 w-5" />
+                <span>{t('vin.empty_info')}</span>
+              </CardContent>
+            </Card>
+          )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Icon icon="mdi:clipboard-list-outline" className="h-5 w-5 text-primary" />
-                      {t('carfax.summary.title')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 md:grid-cols-2 text-sm">
-                    <div className="flex items-start gap-2">
-                      <Icon icon="mdi:account-group" className="h-4 w-4 mt-1 text-primary" />
-                      <div>
-                        <div className="font-medium">{t('carfax.summary.owners_count_label')}</div>
-                        <div className="text-muted-foreground text-xs">{t('carfax.summary.owners_count', { count: mockReport.owners })}</div>
-                      </div>
+          {isLoading && !hasResult && (
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-4 w-40" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  {[1, 2, 3, 4].map((key) => (
+                    <div
+                      key={key}
+                      className="space-y-1"
+                    >
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-4 w-32" />
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Icon
-                        icon={mockReport.accidents > 0 ? 'mdi:alert-circle-outline' : 'mdi:check-circle-outline'}
-                        className="h-4 w-4 mt-1 text-primary"
-                      />
-                      <div>
-                        <div className="font-medium">{t('carfax.summary.accidents_label')}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {mockReport.accidents > 0
-                            ? t('carfax.summary.accidents_count', { count: mockReport.accidents })
-                            : t('carfax.summary.no_accidents')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Icon
-                        icon={mockReport.lease ? 'mdi:file-document-edit-outline' : 'mdi:file-document-outline'}
-                        className="h-4 w-4 mt-1 text-primary"
-                      />
-                      <div>
-                        <div className="font-medium">{t('carfax.summary.lease_label')}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {mockReport.lease
-                            ? t('carfax.summary.lease_exists')
-                            : t('carfax.summary.no_lease')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Icon icon="mdi:car-wrench" className="h-4 w-4 mt-1 text-primary" />
-                      <div>
-                        <div className="font-medium">{t('carfax.damage_desc')}</div>
-                        <div className="text-muted-foreground text-xs">{mockReport.damageSummary}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Icon icon="mdi:timeline-clock-outline" className="h-5 w-5 text-primary" />
-                      {t('carfax.events_history')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm">
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('common.date')}</TableHead>
-                            <TableHead>{t('common.type')}</TableHead>
-                            <TableHead>{t('common.description')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockReport.events.map((event) => (
-                            <TableRow key={event.date + event.type}>
-                              <TableCell>{event.date}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {event.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{event.description}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="border-primary/10 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Icon icon="mdi:shield-check" className="h-5 w-5 text-primary" />
-                    {t('carfax.warning_title')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-xs text-muted-foreground">
-                  <p>
-                    {t('carfax.warning_text_1')}
-                  </p>
-                  <p>
-                    {t('carfax.warning_text_2')}
-                  </p>
-                </CardContent>
-              </Card>
+          {hasResult && result && (
+            <div className="w-full max-w-2xl mx-auto space-y-4">
+              <VinDecodeResultCard
+                vin={result.vin}
+                data={result.data}
+              />
             </div>
           )}
         </div>
