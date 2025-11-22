@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +16,10 @@ const VIN_HISTORY_STORAGE_KEY = 'trustedimporters.vin.history';
 
 const CarfaxPage = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [vin, setVin] = useState('');
   const [vinHistory, setVinHistory] = useState<string[]>([]);
+  const [hasAutoSubmittedFromUrl, setHasAutoSubmittedFromUrl] = useState(false);
   const { isLoading, error, result, submit, reset } = useVinDecode();
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -39,6 +42,58 @@ const CarfaxPage = () => {
       // ignore history load errors
     }
   }, []);
+
+  const handleClearHistory = () => {
+    setVinHistory([]);
+
+    if (typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.removeItem(VIN_HISTORY_STORAGE_KEY);
+    } catch {
+      // ignore history clear errors
+    }
+  };
+
+  const handleRemoveHistoryItem = (value: string) => {
+    setVinHistory((prev) => {
+      const next = prev.filter((item) => item !== value);
+
+      if (typeof window !== 'undefined') {
+        try {
+          if (next.length === 0) {
+            window.localStorage.removeItem(VIN_HISTORY_STORAGE_KEY);
+          } else {
+            window.localStorage.setItem(VIN_HISTORY_STORAGE_KEY, JSON.stringify(next));
+          }
+        } catch {
+          // ignore history update errors
+        }
+      }
+
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const vinFromUrl = searchParams.get('vin');
+    if (!vinFromUrl) return;
+
+    let nextValue = vinFromUrl.toUpperCase();
+    nextValue = nextValue.replace(/[IOQ]/gi, '');
+    if (nextValue.length > 17) {
+      nextValue = nextValue.slice(0, 17);
+    }
+
+    if (!nextValue) return;
+
+    setVin(nextValue);
+
+    if (!hasAutoSubmittedFromUrl && nextValue.length === 17) {
+      void submit(nextValue);
+      setHasAutoSubmittedFromUrl(true);
+    }
+  }, [searchParams, hasAutoSubmittedFromUrl, submit]);
 
   useEffect(() => {
     if (!result?.vin) return;
@@ -128,7 +183,10 @@ const CarfaxPage = () => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {t('vin.vin_hint')}
+                    {t(
+                      'vin.vin_hint',
+                      'Enter a 17-character VIN (letters A-Z except I, O, Q and digits 0-9).',
+                    )}
                   </p>
                 </div>
 
@@ -169,10 +227,20 @@ const CarfaxPage = () => {
 
           {vinHistory.length > 0 && (
             <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
                 <CardTitle className="text-sm">
                   {t('vin.history_title', 'Recent VIN checks')}
                 </CardTitle>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[0.7rem] text-muted-foreground"
+                  onClick={handleClearHistory}
+                >
+                  <Icon icon="mdi:trash-can-outline" className="me-1 h-3 w-3" />
+                  {t('vin.history_clear', 'Clear')}
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2 text-xs">
                 <p className="text-muted-foreground">
@@ -180,19 +248,31 @@ const CarfaxPage = () => {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {vinHistory.map((item) => (
-                    <button
+                    <div
                       key={item}
-                      type="button"
-                      className="text-[0.7rem] uppercase tracking-[0.14em] rounded-full border px-3 py-1 hover:bg-muted transition-colors"
-                      onClick={() => {
-                        setVin(item);
-                        if (error) {
-                          reset();
-                        }
-                      }}
+                      className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[0.7rem] uppercase tracking-[0.14em] bg-background"
                     >
-                      {item}
-                    </button>
+                      <button
+                        type="button"
+                        className="hover:underline"
+                        onClick={() => {
+                          setVin(item);
+                          if (error) {
+                            reset();
+                          }
+                        }}
+                      >
+                        {item}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-[0.7rem] text-muted-foreground hover:text-foreground"
+                        aria-label={t('vin.history_item_remove', 'Remove VIN from history')}
+                        onClick={() => handleRemoveHistoryItem(item)}
+                      >
+                        <Icon icon="mdi:close" className="h-3 w-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </CardContent>
@@ -203,7 +283,12 @@ const CarfaxPage = () => {
             <Card className="border-dashed border-muted w-full max-w-2xl mx-auto">
               <CardContent className="py-6 flex items-center gap-3 text-sm text-muted-foreground">
                 <Icon icon="mdi:information-outline" className="h-5 w-5" />
-                <span>{t('vin.empty_info')}</span>
+                <span>
+                  {t(
+                    'vin.empty_info',
+                    'Enter a 17-character VIN to see vehicle details and find import companies.',
+                  )}
+                </span>
               </CardContent>
             </Card>
           )}
@@ -217,6 +302,12 @@ const CarfaxPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    'vin.loading_hint',
+                    'Contacting the VIN service. This may take a few seconds…',
+                  )}
+                </p>
                 <div className="space-y-1">
                   <Skeleton className="h-3 w-24" />
                   <Skeleton className="h-4 w-48" />

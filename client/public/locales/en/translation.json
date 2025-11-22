@@ -279,12 +279,14 @@
     "pagination": {
       "page": "Page",
       "prev": "Back",
-      "next": "Next"
+      "next": "Next",
+      "label": "Catalog pages navigation"
     },
     "tags": {
       "active": "Active filters:",
       "search": "Search:",
-      "sort": "Sort:"
+      "sort": "Sort:",
+      "reset_all": "Reset all filters"
     },
     "error": {
       "fetch": "Failed to load companies. Please try again.",
