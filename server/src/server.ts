@@ -65,7 +65,7 @@ const fastify = Fastify({
         },
       },
   // Protect against excessively large request bodies (basic DoS mitigation)
-  bodyLimit: 1024 * 1024, // 1 MiB
+  bodyLimit: 5 * 1024 * 1024, // 5 MiB
 }).withTypeProvider<ZodTypeProvider>();
 
 // ---------------------------------------------------------------------------
@@ -87,7 +87,15 @@ const globalRateLimitMax = process.env.RATE_LIMIT_MAX
 const globalRateLimitWindow = process.env.RATE_LIMIT_TIME_WINDOW || '1 minute';
 
 // Register plugins
-await fastify.register(helmet);
+// Allow static assets (e.g., company logos) to be embedded from other origins
+// such as the SPA dev server (localhost:5173) by relaxing the
+// Cross-Origin-Resource-Policy header. Without this, browsers may block
+// images with ERR_BLOCKED_BY_RESPONSE.NotSameOrigin even on 200 responses.
+await fastify.register(helmet, {
+  crossOriginResourcePolicy: {
+    policy: 'cross-origin',
+  },
+});
 
 await fastify.register(cors, {
   // Allow only explicitly configured origins in production; allow all in development
@@ -121,7 +129,7 @@ await fastify.register(fastifySensible);
 
 await fastify.register(fastifyMultipart, {
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2 MiB max per file
+    fileSize: 5 * 1024 * 1024, // 5 MiB max per file
     files: 1,
   },
 });

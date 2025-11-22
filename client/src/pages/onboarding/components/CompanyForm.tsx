@@ -42,6 +42,7 @@ export function CompanyForm() {
     customs_fee: z.coerce.number().min(0).optional(),
     service_fee: z.coerce.number().min(0).optional(),
     broker_fee: z.coerce.number().min(0).optional(),
+    insurance: z.coerce.number().min(0).optional(),
     description: z.string().optional(),
     country: z.string().optional(),
     city: z.string().optional(),
@@ -68,6 +69,7 @@ export function CompanyForm() {
       customs_fee: 0,
       service_fee: 0,
       broker_fee: 0,
+      insurance: 0,
       description: "",
       country: "",
       city: "",
@@ -153,6 +155,7 @@ export function CompanyForm() {
           customs_fee: Number(company.customs_fee) || 0,
           service_fee: Number(company.service_fee) || 0,
           broker_fee: Number(company.broker_fee) || 0,
+          insurance: company.insurance != null ? Number(company.insurance) || 0 : 0,
           description: company.description || "",
           country: company.country || "",
           city: company.city || "",
@@ -208,6 +211,7 @@ export function CompanyForm() {
         customs_fee: data.customs_fee ?? undefined,
         service_fee: data.service_fee ?? undefined,
         broker_fee: data.broker_fee ?? undefined,
+        insurance: data.insurance ?? undefined,
         price_per_mile: data.price_per_mile,
         description: data.description || null,
         country: data.country || null,
@@ -479,6 +483,19 @@ export function CompanyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Broker Fee</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="insurance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Insurance</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="0" {...field} />
                     </FormControl>

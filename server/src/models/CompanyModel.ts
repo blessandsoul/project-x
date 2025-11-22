@@ -28,6 +28,7 @@ export class CompanyModel extends BaseModel {
       customs_fee = 0,
       service_fee = 0,
       broker_fee = 0,
+      insurance = null,
       final_formula = null,
       description = null,
       country = null,
@@ -58,7 +59,7 @@ export class CompanyModel extends BaseModel {
       (broker_fee ?? 0);
 
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
         name,
         computedSlug,
@@ -67,6 +68,7 @@ export class CompanyModel extends BaseModel {
         customs_fee,
         service_fee,
         broker_fee,
+        insurance,
         cheapestScore,
         final_formula ? JSON.stringify(final_formula) : null,
         description,
@@ -84,7 +86,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -115,7 +117,7 @@ export class CompanyModel extends BaseModel {
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset],
     );
 
@@ -167,6 +169,10 @@ export class CompanyModel extends BaseModel {
     if (updates.broker_fee !== undefined) {
       fields.push('broker_fee = ?');
       values.push(updates.broker_fee);
+    }
+    if (updates.insurance !== undefined) {
+      fields.push('insurance = ?');
+      values.push(updates.insurance);
     }
     if (updates.final_formula !== undefined) {
       fields.push('final_formula = ?');
@@ -580,7 +586,7 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count

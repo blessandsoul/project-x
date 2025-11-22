@@ -12,6 +12,10 @@ export interface User {
   password_hash: string;
   created_at: Date;
   updated_at: Date;
+  company_logo_url?: string | null;
+  original_company_logo_url?: string | null;
+  avatar_url?: string | null;
+  original_avatar_url?: string | null;
 }
 
 export interface UserCreate {
@@ -46,6 +50,10 @@ export interface AuthUser {
   username: string;
   role?: UserRole; // optional for backward compatibility
   company_id?: number | null;
+  company_logo_url?: string | null;
+  original_company_logo_url?: string | null;
+  avatar_url?: string | null;
+  original_avatar_url?: string | null;
 }
 
 export interface JWTPayload {

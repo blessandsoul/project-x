@@ -49,6 +49,7 @@ export type ApiCompany = {
   customs_fee: number | string
   service_fee: number | string
   broker_fee: number | string
+  insurance?: number | string | null
   final_formula: Record<string, unknown> | null
   description: string | null
   services?: string[] | null
@@ -146,11 +147,14 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
   const customsFee = normalizeNumber(apiCompany.customs_fee)
   const serviceFee = normalizeNumber(apiCompany.service_fee)
   const brokerFee = normalizeNumber(apiCompany.broker_fee)
+  const insurance = normalizeNumber(apiCompany.insurance ?? 0)
 
   const pricePerMile = normalizeNumber(apiCompany.price_per_mile)
-
+  // Approximate min/max shipping totals based on backend fee structure.
+  // min = base + fixed fees; max = min + per-mile component for a long-haul route.
   const minPrice = basePrice + customsFee + serviceFee + brokerFee
-  const maxPrice = minPrice + pricePerMile * 1000
+  const assumedDistanceMiles = 8000
+  const maxPrice = minPrice + pricePerMile * assumedDistanceMiles
 
   const slugCandidate = typeof apiCompany.slug === 'string' && apiCompany.slug.trim().length > 0
     ? apiCompany.slug.trim()
@@ -163,17 +167,24 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
     ? apiCompany.subscription_ends_at
     : null
 
+  // Backend already sends established_year as a year (e.g. 2018), not a timestamp.
   const establishedYear = typeof apiCompany.established_year === 'number'
-    ? new Date(apiCompany.established_year * 1000).getFullYear()
+    ? apiCompany.established_year
     : new Date(apiCompany.created_at).getFullYear()
 
   return {
-    id: String(apiCompany.id),
+    id: apiCompany.id,
     slug: slugCandidate,
     name: apiCompany.name,
     logo: resolveLogoUrl(apiCompany.logo_url ?? apiCompany.logo ?? null),
     description: apiCompany.description ?? '',
     services: extractServices(apiCompany.services),
+    base_price: basePrice,
+    price_per_mile: pricePerMile,
+    customs_fee: customsFee,
+    service_fee: serviceFee,
+    broker_fee: brokerFee,
+    insurance,
     priceRange: {
       min: minPrice,
       max: maxPrice,

@@ -325,6 +325,8 @@ export class ShippingQuoteService {
         formulaOverrides?.service_fee ?? company.service_fee;
       const rawBrokerFee =
         formulaOverrides?.broker_fee ?? company.broker_fee;
+      const rawInsuranceRate =
+        formulaOverrides?.insurance ?? company.insurance;
 
       const numericBasePrice =
         typeof rawBasePrice === 'number' ? rawBasePrice : Number(rawBasePrice ?? 0);
@@ -388,24 +390,36 @@ export class ShippingQuoteService {
       const shippingTotal =
         basePrice + mileageCost + customsFee + serviceFee + brokerFee;
 
-      // Lightweight adjustment based on vehicle retail value.
-      // This behaves like a simple insurance component so that more
-      // expensive vehicles have slightly higher shipping totals without
-      // requiring extra DB fields or complex rules.
-      const rawRetailValue = (vehicle as any).retail_value;
-      const retailValue = this.toNumber(rawRetailValue, 'retail_value');
-      const insuranceRate = 0.01; // 1% of retail value
-      const insuranceFee = retailValue * insuranceRate;
-
+      // Lightweight adjustment using a simple insurance component.
+      // insurance is stored as a percentage (e.g., 1.5 = 1.5%).
       // Vehicle "cost" component from the auction data. In your
       // schema, calc_price is the calculated vehicle price (what you
       // effectively pay for the car itself).
       const rawCalcPrice = (vehicle as any).calc_price;
       const vehiclePrice = this.toNumber(rawCalcPrice, 'calc_price');
 
+      // Retail value is still included in the breakdown for
+      // transparency, but it is no longer the base for the
+      // insurance calculation itself.
+      const rawRetailValue = (vehicle as any).retail_value;
+      const retailValue = this.toNumber(rawRetailValue, 'retail_value');
+
+      // If no company-specific insurance is configured, treat it as 0%
+      // (no insurance applied).
+      const effectiveInsurancePercent =
+        rawInsuranceRate == null
+          ? 0
+          : this.toNumber(rawInsuranceRate, 'insurance');
+      const insuranceRate = effectiveInsurancePercent / 100;
+
+      // Insurance should be calculated from the total price before
+      // insurance: vehicle price + shipping total.
+      const totalBeforeInsurance = vehiclePrice + shippingTotal;
+      const insuranceFee = totalBeforeInsurance * insuranceRate;
+
       // total_price now represents the full amount for the client:
-      // vehicle price + shipping (including insurance).
-      const totalPrice = vehiclePrice + shippingTotal + insuranceFee;
+      // vehicle price + shipping + insurance.
+      const totalPrice = totalBeforeInsurance + insuranceFee;
 
       const breakdown = {
         base_price: basePrice,

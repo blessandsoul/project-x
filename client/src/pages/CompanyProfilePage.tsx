@@ -28,7 +28,11 @@ const CompanyProfilePage = () => {
   const { favorites, toggleFavorite } = useFavorites();
   const { addRecentlyViewed } = useRecentlyViewed();
   const { companies, isLoading } = useCompaniesData();
-  const company = companies.find((c) => c.id === id) ?? mockCompanies.find((c) => c.id === id);
+
+  const numericId = id ? Number(id) : NaN;
+  const company =
+    companies.find((c) => c.id === numericId) ??
+    mockCompanies.find((c) => String(c.id) === id);
   const companyCars = mockCars.filter((car) => car.companyId === (company?.id ?? ''));
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
@@ -51,7 +55,9 @@ const CompanyProfilePage = () => {
   const [isUpdatingReview, setIsUpdatingReview] = useState(false);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
   const reviewsLimit = 5;
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+
+  const canWriteReviews = userRole === 'user' || userRole === 'dealer';
 
   useEffect(() => {
     if (location.search) {
@@ -61,7 +67,7 @@ const CompanyProfilePage = () => {
 
   useEffect(() => {
     if (company?.id) {
-      addRecentlyViewed(company.id);
+      addRecentlyViewed(String(company.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company?.id]);
@@ -143,7 +149,7 @@ const CompanyProfilePage = () => {
 
   const handleSubmitReview = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!company || isSubmittingReview || reviewRating < 1 || reviewRating > 5) {
+    if (!company || !canWriteReviews || isSubmittingReview || reviewRating < 1 || reviewRating > 5) {
       return;
     }
 
@@ -203,7 +209,7 @@ const CompanyProfilePage = () => {
   };
 
   const handleUpdateReview = async (reviewId: string) => {
-    if (!company || isUpdatingReview) {
+    if (!company || !canWriteReviews || isUpdatingReview) {
       return;
     }
 
@@ -250,7 +256,7 @@ const CompanyProfilePage = () => {
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!company || isDeletingReview || !confirm(t('company_profile.reviews.delete_confirm'))) {
+    if (!company || !canWriteReviews || isDeletingReview || !confirm(t('company_profile.reviews.delete_confirm'))) {
       return;
     }
 
@@ -284,7 +290,10 @@ const CompanyProfilePage = () => {
   };
 
   const isReviewOwner = (review: ApiCompanyReview): boolean => {
-    return user ? Number(user.id) === review.user_id : false;
+    if (!user || !(userRole === 'user' || userRole === 'dealer')) {
+      return false;
+    }
+    return Number(user.id) === review.user_id;
   };
 
   if (isLoading) {
@@ -326,6 +335,8 @@ const CompanyProfilePage = () => {
     );
   }
 
+  const logoSrc = company.logo ?? '';
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header
@@ -347,11 +358,11 @@ const CompanyProfilePage = () => {
             </Button>
 
             <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-8 rtl:space-x-reverse">
-              {company.logo && (
+              {logoSrc && (
                 <div className="relative mb-4 lg:mb-0">
                   <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 shadow-lg flex items-center justify-center overflow-hidden">
                     <img
-                      src={company.logo}
+                      src={logoSrc}
                       alt={company.name}
                       className="w-24 h-24 rounded-xl object-cover"
                     />
@@ -369,13 +380,13 @@ const CompanyProfilePage = () => {
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 rounded-full ms-2"
-                    onClick={() => toggleFavorite(company.id)}
-                    aria-pressed={favorites.includes(company.id)}
-                    aria-label={favorites.includes(company.id) ? t('company_profile.favorites.remove') : t('company_profile.favorites.add')}
+                    onClick={() => toggleFavorite(String(company.id))}
+                    aria-pressed={favorites.includes(String(company.id))}
+                    aria-label={favorites.includes(String(company.id)) ? t('company_profile.favorites.remove') : t('company_profile.favorites.add')}
                   >
                     <Icon
-                      icon={favorites.includes(company.id) ? 'mdi:heart' : 'mdi:heart-outline'}
-                      className={favorites.includes(company.id) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
+                      icon={favorites.includes(String(company.id)) ? 'mdi:heart' : 'mdi:heart-outline'}
+                      className={favorites.includes(String(company.id)) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
                     />
                   </Button>
                 </div>
@@ -389,7 +400,9 @@ const CompanyProfilePage = () => {
                   </div>
                   <div className="flex items-center text-muted-foreground">
                     <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
-                    {company.location.city}, {company.location.state}
+                    {company.location?.city ?? ''}
+                    {company.location?.city && company.location?.state ? ', ' : ''}
+                    {company.location?.state ?? ''}
                   </div>
                   <div className="flex items-center text-muted-foreground">
                     <Icon icon="mdi:calendar" className="h-4 w-4 me-1" />
@@ -480,12 +493,14 @@ const CompanyProfilePage = () => {
                 </div>
               </div>
 
-              <div className="lg:text-right mt-6 lg:mt-0">
-                <div className="text-2xl font-bold text-primary mb-1">
-                  ${company.priceRange.min} - ${company.priceRange.max}
+              {company.priceRange && (
+                <div className="lg:text-right mt-6 lg:mt-0">
+                  <div className="text-2xl font-bold text-primary mb-1">
+                    ${company.priceRange.min} - ${company.priceRange.max}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t('company_profile.service_cost')}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">{t('company_profile.service_cost')}</p>
-              </div>
+              )}
             </div>
           </div>
 
@@ -499,7 +514,7 @@ const CompanyProfilePage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {company.services.map(service => (
+                    {(company.services ?? []).map(service => (
                       <div key={service} className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg rtl:space-x-reverse">
                         <Icon icon="mdi:check-circle" className="h-5 w-5 text-primary" />
                         <span className="text-sm font-medium">{service}</span>
@@ -556,20 +571,22 @@ const CompanyProfilePage = () => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>{t('company_profile.reviews.title')} ({company.reviewCount})</CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsReviewFormOpen(!isReviewFormOpen)}
-                      className="flex items-center gap-2"
-                    >
-                      <Icon icon="mdi:plus" className="h-4 w-4" />
-                      {t('company_profile.reviews.write')}
-                    </Button>
+                    {canWriteReviews && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsReviewFormOpen(!isReviewFormOpen)}
+                        className="flex items-center gap-2"
+                      >
+                        <Icon icon="mdi:plus" className="h-4 w-4" />
+                        {t('company_profile.reviews.write')}
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Review Form */}
-                  {isReviewFormOpen && (
+                  {canWriteReviews && isReviewFormOpen && (
                     <Card className="border-primary/20 bg-primary/5">
                       <CardContent className="pt-6">
                         <form className="space-y-4" onSubmit={handleSubmitReview}>
@@ -844,24 +861,30 @@ const CompanyProfilePage = () => {
                   <CardTitle>{t('company_profile.contact_info.title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <Icon icon="mdi:phone" className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{company.contact.phone}</p>
+                  {company.contact?.phone && (
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                      <Icon icon="mdi:phone" className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{company.contact.phone}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <Icon icon="mdi:email" className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{company.contact.email}</p>
+                  )}
+                  {company.contact?.email && (
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                      <Icon icon="mdi:email" className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{company.contact.email}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <Icon icon="mdi:web" className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{company.contact.website}</p>
+                  )}
+                  {company.contact?.website && (
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                      <Icon icon="mdi:web" className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{company.contact.website}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Social Networks - Icon Only */}
                   <div className="pt-6 border-t mt-4">
@@ -926,7 +949,7 @@ const CompanyProfilePage = () => {
                     {/* Services */}
                     <div className="flex flex-col items-center p-4 rounded-lg bg-muted/50 text-center">
                       <Icon icon="mdi:briefcase" className="h-6 w-6 text-success mb-2" />
-                      <span className="text-xl font-bold">{company.services.length}</span>
+                      <span className="text-xl font-bold">{company.services?.length ?? 0}</span>
                       <p className="text-xs text-muted-foreground mt-1">{t('company_profile.stats.services')}</p>
                     </div>
                   </div>

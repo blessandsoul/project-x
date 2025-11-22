@@ -35,6 +35,7 @@ export interface Company {
   customs_fee: number;
   service_fee: number;
   broker_fee: number;
+  insurance?: number;
   final_formula: Record<string, any> | null;
   description: string | null;
   phone_number: string | null;
@@ -44,6 +45,12 @@ export interface Company {
   updated_at: string;
   // Extended fields often used in UI but might need optionality if not always fetched
   social_links?: SocialLink[];
+  socialLinks?: {
+    id: string;
+    url: string;
+    label: string;
+    icon: string;
+  }[];
   // Derived/Frontend specific (from mock data legacy, keeping for compatibility if needed)
   slug?: string;
   location?: {

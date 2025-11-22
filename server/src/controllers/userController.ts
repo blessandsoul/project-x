@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { FastifyInstance } from 'fastify';
+import fs from 'fs/promises';
+import path from 'path';
 import { User, UserCreate, UserUpdate, UserLogin, AuthResponse } from '../types/user.js';
 import { UserModel } from '../models/UserModel.js';
 import { CompanyModel } from '../models/CompanyModel.js';
@@ -25,6 +27,110 @@ export class UserController {
     this.fastify = fastify;
     this.userModel = new UserModel(fastify);
     this.companyModel = new CompanyModel(fastify);
+  }
+
+  private async computeCompanyLogoUrls(companyId: number | null): Promise<{ company_logo_url: string | null; original_company_logo_url: string | null }> {
+    if (!companyId) {
+      return { company_logo_url: null, original_company_logo_url: null };
+    }
+
+    const company = await this.companyModel.findById(companyId);
+    if (!company || !company.slug) {
+      return { company_logo_url: null, original_company_logo_url: null };
+    }
+
+    const safeSlug = company.slug
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const uploadsRoot = path.join(
+      process.cwd(),
+      'uploads',
+      'companies',
+      safeSlug,
+      'logos',
+    );
+
+    let files: string[];
+    try {
+      files = await fs.readdir(uploadsRoot);
+    } catch {
+      return { company_logo_url: null, original_company_logo_url: null };
+    }
+
+    let logoFile = files.find((f) => f.startsWith(`${safeSlug}.`)) || null;
+    if (!logoFile) {
+      logoFile = files.find((f) => f.startsWith('logo.')) || null;
+    }
+
+    let originalFile = files.find((f) => f.startsWith(`${safeSlug}-original.`)) || null;
+    if (!originalFile) {
+      originalFile = files.find((f) => f.startsWith('logo-original.')) || null;
+    }
+
+    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
+
+    const buildUrl = (file: string | null): string | null => {
+      if (!file) return null;
+      const publicPath = `/uploads/companies/${safeSlug}/logos/${file}`;
+      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
+        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
+      }
+      return publicPath;
+    };
+
+    return {
+      company_logo_url: buildUrl(logoFile),
+      original_company_logo_url: buildUrl(originalFile),
+    };
+  }
+
+  private async computeUserAvatarUrls(username: string | null | undefined): Promise<{ avatar_url: string | null; original_avatar_url: string | null }> {
+    if (!username || username.trim().length === 0) {
+      return { avatar_url: null, original_avatar_url: null };
+    }
+
+    const safeUsername = username
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const uploadsRoot = path.join(
+      process.cwd(),
+      'uploads',
+      'users',
+      safeUsername,
+      'avatars',
+    );
+
+    let files: string[];
+    try {
+      files = await fs.readdir(uploadsRoot);
+    } catch {
+      return { avatar_url: null, original_avatar_url: null };
+    }
+
+    const avatarFile = files.find((f) => f.startsWith('avatar.')) || null;
+    const originalFile = files.find((f) => f.startsWith('avatar-original.')) || null;
+
+    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
+
+    const buildUrl = (file: string | null): string | null => {
+      if (!file) return null;
+      const publicPath = `/uploads/users/${safeUsername}/avatars/${file}`;
+      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
+        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
+      }
+      return publicPath;
+    };
+
+    return {
+      avatar_url: buildUrl(avatarFile),
+      original_avatar_url: buildUrl(originalFile),
+    };
   }
 
   /**
@@ -139,6 +245,9 @@ export class UserController {
       role: user.role,
     });
 
+    const logoMeta = await this.computeCompanyLogoUrls(user.company_id ?? null);
+    const avatarMeta = await this.computeUserAvatarUrls(user.username);
+
     return {
       token,
       user: {
@@ -147,6 +256,10 @@ export class UserController {
         username: user.username,
         role: user.role,
         company_id: user.company_id,
+        company_logo_url: logoMeta.company_logo_url,
+        original_company_logo_url: logoMeta.original_company_logo_url,
+        avatar_url: avatarMeta.avatar_url,
+        original_avatar_url: avatarMeta.original_avatar_url,
       },
     };
   }
@@ -185,6 +298,8 @@ export class UserController {
       role: user.role,
     });
 
+    const logoMeta = await this.computeCompanyLogoUrls(user.company_id ?? null);
+
     return {
       token,
       user: {
@@ -193,6 +308,8 @@ export class UserController {
         username: user.username,
         role: user.role,
         company_id: user.company_id,
+        company_logo_url: logoMeta.company_logo_url,
+        original_company_logo_url: logoMeta.original_company_logo_url,
       },
     };
   }
@@ -212,7 +329,16 @@ export class UserController {
       throw new NotFoundError('User');
     }
 
-    return user;
+    const logoMeta = await this.computeCompanyLogoUrls(user.company_id ?? null);
+    const avatarMeta = await this.computeUserAvatarUrls(user.username);
+
+    return {
+      ...user,
+      company_logo_url: logoMeta.company_logo_url,
+      original_company_logo_url: logoMeta.original_company_logo_url,
+      avatar_url: avatarMeta.avatar_url,
+      original_avatar_url: avatarMeta.original_avatar_url,
+    };
   }
 
   /**

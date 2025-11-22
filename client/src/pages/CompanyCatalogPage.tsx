@@ -276,8 +276,16 @@ const CompanyCatalogPage = () => {
 
       const companyMinPrice = company.priceRange?.min ?? 0;
       const companyMaxPrice = company.priceRange?.max ?? 0;
-      if (companyMinPrice < priceRange[0] || companyMaxPrice > priceRange[1]) {
-        return false;
+      const hasCompanyPriceRange = companyMinPrice > 0 || companyMaxPrice > 0;
+
+      // Only apply price filtering when the user has changed the slider
+      // from the default range, and only for companies that actually
+      // have a meaningful price range configured.
+      const isDefaultPriceRange = priceRange[0] === 1000 && priceRange[1] === 10000;
+      if (!isDefaultPriceRange && hasCompanyPriceRange) {
+        if (companyMinPrice < priceRange[0] || companyMaxPrice > priceRange[1]) {
+          return false;
+        }
       }
 
       return true;
@@ -301,13 +309,6 @@ const CompanyCatalogPage = () => {
   }, [allCompanies, searchTerm, city, minRating, isVipOnly, onboardingFree, priceRange, sortBy]);
 
   const totalResults = filteredCompanies.length;
-  const totalPages = totalResults === 0 ? 0 : Math.ceil(totalResults / pageSize);
-  const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
-
-  const paginatedCompanies = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredCompanies.slice(startIndex, startIndex + pageSize);
-  }, [filteredCompanies, currentPage, pageSize]);
 
   const hasRatingFilter = minRating > 0;
   const hasVipFilter = isVipOnly;
@@ -461,7 +462,7 @@ const CompanyCatalogPage = () => {
                   role="status"
                   aria-live="polite"
                 >
-                  {t('catalog.results.showing')} {isLoading ? 0 : paginatedCompanies.length} {t('catalog.results.connector')} {totalResults}{t('catalog.results.of')}
+                  {t('catalog.results.showing')} {isLoading ? 0 : totalResults} {t('catalog.results.connector')} {totalResults}{t('catalog.results.of')}
                 </p>
               </div>
 
@@ -530,126 +531,101 @@ const CompanyCatalogPage = () => {
                             <Skeleton className="h-3 w-1/2" />
                             <Skeleton className="h-3 w-2/3" />
                             <Skeleton className="h-3 w-1/3" />
-                            <Skeleton className="h-3 w-1/4" />
                           </div>
                         </CardContent>
                       </Card>
                     ))
-                  : paginatedCompanies.map((company, index) => (
-                      <motion.article
-                        key={company.id}
-                        {...getCardMotionProps(index)}
-                        role="listitem"
-                      >
-                        <Card
-                          className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-                          onClick={() => navigate(`/company/${company.id}`)}
+                  : filteredCompanies.map((company, index) => {
+                      const logoSrc = company.logo ?? '';
+
+                      return (
+                        <motion.article
+                          key={company.id}
+                          {...getCardMotionProps(index)}
+                          role="listitem"
                         >
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              {company.logo && (
-                                <img
-                                  src={company.logo}
-                                  alt={company.name}
-                                  className="w-12 h-12 rounded-lg object-cover"
-                                />
-                              )}
-                              <div className="flex items-center gap-2">
-                                {company.vipStatus && <VipBadge />}
+                          <Card
+                            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+                            onClick={() => navigate(`/company/${company.id}`)}
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                {logoSrc && (
+                                  <img
+                                    src={logoSrc}
+                                    alt={company.name}
+                                    className="w-12 h-12 rounded-lg object-cover"
+                                  />
+                                )}
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 rounded-full"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    toggleFavorite(company.id);
+                                    toggleFavorite(String(company.id));
                                   }}
-                                  aria-pressed={favorites.includes(company.id)}
-                                  aria-label={favorites.includes(company.id) ? t('catalog.card.remove_favorite') : t('catalog.card.add_favorite')}
+                                  aria-pressed={favorites.includes(String(company.id))}
+                                  aria-label={favorites.includes(String(company.id)) ? t('catalog.card.favorites_remove') : t('catalog.card.favorites_add')}
                                 >
                                   <Icon
-                                    icon={favorites.includes(company.id) ? 'mdi:heart' : 'mdi:heart-outline'}
-                                    className={favorites.includes(company.id) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
+                                    icon={favorites.includes(String(company.id)) ? 'mdi:heart' : 'mdi:heart-outline'}
+                                    className={favorites.includes(String(company.id)) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
                                   />
                                 </Button>
                               </div>
-                            </div>
-                            <CardTitle className="text-lg leading-tight">{company.name}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="space-y-3">
-                              <div className="flex items-center space-x-2">
-                                <CompanyRating rating={company.rating} />
-                                <span className="text-sm text-muted-foreground">
-                                  ({company.reviewCount})
-                                </span>
-                              </div>
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
-                                {company.location.city}, {company.location.state}
-                              </div>
-                              <div className="flex items-center text-sm">
-                                <Icon icon="mdi:cash" className="h-4 w-4 me-1 text-primary" />
-                                <span className="font-medium">
-                                  ${company.priceRange.min} - ${company.priceRange.max}
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {company.services.slice(0, 2).map((service) => (
-                                  <span
-                                    key={service}
-                                    className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md"
-                                  >
-                                    {service}
+                              <CardTitle className="text-lg leading-tight mt-2 flex items-center gap-2">
+                                <span>{company.name}</span>
+                                {company.vipStatus && <VipBadge />}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-2">
+                                  <CompanyRating rating={company.rating} />
+                                  <span className="text-sm text-muted-foreground">
+                                    ({company.reviewCount})
                                   </span>
-                                ))}
-                                {company.services.length > 2 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{company.services.length - 2} more
+                                </div>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
+                                  {company.location?.city}, {company.location?.state}
+                                </div>
+                                <div className="flex items-center text-sm">
+                                  <Icon icon="mdi:cash" className="h-4 w-4 me-1 text-primary" />
+                                  <span className="font-medium">
+                                    ${company.priceRange?.min ?? 0} - ${company.priceRange?.max ?? 0}
                                   </span>
-                                )}
+                                </div>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Icon icon="mdi:phone" className="h-4 w-4 me-1" />
+                                  <span>{company.contact?.phone}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {(company.services ?? []).slice(0, 2).map((service: string) => (
+                                    <span
+                                      key={service}
+                                      className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md"
+                                    >
+                                      {service}
+                                    </span>
+                                  ))}
+                                  {(company.services?.length ?? 0) > 2 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      +{(company.services?.length ?? 0) - 2} more
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {t('catalog.card.founded')} {company.establishedYear ?? ''}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {t('catalog.card.founded')} {company.establishedYear}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.article>
-                    ))}
+                            </CardContent>
+                          </Card>
+                        </motion.article>
+                      );
+                    })}
               </div>
-
-              {!isLoading && totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between gap-4">
-                  <p className="text-xs text-muted-foreground">
-                    {t('catalog.pagination.page')} {currentPage} / {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      aria-label={t('catalog.pagination.prev')}
-                      motionVariant="scale"
-                    >
-                      <Icon icon="mdi:chevron-left" className="me-1 h-4 w-4" />
-                      {t('catalog.pagination.prev')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      aria-label={t('catalog.pagination.next')}
-                      motionVariant="scale"
-                    >
-                      {t('catalog.pagination.next')}
-                      <Icon icon="mdi:chevron-right" className="ms-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               {!isLoading && totalResults === 0 && (
                 <Card className="mt-6 p-12">

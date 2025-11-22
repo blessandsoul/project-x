@@ -7,6 +7,7 @@ export interface Company {
   customs_fee: number;
   service_fee: number;
   broker_fee: number;
+  insurance: number | null;
   final_formula: any | null;
   description: string | null;
   country: string | null;
@@ -33,6 +34,7 @@ export interface CompanyCreate {
   customs_fee?: number;
   service_fee?: number;
   broker_fee?: number;
+   insurance?: number | null;
   final_formula?: any | null;
   description?: string | null;
   country?: string | null;
@@ -57,6 +59,7 @@ export interface CompanyUpdate {
   customs_fee?: number;
   service_fee?: number;
   broker_fee?: number;
+  insurance?: number | null;
   final_formula?: any | null;
   description?: string | null;
   country?: string | null;

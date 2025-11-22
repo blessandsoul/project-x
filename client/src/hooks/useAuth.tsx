@@ -60,6 +60,10 @@ type BackendUser = {
   username: string
   role?: UserRole
   company_id?: number | null
+  company_logo_url?: string | null
+  original_company_logo_url?: string | null
+  avatar_url?: string | null
+  original_avatar_url?: string | null
 }
 
 type AuthSuccessPayload = {
@@ -96,8 +100,13 @@ type ProfilePayload = {
   id: number
   email: string
   username: string
+  role?: UserRole
+  company_logo_url?: string | null
+  avatar_url?: string | null
   created_at?: string
   updated_at?: string
+  original_company_logo_url?: string | null
+  original_avatar_url?: string | null
 }
 
 const extractProfilePayload = (payload: unknown): ProfilePayload | null => {
@@ -115,6 +124,11 @@ const extractProfilePayload = (payload: unknown): ProfilePayload | null => {
     id?: unknown
     email?: unknown
     username?: unknown
+    role?: unknown
+    company_logo_url?: unknown
+    original_company_logo_url?: unknown
+    avatar_url?: unknown
+    original_avatar_url?: unknown
     created_at?: unknown
     updated_at?: unknown
   }
@@ -128,10 +142,42 @@ const extractProfilePayload = (payload: unknown): ProfilePayload | null => {
       ? maybeProfile.username
       : maybeProfile.email.split('@')[0] || 'User'
 
+  const role = ((): UserRole | undefined => {
+    const raw = maybeProfile.role
+    return raw === 'user' || raw === 'dealer' || raw === 'company'
+      ? raw
+      : undefined
+  })()
+
+  const companyLogoUrl =
+    typeof maybeProfile.company_logo_url === 'string' && maybeProfile.company_logo_url.trim().length > 0
+      ? maybeProfile.company_logo_url
+      : undefined
+
+  const originalCompanyLogoUrl =
+    typeof maybeProfile.original_company_logo_url === 'string' &&
+    maybeProfile.original_company_logo_url.trim().length > 0
+      ? maybeProfile.original_company_logo_url
+      : undefined
+
+  const avatarUrl =
+    typeof maybeProfile.avatar_url === 'string' && maybeProfile.avatar_url.trim().length > 0
+      ? maybeProfile.avatar_url
+      : undefined
+
+  const originalAvatarUrl =
+    typeof maybeProfile.original_avatar_url === 'string' && maybeProfile.original_avatar_url.trim().length > 0
+      ? maybeProfile.original_avatar_url
+      : undefined
+
   return {
     id: maybeProfile.id,
     email: maybeProfile.email,
     username,
+    role,
+    company_logo_url: companyLogoUrl ?? null,
+    avatar_url: avatarUrl ?? null,
+    original_company_logo_url: originalCompanyLogoUrl ?? null,
     created_at:
       typeof maybeProfile.created_at === 'string' ? maybeProfile.created_at : undefined,
     updated_at:
@@ -176,6 +222,10 @@ const extractAuthPayload = (payload: unknown): AuthSuccessPayload | null => {
       username,
       role: backendUser.role,
       company_id: backendUser.company_id ?? null,
+      company_logo_url: backendUser.company_logo_url ?? null,
+      original_company_logo_url: backendUser.original_company_logo_url ?? null,
+      avatar_url: backendUser.avatar_url ?? null,
+      original_avatar_url: backendUser.original_avatar_url ?? null,
     },
   }
 }
@@ -271,12 +321,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const mapProfileToUser = (profile: ProfilePayload): User => {
     const username = profile.username || profile.email.split('@')[0] || 'User'
 
+    const shouldUseCompanyLogo = profile.role === 'company'
+    let avatar: string
+
+    if (shouldUseCompanyLogo && profile.company_logo_url) {
+      avatar = profile.company_logo_url
+    } else if (!shouldUseCompanyLogo && profile.avatar_url) {
+      // user/dealer: prefer uploaded avatar when available
+      avatar = profile.avatar_url
+    } else {
+      avatar = pickAvatar(username)
+    }
+
     return {
       id: profile.id,
       username,
       name: username,
       email: profile.email,
-      avatar: pickAvatar(username),
+      avatar,
     }
   }
 
@@ -532,12 +594,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const username =
         backendUser.username || backendUser.email.split('@')[0] || 'User'
 
+      const shouldUseCompanyLogo = backendUser.role === 'company'
+      let avatar: string
+
+      if (shouldUseCompanyLogo && backendUser.company_logo_url) {
+        avatar = backendUser.company_logo_url
+      } else if (!shouldUseCompanyLogo && backendUser.avatar_url) {
+        avatar = backendUser.avatar_url
+      } else {
+        avatar = pickAvatar(username)
+      }
+
       const nextUser: User = {
         id: backendUser.id,
         username,
         name: username,
         email: backendUser.email,
-        avatar: pickAvatar(username),
+        avatar,
       }
 
       persistSession(nextUser, authPayload.token)

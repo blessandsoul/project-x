@@ -110,6 +110,7 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
               if (onLogout) {
                 onLogout();
               }
+              navigate('/');
             }}
           >
             <Icon icon="mdi:logout" className="me-2 h-4 w-4" />
