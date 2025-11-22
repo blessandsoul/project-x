@@ -142,6 +142,40 @@ export class CompanyModel extends BaseModel {
     return rows as Company[];
   }
 
+  async findByIds(ids: number[]): Promise<Company[]> {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return [];
+    }
+
+    const uniqueIds = Array.from(new Set(ids));
+    const placeholders = uniqueIds.map(() => '?').join(', ');
+
+    const rows = await this.executeQuery(
+      `SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
+      uniqueIds,
+    );
+
+    for (const row of rows) {
+      if (row.final_formula) {
+        try {
+          row.final_formula = JSON.parse(row.final_formula as string);
+        } catch {
+          // ignore parse error
+        }
+      }
+
+      if (row.services) {
+        try {
+          row.services = JSON.parse(row.services as string);
+        } catch {
+          // ignore parse error
+        }
+      }
+    }
+
+    return rows as Company[];
+  }
+
   async update(id: number, updates: CompanyUpdate): Promise<Company | null> {
     const fields: string[] = [];
     const values: any[] = [];
@@ -351,6 +385,15 @@ export class CompanyModel extends BaseModel {
     }
 
     return rows as CompanyQuote[];
+  }
+
+  async deleteQuotesByVehicleId(vehicleId: number): Promise<number> {
+    const result = await this.executeCommand(
+      'DELETE FROM company_quotes WHERE vehicle_id = ?',
+      [vehicleId],
+    );
+
+    return (result as any).affectedRows ?? 0;
   }
 
   async getQuotesByVehicleId(vehicleId: number): Promise<CompanyQuote[]> {

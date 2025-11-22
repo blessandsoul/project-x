@@ -688,6 +688,105 @@ export class CompanyController {
       throw new NotFoundError('Vehicle');
     }
 
+    // First, try to reuse already persisted quotes for this vehicle to
+    // avoid unnecessary recalculation and external distance API calls.
+    let existingQuotes = await this.companyModel.getQuotesByVehicleId(vehicleId);
+    if (Array.isArray(existingQuotes) && existingQuotes.length > 0) {
+      // If the vehicle was updated after the quotes were created, treat
+      // the cached quotes as stale and force a full recalculation.
+      const vehicleUpdatedAt = (vehicle as any).updated_at
+        ? new Date((vehicle as any).updated_at)
+        : null;
+
+      if (vehicleUpdatedAt instanceof Date && !Number.isNaN(vehicleUpdatedAt.getTime())) {
+        const newestQuoteCreatedAt = existingQuotes.reduce<Date | null>((acc, q) => {
+          const createdRaw: any = (q as any).created_at;
+          if (!createdRaw) return acc;
+          const created = new Date(createdRaw);
+          if (Number.isNaN(created.getTime())) return acc;
+          if (!acc || created > acc) return created;
+          return acc;
+        }, null);
+
+        if (newestQuoteCreatedAt && vehicleUpdatedAt > newestQuoteCreatedAt) {
+          await this.companyModel.deleteQuotesByVehicleId(vehicleId);
+          existingQuotes = [];
+        }
+      }
+
+      if (existingQuotes.length > 0) {
+      // Derive distance from the stored breakdown if available. This
+      // keeps the response consistent with the original calculation
+      // without recomputing distance.
+      let distanceMiles = 0;
+      const firstBreakdown: any = existingQuotes[0]?.breakdown;
+      if (firstBreakdown && typeof firstBreakdown.distance_miles === 'number') {
+        distanceMiles = firstBreakdown.distance_miles;
+      }
+
+      // Resolve company names for the quotes so the response shape
+      // matches freshly calculated quotes. Use a batched lookup to
+      // avoid N separate DB queries.
+      const uniqueCompanyIds = Array.from(
+        new Set(existingQuotes.map((q) => q.company_id)),
+      );
+      const companies = await this.companyModel.findByIds(uniqueCompanyIds);
+      const companyNameById = new Map<number, string>();
+      for (const company of companies) {
+        if (company && typeof company.name === 'string') {
+          companyNameById.set(company.id, company.name);
+        }
+      }
+
+      let quotes: CalculatedQuoteResponse[] = existingQuotes.map((q) => ({
+        company_id: q.company_id,
+        company_name: companyNameById.get(q.company_id) ?? '',
+        total_price: q.total_price,
+        delivery_time_days: q.delivery_time_days,
+        breakdown: q.breakdown,
+      }));
+
+      const normalizedCurrency = this.normalizeCurrencyCode(currency);
+      quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+
+      // Sort by total price ascending so the client sees the cheapest
+      // offers first, consistent with the fresh-calculation path.
+      quotes.sort((a, b) => a.total_price - b.total_price);
+
+      let totalCompanies = quotes.length;
+
+      // Apply optional pagination over the already stored quotes to
+      // mirror the semantics of the company pagination branch below.
+      if (options && (typeof options.limit === 'number' || typeof options.offset === 'number')) {
+        const rawLimit = options.limit;
+        const rawOffset = options.offset;
+
+        const safeLimit = Number.isFinite(rawLimit as number) && (rawLimit as number) > 0 && (rawLimit as number) <= 100
+          ? (rawLimit as number)
+          : 20;
+        const safeOffset = Number.isFinite(rawOffset as number) && (rawOffset as number) >= 0
+          ? (rawOffset as number)
+          : 0;
+
+        totalCompanies = quotes.length;
+        quotes = quotes.slice(safeOffset, safeOffset + safeLimit);
+      }
+
+      return {
+        vehicle_id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        mileage: (vehicle as any).mileage ?? null,
+        yard_name: vehicle.yard_name,
+        source: vehicle.source,
+        distance_miles: distanceMiles,
+        quotes,
+        totalCompanies,
+      };
+      }
+    }
+
     let companies = [] as Company[];
     let totalCompanies = 0;
 
