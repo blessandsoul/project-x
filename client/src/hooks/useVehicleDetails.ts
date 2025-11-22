@@ -10,6 +10,9 @@ interface UseVehicleDetailsResult {
   isLoading: boolean
   error: string | null
   recalculate: () => void
+  quotesPage: number
+  quotesTotalPages: number
+  setQuotesPage: (page: number) => void
 }
 
 export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsResult {
@@ -20,6 +23,10 @@ export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsRe
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [quotesPage, setQuotesPage] = useState(1)
+  const [quotesTotalPages, setQuotesTotalPages] = useState(1)
+
+  const QUOTES_LIMIT = 5
 
   useEffect(() => {
     if (!vehicleId) {
@@ -50,14 +57,22 @@ export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsRe
       }
 
       try {
-        const quotesResponse = await calculateVehicleQuotes(vehicleId, 'usd')
+        const quotesResponse = await calculateVehicleQuotes(vehicleId, 'usd', {
+          limit: QUOTES_LIMIT,
+          offset: (quotesPage - 1) * QUOTES_LIMIT,
+        })
         if (!isMounted) return
 
         setDistanceMiles(quotesResponse.distance_miles)
 
-        const itemsQuotes = quotesResponse.quotes
-        if (Array.isArray(itemsQuotes) && itemsQuotes.length > 0) {
-          setQuotes(itemsQuotes)
+        const itemsQuotes = Array.isArray(quotesResponse.quotes) ? quotesResponse.quotes : []
+        setQuotes(itemsQuotes)
+
+        if (typeof quotesResponse.total === 'number' && typeof quotesResponse.limit === 'number') {
+          const totalPages = Math.max(1, Math.ceil(quotesResponse.total / quotesResponse.limit))
+          setQuotesTotalPages(totalPages)
+        } else {
+          setQuotesTotalPages(1)
         }
       } catch (error) {
         if (!isMounted) return
@@ -80,9 +95,10 @@ export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsRe
     return () => {
       isMounted = false
     }
-  }, [vehicleId, reloadKey])
+  }, [vehicleId, reloadKey, quotesPage])
 
   const recalculate = () => {
+    setQuotesPage(1)
     setReloadKey((prev) => prev + 1)
   }
 
@@ -94,5 +110,8 @@ export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsRe
     isLoading,
     error,
     recalculate,
+    quotesPage,
+    quotesTotalPages,
+    setQuotesPage,
   }
 }

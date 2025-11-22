@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
+import { API_BASE_URL, apiAuthorizedGet, apiAuthorizedMutation, apiPost } from '@/lib/apiClient'
 import type { User, UserRole } from '@/types/api'
 
 interface AuthContextValue {
@@ -18,13 +18,14 @@ interface AuthContextValue {
     password: string,
     role?: string,
     companyName?: string,
-    companyPhone?: string
+    companyPhone?: string,
   ) => Promise<void>
   logout: () => void
   updateUser: (updates: Partial<User>) => void
   refreshProfile: () => Promise<void>
   updateProfile: (data: { email?: string; username?: string; password?: string }) => Promise<void>
   deleteAccount: () => Promise<void>
+  uploadAvatar: (file: File) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -33,26 +34,6 @@ const STORAGE_KEY_USER = 'projectx_auth_user'
 const STORAGE_KEY_TOKEN = 'projectx_auth_token'
 const STORAGE_KEY_ROLE = 'projectx_auth_role'
 const STORAGE_KEY_COMPANY_ID = 'projectx_auth_company_id'
-
-const AVATAR_IMAGES = [
-  '/avatars/user.jpg',
-  '/avatars/dealer.jpg',
-  '/avatars/0450249b131eec36dc8333b7cf847bc4.webp',
-]
-
-function hashString(value: string): number {
-  let hash = 0
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0
-  }
-  return hash
-}
-
-function pickAvatar(seed: string): string {
-  if (!seed) return AVATAR_IMAGES[0]
-  const index = Math.abs(hashString(seed)) % AVATAR_IMAGES.length
-  return AVATAR_IMAGES[index]
-}
 
 type BackendUser = {
   id: number
@@ -322,15 +303,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const username = profile.username || profile.email.split('@')[0] || 'User'
 
     const shouldUseCompanyLogo = profile.role === 'company'
-    let avatar: string
+    let avatar: string | undefined
 
     if (shouldUseCompanyLogo && profile.company_logo_url) {
       avatar = profile.company_logo_url
     } else if (!shouldUseCompanyLogo && profile.avatar_url) {
       // user/dealer: prefer uploaded avatar when available
       avatar = profile.avatar_url
-    } else {
-      avatar = pickAvatar(username)
     }
 
     return {
@@ -471,6 +450,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const uploadAvatar = async (file: File) => {
+    if (!token) {
+      throw new Error(t('auth.error.not_authorized'))
+    }
+
+    setIsLoading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await axios.post<{
+        avatarUrl?: string | null
+        originalAvatarUrl?: string | null
+      }>(`${API_BASE_URL}/user/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const avatarUrl =
+        typeof response.data.avatarUrl === 'string' &&
+        response.data.avatarUrl.trim().length > 0
+          ? response.data.avatarUrl
+          : null
+
+      if (avatarUrl) {
+        updateUser({ avatar: avatarUrl })
+      } else {
+        await refreshProfile()
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data as unknown
+        const { code, message } = extractErrorInfo(payload)
+
+        let friendlyMessage = message
+
+        if (!friendlyMessage) {
+          if (code === 'VALIDATION_ERROR') {
+            friendlyMessage = t('auth.error.profile_invalid')
+          } else if (code === 'AUTHORIZATION_ERROR') {
+            friendlyMessage = t('auth.error.not_authorized')
+          } else {
+            friendlyMessage = t('auth.error.profile_update')
+          }
+        }
+
+        console.error('[Auth][Avatar][UPLOAD] Request failed', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          payload,
+          code,
+          message,
+          friendlyMessage,
+        })
+
+        const status = error.response?.status
+
+        if (status === 401 || status === 404) {
+          persistSession(null, null)
+        }
+
+        throw new Error(friendlyMessage)
+      }
+
+      console.error('[Auth][Avatar][UPLOAD] Unexpected error', error)
+
+      if (error instanceof Error) {
+        throw error
+      }
+
+      throw new Error(t('auth.error.profile_update'))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const deleteAccount = async () => {
     if (!token) {
       throw new Error(t('auth.error.not_authorized'))
@@ -595,14 +653,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         backendUser.username || backendUser.email.split('@')[0] || 'User'
 
       const shouldUseCompanyLogo = backendUser.role === 'company'
-      let avatar: string
+      let avatar: string | undefined
 
       if (shouldUseCompanyLogo && backendUser.company_logo_url) {
         avatar = backendUser.company_logo_url
       } else if (!shouldUseCompanyLogo && backendUser.avatar_url) {
         avatar = backendUser.avatar_url
-      } else {
-        avatar = pickAvatar(username)
       }
 
       const nextUser: User = {
@@ -670,10 +726,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username,
         name: username,
         email: backendUser.email,
-        avatar: pickAvatar(username),
       }
 
       persistSession(nextUser, authPayload.token)
+
+      const effectiveRole: UserRole =
+        backendUser.role === 'dealer' || backendUser.role === 'company' || backendUser.role === 'user'
+          ? backendUser.role
+          : role === 'dealer' || role === 'company'
+            ? role
+            : 'user'
+
+      const companyIdValue = typeof backendUser.company_id === 'number' ? backendUser.company_id : null
+      persistAuthMetadata(effectiveRole, companyIdValue)
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const payload = error.response?.data as unknown
@@ -734,6 +799,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshProfile,
     updateProfile,
     deleteAccount,
+    uploadAvatar,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -6,6 +6,8 @@ export type ApiCompanyReview = {
   id: number
   company_id: number
   user_id: number
+  user_name?: string | null
+  avatar?: string | null
   rating: number
   comment: string | null
   created_at: string

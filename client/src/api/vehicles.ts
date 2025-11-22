@@ -35,6 +35,11 @@ export interface VehicleQuotesResponse {
   source: string | null
   distance_miles: number
   quotes: VehicleQuote[]
+  total?: number
+  limit?: number
+  offset?: number
+  page?: number
+  totalPages?: number
 }
 
 export interface VehiclesCompareRequest {
@@ -51,11 +56,18 @@ export interface VehiclesCompareResponse {
 export async function calculateVehicleQuotes(
   vehicleId: number,
   currency: 'usd' | 'gel' = 'usd',
+  options?: { limit?: number; offset?: number },
 ): Promise<VehicleQuotesResponse> {
   const params = new URLSearchParams()
 
   if (currency) {
     params.set('currency', currency)
+  }
+  if (typeof options?.limit === 'number') {
+    params.set('limit', String(options.limit))
+  }
+  if (typeof options?.offset === 'number') {
+    params.set('offset', String(options.offset))
   }
 
   const query = params.toString()

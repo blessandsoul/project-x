@@ -17,14 +17,10 @@ export function RequireGuest({ children }: { children: ReactNode }) {
   const { isAuthenticated, userRole } = useAuth()
 
   if (isAuthenticated) {
-    let target = '/onboarding/user'
-    if (userRole === 'dealer') {
-      target = '/onboarding/dealer'
-    } else if (userRole === 'company') {
-      target = '/onboarding/company'
-    }
-
-    return <Navigate to={target} replace />
+    // After initial registration/onboarding, hitting guest-only routes
+    // (login/register) while authenticated should not send user back
+    // to onboarding. Always go to dashboard.
+    return <Navigate to="/dashboard" replace />
   }
 
   return <>{children}</>

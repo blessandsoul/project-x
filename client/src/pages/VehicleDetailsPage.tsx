@@ -79,7 +79,7 @@ const VehicleDetailsPage = () => {
     return Number.isFinite(parsed) ? parsed : null
   }, [params.id])
 
-  const { vehicle, photos, quotes, distanceMiles, isLoading, error, recalculate } =
+  const { vehicle, photos, quotes, distanceMiles, isLoading, error, recalculate, quotesPage, quotesTotalPages, setQuotesPage } =
     useVehicleDetails(vehicleId)
 
   const isInitialLoading = isLoading && !vehicle
@@ -97,6 +97,18 @@ const VehicleDetailsPage = () => {
 
   const thumbStartIndex = clampedThumbPage * THUMBS_PER_PAGE
   const visibleThumbs = photos.slice(thumbStartIndex, thumbStartIndex + THUMBS_PER_PAGE)
+
+  // Keep quotes page in sync with URL (?page=N) so refresh/share preserves progress
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const raw = params.get('page')
+    const parsed = raw ? Number(raw) : 1
+    const safePage = Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+
+    if (safePage !== quotesPage) {
+      setQuotesPage(safePage)
+    }
+  }, [location.search, quotesPage, setQuotesPage])
 
   useEffect(() => {
     if (!vehicleId) return
@@ -209,6 +221,12 @@ const VehicleDetailsPage = () => {
     setActivePhotoIndex(0)
     setThumbPage(0)
   }, [vehicleId, photos.length])
+
+  // On quotes page change, scroll offers section into view smoothly
+  useEffect(() => {
+    if (!offersRef.current) return
+    offersRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [quotesPage])
 
   useEffect(() => {
     if (!photos.length) return
@@ -469,6 +487,29 @@ const VehicleDetailsPage = () => {
     } finally {
       setIsLeadSubmitting(false)
     }
+  }
+
+  const updateQuotesPageInUrl = (nextPage: number) => {
+    const params = new URLSearchParams(location.search)
+    if (nextPage <= 1) {
+      params.delete('page')
+    } else {
+      params.set('page', String(nextPage))
+    }
+
+    const search = params.toString()
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : '' }, { replace: false })
+    setQuotesPage(nextPage)
+  }
+
+  const handlePrevQuotesPage = () => {
+    if (quotesPage <= 1) return
+    updateQuotesPageInUrl(quotesPage - 1)
+  }
+
+  const handleNextQuotesPage = () => {
+    if (quotesPage >= quotesTotalPages) return
+    updateQuotesPageInUrl(quotesPage + 1)
   }
 
   const handleContinueClick = () => {
@@ -1601,11 +1642,6 @@ const VehicleDetailsPage = () => {
                         <span className="text-[11px] text-muted-foreground">
                           {t('vehicle_details.offers.compare_text')}
                         </span>
-                        {distanceMiles != null && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {t('vehicle_details.offers.distance_to_poti')}: {formatMilesToKilometers(distanceMiles) ?? `${distanceMiles.toLocaleString()} mi`}
-                          </span>
-                        )}
                         <span className="text-[11px] text-muted-foreground">
                           {t('vehicle_details.offers.total_price_disclaimer')}
                         </span>
@@ -2226,6 +2262,36 @@ const VehicleDetailsPage = () => {
                               )}
                             </AnimatePresence>
                           </div>
+
+                          {quotesTotalPages > 1 && (
+                            <div className="flex items-center justify-between pt-2 border-t mt-4">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs"
+                                onClick={handlePrevQuotesPage}
+                                disabled={quotesPage <= 1 || isLoading}
+                              >
+                                <Icon icon="mdi:chevron-left" className="h-4 w-4 me-1" />
+                                {t('common.prev')}
+                              </Button>
+                              <span className="text-[11px] text-muted-foreground">
+                                {t('common.page')} {quotesPage} / {quotesTotalPages}
+                              </span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs"
+                                onClick={handleNextQuotesPage}
+                                disabled={quotesPage >= quotesTotalPages || isLoading}
+                              >
+                                {t('common.next')}
+                                <Icon icon="mdi:chevron-right" className="h-4 w-4 ms-1" />
+                              </Button>
+                            </div>
+                          )}
 
                           {mockRecentCases.length > 0 && (
                             <div className="mt-3 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs mt-4">

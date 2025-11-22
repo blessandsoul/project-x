@@ -2,6 +2,8 @@ export interface CompanyReview {
   id: number;
   company_id: number;
   user_id: number;
+  user_name?: string | null;
+  avatar?: string | null;
   rating: number; // 1-5
   comment: string | null;
   created_at: Date;

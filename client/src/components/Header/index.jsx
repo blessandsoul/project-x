@@ -1,11 +1,11 @@
-import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import { useAuth } from '@/hooks/useAuth';
+import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import { useAuth } from "@/hooks/useAuth";
 
-const STORAGE_KEY_USER = 'projectx_auth_user';
+const STORAGE_KEY_USER = "projectx_auth_user";
 
 const Header = ({ user, navigationItems, onNavigate }) => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const Header = ({ user, navigationItems, onNavigate }) => {
 
   let storedUser = null;
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY_USER);
       if (raw) {
@@ -52,7 +52,7 @@ const Header = ({ user, navigationItems, onNavigate }) => {
           <a className="mr-6 flex items-center space-x-2" href="/">
             <Icon icon="mdi:home" className="h-6 w-6" />
             <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
-              <span className="font-bold">Trusted</span>{' '}
+              <span className="font-bold">Trusted</span>{" "}
               <span className="font-normal">Importers.Ge</span>
             </span>
           </a>
@@ -76,7 +76,7 @@ const Header = ({ user, navigationItems, onNavigate }) => {
               variant="ghost"
               className="md:hidden"
               size="icon"
-              aria-label={t('header.menu')}
+              aria-label={t("header.menu")}
             >
               <Icon icon="mdi:menu" className="h-5 w-5" />
             </Button>
@@ -85,22 +85,26 @@ const Header = ({ user, navigationItems, onNavigate }) => {
           <nav className="flex items-center">
             {effectiveUser ? (
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">{effectiveUser.name}</span>
-                <img
-                  src={effectiveUser.avatar}
-                  alt={t('header.avatar_alt')}
-                  className="h-8 w-8 rounded-full"
-                />
+                <span className="text-sm font-medium">
+                  {effectiveUser.name}
+                </span>
+                {effectiveUser.avatar && (
+                  <img
+                    src={effectiveUser.avatar}
+                    alt={t("header.avatar_alt")}
+                    className="h-8 w-8 rounded-full"
+                  />
+                )}
               </div>
             ) : (
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => navigate('/login')}
-                aria-label={t('header.sign_in')}
+                onClick={() => navigate("/login")}
+                aria-label={t("header.sign_in")}
               >
                 <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
-                {t('header.sign_in')}
+                {t("header.sign_in")}
               </Button>
             )}
           </nav>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -11,15 +11,17 @@ import { useAuth } from '@/hooks/useAuth'
 
 const ProfilePage = () => {
   const { t } = useTranslation()
-  const { user, isLoading, updateProfile, deleteAccount } = useAuth()
+  const { user, isLoading, updateProfile, deleteAccount, uploadAvatar } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState(user?.email ?? '')
   const [username, setUsername] = useState(user?.name ?? '')
   const [password, setPassword] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -34,6 +36,12 @@ const ProfilePage = () => {
         password: password || undefined,
       })
 
+      if (avatarFile) {
+        setIsUploadingAvatar(true)
+        await uploadAvatar(avatarFile)
+        setAvatarFile(null)
+      }
+
       setPassword('')
       setSuccess(t('profile.success'))
     } catch (err) {
@@ -43,7 +51,21 @@ const ProfilePage = () => {
           : t('profile.error.update')
 
       setError(message)
+    } finally {
+      setIsUploadingAvatar(false)
     }
+  }
+
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setAvatarFile(file)
   }
 
   const handleDeleteAccount = async () => {
@@ -117,6 +139,26 @@ const ProfilePage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>
+            <div className="flex flex-col items-center gap-3">
+              {user?.avatar && (
+                <img
+                  src={user.avatar}
+                  alt={t('header.avatar_alt')}
+                  className="h-16 w-16 rounded-full object-cover border"
+                />
+              )}
+              <div className="w-full space-y-1">
+                <Label htmlFor="avatar">{t('profile.avatar_label')}</Label>
+                <Input
+                  id="avatar"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={isLoading || isDeleting || isUploadingAvatar}
+                  aria-disabled={isLoading || isDeleting || isUploadingAvatar}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="username">{t('profile.username')}</Label>
               <Input
@@ -160,8 +202,8 @@ const ProfilePage = () => {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
-                aria-disabled={isLoading}
+                disabled={isLoading || isDeleting || isUploadingAvatar}
+                aria-disabled={isLoading || isDeleting || isUploadingAvatar}
               >
                 <Icon icon="mdi:content-save" className="me-2 h-4 w-4" />
                 {isLoading ? t('profile.saving') : t('profile.save')}
@@ -170,8 +212,8 @@ const ProfilePage = () => {
                 type="button"
                 variant="destructive"
                 className="w-full"
-                disabled={isDeleting || isLoading}
-                aria-disabled={isDeleting || isLoading}
+                disabled={isDeleting || isLoading || isUploadingAvatar}
+                aria-disabled={isDeleting || isLoading || isUploadingAvatar}
                 onClick={handleDeleteAccount}
               >
                 <Icon icon="mdi:delete" className="me-2 h-4 w-4" />

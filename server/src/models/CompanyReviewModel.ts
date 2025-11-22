@@ -9,7 +9,7 @@ export class CompanyReviewModel extends BaseModel {
 
   async getByCompanyId(companyId: number, limit: number, offset: number): Promise<CompanyReview[]> {
     const rows = await this.executeQuery(
-      'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE company_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.company_id = ? ORDER BY r.created_at DESC LIMIT ? OFFSET ?',
       [companyId, limit, offset],
     );
     return rows as CompanyReview[];
@@ -45,7 +45,7 @@ export class CompanyReviewModel extends BaseModel {
 
   async getById(id: number): Promise<CompanyReview | null> {
     const rows = await this.executeQuery(
-      'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE id = ?',
+      'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.id = ?',
       [id],
     );
     if (!rows.length) return null;

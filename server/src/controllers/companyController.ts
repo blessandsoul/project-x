@@ -67,6 +67,52 @@ export class CompanyController {
     this.fxRateService = new FxRateService(fastify);
   }
 
+  private async computeUserAvatarUrls(username: string | null | undefined): Promise<{ avatar_url: string | null; original_avatar_url: string | null }> {
+    if (!username || username.trim().length === 0) {
+      return { avatar_url: null, original_avatar_url: null };
+    }
+
+    const safeUsername = username
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const uploadsRoot = path.join(
+      process.cwd(),
+      'uploads',
+      'users',
+      safeUsername,
+      'avatars',
+    );
+
+    let files: string[];
+    try {
+      files = await fs.readdir(uploadsRoot);
+    } catch {
+      return { avatar_url: null, original_avatar_url: null };
+    }
+
+    const avatarFile = files.find((f) => f.startsWith('avatar.')) || null;
+    const originalFile = files.find((f) => f.startsWith('avatar-original.')) || null;
+
+    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
+
+    const buildUrl = (file: string | null): string | null => {
+      if (!file) return null;
+      const publicPath = `/uploads/users/${safeUsername}/avatars/${file}`;
+      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
+        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
+      }
+      return publicPath;
+    };
+
+    return {
+      avatar_url: buildUrl(avatarFile),
+      original_avatar_url: buildUrl(originalFile),
+    };
+  }
+
   private async computeLogoUrls(slug: string): Promise<{ logo_url: string | null; original_logo_url: string | null }> {
     const safeSlug = slug
       .toLowerCase()
@@ -312,10 +358,20 @@ export class CompanyController {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 50 ? limit : 10;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       this.companyReviewModel.getByCompanyId(companyId, safeLimit, safeOffset),
       this.companyReviewModel.countByCompanyId(companyId),
     ]);
+
+    const items = await Promise.all(
+      rawItems.map(async (review) => {
+        const avatarMeta = await this.computeUserAvatarUrls((review as any).user_name ?? null);
+        return {
+          ...review,
+          avatar: avatarMeta.avatar_url,
+        } as CompanyReview & { avatar?: string | null };
+      }),
+    );
 
     return { items, total, limit: safeLimit, offset: safeOffset };
   }
@@ -349,14 +405,20 @@ export class CompanyController {
       const reviewId = insertInfo.insertId as number;
 
       const [reviewRows] = await conn.execute(
-        'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE id = ?',
+        'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.id = ?',
         [reviewId],
       );
-      const typedReviewRows = reviewRows as CompanyReview[];
+      const typedReviewRows = reviewRows as (CompanyReview & { user_name?: string | null })[];
       const created = typedReviewRows[0];
       if (!created) {
         throw new Error('Failed to load created review');
       }
+
+      const avatarMeta = await this.computeUserAvatarUrls(created.user_name ?? null);
+      const createdWithAvatar: CompanyReview & { avatar?: string | null } = {
+        ...created,
+        avatar: avatarMeta.avatar_url,
+      };
 
       // Recalculate and update company rating
       const [aggRows] = await conn.execute(
@@ -369,7 +431,7 @@ export class CompanyController {
 
       await conn.execute('UPDATE companies SET rating = ? WHERE id = ?', [newRating, companyId]);
 
-      return created;
+      return createdWithAvatar;
     });
   }
 
@@ -418,14 +480,20 @@ export class CompanyController {
       }
 
       const [reviewRows] = await conn.execute(
-        'SELECT id, company_id, user_id, rating, comment, created_at, updated_at FROM company_reviews WHERE id = ?',
+        'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.id = ?',
         [reviewId],
       );
-      const typedReviewRows = reviewRows as CompanyReview[];
+      const typedReviewRows = reviewRows as (CompanyReview & { user_name?: string | null })[];
       const updated = typedReviewRows[0];
       if (!updated) {
         throw new NotFoundError('Review');
       }
+
+      const avatarMeta = await this.computeUserAvatarUrls(updated.user_name ?? null);
+      const updatedWithAvatar: CompanyReview & { avatar?: string | null } = {
+        ...updated,
+        avatar: avatarMeta.avatar_url,
+      };
 
       const [aggRows] = await conn.execute(
         'SELECT AVG(rating) AS rating, COUNT(*) AS count FROM company_reviews WHERE company_id = ?',
@@ -436,7 +504,7 @@ export class CompanyController {
 
       await conn.execute('UPDATE companies SET rating = ? WHERE id = ?', [newRating, companyId]);
 
-      return updated;
+      return updatedWithAvatar;
     });
   }
 
@@ -594,29 +662,61 @@ export class CompanyController {
   }
 
   /**
-   * Calculate and persist quotes for all companies for a given vehicle.
+   * Calculate and persist quotes for companies for a given vehicle.
    *
    * Workflow:
    * - Load full vehicle data (make, model, year, yard_name, source)
    * - Derive distance_miles from yard_name -> Poti, Georgia
-   * - Load all companies and, for each company:
+   * - Load companies (optionally paginated) and, for each company:
    *   - Apply default pricing OR override with company.final_formula JSON
    *   - Compute total_price
    *   - Build a detailed breakdown JSON for transparency
    *   - Insert a row into company_quotes
    * - Return a vehicle + quotes response DTO for the frontend.
+   *
+   * If options.limit/offset are provided, only that slice of companies is used
+   * and totalCompanies is returned for pagination. If not provided, all
+   * companies (up to a hard cap) are used for backward-compatible flows.
    */
   async calculateQuotesForVehicle(
     vehicleId: number,
     currency?: string,
-  ): Promise<VehicleQuotesResponse> {
+    options?: { limit?: number; offset?: number },
+  ): Promise<VehicleQuotesResponse & { totalCompanies: number }> {
     const vehicle: Vehicle | null = await this.vehicleModel.findById(vehicleId);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
     }
 
-    // Fetch all companies to calculate quotes for each
-    const companies = await this.companyModel.findAll(1000, 0);
+    let companies = [] as Company[];
+    let totalCompanies = 0;
+
+    const hasPagination = options && (typeof options.limit === 'number' || typeof options.offset === 'number');
+
+    if (hasPagination) {
+      const rawLimit = options?.limit;
+      const rawOffset = options?.offset;
+
+      const safeLimit = Number.isFinite(rawLimit as number) && (rawLimit as number) > 0 && (rawLimit as number) <= 100
+        ? (rawLimit as number)
+        : 20;
+      const safeOffset = Number.isFinite(rawOffset as number) && (rawOffset as number) >= 0
+        ? (rawOffset as number)
+        : 0;
+
+      const searchResult = await this.companyModel.search({
+        limit: safeLimit,
+        offset: safeOffset,
+      });
+
+      companies = searchResult.items;
+      totalCompanies = searchResult.total;
+    } else {
+      // Backward-compatible behavior: load up to 1000 companies without pagination
+      companies = await this.companyModel.findAll(1000, 0);
+      totalCompanies = companies.length;
+    }
+
     if (!companies.length) {
       throw new ValidationError('No companies configured for quote calculation');
     }
@@ -666,6 +766,7 @@ export class CompanyController {
       source: vehicle.source,
       distance_miles: distanceMiles,
       quotes: convertedQuotes,
+      totalCompanies,
     };
   }
 

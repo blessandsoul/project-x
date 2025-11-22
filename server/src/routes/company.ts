@@ -97,8 +97,8 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
-    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+    const parsedLimit = typeof limit === 'number' ? limit : NaN;
+    const parsedOffset = typeof offset === 'number' ? offset : NaN;
 
     let typedOrderBy: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
     if (order_by === 'rating' || order_by === 'cheapest' || order_by === 'name' || order_by === 'newest') {
@@ -711,13 +711,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       querystring: {
         type: 'object',
         properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 50 },
+          offset: { type: 'integer', minimum: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
         },
       },
     },
   }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
-    const { currency } = request.query as { currency?: string };
+    const { limit, offset, currency } = request.query as { limit?: number; offset?: number; currency?: string };
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
@@ -725,8 +727,43 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
 
     request.log.info(`Calculating quotes for vehicle ${id} at ${new Date().toISOString()} with currency ${currency}`);
 
-    const result = await controller.calculateQuotesForVehicle(id, currency);
-    return reply.code(201).send(result);
+    // Parse pagination for companies/quotes
+    const parsedLimit = typeof limit === 'number' ? limit : NaN;
+    const parsedOffset = typeof offset === 'number' ? offset : NaN;
+
+    const { limit: safeLimit, offset: safeOffset } = parsePagination(
+      {
+        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
+      },
+      { limit: 5, maxLimit: 50 },
+    );
+
+    const fullResult = await controller.calculateQuotesForVehicle(id, currency, {
+      limit: safeLimit,
+      offset: safeOffset,
+    });
+
+    const total = typeof fullResult.totalCompanies === 'number'
+      ? fullResult.totalCompanies
+      : Array.isArray(fullResult.quotes)
+        ? fullResult.quotes.length
+        : 0;
+
+    const page = total > 0 ? Math.floor(safeOffset / safeLimit) + 1 : 1;
+    const totalPages = total > 0 ? Math.max(1, Math.ceil(total / safeLimit)) : 1;
+
+    // Do not slice quotes here; controller already paginates companies/quotes
+    const { totalCompanies, ...rest } = fullResult as any;
+
+    return reply.code(201).send({
+      ...rest,
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      page,
+      totalPages,
+    });
   });
 
   /**

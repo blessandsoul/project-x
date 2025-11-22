@@ -701,8 +701,17 @@ const CompanyProfilePage = () => {
                         <div key={`review-${review.id}-${review.created_at}`} className="border-b last:border-b-0 pb-4 last:pb-0">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                              {review.avatar && review.avatar.trim().length > 0 && (
+                                <img
+                                  src={review.avatar}
+                                  alt={review.user_name || `${t('common.user')} #${review.user_id}`}
+                                  className="h-8 w-8 rounded-full object-cover border border-muted"
+                                />
+                              )}
                               <span className="font-medium">
-                                {t('common.user')} #{review.user_id}
+                                {review.user_name && review.user_name.trim().length > 0
+                                  ? review.user_name
+                                  : `${t('common.user')} #${review.user_id}`}
                               </span>
                               <div className="flex items-center">
                                 {[...Array(5)].map((_, index) => (
