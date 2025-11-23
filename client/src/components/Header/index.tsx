@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,18 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
   }
 
   const effectiveUser = authUser ?? storedUser ?? (isAuthenticated ? authUser : user ?? null);
+
+  useEffect(() => {
+    const handleOpenAuth = () => {
+      setIsAuthOpen(true);
+    };
+
+    window.addEventListener('projectx:open-auth', handleOpenAuth);
+
+    return () => {
+      window.removeEventListener('projectx:open-auth', handleOpenAuth);
+    };
+  }, []);
 
   return (
     <header

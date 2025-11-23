@@ -36,7 +36,9 @@ function useAnimatedNumber(value: number, shouldAnimate: boolean, durationMs = A
       const progress = Math.min(elapsed / durationMs, 1)
       const nextValue = startValue + delta * progress
 
-      setDisplayValue(Math.round(nextValue))
+      // Keep a single decimal place for smoother UI and to avoid long fractional values
+      const roundedToTenth = Math.round(nextValue * 10) / 10
+      setDisplayValue(roundedToTenth)
 
       if (progress < 1) {
         frameId = requestAnimationFrame(tick)
@@ -252,12 +254,12 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                 size="lg"
                 variant="outline"
                 onClick={() => {
-                  trackHeroCtaClick('catalog')
-                  navigate('/catalog')
+                  trackHeroCtaClick('auction-listings')
+                  navigate('/auction-listings')
                 }}
               >
                 <Icon icon="mdi:view-grid" className="me-2 h-4 w-4" />
-                {t('home.hero.cta_catalog')}
+                აუქციონების ნახვა
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -378,9 +380,11 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                           return (
                             <div className="flex gap-2">
                               {staticItems.map((company) => (
-                                <div
+                                <button
                                   key={company.id}
-                                  className="flex min-w-[140px] flex-shrink-0 items-center gap-2 rounded-md border bg-muted/40 px-2 py-1"
+                                  type="button"
+                                  onClick={() => navigate(`/company/${company.id}`)}
+                                  className="flex min-w-[140px] flex-shrink-0 cursor-pointer items-center gap-2 rounded-md border bg-muted/40 px-2 py-1 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                                 >
                                   <div className="h-6 w-6 overflow-hidden rounded-full border bg-background">
                                     <img
@@ -398,7 +402,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                                       {company.location.city}, {company.location.state}
                                     </div>
                                   </div>
-                                </div>
+                                </button>
                               ))}
                             </div>
                           )
@@ -412,9 +416,11 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                           const company = limitedCompanies[index]
 
                           items.push(
-                            <div
+                            <button
                               key={company.id}
-                              className="flex min-w-[140px] flex-shrink-0 items-center gap-2 rounded-md border bg-muted/40 px-2 py-1"
+                              type="button"
+                              onClick={() => navigate(`/company/${company.id}`)}
+                              className="flex min-w-[140px] flex-shrink-0 cursor-pointer items-center gap-2 rounded-md border bg-muted/40 px-2 py-1 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                             >
                               <div className="h-6 w-6 overflow-hidden rounded-full border bg-background">
                                 <img
@@ -432,7 +438,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                                   {company.location.city}, {company.location.state}
                                 </div>
                               </div>
-                            </div>,
+                            </button>,
                           )
                         }
 

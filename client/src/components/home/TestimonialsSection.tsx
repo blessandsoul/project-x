@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 interface Testimonial {
   id: string
   userName: string
+  avatarUrl: string | null
   rating: number
   comment: string
   companyName: string
@@ -27,19 +28,8 @@ export function TestimonialsSection() {
 
   const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
 
-  const featuredCompany = useMemo(() => {
-    if (!companies || companies.length === 0) return null
-
-    const withReviews = companies.filter((company) => company.reviewCount && company.reviewCount > 0)
-    if (withReviews.length > 0) {
-      return withReviews[0]
-    }
-
-    return companies[0]
-  }, [companies])
-
   useEffect(() => {
-    if (!featuredCompany || companiesError) {
+    if (!companies || companies.length === 0 || companiesError) {
       return
     }
 
@@ -50,22 +40,69 @@ export function TestimonialsSection() {
       setError(null)
 
       try {
-        const response = await fetchCompanyReviewsFromApi(featuredCompany.id, {
-          limit: 6,
-          offset: 0,
-        })
+        const companiesWithReviews = companies.filter((company) => company.reviewCount && company.reviewCount > 0)
+
+        if (companiesWithReviews.length === 0) {
+          if (!isCancelled) {
+            setTestimonials([])
+          }
+          return
+        }
+
+        const companiesToLoad = companiesWithReviews.slice(0, 5)
+
+        const responses = await Promise.all(
+          companiesToLoad.map(async (company) => {
+            try {
+              const response = await fetchCompanyReviewsFromApi(company.id, {
+                limit: 3,
+                offset: 0,
+              })
+
+              return {
+                companyName: company.name,
+                items: Array.isArray(response.items) ? response.items : [],
+              }
+            } catch {
+              return {
+                companyName: company.name,
+                items: [] as ApiCompanyReview[],
+              }
+            }
+          }),
+        )
 
         if (isCancelled) return
 
-        const mapped: Testimonial[] = response.items.map((review: ApiCompanyReview) => ({
-          id: String(review.id),
-          userName: `User #${review.user_id}`,
-          rating: review.rating,
-          comment: review.comment ?? '',
-          companyName: featuredCompany.name,
-        }))
+        const allMapped: Testimonial[] = responses.flatMap(({ companyName, items }) => (
+          items.map((review: ApiCompanyReview) => {
+            const hasCustomName = typeof review.user_name === 'string' && review.user_name.trim().length > 0
+            const userName = hasCustomName ? review.user_name!.trim() : `${t('common.user')} #${review.user_id}`
 
-        setTestimonials(mapped.slice(0, 6))
+            const hasAvatar = typeof review.avatar === 'string' && review.avatar.trim().length > 0
+            const avatarUrl = hasAvatar ? review.avatar!.trim() : null
+
+            return {
+              id: `${review.company_id}-${review.id}`,
+              userName,
+              avatarUrl,
+              rating: review.rating,
+              comment: review.comment ?? '',
+              companyName,
+            }
+          })
+        ))
+
+        // Shuffle to get random distinct testimonials
+        const shuffled = [...allMapped]
+        for (let i = shuffled.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1))
+          const temp = shuffled[i]
+          shuffled[i] = shuffled[j]
+          shuffled[j] = temp
+        }
+
+        setTestimonials(shuffled.slice(0, 6))
       } catch (err) {
         if (!isCancelled) {
           setError(t('home.testimonials.error'))
@@ -83,7 +120,7 @@ export function TestimonialsSection() {
     return () => {
       isCancelled = true
     }
-  }, [featuredCompany, companiesError])
+  }, [companies, companiesError, t])
 
   const shouldReduceMotion = useReducedMotion()
 
@@ -121,7 +158,7 @@ export function TestimonialsSection() {
     return null
   }
 
-  if (!featuredCompany || testimonials.length === 0) {
+  if (testimonials.length === 0) {
     return null
   }
 
@@ -195,7 +232,9 @@ export function TestimonialsSection() {
                 '/avatars/dealer.jpg',
                 '/avatars/0450249b131eec36dc8333b7cf847bc4.webp',
               ]
-              const avatarSrc = avatarImages[index % avatarImages.length]
+              const avatarSrc = item.avatarUrl && item.avatarUrl.trim().length > 0
+                ? item.avatarUrl
+                : avatarImages[index % avatarImages.length]
               const initials = item.userName
                 .split(' ')
                 .map((part) => part[0])
@@ -219,6 +258,9 @@ export function TestimonialsSection() {
                           <CardTitle className="text-base font-semibold">
                             {item.userName}
                           </CardTitle>
+                          <p className="text-xs text-muted-foreground">
+                            {item.companyName}
+                          </p>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Icon

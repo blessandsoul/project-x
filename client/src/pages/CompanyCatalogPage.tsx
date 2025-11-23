@@ -24,7 +24,7 @@ import { fetchCompaniesFromApi } from '@/services/companiesApi';
 
 type CatalogSortBy = 'rating' | 'cheapest' | 'name' | 'newest';
 
-const DEFAULT_PRICE_RANGE: [number, number] = [1000, 10000];
+const DEFAULT_PRICE_RANGE: [number, number] = [0, 10000];
 
 const useCatalogQueryParams = () => {
   const location = useLocation();
@@ -108,17 +108,7 @@ const useCatalogQueryParams = () => {
         setPage(parsed);
       }
     }
-  }, [
-    location.search,
-    searchTerm,
-    minRating,
-    priceRange,
-    city,
-    isVipOnly,
-    onboardingFree,
-    sortBy,
-    page,
-  ]);
+  }, [location.search]);
 
   useEffect(() => {
     setPage(1);
@@ -433,6 +423,10 @@ const CompanyCatalogPage = () => {
     setIsVipOnly(false);
     setOnboardingFree(false);
     setSortBy('newest');
+    setPage(1);
+
+    // Ensure URL is fully reset so filters are URL-dependent and sharable
+    navigate('/catalog', { replace: true });
   };
 
   return (
@@ -519,7 +513,7 @@ const CompanyCatalogPage = () => {
                           value={priceRange}
                           onValueChange={(value: number[]) => setPriceRange([value[0], value[1]])}
                           max={10000}
-                          min={1000}
+                          min={0}
                           step={500}
                           className="w-full"
                         />
@@ -562,6 +556,16 @@ const CompanyCatalogPage = () => {
                         />
                         <label htmlFor="onboarding-free" className="text-sm font-medium">{t('catalog.filters.free_onboarding')}</label>
                       </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-center"
+                        onClick={handleResetAllFilters}
+                      >
+                        {t('catalog.tags.reset_all')}
+                      </Button>
                     </>
                   )}
                 </CardContent>
@@ -726,9 +730,10 @@ const CompanyCatalogPage = () => {
                           key={companyId}
                           {...getCardMotionProps(index)}
                           role="listitem"
+                          className="h-full"
                         >
                           <Card
-                            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+                            className="flex h-full flex-col cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
                             role="link"
                             tabIndex={0}
                             onClick={() => navigate(`/company/${companyId}`)}
@@ -765,8 +770,8 @@ const CompanyCatalogPage = () => {
                               </div>
                               <CardTitle className="text-lg leading-tight">{company.name}</CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-0">
-                              <div className="space-y-3">
+                            <CardContent className="pt-0 flex-1 flex flex-col">
+                              <div className="space-y-3 flex-1">
                                 <div className="flex items-center space-x-2">
                                   <CompanyRating rating={company.rating} />
                                   <span className="text-sm text-muted-foreground">

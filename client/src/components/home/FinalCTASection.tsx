@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,15 +8,14 @@ import { useTranslation } from 'react-i18next'
 export function FinalCTASection() {
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
-  const navigate = useNavigate()
   const shouldReduceMotion = useReducedMotion()
 
+  if (isAuthenticated) {
+    return null
+  }
+
   const handleClick = () => {
-    if (isAuthenticated) {
-      navigate('/dashboard')
-    } else {
-      navigate('/register')
-    }
+    window.dispatchEvent(new Event('projectx:open-auth'))
   }
 
   return (

@@ -23,6 +23,12 @@ export const useCompanyStats = (companies: Company[] = mockCompanies): CompanySt
       (company) => typeof company.rating === 'number' && !Number.isNaN(company.rating),
     )
 
+    console.log('HOME STATS companies:',
+      companies.map((c) => ({ id: c.id, name: c.name, rating: c.rating })),
+      'USED ratings:',
+      ratedCompanies.map((c) => ({ id: c.id, name: c.name, rating: c.rating })),
+    )
+
     const ratingsCount = ratedCompanies.length
     const avgRatingRaw =
       ratingsCount === 0

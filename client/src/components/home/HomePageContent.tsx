@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/company/EmptyState'
 import { useCompaniesData } from '@/hooks/useCompaniesData'
 import { useCompanyStats } from '@/hooks/useCompanyStats'
+import { useAuth } from '@/hooks/useAuth'
 
 const CompanyCompareSectionLazy = lazy(() =>
   import('@/components/home/CompanyCompareSection').then((mod) => ({
@@ -46,6 +47,7 @@ export const HomePageContent = () => {
   const { t } = useTranslation()
   const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
   const stats = useCompanyStats(companies)
+  const { isAuthenticated } = useAuth()
 
   return (
     <main className="flex-1" role="main" aria-labelledby="home-hero-heading">
@@ -105,12 +107,16 @@ export const HomePageContent = () => {
         </Suspense>
 
         {/* Block 4: Final CTA */}
-        <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t('home.steps.step4')}
-          </h2>
-        </div>
-        <FinalCTASection />
+        {!isAuthenticated && (
+          <>
+            <div className="mt-10 mb-6 border-t border-muted/40 pt-6">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('home.steps.step4')}
+              </h2>
+            </div>
+            <FinalCTASection />
+          </>
+        )}
         {!isCompaniesLoading && companiesError && (
           <Card className="mt-8">
             <EmptyState

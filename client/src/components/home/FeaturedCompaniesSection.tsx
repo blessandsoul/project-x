@@ -122,13 +122,13 @@ export function FeaturedCompaniesSection({
       return (
         <Card
           key={company.id}
-          className={`h-full cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${tierClassName}`}
+          className={`h-full cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg ${tierClassName}`}
           onClick={() => navigate(`/company/${company.id}`)}
         >
-          <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-2 md:gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground overflow-hidden">
-                <CardTitle className="text-base font-semibold text-foreground max-w-[40%] truncate">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground overflow-hidden min-w-0">
+                <CardTitle className="text-base font-semibold text-foreground">
                   {company.name}
                 </CardTitle>
                 {tier === 'diamond' && (
@@ -146,15 +146,15 @@ export function FeaturedCompaniesSection({
                     {vipLabel}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 max-w-[40%] truncate">
+                <span className="inline-flex items-center gap-1">
                   <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                  <span className="truncate">
+                  <span>
                     {company.location.city}, {company.location.state}
                   </span>
                 </span>
               </div>
             </div>
-            {company.vipStatus && <VipBadge label={vipLabel} />}
+            {company.vipStatus && <VipBadge />}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-sm">

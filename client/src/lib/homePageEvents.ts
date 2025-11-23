@@ -1,4 +1,4 @@
-export type HomePageCtaType = 'search' | 'catalog'
+export type HomePageCtaType = 'search' | 'catalog' | 'auction-listings'
 
 export const trackHeroCtaClick = (type: HomePageCtaType) => {
   // Centralized place to plug real analytics later

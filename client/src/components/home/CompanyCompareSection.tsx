@@ -69,7 +69,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
               ? Array.from({ length: 3 }).map((_, index: number) => (
                   <div
                     key={index}
-                    className="relative flex items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 border border-muted/60"
+                    className="relative flex h-[170px] items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 border border-muted/60"
                     role="listitem"
                   >
                     <div className="flex items-start gap-3">
@@ -124,7 +124,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                     <div
                       key={company.id}
                       className={cn(
-                        'relative flex items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer',
+                        'relative flex h-[170px] items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer',
                         highlightClass,
                       )}
                       role="listitem"
@@ -266,11 +266,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        {company.vipStatus && (
-                          <VipBadge
-                            label={vipLabel}
-                          />
-                        )}
+                        {company.vipStatus && <VipBadge />}
                       </div>
                     </div>
                   )
@@ -328,7 +324,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                     <div
                       key={company.id}
                       className={cn(
-                        'relative flex items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border border-slate-300/70 cursor-pointer',
+                        'relative flex h-[170px] items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border border-slate-300/70 cursor-pointer',
                       )}
                       role="listitem"
                       onClick={() => navigate(`/company/${company.id}`)}

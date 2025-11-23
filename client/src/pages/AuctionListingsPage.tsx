@@ -20,7 +20,6 @@ import {
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { navigationItems, footerLinks } from '@/config/navigation';
-import { useVehiclePhotosMap } from '@/hooks/useVehiclePhotosMap';
 import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { compareVehicles, fetchVehiclePhotos, searchVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
@@ -167,7 +166,7 @@ const AuctionListingsPage = () => {
   const [fuelType, setFuelType] = useState('all');
   const [category, setCategory] = useState('all');
   const [drive, setDrive] = useState('all');
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(36);
   const [page, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,6 +201,11 @@ const AuctionListingsPage = () => {
     (VehiclesSearchFilters & { page: number; limit: number }) | null
   >(null);
   const [appliedPage, setAppliedPage] = useState(1);
+  const [extraLoaded, setExtraLoaded] = useState<{
+    startPage: number;
+    endPage: number;
+    items: BackendItem[];
+  } | null>(null);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const { companies } = useCompaniesData();
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<number[]>([]);
@@ -404,7 +408,7 @@ const AuctionListingsPage = () => {
     }
 
     const effectiveLimit = options?.limit ?? limit;
-    if (effectiveLimit !== 20) {
+    if (effectiveLimit !== 36) {
       searchParams.set('limit', String(effectiveLimit));
     } else {
       searchParams.delete('limit');
@@ -551,8 +555,8 @@ const AuctionListingsPage = () => {
     const limitParam = params.get('limit');
     const nextLimit = limitParam ? (() => {
       const parsed = Number(limitParam);
-      return [10, 20, 30, 50].includes(parsed) ? parsed : 20;
-    })() : 20;
+      return [12, 24, 36, 60].includes(parsed) ? parsed : 36;
+    })() : 36;
 
     // Page
     const pageParam = params.get('page');
@@ -606,6 +610,7 @@ const AuctionListingsPage = () => {
     setPage(nextPage);
     setAppliedFilters(filters);
     setAppliedPage(filters.page);
+    setExtraLoaded(null);
   }, [location.search, selectedMakeName, selectedModelName]);
 
   useEffect(() => {
@@ -680,6 +685,7 @@ const AuctionListingsPage = () => {
       .then((result) => {
         if (!isMounted) return;
         setBackendData(result);
+        setExtraLoaded(null);
       })
       .catch((error: Error) => {
         if (!isMounted) return;
@@ -694,13 +700,6 @@ const AuctionListingsPage = () => {
       isMounted = false;
     };
   }, [appliedFilters]);
-
-  const backendVehicleIds = useMemo(
-    () => (backendData ? backendData.items.map((item) => item.vehicle_id ?? item.id) : []),
-    [backendData],
-  );
-
-  const photosByVehicleId = useVehiclePhotosMap({ vehicleIds: backendVehicleIds });
 
   const randomCalcQuote = useMemo(() => {
     if (!calcData || !calcData.quotes || calcData.quotes.length === 0) {
@@ -728,11 +727,50 @@ const AuctionListingsPage = () => {
     });
   }, [backendData, auctionFilter]);
 
+  const displayedItems: BackendItem[] = useMemo(() => (
+    extraLoaded ? extraLoaded.items : filteredBackendItems
+  ), [extraLoaded, filteredBackendItems]);
+
+  const maxAvailablePage = useMemo(() => {
+    if (!backendData) return 1;
+    return backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / (appliedFilters?.limit || limit)));
+  }, [backendData, appliedFilters, limit]);
+
+  const currentWindowEndPage = extraLoaded ? extraLoaded.endPage : appliedPage;
+  const canLoadMore = !!backendData && currentWindowEndPage < maxAvailablePage;
+
   useEffect(() => {
     if (!backendData && !isBackendLoading && !backendError) {
       return;
     }
   }, [appliedFilters, isBackendLoading, backendError, backendData, filteredBackendItems]);
+
+  const handleLoadMore = async () => {
+    if (!appliedFilters || !backendData) return;
+
+    const baseLimit = appliedFilters.limit;
+    const currentPage = appliedPage;
+    const nextPage = extraLoaded ? extraLoaded.endPage + 1 : currentPage + 1;
+
+    const maxPage = backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / baseLimit));
+    if (nextPage > maxPage) return;
+
+    try {
+      const result = await searchVehicles({ ...appliedFilters, page: nextPage });
+      const nextItems = (result.items ?? []) as BackendItem[];
+
+      if (!extraLoaded) {
+        const combined = [...filteredBackendItems, ...nextItems];
+        setExtraLoaded({ startPage: currentPage, endPage: nextPage, items: combined });
+      } else {
+        const combined = [...extraLoaded.items, ...nextItems];
+        setExtraLoaded({ startPage: extraLoaded.startPage, endPage: nextPage, items: combined });
+      }
+    } catch (error) {
+      console.error('[AuctionListingsPage] Failed to load more vehicles', error);
+    }
+  };
+  
 
   const handleOpenBackendGallery = async (
     item: BackendItem,
@@ -1398,13 +1436,13 @@ const AuctionListingsPage = () => {
                         }}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="20" />
+                          <SelectValue placeholder="36" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="30">30</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="12">12</SelectItem>
+                          <SelectItem value="24">24</SelectItem>
+                          <SelectItem value="36">36</SelectItem>
+                          <SelectItem value="60">60</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1430,7 +1468,7 @@ const AuctionListingsPage = () => {
                       setFuelType('all');
                       setCategory('all');
                       setDrive('all');
-                      setLimit(20);
+                      setLimit(36);
                       setPage(1);
                       setBuyNowOnly(false);
                       setSearchQuery('');
@@ -1440,7 +1478,7 @@ const AuctionListingsPage = () => {
                       setBackendData(null);
                       setBackendError(null);
                       setSearchValidationError(null);
-                      updateUrlFromState({ page: 1, limit: 20, replace: false });
+                      updateUrlFromState({ page: 1, limit: 36, replace: false });
                     }}
                   >
                     {t('common.reset_filters')}
@@ -1662,12 +1700,12 @@ const AuctionListingsPage = () => {
                       setFuelType('all')
                       setCategory('all')
                       setDrive('all')
-                      setLimit(20)
+                      setLimit(36)
                       setPage(1)
                       setBuyNowOnly(false)
                       setSearchQuery('')
                       setSortBy('relevance')
-                      updateUrlFromState({ page: 1, limit: 20, replace: false })
+                      updateUrlFromState({ page: 1, limit: 36, replace: false })
                     }}
                   >
                     {t('common.reset_filters')}
@@ -1676,7 +1714,7 @@ const AuctionListingsPage = () => {
               </Card>
             )}
 
-            {!isBackendLoading && !backendError && backendData && filteredBackendItems.length > 0 && (
+            {!isBackendLoading && !backendError && backendData && displayedItems.length > 0 && (
               <>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>
@@ -1725,40 +1763,88 @@ const AuctionListingsPage = () => {
                   </div>
                 </div>
                 <div
-                  className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+                  className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
                   aria-label={t('auction.real_lot_results')}
                 >
-                  {filteredBackendItems.map((item) => {
+                  {displayedItems.map((item) => {
                     const vehicleKey = item.vehicle_id ?? item.id;
-                    const extraPhotoUrls = photosByVehicleId[vehicleKey] || [];
                     const mainPhotoUrl =
-                      item.primary_photo_url || item.primary_thumb_url || extraPhotoUrls[0] || '/cars/1.webp';
-                    const priceRaw =
-                      typeof item.calc_price === 'number'
-                        ? item.calc_price
-                        : typeof item.retail_value === 'number'
+                      item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
+
+                    let priceRaw: number | null = null;
+                    if (item.calc_price != null) {
+                      const numericCalc =
+                        typeof item.calc_price === 'number'
+                          ? item.calc_price
+                          : Number(item.calc_price);
+                      if (Number.isFinite(numericCalc)) {
+                        priceRaw = numericCalc;
+                      }
+                    }
+
+                    if (priceRaw == null && item.retail_value != null) {
+                      const numericRetail =
+                        typeof item.retail_value === 'number'
                           ? item.retail_value
-                          : Number(item.retail_value ?? 0);
-                    const displayPrice = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+                          : Number(item.retail_value);
+                      if (Number.isFinite(numericRetail)) {
+                        priceRaw = numericRetail;
+                      }
+                    }
+
+                    const displayPrice = priceRaw != null && Number.isFinite(priceRaw)
+                      ? Math.max(0, priceRaw)
+                      : 0;
 
                     const isSelected = selectedVehicleIds.includes(vehicleKey);
 
                     return (
-                      <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col p-0">
+                      <Card key={`${item.id}-${item.make}-${item.model}`} className="overflow-hidden flex flex-col gap-0 p-0">
                         <div className="relative w-full">
                           <button
                             type="button"
-                            className="relative w-full h-40 overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
+                            className="relative w-full h-full aspect-[4/3] overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
                             onClick={() => handleOpenBackendGallery(item, mainPhotoUrl)}
                           >
                             <img
                               src={mainPhotoUrl}
                               alt={`${item.year} ${item.make} ${item.model}`}
-                              className="absolute inset-0 h-full w-full object-cover"
+                              className="h-full w-full object-cover"
                               loading="lazy"
                             />
                           </button>
                           <AnimatePresence>
+                            {(item.yard_name || item.source) && (
+                              <motion.div
+                                key="location-tags"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 6 }}
+                                transition={{ duration: 0.18, ease: 'easeOut' }}
+                                className="absolute inset-x-1 bottom-2 flex items-center justify-between gap-2 z-10"
+                              >
+                                {item.yard_name && (
+                                  <span className="rounded-[4px] bg-black/70 px-2 py-0.5 text-[10px] text-white">
+                                    {item.yard_name}
+                                  </span>
+                                )}
+                                {item.source && (
+                                  <span
+                                    className={`rounded-[4px] px-2 py-0.5 text-[10px] text-white ${
+                                      item.source.toLowerCase() === 'copart'
+                                        ? 'bg-[#0047AB]'
+                                        : item.source.toLowerCase() === 'iaai'
+                                          ? 'bg-[#FF0000]'
+                                          : 'bg-black/70'
+                                    }`}
+                                  >
+                                    {item.source.toLowerCase() === 'iaai'
+                                      ? item.source.toUpperCase()
+                                      : `${item.source.charAt(0).toUpperCase()}${item.source.slice(1).toLowerCase()}`}
+                                  </span>
+                                )}
+                              </motion.div>
+                            )}
                             {showCompareCheckboxes && (
                               <motion.div
                                 key="compare-checkbox"
@@ -1794,61 +1880,55 @@ const AuctionListingsPage = () => {
                             )}
                           </AnimatePresence>
                         </div>
-                        {extraPhotoUrls.length > 1 && (
-                          <div className="flex items-center gap-1 px-2 pt-0.5 pb-1 overflow-x-auto">
-                            {extraPhotoUrls.slice(0, 3).map((thumbUrl, index) => (
-                              <button
-                                key={`${item.id}-thumb-${index}`}
-                                type="button"
-                                className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-sm border border-border hover:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/60"
-                                onClick={() => handleOpenBackendGallery(item, thumbUrl)}
-                              >
-                                <img
-                                  src={thumbUrl}
-                                  alt={`${item.year} ${item.make} ${item.model} thumb ${index + 1}`}
-                                  className="h-full w-full object-cover"
-                                  loading="lazy"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <CardHeader className="pb-2">
+                        <CardHeader className="py-2 pb-1 px-2">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <CardTitle className="text-base leading-tight">
                                 {item.year} {item.make} {item.model}
                               </CardTitle>
-                              <p className="text-[11px] text-muted-foreground mt-1">
-                                {item.yard_name} • {item.source}
-                              </p>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="pt-0 flex-1 flex flex-col justify-between text-xs">
-                          <div className="space-y-2 mb-3">
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <CardContent className="pt-1 px-2 flex-1 flex flex-col justify-between text-xs">
+                          <div className="space-y-1.5 mb-2">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                               <div>
-                                <span className="block text-[10px] text-muted-foreground">{t('common.mileage')}</span>
-                                <span>{item.mileage ? item.mileage.toLocaleString() : 'N/A'} km</span>
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Icon
+                                    icon="mdi:speedometer"
+                                    className="h-3 w-3 text-primary"
+                                    aria-label={t('common.mileage')}
+                                  />
+                                  <span>{item.mileage ? item.mileage.toLocaleString() : 'N/A'} km</span>
+                                </div>
                               </div>
                               <div>
-                                <span className="block text-[10px] text-muted-foreground">{t('common.distance')}</span>
-                                <span>
-                                  {item.distance_miles != null
-                                    ? item.distance_miles.toLocaleString()
-                                    : 'N/A'}{' '}
-                                  mi
-                                </span>
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Icon
+                                    icon="mdi:gas-station"
+                                    className="h-3 w-3 text-amber-500"
+                                    aria-label={t('auction.filters.fuel')}
+                                  />
+                                  <span>
+                                    {item.fuel_type
+                                      ? `${item.fuel_type.charAt(0).toUpperCase()}${item.fuel_type.slice(1).toLowerCase()}`
+                                      : 'N/A'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-2 pt-3 pb-2 border-t mt-auto">
+                          <div className="flex items-center justify-between gap-2 pt-2 pb-2 border-t mt-auto">
                             <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
                               <div className="flex items-center gap-1">
-                                <Icon icon="mdi:chart-line" className="h-3 w-3 text-primary" />
+                                <Icon icon="mdi:cash-multiple" className="h-3 w-3 text-emerald-600" />
                                 <span className="font-medium">
                                   ${displayPrice.toLocaleString()}
+                                </span>
+                                <span className="mx-1">/</span>
+                                <Icon icon="mdi:chart-line" className="h-3 w-3 text-emerald-500" />
+                                <span className="font-medium">
+                                  {formatMoney(item.retail_value) || 'N/A'}
                                 </span>
                               </div>
                             </div>
@@ -1861,9 +1941,8 @@ const AuctionListingsPage = () => {
                                 aria-label={t('auction.calculate_cost')}
                                 onClick={() => {
                                   const vehicleKey = item.vehicle_id ?? item.id;
-                                  calculateQuotes(vehicleKey).then(() => {
-                                    setIsCalcModalOpen(true);
-                                  });
+                                  setIsCalcModalOpen(true);
+                                  calculateQuotes(vehicleKey);
                                 }}
                               >
                                 <Icon icon="mdi:calculator-variant" className="h-3.5 w-3.5" />
@@ -1895,6 +1974,67 @@ const AuctionListingsPage = () => {
                       </Card>
                     );
                   })}
+                </div>
+                {/* Bottom pagination + Load more */}
+                <div className="mt-4 flex flex-col items-center gap-3">
+                  <div className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
+                    <span>
+                      {t('common.page')} {appliedPage} / {backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit))}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-[11px]"
+                        disabled={!appliedFilters || appliedPage <= 1}
+                        onClick={() => {
+                          if (!appliedFilters || appliedPage <= 1) return;
+                          const nextPage = appliedPage - 1;
+                          setPage(nextPage);
+                          setAppliedPage(nextPage);
+                          updateUrlFromState({ page: nextPage, replace: false });
+                          setExtraLoaded(null);
+                        }}
+                      >
+                        {t('common.prev')}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-[11px]"
+                        disabled={
+                          !appliedFilters ||
+                          !backendData ||
+                          appliedPage >=
+                          (backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit)))
+                        }
+                        onClick={() => {
+                          if (!appliedFilters || !backendData) return;
+                          const maxPage = backendData.totalPages ?? Math.max(1, Math.ceil(backendData.total / limit));
+                          const nextPage = appliedPage >= maxPage ? appliedPage : appliedPage + 1;
+                          if (nextPage === appliedPage) return;
+                          setPage(nextPage);
+                          setAppliedPage(nextPage);
+                          setExtraLoaded(null);
+                          updateUrlFromState({ page: nextPage, replace: false });
+                        }}
+                      >
+                        {t('common.next')}
+                      </Button>
+                    </div>
+                  </div>
+                  {canLoadMore && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-1"
+                      onClick={handleLoadMore}
+                    >
+                      {t('auction.load_more')}
+                    </Button>
+                  )}
                 </div>
               </>
             )}
@@ -2000,11 +2140,9 @@ const AuctionListingsPage = () => {
                               const backendItem = backendData?.items.find(
                                 (item) => (item.vehicle_id ?? item.id) === vehicle.vehicle_id,
                               );
-                              const extraPhotos = backendItem ? photosByVehicleId[vehicle.vehicle_id] || [] : [];
                               const thumbnailUrl =
                                 backendItem?.primary_photo_url ||
                                 backendItem?.primary_thumb_url ||
-                                extraPhotos[0] ||
                                 '/cars/1.webp';
                               const sortedQuotes = [...vehicle.quotes].sort((a, b) => {
                                 const aRaw = a.total_price as number | string;
@@ -2347,10 +2485,6 @@ const AuctionListingsPage = () => {
                   <div className="flex items-center justify-between px-4 py-2 border-b">
                     <div className="flex flex-col gap-0.5 text-[11px]">
                       <div className="font-medium text-sm truncate">{backendGallery.title}</div>
-                      <div className="text-muted-foreground">
-                        {backendGallery.yardName}{' '}
-                        {backendGallery.saleState ? `• ${backendGallery.saleState}` : ''}
-                      </div>
                     </div>
                     <Button
                       type="button"
@@ -2363,105 +2497,39 @@ const AuctionListingsPage = () => {
                       <Icon icon="mdi:close" className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-2/3 bg-background flex flex-col items-center justify-center">
-                      <div className="w-full flex items-center justify-center p-3">
-                        <div className="relative w-full max-w-[520px] aspect-square">
+                  <div className="w-full bg-background flex flex-col items-center justify-center">
+                    <div className="w-full flex items-center justify-center p-0 mt-2">
+                      <div className="relative w-full h-[70vh] px-4">
+                        <div className="h-full w-full overflow-hidden rounded-[8px] border border-border">
                           <img
                             src={backendGallery.photos[backendGalleryIndex] ?? backendGallery.photos[0]}
                             alt={backendGallery.title}
-                            className="absolute inset-0 h-full w-full object-contain"
+                            className="h-full w-full object-cover rounded-[8px]"
                           />
                         </div>
                       </div>
-                      {backendGallery.photos.length > 1 && (
-                        <div className="flex flex-wrap items-center justify-center gap-2 px-3 pb-3 w-full">
-                          {backendGallery.photos.slice(0, 6).map((photoUrl, index) => (
-                            <button
-                              key={photoUrl + index}
-                              type="button"
-                              className={`h-12 w-16 overflow-hidden rounded-sm border ${index === backendGalleryIndex
-                                ? 'border-primary'
-                                : 'border-border hover:border-primary/60'
-                                }`}
-                              onClick={() => setBackendGalleryIndex(index)}
-                            >
-                              <img
-                                src={photoUrl}
-                                alt={`thumb-${index}`}
-                                className="h-full w-full object-cover"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                    <div className="w-full md:w-1/3 border-t md:border-t-0 md:border-l px-4 py-3 text-[11px] space-y-3 flex flex-col justify-between">
-                      <div className="space-y-1">
-                        {backendGallery.bestTotalPrice != null && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">{t('auction.best_total_price')}</span>
-                            <span className="font-semibold text-sm">
-                              ${backendGallery.bestTotalPrice.toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-                        {backendGallery.distanceMiles != null && (
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>{t('auction.distance_to_poti')}</span>
-                            <span className="font-medium text-foreground">
-                              {backendGallery.distanceMiles.toLocaleString()} mi
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between gap-2 pt-2">
-                        <div className="flex items-center gap-2 ml-auto">
-                          <Button
+                    {backendGallery.photos.length > 1 && (
+                      <div className="flex flex-wrap items-center justify-center gap-2 px-3 pt-3 pb-3 w-full">
+                        {backendGallery.photos.slice(0, 6).map((photoUrl, index) => (
+                          <button
+                            key={photoUrl + index}
                             type="button"
-                            size="sm"
-                            className="h-7 px-2 text-[10px]"
-                            onClick={() => {
-                              const companyName = getSelectedCompanyNameForLink();
-                              const search = companyName
-                                ? `?company=${encodeURIComponent(companyName)}`
-                                : '';
-
-                              navigate(
-                                {
-                                  pathname: `/vehicle/${backendGallery.id}`,
-                                  search,
-                                },
-                                {
-                                  state: { scrollToOffers: true },
-                                },
-                              );
-                            }}
+                            className={`h-12 w-16 overflow-hidden rounded-sm border ${index === backendGalleryIndex
+                              ? 'border-primary'
+                              : 'border-border hover:border-primary/60'
+                              }`}
+                            onClick={() => setBackendGalleryIndex(index)}
                           >
-                            {t('auction.calculate_cost')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-[10px]"
-                            onClick={() => {
-                              const companyName = getSelectedCompanyNameForLink();
-                              const search = companyName
-                                ? `?company=${encodeURIComponent(companyName)}`
-                                : '';
-
-                              navigate({
-                                pathname: `/vehicle/${backendGallery.id}`,
-                                search,
-                              });
-                            }}
-                          >
-                            {t('common.view_details')}
-                          </Button>
-                        </div>
+                            <img
+                              src={photoUrl}
+                              alt={`thumb-${index}`}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
                 </motion.div>
               </motion.div>
