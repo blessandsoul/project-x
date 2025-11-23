@@ -917,11 +917,11 @@
         "profit": "الربح"
       },
       "best_price": "أفضل سعر",
-    "fast_delivery": "توصيل سريع",
-    "placeholders": {
-      "search": "مثال: BMW X5, Camry 2018, VIN..."
-    }
-  },
+      "fast_delivery": "توصيل سريع",
+      "placeholders": {
+        "search": "مثال: BMW X5, Camry 2018, VIN..."
+      }
+    },
     "auction_listings": {
       "title": "المزادات",
       "subtitle": "المزادات النشطة",

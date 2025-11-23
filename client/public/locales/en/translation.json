@@ -1443,7 +1443,36 @@
     "calc_modal_desc": "View a sample total price from a random company for this lot.",
     "best_total_price": "Best Total Price",
     "distance_to_poti": "Distance to Poti",
-    "company_search_placeholder": "e.g. Premium Auto Import..."
+    "company_search_placeholder": "e.g. Premium Auto Import...",
+    "filters": {
+      "advanced": "Advanced Filters",
+      "make": "Make",
+      "model": "Model",
+      "year": "Year",
+      "price": "Price",
+      "auction": "Auction",
+      "fuel": "Fuel",
+      "buy_now_only": "Buy Now Only",
+      "show_vin": "Show VIN Codes",
+      "additional_title": "Additional Filters",
+      "company_importer": "Company / Importer",
+      "search_by_company": "Search by Company",
+      "vip_only": "VIP Companies Only",
+      "company_filtered_hint": "Showing only lots with offers from this company.",
+      "brand_model_title": "Brand & Model",
+      "select_make": "Select Make",
+      "select_model": "Select Model",
+      "select_make_first": "Select Make First",
+      "vehicle_info_title": "Vehicle Info",
+      "max_mileage": "Max Mileage",
+      "exact_year_min_mileage": "Exact Year / Min Mileage",
+      "tech_data_title": "Technical Data",
+      "category": "Category",
+      "drive": "Drive",
+      "per_page": "Per Page",
+      "reset": "Reset Filters",
+      "apply": "Apply"
+    }
   },
   "error": {
     "failed_to_load_data": "Failed to load real data"

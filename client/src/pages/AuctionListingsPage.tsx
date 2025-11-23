@@ -1172,9 +1172,9 @@ const AuctionListingsPage = () => {
           </Card>
 
           <Sheet open={isAdvancedFiltersOpen} onOpenChange={setIsAdvancedFiltersOpen}>
-            <SheetContent side="right" aria-label={t('auction.more_filters')}>
+            <SheetContent side="right" aria-label={t('pages.auction.more_filters')}>
               <SheetHeader>
-                <SheetTitle>{t('auction.more_filters')}</SheetTitle>
+                <SheetTitle>{t('pages.auction.more_filters')}</SheetTitle>
               </SheetHeader>
               <motion.div
                 className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 mt-2 text-sm"
@@ -1185,11 +1185,11 @@ const AuctionListingsPage = () => {
               >
                 {/* Company and brand/model filters */}
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm">{t('auction.company_importer')}</h3>
+                  <h3 className="font-semibold text-sm">{t('pages.auction.company_importer')}</h3>
                   <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">{t('auction.search_by_company')}</span>
+                    <span className="text-xs text-muted-foreground">{t('pages.auction.search_by_company')}</span>
                     <Input
-                      placeholder={t('auction.company_search_placeholder')}
+                      placeholder={t('pages.auction.company_search_placeholder')}
                       value={companySearch}
                       onChange={(event) => {
                         setCompanySearch(event.target.value);
