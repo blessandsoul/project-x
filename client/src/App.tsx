@@ -95,6 +95,10 @@ function AppRoutes() {
             element={renderWithTransition(<CompanyCatalogPage />)}
           />
           <Route
+            path="/companies"
+            element={renderWithTransition(<CompanyCatalogPage />)}
+          />
+          <Route
             path="/company/:id"
             element={renderWithTransition(<CompanyProfilePage />)}
           />
