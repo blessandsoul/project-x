@@ -96,13 +96,13 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
 
                   const tier = index === 0 ? 'diamond' : index === 1 ? 'gold' : 'silver'
 
-                  const includesDocuments = company.services.some((service: string) =>
+                  const includesDocuments = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('document'),
                   )
-                  const includesTransport = company.services.some((service: string) =>
+                  const includesTransport = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('shipping'),
                   )
-                  const includesCustoms = company.services.some((service: string) =>
+                  const includesCustoms = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('customs'),
                   )
 
@@ -112,13 +112,6 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                       : tier === 'gold'
                         ? 'border-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.5)]'
                         : 'border-slate-300/70'
-
-                  const vipLabel = (() => {
-                    if (tier === 'diamond') return t('home.featured_companies.vip_labels.diamond')
-                    if (tier === 'gold') return t('home.featured_companies.vip_labels.gold')
-                    if (tier === 'silver') return t('home.featured_companies.vip_labels.silver')
-                    return 'VIP'
-                  })()
 
                   return (
                     <div
@@ -134,7 +127,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                         <Avatar>
                           <AvatarImage
                             alt={company.name}
-                            src={company.logo}
+                            src={company.logo ?? ''}
                           />
                           <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
@@ -158,7 +151,9 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                 className="h-3 w-3"
                               />
                               <span>
-                                {company.location.city}, {company.location.state}
+                                {company.location?.city ?? ''}
+                                {company.location?.city && company.location?.state ? ', ' : ''}
+                                {company.location?.state ?? ''}
                               </span>
                             </span>
                           </div>
@@ -172,8 +167,8 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                 className="h-4 w-4"
                               />
                               <span>
-                                {company.priceRange.min.toLocaleString()} -{' '}
-                                {company.priceRange.max.toLocaleString()} USD
+                                {(company.priceRange?.min ?? 0).toLocaleString()} -{' '}
+                                {(company.priceRange?.max ?? 0).toLocaleString()} USD
                               </span>
                             </div>
                           </div>
@@ -310,13 +305,13 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                     .slice(0, 2)
                     .toUpperCase()
 
-                  const includesDocuments = company.services.some((service: string) =>
+                  const includesDocuments = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('document'),
                   )
-                  const includesTransport = company.services.some((service: string) =>
+                  const includesTransport = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('shipping'),
                   )
-                  const includesCustoms = company.services.some((service: string) =>
+                  const includesCustoms = (company.services ?? []).some((service: string) =>
                     service.toLowerCase().includes('customs'),
                   )
 
@@ -333,7 +328,7 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                         <Avatar>
                           <AvatarImage
                             alt={company.name}
-                            src={company.logo}
+                            src={company.logo ?? ''}
                           />
                           <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
@@ -357,7 +352,9 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                 className="h-3 w-3"
                               />
                               <span>
-                                {company.location.city}, {company.location.state}
+                                {company.location?.city ?? ''}
+                                {company.location?.city && company.location?.state ? ', ' : ''}
+                                {company.location?.state ?? ''}
                               </span>
                             </span>
                           </div>
@@ -371,8 +368,8 @@ export function CompanyCompareSection({ companies, isLoading, error }: CompanyCo
                                 className="h-4 w-4"
                               />
                               <span>
-                                {company.priceRange.min.toLocaleString()} -{' '}
-                                {company.priceRange.max.toLocaleString()} USD
+                                {(company.priceRange?.min ?? 0).toLocaleString()} -{' '}
+                                {(company.priceRange?.max ?? 0).toLocaleString()} USD
                               </span>
                             </div>
                           </div>

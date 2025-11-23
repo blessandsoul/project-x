@@ -149,7 +149,9 @@ export function FeaturedCompaniesSection({
                 <span className="inline-flex items-center gap-1">
                   <Icon icon="mdi:map-marker" className="h-3 w-3" />
                   <span>
-                    {company.location.city}, {company.location.state}
+                    {company.location?.city ?? ''}
+                    {company.location?.city && company.location?.state ? ', ' : ''}
+                    {company.location?.state ?? ''}
                   </span>
                 </span>
               </div>
@@ -184,20 +186,13 @@ export function FeaturedCompaniesSection({
               <div className="flex items-center gap-1 text-sm font-semibold">
                 <Icon icon="mdi:cash" className="h-4 w-4 text-primary" />
                 <span>
-                  ${company.priceRange.min} - ${company.priceRange.max}
+                  ${company.priceRange?.min ?? 0} - ${company.priceRange?.max ?? 0}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground flex-wrap">
                 {(() => {
                   const estimatedDeals = company.reviewCount * 3
                   const satisfaction = Math.round((company.rating / 5) * 100)
-
-                  let avgResponseHours = 6
-                  if (company.rating >= 4.5) {
-                    avgResponseHours = 1
-                  } else if (company.rating >= 4) {
-                    avgResponseHours = 3
-                  }
 
                   return (
                     <>
@@ -250,7 +245,7 @@ export function FeaturedCompaniesSection({
                 })()}
               </div>
             </div>
-            {company.contact.phone && (
+            {company.contact?.phone && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Icon icon="mdi:phone" className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{company.contact.phone}</span>
@@ -294,7 +289,7 @@ export function FeaturedCompaniesSection({
             </div>
             {company.vipStatus && (
               <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-muted-foreground">
-                {company.services.slice(0, 3).map((service: string) => (
+                {(company.services ?? []).slice(0, 3).map((service: string) => (
                   <span
                     key={service}
                     className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-primary"

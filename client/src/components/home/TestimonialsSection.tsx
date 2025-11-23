@@ -181,7 +181,7 @@ export function TestimonialsSection() {
             </p>
           </div>
           {testimonials.length > 0 && (
-            <div className="mt-1 md:mt-0">
+            <div className="mt-1 hidden md:mt-0 md:block">
               <div className="flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
                 <Icon
                   icon="mdi:flash"

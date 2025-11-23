@@ -42,6 +42,10 @@
   --font-sans: 'Fira Mono', 'Noto Sans Georgian', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
 }
 
+* {
+  outline: 1px green solid !important;
+}
+
 .dark {
   --color-background: #0f172a;
   --color-foreground: #f8fafc;

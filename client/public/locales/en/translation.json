@@ -820,6 +820,8 @@
       "deals_tooltip": "Approximate number of closed deals calculated from review count (≈ reviewCount × 3).",
       "satisfaction_label": "Satisfaction",
       "satisfaction_tooltip": "Approximate satisfaction level calculated from average rating (rating/5).",
+      "deals": "Deals",
+      "satisfaction": "Satisfaction",
       "established": "Founded: {{year}}",
       "response_time": "Avg. reply: {{hours}} h",
       "response_time_tooltip": "Average time it takes for the company to reply to the first message.",

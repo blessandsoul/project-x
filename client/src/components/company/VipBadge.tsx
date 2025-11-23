@@ -4,12 +4,13 @@ import { cn } from '@/lib/utils'
 
 interface VipBadgeProps {
   className?: string
+  label?: string
 }
 
-export function VipBadge({ className }: VipBadgeProps) {
+export function VipBadge({ className, label }: VipBadgeProps) {
   const vipClassName = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 ring-1 ring-amber-400/40'
 
-  const displayLabel = 'VIP'
+  const displayLabel = label ?? 'VIP'
 
   return (
     <Badge

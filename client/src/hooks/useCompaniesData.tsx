@@ -10,7 +10,7 @@ interface UseCompaniesDataState {
 }
 
 export function useCompaniesData(): UseCompaniesDataState {
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies)
+  const [companies, setCompanies] = useState<Company[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 

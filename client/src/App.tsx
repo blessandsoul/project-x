@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { MobileStickyCta } from '@/components/home/MobileStickyCta'
 import HomePage from './pages/HomePage.tsx'
 import DashboardPage from './pages/DashboardPage'
 import CompanyCatalogPage from './pages/CompanyCatalogPage'
@@ -63,6 +64,7 @@ function AppRoutes() {
     <motion.div
       {...pageMotionProps}
       transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="pb-20 md:pb-0"
     >
       {children}
     </motion.div>
@@ -164,6 +166,7 @@ function AppRoutes() {
           />
         </Routes>
       </AnimatePresence>
+      <MobileStickyCta />
     </>
   )
 }

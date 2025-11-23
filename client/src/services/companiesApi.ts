@@ -40,6 +40,8 @@ const SOCIAL_ICON_BY_HOST: Record<string, string> = {
   'twitter.com': 'mdi:twitter',
 }
 
+type NormalizedCompanySocialLink = NonNullable<Company['socialLinks']>[number]
+
 export type ApiCompany = {
   id: number
   slug?: string | null
@@ -108,13 +110,13 @@ function extractServices(value: unknown): string[] {
     .map((service) => service.trim())
 }
 
-function normalizeSocialLinks(value: unknown): Company['socialLinks'] {
+function normalizeSocialLinks(value: unknown): NormalizedCompanySocialLink[] {
   if (!Array.isArray(value)) {
     return []
   }
 
   return value
-    .map((link): Company['socialLinks'][number] | null => {
+    .map((link): NormalizedCompanySocialLink | null => {
       if (!link || typeof link !== 'object') {
         return null
       }
@@ -141,7 +143,7 @@ function normalizeSocialLinks(value: unknown): Company['socialLinks'] {
         return null
       }
     })
-    .filter((link): link is Company['socialLinks'][number] => link !== null)
+    .filter((link): link is NormalizedCompanySocialLink => link !== null)
 }
 
 function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {

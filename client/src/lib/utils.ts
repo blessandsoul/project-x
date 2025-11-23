@@ -13,18 +13,23 @@ export function filterCompaniesBySearchFilters(
   const [minPrice, maxPrice] = filters.priceRange
 
   return companies.filter((company) => {
-    if (filters.geography.length > 0 && !filters.geography.includes(company.location.state)) {
+    const locationState = company.location?.state
+
+    if (filters.geography.length > 0 && (!locationState || !filters.geography.includes(locationState))) {
       return false
     }
 
     if (
       filters.services.length > 0 &&
-      !company.services.some((service) => filters.services.includes(service))
+      (!company.services ||
+        !company.services.some((service) => filters.services.includes(service)))
     ) {
       return false
     }
 
-    if (company.priceRange.min > maxPrice || company.priceRange.max < minPrice) {
+    const priceRange = company.priceRange
+
+    if (!priceRange || priceRange.min > maxPrice || priceRange.max < minPrice) {
       return false
     }
 

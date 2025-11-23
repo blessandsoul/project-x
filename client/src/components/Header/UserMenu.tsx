@@ -2,7 +2,6 @@ import type { FC } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
@@ -68,12 +67,13 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
           />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, y: -6, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.16, ease: 'easeOut' }}
-        >
+      <DropdownMenuContent
+        side="bottom"
+        align="end"
+        sideOffset={6}
+        collisionPadding={8}
+        className="w-56 max-w-[calc(100vw-1rem)] overflow-hidden"
+      >
           <DropdownMenuLabel>
             <div className="flex flex-col">
               <span className="truncate text-sm font-medium">{user.name}</span>
@@ -116,8 +116,7 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
             <Icon icon="mdi:logout" className="me-2 h-4 w-4" />
             <span>{t('header.sign_out')}</span>
           </DropdownMenuItem>
-        </motion.div>
-      </DropdownMenuContent>
+        </DropdownMenuContent>
     </DropdownMenu>
   );
 };

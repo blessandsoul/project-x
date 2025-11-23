@@ -5,7 +5,9 @@ import axios, {
   type Method,
 } from 'axios'
 
-export const API_BASE_URL = 'http://localhost:3000'
+export const API_BASE_URL = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : 'https://api.trendingnow.ge'
 const AUTH_TOKEN_STORAGE_KEY = 'projectx_auth_token'
 
 function getStoredToken(): string | null {

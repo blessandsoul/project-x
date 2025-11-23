@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { navigationItems } from '@/config/navigation'
 import { mockCompanies } from '@/mocks/_mockData'
-import type { UserRole } from '@/types/api'
+import type { UserRole, Company } from '@/types/api'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
@@ -33,9 +33,13 @@ import { fetchCompanyLeads } from '@/api/companyLeads'
 export default function DashboardPage() {
   const { t } = useTranslation()
   const { favorites, clearFavorites } = useFavorites()
-  const favoriteCompanies = mockCompanies.filter((company) => favorites.includes(company.id))
+  const favoriteCompanies = (mockCompanies as unknown as Company[]).filter((company) =>
+    favorites.includes(String(company.id)),
+  )
   const { recentlyViewed, clearRecentlyViewed } = useRecentlyViewed()
-  const recentlyViewedCompanies = mockCompanies.filter((company) => recentlyViewed.includes(company.id))
+  const recentlyViewedCompanies = (mockCompanies as unknown as Company[]).filter((company) =>
+    recentlyViewed.includes(String(company.id)),
+  )
   const shouldReduceMotion = useReducedMotion()
   const { user, updateUser } = useAuth()
   const [localRole, setLocalRole] = useState<UserRole>('user')
@@ -52,8 +56,8 @@ export default function DashboardPage() {
   const [userLeadOffersError, setUserLeadOffersError] = useState<string | null>(null)
 
   const [companyLeads, setCompanyLeads] = useState<CompanyLeadBubble[]>([])
-  const [isCompanyLeadsLoading, setIsCompanyLeadsLoading] = useState(false)
-  const [companyLeadsError, setCompanyLeadsError] = useState<string | null>(null)
+  const [, setIsCompanyLeadsLoading] = useState(false)
+  const [, setCompanyLeadsError] = useState<string | null>(null)
 
   const isDashboardLoading = false
   const dashboardError: string | null = null
@@ -178,9 +182,10 @@ export default function DashboardPage() {
     navigate('/catalog')
   }
 
-  const recommendedCompanies = useMemo(
+  const recommendedCompanies = useMemo<Company[]>(
     () =>
-      [...mockCompanies]
+      (mockCompanies as unknown as Company[])
+        .slice()
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 6),
     [],
@@ -477,11 +482,11 @@ export default function DashboardPage() {
 
   const companyCompetitors = useMemo(
     () =>
-      mockCompanies.slice(0, 5).map((company, index) => ({
+      (mockCompanies as unknown as Company[]).slice(0, 5).map((company, index) => ({
         id: `competitor-${company.id}`,
         name: company.name,
         rating: company.rating,
-        trend: index % 2 === 0 ? 'up' : 'down',
+        trend: (index % 2 === 0 ? 'up' : 'down') as 'up' | 'down',
       })),
     [],
   )

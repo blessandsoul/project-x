@@ -178,9 +178,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {user && (
           <NavUser
             user={{
-              name: user.name,
+              name: user.name ?? user.username ?? user.email,
               email: user.email,
-              avatar: user.avatar,
+              avatar: user.avatar ?? "",
             }}
             onLogout={logout}
           />

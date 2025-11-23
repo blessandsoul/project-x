@@ -146,11 +146,6 @@ const extractProfilePayload = (payload: unknown): ProfilePayload | null => {
       ? maybeProfile.avatar_url
       : undefined
 
-  const originalAvatarUrl =
-    typeof maybeProfile.original_avatar_url === 'string' && maybeProfile.original_avatar_url.trim().length > 0
-      ? maybeProfile.original_avatar_url
-      : undefined
-
   return {
     id: maybeProfile.id,
     email: maybeProfile.email,

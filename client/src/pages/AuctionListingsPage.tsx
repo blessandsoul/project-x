@@ -37,21 +37,6 @@ type SortOption = 'relevance' | 'price-low' | 'price-high' | 'year-new' | 'year-
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via useVehicleSearchQuotes.
 
-const getDeliveryRangeToPoti = (state: string): { min: number; max: number } => {
-  switch (state) {
-    case 'TX':
-      return { min: 700, max: 900 };
-    case 'FL':
-      return { min: 650, max: 850 };
-    case 'CA':
-      return { min: 900, max: 1200 };
-    case 'NJ':
-      return { min: 750, max: 950 };
-    default:
-      return { min: 800, max: 1100 };
-  }
-};
-
 const parseSearchQueryToFilters = (query: string): { make?: string; model?: string } => {
   if (!query) {
     return {};
@@ -156,8 +141,8 @@ const AuctionListingsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>('all');
-  const [statusFilter, setStatusFilter] = useState<LotStatus>('all');
-  const [damageFilter, setDamageFilter] = useState<DamageType>('all');
+  const [, setStatusFilter] = useState<LotStatus>('all');
+  const [, setDamageFilter] = useState<DamageType>('all');
   const [priceRange, setPriceRange] = useState<number[]>([500, 30000]);
   const [yearRange, setYearRange] = useState<number[]>([2010, 2024]);
   const [maxMileage, setMaxMileage] = useState<number[]>([200000]);
@@ -167,7 +152,7 @@ const AuctionListingsPage = () => {
   const [category, setCategory] = useState('all');
   const [drive, setDrive] = useState('all');
   const [limit, setLimit] = useState(36);
-  const [page, setPage] = useState(1);
+  const [, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
@@ -243,7 +228,7 @@ const AuctionListingsPage = () => {
   const companyFilterTerm = useMemo(() => {
     const fromSelected =
       selectedCompanyId && companies
-        ? companies.find((company) => company.id === selectedCompanyId)?.name ?? ''
+        ? companies.find((company) => String(company.id) === selectedCompanyId)?.name ?? ''
         : '';
 
     const base = fromSelected || companySearch;
@@ -252,7 +237,7 @@ const AuctionListingsPage = () => {
 
   const getSelectedCompanyNameForLink = (): string | null => {
     if (selectedCompanyId && companies && companies.length > 0) {
-      const matched = companies.find((company) => company.id === selectedCompanyId);
+      const matched = companies.find((company) => String(company.id) === selectedCompanyId);
       if (matched?.name) {
         return matched.name;
       }
@@ -784,6 +769,11 @@ const AuctionListingsPage = () => {
   ) => {
     const vehicleKey = item.vehicle_id ?? item.id;
 
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      navigate(`/vehicle/${vehicleKey}`);
+      return;
+    }
+
     setBackendGallery({
       id: vehicleKey,
       title: `${item.year} ${item.make} ${item.model}`,
@@ -1211,7 +1201,7 @@ const AuctionListingsPage = () => {
                           className="w-full text-left px-2 py-1 hover:bg-muted flex items-center justify-between gap-2"
                           onClick={() => {
                             setCompanySearch(company.name);
-                            setSelectedCompanyId(company.id);
+                            setSelectedCompanyId(String(company.id));
                           }}
                         >
                           <span className="truncate">{company.name}</span>

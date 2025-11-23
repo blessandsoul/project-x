@@ -62,7 +62,7 @@ type UserDashboardSectionsProps = {
 }
 
 export function UserDashboardSections({
-  recommendedCompanies,
+  recommendedCompanies: _recommendedCompanies,
   favoriteCompanies,
   recentlyViewedCompanies,
   activityStats,
@@ -86,28 +86,12 @@ export function UserDashboardSections({
   getSectionMotionProps,
 }: UserDashboardSectionsProps) {
   const { t } = useTranslation()
-  type CompanySortMode = 'default' | 'rating' | 'city'
-
-  const [sortMode, setSortMode] = useState<CompanySortMode>('rating')
   const [activeDialogOffer, setActiveDialogOffer] = useState<UserLeadOffer | null>(null)
   const [compareIndices, setCompareIndices] = useState<number[]>([])
   const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false)
 
-  const sortCompanies = (companies: Company[]): Company[] => {
-    if (sortMode === 'rating') {
-      return [...companies].sort((a, b) => b.rating - a.rating)
-    }
-
-    if (sortMode === 'city') {
-      return [...companies].sort((a, b) => a.location.city.localeCompare(b.location.city))
-    }
-
-    return companies
-  }
-
-  const sortedRecommended = sortCompanies(recommendedCompanies)
-  const sortedFavorites = sortCompanies(favoriteCompanies)
-  const sortedRecentlyViewed = sortCompanies(recentlyViewedCompanies)
+  const sortedFavorites = [...favoriteCompanies].sort((a, b) => b.rating - a.rating)
+  const sortedRecentlyViewed = [...recentlyViewedCompanies].sort((a, b) => b.rating - a.rating)
   const getOfferStatusLabel = (status: string): string => {
     switch (status) {
       case 'SELECTED':

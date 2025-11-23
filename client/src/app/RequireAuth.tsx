@@ -14,7 +14,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export function RequireGuest({ children }: { children: ReactNode }) {
-  const { isAuthenticated, userRole } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   if (isAuthenticated) {
     // After initial registration/onboarding, hitting guest-only routes

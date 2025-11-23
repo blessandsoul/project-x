@@ -53,7 +53,8 @@ function Button({
   const shouldReduceMotion = useReducedMotion()
 
   if (motionVariant === "scale" && !shouldReduceMotion && !asChild) {
-    const MotionComp = motion(Comp as React.ElementType)
+    const MotionComp = motion.button
+    const { onDrag, ...restProps } = props as any
 
     return (
       <MotionComp
@@ -61,7 +62,7 @@ function Button({
         className={cn(buttonVariants({ variant, size, className }))}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        {...props}
+        {...restProps}
       />
     )
   }

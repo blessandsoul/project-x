@@ -30,7 +30,7 @@ export function CompanyForm() {
   const [isPrefilling, setIsPrefilling] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null)
-  const [initialSocialLinks, setInitialSocialLinks] = useState<string[]>([])
+  const [, setInitialSocialLinks] = useState<string[]>([])
   const { isAuthenticated, userRole, companyId } = useAuth();
   const navigate = useNavigate()
 

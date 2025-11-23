@@ -23,7 +23,8 @@ type QuoteWithVipMeta = { quote: VehicleQuote; index: number; vipLabel: string |
 const LEAD_STATE_STORAGE_PREFIX = 'vehicle_lead_state_'
 
 const VehicleDetailsPage = () => {
-  const { mockCompanies, mockRecentCases } = { mockCompanies: [], mockRecentCases: [] }
+  const mockCompanies: { name: string; rating: number; reviewCount: number; slug?: string }[] = []
+  const mockRecentCases: { id: string; make: string; model: string; from: string; to: string; days: number }[] = []
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated } = useAuth()
@@ -59,7 +60,7 @@ const VehicleDetailsPage = () => {
   const [supportReviewChecked, setSupportReviewChecked] = useState(false)
   const [supportReviewText, setSupportReviewText] = useState('')
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
-  const [isLeadRulesModalOpen, setIsLeadRulesModalOpen] = useState(false)
+  const [, setIsLeadRulesModalOpen] = useState(false)
   const [isLeadSubmitting, setIsLeadSubmitting] = useState(false)
   const [leadError, setLeadError] = useState<string | null>(null)
   const [isSupportUnlockSubmitting, setIsSupportUnlockSubmitting] = useState(false)
@@ -79,7 +80,7 @@ const VehicleDetailsPage = () => {
     return Number.isFinite(parsed) ? parsed : null
   }, [params.id])
 
-  const { vehicle, photos, quotes, distanceMiles, isLoading, error, recalculate, quotesPage, quotesTotalPages, setQuotesPage } =
+  const { vehicle, photos, quotes, isLoading, error, recalculate, quotesPage, quotesTotalPages, setQuotesPage } =
     useVehicleDetails(vehicleId)
 
   const isInitialLoading = isLoading && !vehicle
@@ -740,18 +741,6 @@ const VehicleDetailsPage = () => {
     return trimmed
   }
 
-  const formatMilesToKilometers = (value: number | null | undefined): string | null => {
-    if (value == null) return null
-
-    const numeric = Number(value)
-    if (!Number.isFinite(numeric)) return null
-
-    const kilometers = numeric * 1.60934
-    const rounded = Math.round(kilometers)
-
-    return `${rounded.toLocaleString()} km`
-  }
-
   const formatDateTime = (
     dateValue: string | null | undefined,
     timeValue?: string | null | undefined,
@@ -792,13 +781,13 @@ const VehicleDetailsPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Header
         user={null}
         navigationItems={navigationItems}
       />
-      <main className="flex-1" role="main" aria-label={t('vehicle_details.title')}>
-        <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8">
+      <main className="flex-1 w-full overflow-x-hidden" role="main" aria-label={t('vehicle_details.title')}>
+        <div className="container mx-auto max-w-6xl px-2 sm:px-4 lg:px-6 py-8">
           {isSupportModalOpen && (
             <div
               className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
@@ -1278,7 +1267,7 @@ const VehicleDetailsPage = () => {
               </Card>
             )}
             {!isInitialLoading && !error && vehicle && (
-                <div className="grid gap-6 md:grid-cols-5">
+                <div className="grid gap-6 md:grid-cols-5 w-full max-w-full">
                   <Card className="md:col-span-2 flex flex-col">
                     <CardContent className="flex-1 flex flex-col gap-4">
                       {photos.length > 0 ? (
@@ -1850,7 +1839,7 @@ const VehicleDetailsPage = () => {
                                       >
                                         <div
                                           className={cn(
-                                            'relative flex items-start justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                                            'relative flex flex-col md:flex-row md:items-start md:justify-between gap-3 rounded-md px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background max-w-full',
                                             vipLabel &&
                                               (vipLabel.includes('Diamond')
                                                 ? 'border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.5)]'
@@ -1864,7 +1853,7 @@ const VehicleDetailsPage = () => {
                                           onClick={() => handleOpenCompanyPage(quote)}
                                           tabIndex={0}
                                         >
-                                          <div className="space-y-1">
+                                          <div className="space-y-1 min-w-0">
                                             <div className="text-sm font-semibold mb-0.5">{quote.company_name}</div>
                                             {companyMeta && (
                                               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -2006,7 +1995,7 @@ const VehicleDetailsPage = () => {
                                               </span>
                                             </div>
                                           </div>
-                                          <div className="flex flex-col items-end gap-2">
+                                          <div className="flex flex-col items-end gap-2 md:self-start">
                                             {vipLabel && <VipBadge label={vipLabel} />}
                                             <div className="flex flex-col items-end gap-1">
                                               <Button

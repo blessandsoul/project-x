@@ -42,7 +42,8 @@ export function UserForm() {
   type UserFormValues = z.infer<typeof userFormSchema>
 
   const { form, triggerConfetti } = useOnboardingForm<UserFormValues>('user', {
-    resolver: zodResolver(userFormSchema),
+    // Cast to any to avoid resolver generic mismatch while still enforcing runtime schema
+    resolver: zodResolver(userFormSchema) as any,
     defaultValues: {
       budget_min: 5000,
       budget_max: 25000,
@@ -117,7 +118,7 @@ export function UserForm() {
                         min={0}
                         max={100000}
                         step={1000}
-                        value={[form.watch("budget_min"), form.watch("budget_max")]}
+                        value={[form.watch("budget_min") ?? 0, form.watch("budget_max") ?? 0]}
                         onValueChange={(vals) => {
                             form.setValue("budget_min", vals[0])
                             form.setValue("budget_max", vals[1])

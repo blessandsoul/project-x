@@ -50,6 +50,15 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
 
   const effectiveUser = authUser ?? storedUser ?? (isAuthenticated ? authUser : user ?? null);
 
+  const effectiveMenuUser = effectiveUser
+    ? {
+        id: String(effectiveUser.id),
+        name: effectiveUser.name ?? effectiveUser.email,
+        email: effectiveUser.email,
+        avatar: effectiveUser.avatar ?? '',
+      }
+    : null;
+
   useEffect(() => {
     const handleOpenAuth = () => {
       setIsAuthOpen(true);
@@ -116,15 +125,15 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                     </span>
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="flex flex-col space-y-3">
+                <nav className="flex flex-col space-y-2">
                   {navigationItems.map((item: NavigationItem) => (
                     <SheetClose asChild key={item.id}>
                       <NavLink
                         to={item.href}
                         className={({ isActive }) =>
                           isActive
-                            ? 'flex items-center rounded-md px-2 py-1.5 text-base font-semibold text-primary bg-primary/5'
-                            : 'flex items-center rounded-md px-2 py-1.5 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-muted'
+                            ? 'flex items-center rounded-md px-3 py-2 text-base font-semibold text-primary bg-primary/5'
+                            : 'flex items-center rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-muted'
                         }
                       >
                         {t(item.label)}
@@ -139,8 +148,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
           <nav className="flex items-center gap-2">
             <LanguageSwitcher />
             
-            {effectiveUser ? (
-              <UserMenu user={effectiveUser} onLogout={logout} />
+            {effectiveMenuUser ? (
+              <UserMenu user={effectiveMenuUser} onLogout={logout} />
             ) : (
               <Button
                 variant="default"

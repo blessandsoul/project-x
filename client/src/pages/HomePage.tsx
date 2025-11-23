@@ -1,6 +1,5 @@
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
-import { MobileStickyCta } from '@/components/home/MobileStickyCta';
 import { HomePageSkeleton } from '@/components/home/HomePageSkeleton';
 import { HomePageContent } from '@/components/home/HomePageContent';
 import { useHomePageState } from '@/hooks/useHomePageState';
@@ -8,7 +7,7 @@ import { navigationItems, footerLinks } from '@/config/navigation';
 
 const HomePage = () => {
   // Simulate loading state
-  const { loading, isStickyCtaVisible } = useHomePageState();
+  const { loading } = useHomePageState();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,7 +20,6 @@ const HomePage = () => {
       <Footer
         footerLinks={footerLinks}
       />
-      {isStickyCtaVisible && <MobileStickyCta />}
     </div>
   );
 };

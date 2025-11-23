@@ -388,7 +388,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                                 >
                                   <div className="h-6 w-6 overflow-hidden rounded-full border bg-background">
                                     <img
-                                      src={company.logo}
+                                      src={company.logo ?? ''}
                                       alt={company.name}
                                       className="h-full w-full object-cover"
                                       loading="lazy"
@@ -399,7 +399,9 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                                       {company.name}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground">
-                                      {company.location.city}, {company.location.state}
+                                      {company.location?.city ?? ''}
+                                      {company.location?.city && company.location?.state ? ', ' : ''}
+                                      {company.location?.state ?? ''}
                                     </div>
                                   </div>
                                 </button>
@@ -424,7 +426,7 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                             >
                               <div className="h-6 w-6 overflow-hidden rounded-full border bg-background">
                                 <img
-                                  src={company.logo}
+                                  src={company.logo ?? ''}
                                   alt={company.name}
                                   className="h-full w-full object-cover"
                                   loading="lazy"
@@ -435,7 +437,9 @@ export function HeroSection({ stats, companies }: HeroSectionProps) {
                                   {company.name}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground">
-                                  {company.location.city}, {company.location.state}
+                                  {company.location?.city ?? ""}
+                                  {company.location?.city && company.location?.state ? ", " : ""}
+                                  {company.location?.state ?? ""}
                                 </div>
                               </div>
                             </button>,

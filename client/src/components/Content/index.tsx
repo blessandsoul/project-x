@@ -23,7 +23,7 @@ interface ContentProps {
   loading?: boolean;
 }
 
-const Content: React.FC<ContentProps> = ({ content, loading }) => {
+const Content: React.FC<ContentProps> = ({ loading }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 

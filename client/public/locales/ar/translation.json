@@ -728,6 +728,8 @@
       "deals_tooltip": "عدد تقريبي للصفقات المغلقة محسوب من عدد المراجعات (≈ عدد المراجعات × 3).",
       "satisfaction_label": "الرضا",
       "satisfaction_tooltip": "مستوى رضا تقريبي محسوب من متوسط التقييم (التقييم/5).",
+      "deals": "صفقات",
+      "satisfaction": "الرضا",
       "established": "تأسست: {{year}}",
       "response_time": "متوسط الرد: {{hours}} س",
       "response_time_tooltip": "متوسط الوقت الذي تستغرقه الشركة للرد على الرسالة الأولى.",
