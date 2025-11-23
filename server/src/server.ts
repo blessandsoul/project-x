@@ -28,7 +28,7 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
 import { CatalogModel } from './models/CatalogModel.js';
-
+import 'dotenv/config.js'
 /**
  * Fastify Server Application
  *

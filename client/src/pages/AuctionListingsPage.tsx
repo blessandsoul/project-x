@@ -292,10 +292,16 @@ const AuctionListingsPage = () => {
     return matchedModel?.name;
   }, [selectedModelId, catalogModels]);
 
-  const updateUrlFromState = (options?: { page?: number; limit?: number; replace?: boolean }) => {
+  const updateUrlFromState = (options?: {
+    page?: number;
+    limit?: number;
+    replace?: boolean;
+    searchQueryOverride?: string;
+  }) => {
     const searchParams = new URLSearchParams(location.search);
 
-    const trimmedQuery = searchQuery.trim();
+    const rawQuery = options?.searchQueryOverride ?? searchQuery;
+    const trimmedQuery = rawQuery.trim();
     if (trimmedQuery.length > 0) {
       searchParams.set('q', trimmedQuery);
     } else {
@@ -873,20 +879,17 @@ const AuctionListingsPage = () => {
                       onChange={(event) => {
                         const value = event.target.value;
                         setSearchQuery(value);
-
-                        const trimmed = value.trim();
-                        if (trimmed.length === 0 || trimmed.length >= 4) {
-                          setSearchValidationError(null);
-                        }
+                        setSearchValidationError(null);
+                        setPage(1);
+                        setAppliedPage(1);
+                        updateUrlFromState({
+                          page: 1,
+                          replace: false,
+                          searchQueryOverride: value,
+                        });
                       }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
-                          const trimmed = searchQuery.trim();
-                          if (trimmed.length > 0 && trimmed.length < 4) {
-                            setSearchValidationError(t('auction.search_min_chars'));
-                            return;
-                          }
-
                           setPage(1);
                           setAppliedPage(1);
                           updateUrlFromState({ page: 1, replace: false });

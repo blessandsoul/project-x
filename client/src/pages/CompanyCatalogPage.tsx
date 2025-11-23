@@ -55,19 +55,6 @@ const useCatalogQueryParams = () => {
       }
     }
 
-    const priceMinParam = params.get('priceMin');
-    const priceMaxParam = params.get('priceMax');
-    if (priceMinParam !== null && priceMaxParam !== null) {
-      const parsedMin = Number(priceMinParam);
-      const parsedMax = Number(priceMaxParam);
-      if (Number.isFinite(parsedMin) && Number.isFinite(parsedMax)) {
-        const nextRange: [number, number] = [parsedMin, parsedMax];
-        if (nextRange[0] !== priceRange[0] || nextRange[1] !== priceRange[1]) {
-          setPriceRange(nextRange);
-        }
-      }
-    }
-
     const cityParam = params.get('city');
     if (cityParam !== null && cityParam !== city) {
       setCity(cityParam);
@@ -86,6 +73,19 @@ const useCatalogQueryParams = () => {
       const nextOnboarding = onboardingParam === '1' || onboardingParam === 'true';
       if (nextOnboarding !== onboardingFree) {
         setOnboardingFree(nextOnboarding);
+      }
+    }
+
+    const priceMinParam = params.get('priceMin');
+    const priceMaxParam = params.get('priceMax');
+    if (priceMinParam !== null && priceMaxParam !== null) {
+      const parsedMin = Number(priceMinParam);
+      const parsedMax = Number(priceMaxParam);
+      if (Number.isFinite(parsedMin) && Number.isFinite(parsedMax)) {
+        const nextRange: [number, number] = [parsedMin, parsedMax];
+        if (nextRange[0] !== priceRange[0] || nextRange[1] !== priceRange[1]) {
+          setPriceRange(nextRange);
+        }
       }
     }
 

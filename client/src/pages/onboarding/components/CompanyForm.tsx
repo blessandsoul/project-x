@@ -107,9 +107,30 @@ export function CompanyForm() {
         const services = Array.isArray(company.services) ? company.services : []
         const socialLinksArray = Array.isArray(company.social_links) ? company.social_links : []
 
-        const establishedYear = typeof company.established_year === 'number'
-          ? new Date(company.established_year * 1000).getFullYear()
-          : new Date(company.created_at).getFullYear()
+        const establishedYear = (() => {
+          if (typeof company.established_year !== 'number' || Number.isNaN(company.established_year)) {
+            return new Date(company.created_at).getFullYear()
+          }
+
+          const numeric = company.established_year
+
+          // If it already looks like a normal calendar year, use it directly.
+          if (numeric >= 1900 && numeric <= 2100) {
+            return numeric
+          }
+
+          // Fallback for legacy data where a Unix timestamp (in seconds) was stored.
+          // This also covers negative/offset values like -14400.
+          const fromTimestamp = new Date(numeric * 1000)
+          const tsYear = fromTimestamp.getUTCFullYear()
+
+          if (tsYear >= 1900 && tsYear <= 2100) {
+            return tsYear
+          }
+
+          // Last-resort fallback: created_at year.
+          return new Date(company.created_at).getFullYear()
+        })()
 
         const normalizedSocialLinks = socialLinksArray
           .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
@@ -203,8 +224,6 @@ export function CompanyForm() {
         ? data.established_year
         : new Date().getFullYear()
 
-      const establishedTimestamp = Math.floor(new Date(year, 0, 1).getTime() / 1000)
-
       const payload = {
         name: data.name,
         base_price: data.base_price,
@@ -219,7 +238,7 @@ export function CompanyForm() {
         phone_number: data.phone_number || null,
         contact_email: data.contact_email || null,
         website: data.website || null,
-        established_year: establishedTimestamp,
+        established_year: year,
         services: sanitizedServices.length > 0 ? sanitizedServices : undefined,
       }
 
@@ -400,9 +419,9 @@ export function CompanyForm() {
                 name="established_year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Established Year (Timestamp)</FormLabel>
+                    <FormLabel>Established Year</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Year or Timestamp" {...field} />
+                      <Input type="number" placeholder="e.g. 2015" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
