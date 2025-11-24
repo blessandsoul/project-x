@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header/index.tsx';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { navigationItems } from '@/config/navigation';
-import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { fetchVehiclePhotos, searchVehicles, compareVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
@@ -29,24 +28,7 @@ type DamageType = 'all' | 'front' | 'rear' | 'side';
 type SortOption = 'relevance' | 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
-// The page now relies solely on real API data via useVehicleSearchQuotes.
-
-const parseSearchQueryToFilters = (query: string): { make?: string; model?: string } => {
-  if (!query) {
-    return {};
-  }
-
-  const parts = query.split(/\s+/).filter(Boolean);
-
-  if (parts.length === 1) {
-    return { make: parts[0] };
-  }
-
-  return {
-    make: parts[0],
-    model: parts.slice(1).join(' '),
-  };
-};
+// The page now relies solely on real API data via /vehicles/search.
 
 type DraftFiltersInput = {
   searchQuery: string;
@@ -61,6 +43,7 @@ type DraftFiltersInput = {
   limit: number;
   page: number;
   searchKind: 'all' | 'car' | 'moto' | 'van';
+  auctionFilter: AuctionHouse;
   selectedMakeName?: string;
   selectedModelName?: string;
 };
@@ -68,31 +51,27 @@ type DraftFiltersInput = {
 const buildFiltersFromDraftState = (
   input: DraftFiltersInput,
 ): VehiclesSearchFilters & { page: number; limit: number } => {
-  const trimmed = input.searchQuery.trim().toLowerCase();
-  const quickFilters = parseSearchQueryToFilters(trimmed);
+  const trimmedSearch = input.searchQuery.trim();
 
   const hasExactYear = typeof input.exactYear === 'number' && !Number.isNaN(input.exactYear);
   const hasMinMileage = typeof input.minMileage === 'number' && !Number.isNaN(input.minMileage);
 
-  let kindCategory: string | undefined;
-  if (input.searchKind === 'car') {
-    kindCategory = 'car';
-  } else if (input.searchKind === 'moto') {
-    kindCategory = 'motorcycle';
-  } else if (input.searchKind === 'van') {
-    kindCategory = 'van';
-  }
-
   const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
-    ...quickFilters,
-    make: input.selectedMakeName ?? quickFilters.make,
-    model: input.selectedModelName ?? quickFilters.model,
+    search: trimmedSearch.length > 0 ? trimmedSearch : undefined,
+    make: input.selectedMakeName,
+    model: input.selectedModelName,
     mileage_to: input.maxMileage[0],
     price_from: input.priceRange[0],
     price_to: input.priceRange[1],
     fuel_type: input.fuelType === 'all' ? undefined : input.fuelType,
-    category: input.category === 'all' ? kindCategory : input.category,
+    // category codes: 'v', 'c', 'a'; 'all' means no category filter
+    category: input.category === 'all' ? undefined : input.category,
     drive: input.drive === 'all' ? undefined : input.drive,
+    // auction/source mapping: Copart/IAAI/Manheim -> copart/iaai/manheim
+    source:
+      input.auctionFilter && input.auctionFilter !== 'all'
+        ? input.auctionFilter.toLowerCase()
+        : undefined,
     limit: input.limit,
     page: input.page,
   };
@@ -157,9 +136,6 @@ const AuctionListingsPage = () => {
   const [isLoadingMakes, setIsLoadingMakes] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [searchKind, setSearchKind] = useState<'all' | 'car' | 'moto' | 'van'>('all');
-  const [companySearch, setCompanySearch] = useState('');
-  const [companyVipOnly, setCompanyVipOnly] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [showVinCodes, setShowVinCodes] = useState(false);
   const [backendGallery, setBackendGallery] = useState<{
     id: number;
@@ -185,7 +161,6 @@ const AuctionListingsPage = () => {
     items: BackendItem[];
   } | null>(null);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-  const { companies } = useCompaniesData();
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
@@ -196,52 +171,8 @@ const AuctionListingsPage = () => {
     useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
 
-  const companySuggestions = useMemo(() => {
-    if (!companies || companies.length === 0) {
-      return [] as typeof companies;
-    }
-
-    const term = companySearch.trim().toLowerCase();
-    if (!term) {
-      return [] as typeof companies;
-    }
-
-    return companies
-      .filter((company) => {
-        if (companyVipOnly && !company.vipStatus) {
-          return false;
-        }
-
-        return company.name.toLowerCase().includes(term);
-      })
-      .slice(0, 6);
-  }, [companies, companySearch, companyVipOnly]);
-
-  const companyFilterTerm = useMemo(() => {
-    const fromSelected =
-      selectedCompanyId && companies
-        ? companies.find((company) => String(company.id) === selectedCompanyId)?.name ?? ''
-        : '';
-
-    const base = fromSelected || companySearch;
-    return base.trim().toLowerCase();
-  }, [companies, selectedCompanyId, companySearch]);
-
-  const getSelectedCompanyNameForLink = (): string | null => {
-    if (selectedCompanyId && companies && companies.length > 0) {
-      const matched = companies.find((company) => String(company.id) === selectedCompanyId);
-      if (matched?.name) {
-        return matched.name;
-      }
-    }
-
-    const trimmed = companySearch.trim();
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-
-    return null;
-  };
+  // Only initialize state from URL once on initial mount.
+  const hasInitializedFromUrl = useRef(false);
 
   const vehicleCatalogType: VehicleCatalogType = useMemo(() => {
     if (searchKind === 'moto') {
@@ -285,22 +216,40 @@ const AuctionListingsPage = () => {
       searchParams.delete('q');
     }
 
+    // Sync make & model (from catalog names) into URL for deep-linking.
+    if (selectedMakeName) {
+      searchParams.set('make', selectedMakeName);
+    } else {
+      searchParams.delete('make');
+    }
+
+    if (selectedModelName) {
+      searchParams.set('model', selectedModelName);
+    } else {
+      searchParams.delete('model');
+    }
+
     if (searchKind && searchKind !== 'all') {
       searchParams.set('kind', searchKind);
     } else {
       searchParams.delete('kind');
     }
 
+    // Normalize auction/source: clear legacy `auction` and use `source`
+    searchParams.delete('auction');
     if (auctionFilter && auctionFilter !== 'all') {
-      searchParams.set('auction', auctionFilter);
+      searchParams.set('source', auctionFilter.toLowerCase());
     } else {
-      searchParams.delete('auction');
+      searchParams.delete('source');
     }
 
+    // Clear legacy 'fuel' param to avoid duplicates
+    searchParams.delete('fuel');
+
     if (fuelType && fuelType !== 'all') {
-      searchParams.set('fuel', fuelType);
+      searchParams.set('fuel_type', fuelType);
     } else {
-      searchParams.delete('fuel');
+      searchParams.delete('fuel_type');
     }
 
     if (category && category !== 'all') {
@@ -354,24 +303,6 @@ const AuctionListingsPage = () => {
       searchParams.delete('priceMax');
     }
 
-    if (companySearch.trim().length > 0) {
-      searchParams.set('company', companySearch.trim());
-    } else {
-      searchParams.delete('company');
-    }
-
-    if (companyVipOnly) {
-      searchParams.set('vipOnly', '1');
-    } else {
-      searchParams.delete('vipOnly');
-    }
-
-    if (selectedCompanyId) {
-      searchParams.set('companyId', selectedCompanyId);
-    } else {
-      searchParams.delete('companyId');
-    }
-
     if (buyNowOnly) {
       searchParams.set('buyNow', '1');
     } else {
@@ -405,19 +336,26 @@ const AuctionListingsPage = () => {
     }
 
     const searchString = searchParams.toString();
+    const newSearch = searchString.length > 0 ? `?${searchString}` : '';
 
-    navigate(
-      {
-        pathname: location.pathname,
-        search: searchString.length > 0 ? `?${searchString}` : '',
-      },
-      { replace: options?.replace ?? true },
-    );
+    if (typeof window !== 'undefined') {
+      const newUrl = `${location.pathname}${newSearch}`;
+      if (options?.replace ?? true) {
+        window.history.replaceState(null, '', newUrl);
+      } else {
+        window.history.pushState(null, '', newUrl);
+      }
+    }
   };
 
   const activeFilterLabels = useMemo(
     () => {
       const labels: { id: string; label: string }[] = [];
+
+      const trimmedSearch = searchQuery.trim();
+      if (trimmedSearch.length > 0) {
+        labels.push({ id: 'search', label: `${t('common.search')}: ${trimmedSearch}` });
+      }
 
       if (auctionFilter !== 'all') {
         labels.push({ id: 'auction', label: `${t('auction.filters.auction')}: ${auctionFilter}` });
@@ -435,37 +373,62 @@ const AuctionListingsPage = () => {
         labels.push({ id: 'vin', label: t('auction.filters.show_vin') });
       }
 
-      if (selectedMakeName) {
-        labels.push({ id: 'make', label: `${t('auction.filters.make')}: ${selectedMakeName}` });
+      const effectiveMake = appliedFilters?.make ?? selectedMakeName;
+      if (effectiveMake) {
+        labels.push({ id: 'make', label: `${t('auction.filters.make')}: ${effectiveMake}` });
       }
 
-      if (selectedModelName) {
-        labels.push({ id: 'model', label: `${t('auction.filters.model')}: ${selectedModelName}` });
+      const effectiveModel = appliedFilters?.model ?? selectedModelName;
+      if (effectiveModel) {
+        labels.push({ id: 'model', label: `${t('auction.filters.model')}: ${effectiveModel}` });
       }
 
-      if (companyFilterTerm) {
-        labels.push({ id: 'company', label: `${t('auction.filters.company_importer')}: ${companyFilterTerm}` });
+      // Category chip (v/c/a codes mapped to labels)
+      const effectiveCategoryCode = appliedFilters?.category ?? (category !== 'all' ? category : undefined);
+      if (effectiveCategoryCode) {
+        let categoryLabel: string;
+        if (effectiveCategoryCode === 'v') {
+          categoryLabel = t('common.cars');
+        } else if (effectiveCategoryCode === 'c') {
+          categoryLabel = t('common.motorcycles');
+        } else if (effectiveCategoryCode === 'a') {
+          categoryLabel = t('common.vans'); // used for კვადროციკლები UI label
+        } else {
+          categoryLabel = effectiveCategoryCode;
+        }
+
+        labels.push({ id: 'category', label: `${t('auction.filters.category')}: ${categoryLabel}` });
       }
 
       const hasExactYear = typeof exactYear === 'number' && !Number.isNaN(exactYear);
       if (hasExactYear) {
         labels.push({ id: 'yearExact', label: `${t('auction.filters.year')}: ${exactYear}` });
       } else {
-        labels.push({ id: 'yearRange', label: `${t('auction.filters.year')}: ${yearRange[0]}-${yearRange[1]}` });
+        const isDefaultYearRange = yearRange[0] === 2010 && yearRange[1] === 2024;
+        if (!isDefaultYearRange) {
+          labels.push({ id: 'yearRange', label: `${t('auction.filters.year')}: ${yearRange[0]}-${yearRange[1]}` });
+        }
       }
 
-      labels.push({ id: 'price', label: `${t('auction.filters.price')}: $${priceRange[0]}-$${priceRange[1]}` });
+      const isDefaultPriceRange = priceRange[0] === 500 && priceRange[1] === 30000;
+      if (!isDefaultPriceRange) {
+        labels.push({ id: 'price', label: `${t('auction.filters.price')}: $${priceRange[0]}-$${priceRange[1]}` });
+      }
 
       return labels;
     },
     [
+      searchQuery,
       auctionFilter,
       fuelType,
       buyNowOnly,
       showVinCodes,
       selectedMakeName,
       selectedModelName,
-      companyFilterTerm,
+      appliedFilters?.make,
+      appliedFilters?.model,
+      appliedFilters?.category,
+      category,
       exactYear,
       yearRange,
       priceRange,
@@ -473,6 +436,11 @@ const AuctionListingsPage = () => {
   );
 
   useEffect(() => {
+    if (hasInitializedFromUrl.current) {
+      return;
+    }
+    hasInitializedFromUrl.current = true;
+
     const params = new URLSearchParams(location.search);
 
     // Parse all URL parameters into state values
@@ -480,11 +448,21 @@ const AuctionListingsPage = () => {
     const kindParam = params.get('kind');
     const nextSearchKind = (kindParam === 'all' || kindParam === 'car' || kindParam === 'moto' || kindParam === 'van') ? kindParam : 'all';
 
+    // Prefer new `source` param (copart/iaai/manheim), fall back to legacy `auction`
+    const sourceParam = params.get('source');
     const auctionParam = params.get('auction');
-    const nextAuctionFilter = (auctionParam === 'all' || auctionParam === 'Copart' || auctionParam === 'IAAI' || auctionParam === 'Manheim') ? auctionParam as AuctionHouse : 'all';
+    let nextAuctionFilter: AuctionHouse = 'all';
+    if (sourceParam) {
+      const src = sourceParam.toLowerCase();
+      if (src === 'copart') nextAuctionFilter = 'Copart';
+      else if (src === 'iaai') nextAuctionFilter = 'IAAI';
+      else if (src === 'manheim') nextAuctionFilter = 'Manheim';
+    } else if (auctionParam === 'all' || auctionParam === 'Copart' || auctionParam === 'IAAI' || auctionParam === 'Manheim') {
+      nextAuctionFilter = auctionParam as AuctionHouse;
+    }
 
-    const fuelParam = params.get('fuel');
-    const nextFuelType = (fuelParam && ['all', 'gas', 'diesel', 'hybrid', 'electric'].includes(fuelParam)) ? fuelParam : 'all';
+    const fuelParam = params.get('fuel_type');
+    const nextFuelType = (fuelParam && ['all', 'petrol', 'diesel', 'hybrid', 'electric', 'flexible'].includes(fuelParam)) ? fuelParam : 'all';
 
     const categoryParam = params.get('category');
     const nextCategory = (categoryParam && ['all', 'suv', 'sedan', 'coupe', 'hatchback', 'pickup'].includes(categoryParam)) ? categoryParam : 'all';
@@ -492,14 +470,14 @@ const AuctionListingsPage = () => {
     const driveParam = params.get('drive');
     const nextDrive = (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) ? driveParam : 'all';
 
-    // Year range
+    // Year range – default matches initial state [2010, 2024]
     const yearFromParam = params.get('yearFrom');
     const yearToParam = params.get('yearTo');
     const nextYearRange = (yearFromParam && yearToParam) ? (() => {
       const from = Number(yearFromParam);
       const to = Number(yearToParam);
-      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [1990, new Date().getFullYear() + 1];
-    })() : [1990, new Date().getFullYear() + 1];
+      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [2010, 2024];
+    })() : [2010, 2024];
 
     // Exact year
     const yearExactParam = params.get('yearExact');
@@ -521,14 +499,14 @@ const AuctionListingsPage = () => {
       return Number.isNaN(parsed) ? '' : parsed;
     })() : '';
 
-    // Price range
+    // Price range – default matches initial state [500, 30000]
     const priceMinParam = params.get('priceMin');
     const priceMaxParam = params.get('priceMax');
     const nextPriceRange = (priceMinParam && priceMaxParam) ? (() => {
       const min = Number(priceMinParam);
       const max = Number(priceMaxParam);
-      return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [0, 50000];
-    })() : [0, 50000];
+      return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [500, 30000];
+    })() : [500, 30000];
 
     // Sort
     const sortParam = params.get('sort') as SortOption | null;
@@ -548,14 +526,11 @@ const AuctionListingsPage = () => {
       return (Number.isInteger(parsed) && parsed > 0) ? parsed : 1;
     })() : 1;
 
-    // Company filters
-    const nextCompanySearch = params.get('company') || '';
-    const vipOnlyParam = params.get('vipOnly');
-    const nextCompanyVipOnly = vipOnlyParam === '1' || vipOnlyParam === 'true';
-    const companyIdParam = params.get('companyId');
-    const nextSelectedCompanyId = (companyIdParam !== null && companyIdParam !== '') ? companyIdParam : null;
+    // Optional make/model from URL (used for deep links)
+    const urlMake = params.get('make') || undefined;
+    const urlModel = params.get('model') || undefined;
 
-    // Build filters
+    // Build filters (URL `make`/`model` take precedence on first load)
     const filters = buildFiltersFromDraftState({
       searchQuery: nextSearchQuery,
       exactYear: nextExactYear,
@@ -569,8 +544,9 @@ const AuctionListingsPage = () => {
       limit: nextLimit,
       page: nextPage,
       searchKind: nextSearchKind,
-      selectedMakeName,
-      selectedModelName,
+      auctionFilter: nextAuctionFilter,
+      selectedMakeName: urlMake ?? selectedMakeName,
+      selectedModelName: urlModel ?? selectedModelName,
     });
 
     // Set all state values
@@ -587,9 +563,6 @@ const AuctionListingsPage = () => {
     setPriceRange(nextPriceRange);
     setSortBy(nextSortBy);
     setLimit(nextLimit);
-    setCompanySearch(nextCompanySearch);
-    setCompanyVipOnly(nextCompanyVipOnly);
-    setSelectedCompanyId(nextSelectedCompanyId);
     setPage(nextPage);
     setAppliedFilters(filters);
     setAppliedPage(filters.page);
@@ -696,23 +669,9 @@ const AuctionListingsPage = () => {
   type BackendData = NonNullable<typeof backendData>;
   type BackendItem = BackendData['items'][number];
 
-  const filteredBackendItems: BackendItem[] = useMemo(() => {
-    if (!backendData) {
-      return [];
-    }
-
-    return backendData.items.filter((item) => {
-      const byAuction =
-        auctionFilter === 'all' ||
-        (item.source && item.source.toLowerCase() === auctionFilter.toLowerCase());
-
-      return byAuction;
-    });
-  }, [backendData, auctionFilter]);
-
   const displayedItems: BackendItem[] = useMemo(() => (
-    extraLoaded ? extraLoaded.items : filteredBackendItems
-  ), [extraLoaded, filteredBackendItems]);
+    extraLoaded ? extraLoaded.items : (backendData?.items ?? [])
+  ), [extraLoaded, backendData?.items]);
 
   const maxAvailablePage = useMemo(() => {
     if (!backendData) return 1;
@@ -726,7 +685,7 @@ const AuctionListingsPage = () => {
     if (!backendData && !isBackendLoading && !backendError) {
       return;
     }
-  }, [appliedFilters, isBackendLoading, backendError, backendData, filteredBackendItems]);
+  }, [appliedFilters, isBackendLoading, backendError, backendData]);
 
   const handleLoadMore = async () => {
     if (!appliedFilters || !backendData) return;
@@ -743,7 +702,7 @@ const AuctionListingsPage = () => {
       const nextItems = (result.items ?? []) as BackendItem[];
 
       if (!extraLoaded) {
-        const combined = [...filteredBackendItems, ...nextItems];
+        const combined = [...(backendData?.items ?? []), ...nextItems];
         setExtraLoaded({ startPage: currentPage, endPage: nextPage, items: combined });
       } else {
         const combined = [...extraLoaded.items, ...nextItems];
@@ -814,34 +773,85 @@ const AuctionListingsPage = () => {
      if (updates.minMileage !== undefined) setMinMileage(updates.minMileage);
      if (updates.selectedMakeId !== undefined) setSelectedMakeId(updates.selectedMakeId);
      if (updates.selectedModelId !== undefined) setSelectedModelId(updates.selectedModelId);
-     if (updates.companySearch !== undefined) setCompanySearch(updates.companySearch);
-     if (updates.companyVipOnly !== undefined) setCompanyVipOnly(updates.companyVipOnly);
-     if (updates.selectedCompanyId !== undefined) setSelectedCompanyId(updates.selectedCompanyId);
      if (updates.buyNowOnly !== undefined) setBuyNowOnly(updates.buyNowOnly);
      if (updates.showVinCodes !== undefined) setShowVinCodes(updates.showVinCodes);
      if (updates.limit !== undefined) setLimit(updates.limit);
   };
 
   const applyFilters = () => {
-     const trimmed = searchQuery.trim();
-     if (trimmed.length > 0 && trimmed.length < 4) {
-       // Validation handled by input constraints or toast in future
-       return;
-     }
+    const trimmed = searchQuery.trim();
+    if (trimmed.length > 0 && trimmed.length < 4) {
+      // Validation handled by input constraints or toast in future
+      return;
+    }
 
-     setPage(1);
-     setAppliedPage(1);
-     updateUrlFromState({ page: 1, replace: false });
-     setIsAdvancedFiltersOpen(false);
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      minMileage,
+      maxMileage,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      selectedMakeName,
+      selectedModelName,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+    setIsAdvancedFiltersOpen(false);
+
+    // Keep URL in sync with current search/make/model and other filters, but
+    // do not re-initialize state from URL (guarded by hasInitializedFromUrl).
+    updateUrlFromState({ page: 1, replace: false, searchQueryOverride: searchQuery });
+  };
+
+  // Reset only the draft filter controls inside the drawer, without
+  // touching appliedFilters/backend data or URL. User must still click
+  // "Show results" to apply the cleared state.
+  const resetDrawerFilters = () => {
+    const defaultYearRange: [number, number] = [2010, 2024];
+    const defaultPriceRange: [number, number] = [500, 30000];
+    const defaultMaxMileage: [number] = [200000];
+
+    setAuctionFilter('all');
+    setSearchKind('all');
+    setFuelType('all');
+    setCategory('all');
+    setDrive('all');
+    setYearRange(defaultYearRange);
+    setExactYear('');
+    setMaxMileage(defaultMaxMileage);
+    setMinMileage('');
+    setPriceRange(defaultPriceRange);
+    setSelectedMakeId('all');
+    setSelectedModelId('all');
+    setCatalogModels([]);
+    setBuyNowOnly(false);
+    setShowVinCodes(false);
+    setLimit(36);
   };
 
   const resetFilters = () => {
+    const defaultYearRange: [number, number] = [2010, 2024];
+    const defaultPriceRange: [number, number] = [500, 30000];
+    const defaultMaxMileage: [number] = [200000];
+
     setAuctionFilter('all');
     setStatusFilter('all');
     setDamageFilter('all');
-    setPriceRange([500, 30000]);
-    setYearRange([2010, 2024]);
-    setMaxMileage([200000]);
+    setPriceRange(defaultPriceRange);
+    setYearRange(defaultYearRange);
+    setMaxMileage(defaultMaxMileage);
     setExactYear('');
     setMinMileage('');
     setFuelType('all');
@@ -852,37 +862,101 @@ const AuctionListingsPage = () => {
     setBuyNowOnly(false);
     setSearchQuery('');
     setSortBy('relevance');
-    setAppliedFilters(null);
-    setAppliedPage(1);
     setBackendData(null);
     setBackendError(null);
-    updateUrlFromState({ page: 1, limit: 36, replace: false });
+
+    const draft: DraftFiltersInput = {
+      searchQuery: '',
+      exactYear: '',
+      minMileage: '',
+      maxMileage: defaultMaxMileage,
+      priceRange: defaultPriceRange,
+      yearRange: defaultYearRange,
+      fuelType: 'all',
+      category: 'all',
+      drive: 'all',
+      limit: 36,
+      page: 1,
+      searchKind: 'all',
+      auctionFilter: 'all',
+      selectedMakeName: undefined,
+      selectedModelName: undefined,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setAppliedFilters(nextFilters);
+    setAppliedPage(1);
+    setExtraLoaded(null);
+
+    updateUrlFromState({ page: 1, limit: 36, replace: false, searchQueryOverride: '' });
   };
 
   const handleRemoveFilter = (id: string) => {
+      // Mutate local state first
       switch (id) {
-        case 'auction': setAuctionFilter('all'); break;
-        case 'fuel': setFuelType('all'); break;
-        case 'buyNow': setBuyNowOnly(false); break;
-        case 'vin': setShowVinCodes(false); break;
-        case 'make': 
-            setSelectedMakeId('all'); 
-            setSelectedModelId('all'); 
-            setCatalogModels([]); 
-            break;
-        case 'model': setSelectedModelId('all'); break;
-        case 'company': 
-            setCompanySearch(''); 
-            setSelectedCompanyId(null); 
-            break;
-        case 'yearExact': setExactYear(''); break;
-        case 'yearRange': setYearRange([2010, 2024]); break;
-        case 'price': setPriceRange([500, 30000]); break;
-        default: break;
+        case 'search':
+          setSearchQuery('');
+          break;
+        case 'auction':
+          setAuctionFilter('all');
+          break;
+        case 'fuel':
+          setFuelType('all');
+          break;
+        case 'category':
+          setCategory('all');
+          break;
+        case 'buyNow':
+          setBuyNowOnly(false);
+          break;
+        case 'vin':
+          setShowVinCodes(false);
+          break;
+        case 'make':
+          setSelectedMakeId('all');
+          setSelectedModelId('all');
+          setCatalogModels([]);
+          break;
+        case 'model':
+          setSelectedModelId('all');
+          break;
+        case 'yearExact':
+          setExactYear('');
+          break;
+        case 'yearRange':
+          setYearRange([2010, 2024]);
+          break;
+        case 'price':
+          setPriceRange([500, 30000]);
+          break;
+        default:
+          break;
       }
+
+      // Recompute filters from the *next* logical state, not URL
+      const draft: DraftFiltersInput = {
+        searchQuery: id === 'search' ? '' : searchQuery,
+        exactYear: id === 'yearExact' ? '' : exactYear,
+        minMileage,
+        maxMileage,
+        priceRange: id === 'price' ? [500, 30000] : priceRange,
+        yearRange: id === 'yearRange' ? [2010, 2024] : yearRange,
+        fuelType: id === 'fuel' ? 'all' : fuelType,
+        category,
+        drive: id === 'drive' ? 'all' : drive,
+        limit,
+        page: 1,
+        searchKind,
+        auctionFilter: id === 'auction' ? 'all' : auctionFilter,
+        selectedMakeName: id === 'make' ? undefined : selectedMakeName,
+        selectedModelName: id === 'make' || id === 'model' ? undefined : selectedModelName,
+      };
+
+      const nextFilters = buildFiltersFromDraftState(draft);
       setPage(1);
       setAppliedPage(1);
-      updateUrlFromState({ page: 1, replace: false });
+      setAppliedFilters(nextFilters);
+      setExtraLoaded(null);
   };
 
   return (
@@ -910,8 +984,7 @@ const AuctionListingsPage = () => {
              filters={{
                 searchQuery, searchKind, auctionFilter, fuelType, category, drive, 
                 yearRange, priceRange, maxMileage, exactYear, minMileage, 
-                selectedMakeId, selectedModelId, companySearch, companyVipOnly, 
-                selectedCompanyId, buyNowOnly, showVinCodes, limit
+                selectedMakeId, selectedModelId, buyNowOnly, showVinCodes, limit
              }}
              setFilters={handleFilterChange}
              catalogMakes={catalogMakes}
@@ -920,7 +993,7 @@ const AuctionListingsPage = () => {
              isLoadingModels={isLoadingModels}
              onApply={applyFilters}
              onReset={resetFilters}
-             companySuggestions={companySuggestions}
+             onDrawerReset={resetDrawerFilters}
              activeFilterLabels={activeFilterLabels}
              onRemoveFilter={handleRemoveFilter}
              isOpen={isAdvancedFiltersOpen}
@@ -992,7 +1065,7 @@ const AuctionListingsPage = () => {
 
           {/* Content Grid */}
           <div className="min-h-[400px]">
-            {isBackendLoading && !backendData ? (
+            {isBackendLoading && displayedItems.length === 0 ? (
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {Array.from({ length: 8 }).map((_, i) => (
                      <Card key={i} className="overflow-hidden rounded-xl border-border/50">
@@ -1054,10 +1127,8 @@ const AuctionListingsPage = () => {
                            }}
                            onViewDetails={() => {
                               const id = item.vehicle_id ?? item.id;
-                              const companyName = getSelectedCompanyNameForLink();
-                              const search = companyName ? `?company=${encodeURIComponent(companyName)}` : '';
-                              navigate({ pathname: `/vehicle/${id}`, search });
-                           }}
+                              navigate({ pathname: `/vehicle/${id}` });
+                          }}
                         />
                      ))}
                   </div>
@@ -1086,8 +1157,13 @@ const AuctionListingsPage = () => {
                               const prev = appliedPage - 1;
                               setPage(prev);
                               setAppliedPage(prev);
-                              updateUrlFromState({ page: prev, replace: false });
                               setExtraLoaded(null);
+                              if (appliedFilters) {
+                                const nextFilters = { ...appliedFilters, page: prev };
+                                setAppliedFilters(nextFilters);
+                              }
+
+                              updateUrlFromState({ page: prev, replace: false });
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                            }}
                         >
@@ -1101,6 +1177,12 @@ const AuctionListingsPage = () => {
                               setPage(next);
                               setAppliedPage(next);
                               setExtraLoaded(null);
+
+                              if (appliedFilters) {
+                                const nextFilters = { ...appliedFilters, page: next };
+                                setAppliedFilters(nextFilters);
+                              }
+
                               updateUrlFromState({ page: next, replace: false });
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                            }}

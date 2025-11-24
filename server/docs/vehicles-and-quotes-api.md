@@ -115,7 +115,24 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
 
 **Query params:**
 
-- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
+- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `source`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
+- `search` (optional, string) – combined free-text search over make/model/year.
+
+  When provided, the backend will try to parse the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+
+  - Extracts a year in the range `1950–2099` from the string (if present) and treats it as `year`.
+  - Uses the first remaining word as `make`.
+  - Uses the remaining words (if any) joined with spaces as `model`.
+
+  Examples:
+
+  - `GET /vehicles/search?search=Toyota` → `make="Toyota"`.
+  - `GET /vehicles/search?search=Toyota Corolla` → `make="Toyota"`, `model="Corolla"`.
+  - `GET /vehicles/search?search=Toyota Corolla 2018` → `make="Toyota"`, `model="Corolla"`, `year=2018`.
+
+  Explicit query params always win over values derived from `search`. For example:
+
+  - `GET /vehicles/search?search=Toyota Corolla 2018&make=Honda&year=2020` → `make="Honda"`, `model="Corolla"`, `year=2020`.
 
 **Response 200 JSON:**
 

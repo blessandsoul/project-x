@@ -44,6 +44,7 @@
     "fuel_diesel": "Diesel",
     "fuel_hybrid": "Hybrid",
     "fuel_electric": "Electric",
+    "fuel_flexible": "Flexible fuel",
     "category": "Category",
     "drive": "Drive",
     "items_per_page": "Items per page",
@@ -109,16 +110,16 @@
         "title": "Fast Delivery",
         "description": "Our partners ensure timely and safe vehicle transportation."
       },
-    "trust": {
-      "title": "Why users trust TrustedImporters.Ge",
-      "description": "Key reasons why users choose our platform and recommend it to others.",
-      "items": {
-        "experience": "Verified experience in US to Georgia imports",
-        "reviews": "Real reviews and transparent ratings",
-        "docs": "Support with documents and process",
-        "privacy": "Respect for your privacy and data"
-      }
-    },
+      "trust": {
+        "title": "Why users trust TrustedImporters.Ge",
+        "description": "Key reasons why users choose our platform and recommend it to others.",
+        "items": {
+          "experience": "Verified experience in US to Georgia imports",
+          "reviews": "Real reviews and transparent ratings",
+          "docs": "Support with documents and process",
+          "privacy": "Respect for your privacy and data"
+        }
+      },
       "security": {
         "title": "Security",
         "description": "All companies are verified and hold a high reputation in the market."
@@ -597,7 +598,8 @@
       "vehicle_types": {
         "cars": "Cars",
         "motorcycles": "Motorcycles",
-        "atvs": "ATVs"
+        "atvs": "ATVs",
+        "quads": "Quads"
       },
       "description": "Compare prices, ratings, and services in one place. Transparent terms, verified importers, and support in your language.",
       "how_it_works_title": "How it works: 3 simple steps",
