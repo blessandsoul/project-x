@@ -115,6 +115,7 @@ export interface SearchQuotesResponse {
 }
 
 export interface VehiclesSearchFilters {
+  search?: string
   make?: string
   model?: string
   year?: number
@@ -125,6 +126,7 @@ export interface VehiclesSearchFilters {
   fuel_type?: string
   category?: string
   drive?: string
+  source?: string
   price_from?: number
   price_to?: number
   limit?: number

@@ -90,6 +90,7 @@ export class VehicleModel extends BaseModel {
       fuelType?: string;
       category?: string;
       drive?: string;
+      source?: string;
     },
     limit: number = 50,
     offset: number = 0,
@@ -148,6 +149,10 @@ export class VehicleModel extends BaseModel {
     if (filters.drive) {
       conditions.push('drive LIKE ?');
       params.push(`%${filters.drive}%`);
+    }
+    if (filters.source) {
+      conditions.push('source = ?');
+      params.push(filters.source);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -211,6 +216,7 @@ export class VehicleModel extends BaseModel {
     fuelType?: string;
     category?: string;
     drive?: string;
+    source?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -263,6 +269,10 @@ export class VehicleModel extends BaseModel {
     if (filters.drive) {
       conditions.push('drive LIKE ?');
       params.push(`%${filters.drive}%`);
+    }
+    if (filters.source) {
+      conditions.push('source = ?');
+      params.push(filters.source);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

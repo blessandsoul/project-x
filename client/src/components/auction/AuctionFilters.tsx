@@ -38,9 +38,6 @@ export interface FilterState {
   minMileage: number | '';
   selectedMakeId: string;
   selectedModelId: string;
-  companySearch: string;
-  companyVipOnly: boolean;
-  selectedCompanyId: string | null;
   buyNowOnly: boolean;
   showVinCodes: boolean;
   limit: number;
@@ -54,8 +51,8 @@ interface AuctionFiltersProps {
   isLoadingMakes: boolean;
   isLoadingModels: boolean;
   onApply: () => void;
-  onReset: () => void;
-  companySuggestions: Array<{ id: number; name: string; vipStatus?: boolean }>;
+  onReset: () => void; // global reset (chips "Clear All")
+  onDrawerReset: () => void; // local reset inside drawer only
   activeFilterLabels: Array<{ id: string; label: string }>;
   onRemoveFilter: (id: string) => void;
   isOpen: boolean;
@@ -71,7 +68,7 @@ export function AuctionFilters({
   isLoadingModels,
   onApply,
   onReset,
-  companySuggestions,
+  onDrawerReset,
   activeFilterLabels,
   onRemoveFilter,
   isOpen,
@@ -125,55 +122,7 @@ export function AuctionFilters({
                </SheetHeader>
 
                <div className="flex-1 px-6 py-6 space-y-8">
-                 {/* Company Search */}
-                 <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                       <Icon icon="mdi:domain" className="w-4 h-4" />
-                       {t('pages.auction.company_importer')}
-                    </h3>
-                    <div className="space-y-2">
-                       <Input
-                          placeholder={t('pages.auction.company_search_placeholder')}
-                          value={filters.companySearch}
-                          onChange={(e) => {
-                             updateFilter('companySearch', e.target.value);
-                             updateFilter('selectedCompanyId', null);
-                          }}
-                       />
-                       {companySuggestions.length > 0 && (
-                          <div className="border rounded-md bg-background shadow-sm max-h-40 overflow-y-auto text-xs">
-                             {companySuggestions.map((company) => (
-                                <button
-                                   key={company.id}
-                                   type="button"
-                                   className="w-full text-left px-3 py-2 hover:bg-muted flex items-center justify-between gap-2 transition-colors"
-                                   onClick={() => {
-                                      updateFilter('companySearch', company.name);
-                                      updateFilter('selectedCompanyId', String(company.id));
-                                   }}
-                                >
-                                   <span className="truncate">{company.name}</span>
-                                   {company.vipStatus && (
-                                      <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-orange-500/10 text-orange-600 border-orange-200">VIP</Badge>
-                                   )}
-                                </button>
-                             ))}
-                          </div>
-                       )}
-                       <div className="flex items-center gap-2">
-                          <Checkbox
-                             id="company-vip"
-                             checked={filters.companyVipOnly}
-                             onCheckedChange={(checked) => updateFilter('companyVipOnly', !!checked)}
-                          />
-                          <label htmlFor="company-vip" className="text-sm cursor-pointer">{t('auction.vip_companies_only')}</label>
-                       </div>
-                    </div>
-                 </div>
-
-                 <Separator />
-
-                 {/* Vehicle Type */}
+                 {/* Vehicle Type + Category mapping */}
                  <div className="space-y-3">
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
                        <Icon icon="mdi:car-side" className="w-4 h-4" />
@@ -181,14 +130,26 @@ export function AuctionFilters({
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
                        {[
-                         { value: 'all', label: t('common.all'), icon: 'mdi:apps' },
-                         { value: 'car', label: t('common.cars'), icon: 'mdi:car' },
-                         { value: 'moto', label: t('common.motorcycles'), icon: 'mdi:motorbike' },
-                         { value: 'van', label: t('common.vans'), icon: 'mdi:van-utility' },
+                         // ყველა – no category filter
+                         { value: 'all', label: t('common.all'), icon: 'mdi:apps', categoryValue: 'all' as const },
+                         // მანქანები – category "v"
+                         { value: 'car', label: t('common.cars'), icon: 'mdi:car', categoryValue: 'v' as const },
+                         // მოტოციკლები – category "c"
+                         { value: 'moto', label: t('common.motorcycles'), icon: 'mdi:motorbike', categoryValue: 'c' as const },
+                         // კვადროციკლები – category "a" (reuses vans icon for now)
+                         { value: 'van', label: t('auction.quads'), icon: 'mdi:van-utility', categoryValue: 'a' as const },
                        ].map((type) => (
                          <button
                             key={type.value}
-                            onClick={() => updateFilter('searchKind', type.value as any)}
+                            onClick={() => {
+                              updateFilter('searchKind', type.value as any);
+                              // Map to category codes expected by backend
+                              if (type.categoryValue === 'all') {
+                                updateFilter('category', 'all');
+                              } else {
+                                updateFilter('category', type.categoryValue);
+                              }
+                            }}
                             className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all ${
                               filters.searchKind === type.value
                               ? 'border-primary bg-primary/5 text-primary shadow-sm'
@@ -324,10 +285,12 @@ export function AuctionFilters({
                              <SelectTrigger><SelectValue /></SelectTrigger>
                              <SelectContent>
                                 <SelectItem value="all">{t('common.all')}</SelectItem>
-                                <SelectItem value="gas">{t('common.fuel_gas')}</SelectItem>
-                                <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
+                                {/* Backend expects these exact values: petrol, hybrid, electric, diesel, flexible */}
+                                <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
                                 <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
                                 <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
+                                <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
+                                <SelectItem value="flexible">{t('common.fuel_flexible')}</SelectItem>
                              </SelectContent>
                           </Select>
                        </div>
@@ -390,7 +353,7 @@ export function AuctionFilters({
 
                <SheetFooter className="px-6 py-4 border-t bg-background sticky bottom-0 z-10">
                   <div className="flex w-full gap-3">
-                     <Button variant="outline" className="flex-1" onClick={onReset}>
+                     <Button variant="outline" className="flex-1" onClick={onDrawerReset}>
                         {t('common.reset')}
                      </Button>
                      <Button className="flex-1" onClick={() => { onApply(); }}>

@@ -35,6 +35,8 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       fuel_type?: string;
       category?: string;
       drive?: string;
+      source?: string;
+      search?: string;
       page?: string;
       limit?: string;
     };
@@ -52,7 +54,47 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       fuelType?: string;
       category?: string;
       drive?: string;
+      source?: string;
     } = {};
+
+    // Optional combined search param: search="make model year".
+    // This is parsed into make/model/year only when those are not
+    // already provided explicitly.
+    if (query.search && query.search.trim().length > 0) {
+      const raw = query.search.trim();
+
+      // Try to extract a reasonable model year (1950–2100) from the search
+      // string and treat the remaining words as make/model.
+      const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
+
+      let derivedYear: number | undefined;
+      let derivedMake: string | undefined;
+      let derivedModel: string | undefined;
+
+      let withoutYear = raw;
+      if (yearMatch && yearMatch[0]) {
+        derivedYear = Number.parseInt(yearMatch[0], 10);
+        withoutYear = raw.replace(yearMatch[0], '').trim();
+      }
+
+      const parts = withoutYear.split(/\s+/).filter(Boolean);
+      if (parts.length > 0) {
+        derivedMake = parts[0];
+      }
+      if (parts.length > 1) {
+        derivedModel = parts.slice(1).join(' ');
+      }
+
+      if (!filters.make && derivedMake) {
+        filters.make = derivedMake;
+      }
+      if (!filters.model && derivedModel) {
+        filters.model = derivedModel;
+      }
+      if (!filters.year && typeof derivedYear === 'number' && Number.isFinite(derivedYear)) {
+        filters.year = derivedYear;
+      }
+    }
 
     if (query.make && query.make.trim().length > 0) {
       filters.make = query.make.trim();
@@ -96,6 +138,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     }
     if (query.drive && query.drive.trim().length > 0) {
       filters.drive = query.drive.trim();
+    }
+    if (query.source && query.source.trim().length > 0) {
+      filters.source = query.source.trim();
     }
 
     const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
