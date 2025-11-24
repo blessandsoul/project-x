@@ -399,6 +399,12 @@ const CompanyCatalogPage = () => {
   const totalPages = totalResults === 0 ? 0 : Math.ceil(totalResults / pageSize);
   const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const paginatedCompanies = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredCompanies.slice(startIndex, startIndex + pageSize);
@@ -427,6 +433,32 @@ const CompanyCatalogPage = () => {
 
     // Ensure URL is fully reset so filters are URL-dependent and sharable
     navigate('/catalog', { replace: true });
+  };
+
+  const scrollToTopSmooth = () => {
+    if (typeof window === 'undefined') return;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevPage = () => {
+    setPage((prev) => {
+      const nextPage = Math.max(1, prev - 1);
+      if (nextPage !== prev) {
+        scrollToTopSmooth();
+      }
+      return nextPage;
+    });
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => {
+      const nextPage = Math.min(totalPages, prev + 1);
+      if (nextPage !== prev) {
+        scrollToTopSmooth();
+      }
+      return nextPage;
+    });
   };
 
   return (
@@ -826,7 +858,7 @@ const CompanyCatalogPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      onClick={handlePrevPage}
                       disabled={currentPage === 1}
                       aria-label={t('catalog.pagination.prev')}
                       motionVariant="scale"
@@ -837,7 +869,7 @@ const CompanyCatalogPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                      onClick={handleNextPage}
                       disabled={currentPage === totalPages}
                       aria-label={t('catalog.pagination.next')}
                       motionVariant="scale"

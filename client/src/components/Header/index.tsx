@@ -35,6 +35,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
   const { t } = useTranslation();
   const { user: authUser, isAuthenticated, logout } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   let storedUser: User | null = null;
 
   if (typeof window !== 'undefined') {
@@ -71,9 +72,47 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
     };
   }, []);
 
+  useEffect(() => {
+    let lastScrollY = window.scrollY || 0;
+
+    const handleScroll = () => {
+      const isDesktop = window.innerWidth >= 768;
+
+      if (isDesktop) {
+        if (isHidden) {
+          setIsHidden(false);
+        }
+        lastScrollY = window.scrollY || 0;
+        return;
+      }
+
+      const currentY = window.scrollY || 0;
+      const delta = currentY - lastScrollY;
+
+      if (Math.abs(delta) < 4) {
+        lastScrollY = currentY;
+        return;
+      }
+
+      if (currentY > 64 && delta > 0) {
+        setIsHidden(true);
+      } else if (delta < 0) {
+        setIsHidden(false);
+      }
+
+      lastScrollY = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isHidden]);
+
   return (
     <header
-      className={`${isSticky ? 'sticky top-0 ' : ''}z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}
+      className={`${isSticky ? 'sticky top-0 ' : ''}z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transform transition-transform duration-200 ease-out will-change-transform ${isHidden ? '-translate-y-full' : 'translate-y-0'}`}
       role="banner"
     >
       <div className="container mx-auto px-2 sm:px-4 lg:px-6 flex h-14 items-center">

@@ -158,12 +158,16 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                           exit={{ opacity: 0, x: 40 }}
                           transition={{ duration: 0.25, ease: 'easeOut' as const }}
                         >
-                          <Card className="w-full" role="form" aria-label={t('auth.login.title')}>
+                          <Card
+                            className="w-full max-h-[80vh] flex flex-col"
+                            role="form"
+                            aria-label={t('auth.login.title')}
+                          >
                             <CardHeader className="space-y-2 text-center">
                               <Icon icon="mdi:car" className="mx-auto h-10 w-10 text-primary" />
                               <CardTitle className="text-2xl font-bold">{t('auth.login.title')}</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="flex-1 overflow-y-auto">
                               <form
                                 onSubmit={handleLoginSubmit}
                                 className="space-y-4"
@@ -220,12 +224,16 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                           exit={{ opacity: 0, x: -40 }}
                           transition={{ duration: 0.25, ease: 'easeOut' as const }}
                         >
-                          <Card className="w-full" role="form" aria-label={t('auth.register.title')}>
+                          <Card
+                            className="w-full max-h-[80vh] flex flex-col"
+                            role="form"
+                            aria-label={t('auth.register.title')}
+                          >
                             <CardHeader className="space-y-2 text-center">
                               <Icon icon="mdi:account-plus" className="mx-auto h-10 w-10 text-primary" />
                               <CardTitle className="text-2xl font-bold">{t('auth.register.title')}</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="flex-1 overflow-y-auto">
                               <form
                                 onSubmit={handleRegisterSubmit}
                                 className="space-y-4"
@@ -242,7 +250,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                         setAccountType(value);
                                       }
                                     }}
-                                    className="flex flex-col gap-1.5"
+                                    className="flex w-full flex-col gap-1.5"
                                   >
                                     <ToggleGroupItem
                                       value="user"
@@ -252,7 +260,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                       <Icon icon="mdi:account" className="h-4 w-4" />
                                       <div className="flex flex-col min-w-0">
                                         <span className="font-medium">{t('auth.roles.user.title')}</span>
-                                        <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.user.desc')}</span>
+                                        <span className="text-[11px] text-muted-foreground truncate">{t('auth.roles.user.desc')}</span>
                                       </div>
                                     </ToggleGroupItem>
                                     <ToggleGroupItem
@@ -263,7 +271,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                       <Icon icon="mdi:steering" className="h-4 w-4" />
                                       <div className="flex flex-col min-w-0">
                                         <span className="font-medium">{t('auth.roles.dealer.title')}</span>
-                                        <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.dealer.desc')}</span>
+                                        <span className="text-[11px] text-muted-foreground truncate">{t('auth.roles.dealer.desc')}</span>
                                       </div>
                                     </ToggleGroupItem>
                                     <ToggleGroupItem
@@ -274,7 +282,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                       <Icon icon="mdi:office-building" className="h-4 w-4" />
                                       <div className="flex flex-col min-w-0">
                                         <span className="font-medium">{t('auth.roles.company.title')}</span>
-                                        <span className="text-[11px] text-muted-foreground break-words">{t('auth.roles.company.desc')}</span>
+                                        <span className="text-[11px] text-muted-foreground truncate">{t('auth.roles.company.desc')}</span>
                                       </div>
                                     </ToggleGroupItem>
                                   </ToggleGroup>

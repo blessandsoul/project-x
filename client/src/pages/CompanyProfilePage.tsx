@@ -345,7 +345,7 @@ const CompanyProfilePage = () => {
       />
 
       <main className="flex-1" role="main">
-        <div className="container mx-auto py-8">
+        <div className="container mx-auto py-8 px-4 sm:px-6">
           {/* Header Section */}
           <div className="mb-8">
             <Button
@@ -359,12 +359,12 @@ const CompanyProfilePage = () => {
 
             <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-8 rtl:space-x-reverse">
               {logoSrc && (
-                <div className="relative mb-4 lg:mb-0">
-                  <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 shadow-lg flex items-center justify-center overflow-hidden">
+                <div className="relative mb-4 lg:mb-0 w-full lg:w-auto">
+                  <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden lg:w-28 lg:h-28 lg:aspect-auto">
                     <img
                       src={logoSrc}
                       alt={company.name}
-                      className="w-24 h-24 rounded-xl object-cover"
+                      className="h-full w-full object-cover rounded-2xl lg:w-24 lg:h-24 lg:rounded-xl"
                     />
                   </div>
                   <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-md">
@@ -391,22 +391,26 @@ const CompanyProfilePage = () => {
                   </Button>
                 </div>
 
-                <div className="flex items-center space-x-4 mb-4 rtl:space-x-reverse">
+                <div className="flex flex-col gap-2 mb-4 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 rtl:space-x-reverse">
                   <div className="flex items-center">
                     <CompanyRating rating={company.rating} size="md" />
-                    <span className="text-muted-foreground ms-2">
+                    <span className="ms-2">
                       ({company.reviewCount} {t('company_profile.reviews_count')})
                     </span>
                   </div>
-                  <div className="flex items-center text-muted-foreground">
+                  <div className="flex items-center">
                     <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
-                    {company.location?.city ?? ''}
-                    {company.location?.city && company.location?.state ? ', ' : ''}
-                    {company.location?.state ?? ''}
+                    <span>
+                      {company.location?.city ?? ''}
+                      {company.location?.city && company.location?.state ? ', ' : ''}
+                      {company.location?.state ?? ''}
+                    </span>
                   </div>
-                  <div className="flex items-center text-muted-foreground">
+                  <div className="flex items-center">
                     <Icon icon="mdi:calendar" className="h-4 w-4 me-1" />
-                    {t('company_profile.founded')} {company.establishedYear}
+                    <span>
+                      {t('company_profile.founded')} {company.establishedYear}
+                    </span>
                   </div>
                 </div>
 
