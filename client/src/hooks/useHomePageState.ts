@@ -9,11 +9,7 @@ export const useHomePageState = () => {
   const [isStickyCtaVisible, setIsStickyCtaVisible] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setStatus('ready')
-    }, 700)
-
-    return () => clearTimeout(timer)
+    setStatus('ready')
   }, [])
 
   const loading = status === 'loading'

@@ -9,10 +9,10 @@ import {
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 const LANGUAGES = [
-  { code: 'ka', label: 'ქართული', flag: '🇬🇪' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { code: 'ka', label: 'ქართული', icon: 'circle-flags:ge' },
+  { code: 'en', label: 'English', icon: 'circle-flags:us' },
+  { code: 'ru', label: 'Русский', icon: 'circle-flags:ru' },
+  { code: 'ar', label: 'العربية', icon: 'circle-flags:sa' },
 ];
 
 const LanguageSwitcher = () => {
@@ -33,7 +33,7 @@ const LanguageSwitcher = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label={t('header.language')}>
-          <span className="text-lg leading-none">{currentLanguage.flag}</span>
+          <Icon icon={currentLanguage.icon} className="text-lg rounded-full h-5 w-5" />
           <span className="sr-only">{currentLanguage.label}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -44,7 +44,7 @@ const LanguageSwitcher = () => {
             onClick={() => handleLanguageChange(lang.code)}
             className="flex items-center gap-2 cursor-pointer"
           >
-            <span className="text-lg leading-none">{lang.flag}</span>
+            <Icon icon={lang.icon} className="text-lg rounded-full h-4 w-4" />
             <span>{lang.label}</span>
             {i18n.language === lang.code && (
               <Icon icon="mdi:check" className="ms-auto h-4 w-4" />

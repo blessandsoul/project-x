@@ -1772,7 +1772,7 @@ const VehicleDetailsPage = () => {
                                 aria-pressed={onlyHighRating}
                               >
                                 <Icon icon="mdi:star" className="h-3 w-3" />
-                                ≥ 4.5 ★
+                                ≥ 4.5
                               </Button>
 
                               <Button
