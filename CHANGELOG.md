@@ -4,3 +4,7 @@
 - Fixed "Invalid hook call" error by moving i18n dependencies to client package and configuring Vite dedupe.
 ### Added
 - Implemented full i18n support with 4 languages (KA, EN, RU, AR) and RTL support.
+### Changed
+- Refactored `TestimonialsSection` and `MiniBlogSection` with modern UI, hover effects, and removed coming-soon overlay.
+### Added
+- Added Social Auth buttons (Google, Facebook) to Login and Register pages.

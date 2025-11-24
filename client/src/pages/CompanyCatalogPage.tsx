@@ -1,20 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Icon } from '@iconify/react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
 import { EmptyState } from '@/components/company/EmptyState';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Icon } from '@iconify/react';
-import { navigationItems, footerLinks } from '@/config/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Slider } from '@/components/ui/slider';
+import { CatalogFilters } from '@/components/catalog/CatalogFilters';
+import { CompanyListItem } from '@/components/catalog/CompanyListItem';
+import { CompanyComparisonModal } from '@/components/comparison/CompanyComparisonModal';
+
 import type { Company } from '@/types/api';
 import { fetchCompaniesFromApi } from '@/services/companiesApi';
-import { CompanyTable } from '@/components/company/CompanyTable';
+import { navigationItems, footerLinks } from '@/config/navigation';
 
 type CatalogSortBy = 'rating' | 'cheapest' | 'name' | 'newest';
 
@@ -120,16 +123,22 @@ const CompanyCatalogPage = () => {
   const { t } = useTranslation();
   const {
     searchTerm, setSearchTerm, minRating, setMinRating, priceRange, setPriceRange,
-    city, isVipOnly, setIsVipOnly, onboardingFree, setOnboardingFree,
+    city, setCity, isVipOnly, setIsVipOnly, onboardingFree, setOnboardingFree,
     sortBy, setSortBy, page, setPage, resetAll
   } = useCatalogQueryParams();
 
-  const [localPriceRange, setLocalPriceRange] = useState(priceRange);
-  useEffect(() => { setLocalPriceRange(priceRange); }, [priceRange[0], priceRange[1]]);
-
-  const pageSize = 10; // Table view fits more rows easily
+  const pageSize = 10; // List view standard
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [selectedCompanies, setSelectedCompanies] = useState<number[]>([]);
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+
+  const toggleComparison = (id: number) => {
+    setSelectedCompanies(prev => 
+      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
+    );
+  };
 
   const loadCompanies = useCallback(async () => {
     setIsLoading(true);
@@ -161,131 +170,220 @@ const CompanyCatalogPage = () => {
     [filteredCompanies, currentPage, pageSize],
   );
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
       <Header navigationItems={navigationItems} user={null} />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">{t('catalog.title')}</h1>
-          <p className="text-slate-600">Compare licensed importers by price, rating, and delivery time.</p>
+      {/* Breadcrumb-like Header Section */}
+      <div className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="container mx-auto px-4 py-8">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl"
+          >
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+              {t('catalog.title')}
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl">
+              Compare trusted auto importers, check ratings, and find the best rates for your vehicle delivery.
+            </p>
+          </motion.div>
         </div>
+      </div>
 
+      <main className="flex-1 container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 gap-8 items-start">
-          {/* Filters Sidebar */}
-          <aside className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                 <Icon icon="mdi:filter-variant" /> Filters
-              </h3>
-              
-              <div className="space-y-6">
-                <div className="space-y-2">
-                   <label className="text-xs font-bold text-slate-500 uppercase">Min Rating</label>
-                   <Select value={minRating.toString()} onValueChange={(v) => setMinRating(Number(v))}>
-                      <SelectTrigger>
-                         <SelectValue placeholder="Any Rating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                         <SelectItem value="0">Any Rating</SelectItem>
-                         <SelectItem value="4">4+ Stars (Trusted)</SelectItem>
-                         <SelectItem value="5">5 Stars Only</SelectItem>
-                      </SelectContent>
-                   </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">
-                       Service Cost (${localPriceRange[0]} - ${localPriceRange[1]})
-                    </label>
-                    <Slider
-                       value={localPriceRange}
-                       onValueChange={(value) => setLocalPriceRange(value as [number, number])}
-                       onValueCommit={setPriceRange}
-                       max={5000}
-                       step={100}
-                    />
-                </div>
-
-                <div className="space-y-3 pt-2 border-t border-slate-100">
-                   <div className="flex items-center gap-3">
-                      <Checkbox id="vip" checked={isVipOnly} onCheckedChange={setIsVipOnly} />
-                      <label htmlFor="vip" className="text-sm font-medium text-slate-700">Verified Partners Only</label>
-                   </div>
-                   <div className="flex items-center gap-3">
-                      <Checkbox id="onboarding" checked={onboardingFree} onCheckedChange={setOnboardingFree} />
-                      <label htmlFor="onboarding" className="text-sm font-medium text-slate-700">Free Consultation</label>
-                   </div>
-                </div>
-
-                <Button variant="outline" className="w-full" onClick={resetAll}>Reset Filters</Button>
-              </div>
-            </div>
+          {/* Sidebar Filters */}
+          <aside className="lg:col-span-1 sticky top-24 z-30">
+            <CatalogFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              minRating={minRating}
+              setMinRating={setMinRating}
+              priceRange={priceRange}
+              setPriceRange={setPriceRange}
+              city={city}
+              setCity={setCity}
+              isVipOnly={isVipOnly}
+              setIsVipOnly={setIsVipOnly}
+              onboardingFree={onboardingFree}
+              setOnboardingFree={setOnboardingFree}
+              resetAll={resetAll}
+            />
           </aside>
 
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
-             {/* Controls */}
-             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                <div className="relative w-full sm:max-w-xs">
-                   <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                   <Input 
-                      placeholder="მოძებნეთ კომპანიები..." 
-                      value={searchTerm} 
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 bg-slate-50 border-slate-200"
-                   />
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                   <span className="text-sm text-slate-500 whitespace-nowrap">Sort by:</span>
+             {/* Results Header */}
+             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
+                <p className="text-sm font-medium text-slate-600">
+                  Showing <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> of <span className="font-bold text-slate-900">{totalResults}</span> companies
+                </p>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                   <Toggle 
+                      pressed={isCompareMode} 
+                      onPressedChange={setIsCompareMode}
+                      variant="outline"
+                      aria-label="Toggle compare mode"
+                      className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200"
+                   >
+                      <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
+                      <span className="text-sm font-medium">Compare</span>
+                   </Toggle>
+
+                   <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">Sort by:</span>
                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as CatalogSortBy)}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 shadow-sm">
                          <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                          <SelectItem value="rating">Highest Rated</SelectItem>
                          <SelectItem value="cheapest">Lowest Fees</SelectItem>
                          <SelectItem value="newest">Experience (Years)</SelectItem>
+                         <SelectItem value="name">Name (A-Z)</SelectItem>
                       </SelectContent>
                    </Select>
                 </div>
              </div>
 
-             {/* Results Table */}
+             {/* List Results */}
              {isLoading ? (
                  <div className="space-y-4">
-                    {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className="h-32 rounded-xl border border-slate-100 bg-white p-4 flex gap-4 items-center">
+                        <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-6 w-1/3" />
+                          <Skeleton className="h-4 w-1/4" />
+                        </div>
+                        <div className="w-32 space-y-2 hidden md:block">
+                           <Skeleton className="h-8 w-full" />
+                           <Skeleton className="h-4 w-2/3" />
+                        </div>
+                      </div>
+                    ))}
                  </div>
              ) : totalResults > 0 ? (
-                 <CompanyTable companies={paginatedCompanies} />
+                 <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="flex flex-col space-y-4"
+                 >
+                    <AnimatePresence mode="popLayout">
+                      {paginatedCompanies.map((company) => (
+                        <CompanyListItem 
+                           key={company.id} 
+                           company={company} 
+                           isCompareMode={isCompareMode}
+                           isSelected={selectedCompanies.includes(company.id)}
+                           onToggleCompare={() => toggleComparison(company.id)}
+                        />
+                      ))}
+                    </AnimatePresence>
+                 </motion.div>
              ) : (
                  <EmptyState 
                     title="No companies found" 
                     description="Try adjusting your filters to see more results." 
                     icon="mdi:clipboard-text-off-outline"
-                    action={<Button onClick={resetAll}>Clear Filters</Button>}
+                    action={<Button onClick={resetAll} variant="outline">Clear Filters</Button>}
                  />
              )}
 
              {/* Pagination */}
              {!isLoading && totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-8">
-                   <Button variant="outline" onClick={() => setPage(page - 1)} disabled={page <= 1}>Previous</Button>
-                   <span className="flex items-center px-4 text-sm font-medium text-slate-600">
-                      Page {currentPage} of {totalPages}
-                   </span>
-                   <Button variant="outline" onClick={() => setPage(page + 1)} disabled={page >= totalPages}>Next</Button>
+                <div className="flex justify-center items-center gap-2 mt-12">
+                   <Button 
+                     variant="outline" 
+                     size="icon"
+                     onClick={() => setPage(page - 1)} 
+                     disabled={page <= 1}
+                     className="rounded-full h-10 w-10 hover:bg-slate-100"
+                   >
+                     <Icon icon="mdi:chevron-left" className="h-5 w-5" />
+                   </Button>
+                   
+                   <div className="flex items-center gap-1 px-2">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={`h-10 w-10 rounded-full text-sm font-medium transition-all ${
+                            p === currentPage 
+                              ? 'bg-slate-900 text-white shadow-md scale-110' 
+                              : 'text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                   </div>
+
+                   <Button 
+                     variant="outline" 
+                     size="icon"
+                     onClick={() => setPage(page + 1)} 
+                     disabled={page >= totalPages}
+                     className="rounded-full h-10 w-10 hover:bg-slate-100"
+                   >
+                     <Icon icon="mdi:chevron-right" className="h-5 w-5" />
+                   </Button>
                 </div>
              )}
-
-             {/* Business Note */}
-             <div className="hidden dev-note mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                <strong>Why Comparison Table?</strong> Reduces decision time by 40% (User survey, N=120). Users prefer side-by-side comparison of fees and ratings over aesthetic cards.
-             </div>
           </div>
         </div>
       </main>
       <Footer footerLinks={footerLinks} />
+      
+      {/* Comparison Modal Floating Trigger */}
+      {selectedCompanies.length > 0 && (
+         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
+            <Button 
+               variant="secondary"
+               size="sm"
+               onClick={() => {
+                 setSelectedCompanies([]);
+                 setIsCompareMode(false);
+               }}
+               className="shadow-sm bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 h-8 rounded-full px-4"
+            >
+               <Icon icon="mdi:close" className="h-4 w-4 mr-1" />
+               Cancel
+            </Button>
+            
+            <Button 
+               onClick={() => setIsComparisonModalOpen(true)} 
+               className="bg-slate-900 hover:bg-blue-600 text-white shadow-xl shadow-blue-900/20 rounded-full px-6 h-14 flex items-center gap-3 transition-all hover:scale-105"
+            >
+               <div className="relative">
+                 <Icon icon="mdi:compare-horizontal" className="h-6 w-6" />
+                 <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full border border-slate-900">
+                   {selectedCompanies.length}
+                 </span>
+               </div>
+               <span className="font-bold text-lg tracking-tight">Compare Now</span>
+            </Button>
+         </div>
+      )}
+
+      <CompanyComparisonModal 
+        isOpen={isComparisonModalOpen}
+        onClose={() => setIsComparisonModalOpen(false)}
+        companies={allCompanies.filter(c => selectedCompanies.includes(c.id))}
+      />
     </div>
   );
 };

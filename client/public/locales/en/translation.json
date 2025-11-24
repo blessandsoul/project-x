@@ -211,6 +211,11 @@
         "generic": "An error occurred during registration"
       }
     },
+    "social": {
+      "continue_with": "Or continue with",
+      "google": "Google",
+      "facebook": "Facebook"
+    },
     "account_type": "Account Type",
     "phone_optional": "Phone (Optional)",
     "contact_phone": "Contact Phone",
@@ -779,6 +784,24 @@
       "title": "What clients say about importers",
       "description": "Real feedback and ratings for import companies on TrustedImporters.Ge.",
       "ticker_message": "{{user}} rated {{company}} {{rating}}★ on TrustedImporters.Ge",
+      "filters": {
+        "all": "All Reviews",
+        "speed": "Speed",
+        "price": "Price",
+        "quality": "Condition",
+        "service": "Service",
+        "docs": "Documents"
+      },
+      "stats": {
+        "satisfaction": "Satisfied with timelines",
+        "quality": "Quality Score",
+        "repeat": "Repeat clients"
+      },
+      "card": {
+        "bought": "Purchased",
+        "client_since": "Client since {{year}}",
+        "orders_count": "{{count}} orders"
+      },
       "empty": {
         "title": "No reviews loaded yet",
         "description": "We will show real client reviews here as soon as they are available."
@@ -1030,6 +1053,12 @@
       "read_time": "{{minutes}} min read",
       "views": "{{count}} views",
       "overlay_message": "Blog section is in demo mode. Articles will be published soon.",
+      "takeaways_title": "Key Takeaways",
+      "categories": {
+        "customs": "Customs",
+        "auctions": "Auctions",
+        "tips": "Tips"
+      },
       "empty": {
         "title": "No articles yet",
         "description": "We are preparing useful content about import. Please check back later.",

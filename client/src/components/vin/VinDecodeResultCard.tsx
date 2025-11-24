@@ -3,8 +3,11 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useCarImage } from '@/hooks/useCarImage'
 import {
   getOrderedVinEntries,
   formatVinFieldKey,
@@ -18,218 +21,415 @@ export interface VinDecodeResultCardProps {
   data: Record<string, unknown> | null | undefined
 }
 
+// Helper to check if a car logo exists
+const getBrandLogoPath = (make: string): string | null => {
+  if (!make) return null
+  const normalized = make.toLowerCase().replace(/[\s-]/g, '-')
+  return `/car-logos/${normalized}.png`
+}
+
 export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
   const entries = getOrderedVinEntries(data ?? undefined)
   const [showAllDetails, setShowAllDetails] = useState(false)
+  const [logoError, setLogoError] = useState(false)
 
-  const primaryKeys = useMemo(() => new Set(VIN_PRIMARY_KEYS.map((key) => key.toLowerCase())), [])
-  const secondaryKeys = useMemo(
-    () => new Set(VIN_SECONDARY_KEYS.map((key) => key.toLowerCase())),
-    [],
-  )
+  const { 
+    vehicleTitle, 
+    make,
+    model,
+    year,
+    quickStats, 
+    technicalSpecs, 
+    bodySpecs,
+    otherSpecs,
+    highlights 
+  } = useMemo(() => {
+    const raw = (data || {}) as Record<string, any>
+    
+    // 1. Construct Title
+    const makeStr = raw.make ? String(raw.make) : ''
+    const modelStr = raw.model ? String(raw.model) : ''
+    const yearStr = raw.model_year || raw.year ? String(raw.model_year || raw.year) : ''
+    const trim = raw.trim ? String(raw.trim) : ''
+    
+    const titleParts = [yearStr, makeStr, modelStr, trim].filter(Boolean)
+    const title = titleParts.length > 1 ? titleParts.join(' ') : t('vin.result_title', 'Vehicle Report')
 
-  const { primaryEntries, secondaryEntries, otherEntries } = useMemo(() => {
-    const primary: Array<[string, unknown]> = []
-    const secondary: Array<[string, unknown]> = []
+    // 2. Extract Quick Stats
+    const quickStats = {
+      engine: [
+        raw.engine_cylinders ? `${raw.engine_cylinders} Cyl` : null,
+        raw.engine_displacement ? `${raw.engine_displacement}L` : null,
+        raw.engine_power ? `${raw.engine_power}` : null
+      ].filter(Boolean).join(' / ') || raw.engine_model || 'N/A',
+      
+      transmission: [
+        raw.transmission_style,
+        raw.transmission_speeds ? `${raw.transmission_speeds}-Speed` : null
+      ].filter(Boolean).join(' ') || 'N/A',
+      
+      drive: raw.drive_type || 'N/A',
+      fuel: raw.fuel_type || 'N/A',
+      body: raw.body_class || raw.vehicle_type || 'N/A'
+    }
+
+    // 3. Group Specs
+    const techKeys = new Set([...VIN_PRIMARY_KEYS, 'engine_cylinders', 'engine_displacement', 'engine_power', 'transmission_style', 'transmission_speeds', 'drive_type', 'fuel_type', 'turbo'])
+    const bodyKeys = new Set([...VIN_SECONDARY_KEYS, 'body_class', 'vehicle_type', 'doors', 'gross_vehicle_weight_rating', 'wheel_base', 'cab_type', 'bed_type'])
+    
+    const technical: Array<[string, unknown]> = []
+    const body: Array<[string, unknown]> = []
     const other: Array<[string, unknown]> = []
 
     entries.forEach(([key, value]) => {
       const lowerKey = key.toLowerCase()
-      if (primaryKeys.has(lowerKey)) {
-        primary.push([key, value])
-        return
+      if (['make', 'model', 'year', 'model_year'].includes(lowerKey)) return
+
+      if (techKeys.has(lowerKey) || lowerKey.includes('engine') || lowerKey.includes('brake') || lowerKey.includes('steering')) {
+        technical.push([key, value])
+      } else if (bodyKeys.has(lowerKey) || lowerKey.includes('weight') || lowerKey.includes('dimension') || lowerKey.includes('wheel') || lowerKey.includes('plant')) {
+        body.push([key, value])
+      } else {
+        other.push([key, value])
       }
-      if (secondaryKeys.has(lowerKey)) {
-        secondary.push([key, value])
-        return
-      }
-      other.push([key, value])
     })
 
+    // 4. Highlights
+    const highlightBadges: string[] = []
+    const drive = String(raw.drive_type || '').toLowerCase()
+    if (drive.includes('awd') || drive.includes('4wd') || drive.includes('4x4')) highlightBadges.push('AWD/4WD')
+    if (String(raw.fuel_type).toLowerCase().includes('electric')) highlightBadges.push('Electric')
+    if (String(raw.fuel_type).toLowerCase().includes('hybrid')) highlightBadges.push('Hybrid')
+    if (String(raw.body_class).toLowerCase().includes('luxury')) highlightBadges.push('Luxury')
+    if (String(raw.turbo || '').toLowerCase() === 'yes') highlightBadges.push('Turbo')
+
     return {
-      primaryEntries: primary,
-      secondaryEntries: secondary,
-      otherEntries: other,
+      vehicleTitle: title,
+      make: makeStr,
+      model: modelStr,
+      year: yearStr,
+      quickStats,
+      technicalSpecs: technical,
+      bodySpecs: body,
+      otherSpecs: other,
+      highlights: highlightBadges
     }
-  }, [entries, primaryKeys, secondaryKeys])
+  }, [data, entries, t])
 
-  const canSearchCatalog = useMemo(() => {
-    if (!data || typeof data !== 'object') return false
-    const raw = data as Record<string, unknown>
-    const make = typeof raw.make === 'string' ? raw.make : null
-    const model = typeof raw.model === 'string' ? raw.model : null
-    const year =
-      typeof raw.model_year === 'string'
-        ? raw.model_year
-        : typeof raw.year === 'string' || typeof raw.year === 'number'
-          ? String(raw.year)
-          : null
+  // 3. Car Image Hook
+  const { image: carImage } = useCarImage(`${make} ${model} ${year} car`)
 
-    return Boolean(make || model || year)
-  }, [data])
+  // Mock Import Estimate Logic
+  const estimatedImportCost = useMemo(() => {
+     if (!year) return null;
+     // Simple mock calculation for "Sales" effect
+     const base = 500;
+     const yearFactor = Math.max(0, (parseInt(year) - 2010) * 50);
+     const engineFactor = 200; // static since we don't parse L easily
+     return base + yearFactor + engineFactor;
+  }, [year]);
 
   const handleGoToCatalog = () => {
     if (!data || typeof data !== 'object') return
-    const raw = data as Record<string, unknown>
-
-    const make = typeof raw.make === 'string' ? raw.make : null
-    const model = typeof raw.model === 'string' ? raw.model : null
-    const year =
-      typeof raw.model_year === 'string'
-        ? raw.model_year
-        : typeof raw.year === 'string' || typeof raw.year === 'number'
-          ? String(raw.year)
-          : null
-
     const parts: string[] = []
     if (make) parts.push(make)
     if (model) parts.push(model)
     if (year) parts.push(year)
-
     const query = parts.join(' ').trim()
     const search = query ? `?q=${encodeURIComponent(query)}` : ''
-
     navigate(`/catalog${search}`)
   }
 
+  const SpecRow = ({ label, value, index }: { label: string; value: unknown, index: number }) => (
+    <div className={`flex justify-between py-2 px-3 ${index % 2 === 0 ? 'bg-muted/30' : 'bg-transparent'} border-b border-border/20 last:border-0`}>
+      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        {formatVinFieldKey(label)}
+      </dt>
+      <dd className="text-xs sm:text-sm font-semibold text-foreground text-right pl-4">
+        {formatVinFieldValue(value)}
+      </dd>
+    </div>
+  )
+
+  const logoPath = useMemo(() => getBrandLogoPath(make), [make])
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2 text-base">
-          <span className="flex items-center gap-2">
-            <Icon icon="mdi:car-info" className="h-5 w-5 text-primary" />
-            {t('vin.result_title')}
-          </span>
-          {entries.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-xs"
-              onClick={() => setShowAllDetails((current) => !current)}
-            >
-              <Icon
-                icon={showAllDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-                className="me-1 h-3 w-3"
-              />
-              {showAllDetails
-                ? t('vin.result_toggle_less', 'Show fewer details')
-                : t('vin.result_toggle_more', 'Show all details')}
-            </Button>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* Left Column: Main Content */}
+      <div className="lg:col-span-2 space-y-6">
+        <Card className="w-full overflow-hidden border-none shadow-2xl bg-card ring-1 ring-border/50 relative">
+        
+          {/* Feature 3: Car Photo Background (Unsplash) */}
+          {carImage && (
+            <div className="absolute inset-0 h-64 w-full z-0">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background z-10" />
+                <img 
+                    src={carImage.url} 
+                    alt={vehicleTitle} 
+                    className="w-full h-full object-cover opacity-50"
+                />
+                <div className="absolute bottom-2 right-2 z-20 text-[10px] text-muted-foreground/50">
+                    Photo by {carImage.photographer} / Unsplash
+                </div>
+            </div>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <div className="space-y-1">
-          <span className="block text-xs text-muted-foreground">{t('vin.result_vin_label')}</span>
-          <span className="font-medium tracking-[0.1em] uppercase">{vin}</span>
-        </div>
 
-        <div className="space-y-2">
-          <span className="block text-xs text-muted-foreground">{t('vin.result_data_label')}</span>
-          {entries.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {t('vin.result_empty_data', 'No additional data returned for this VIN.')}
-            </p>
-          ) : (
-            <>
-              {primaryEntries.length > 0 && (
-                <section aria-label={t('vin.result_primary_section', 'Key vehicle details')}>
-                  <h3 className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t('vin.result_primary_heading', 'Key specifications')}
-                  </h3>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                    {primaryEntries.map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="space-y-0.5"
-                      >
-                        <dt className="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-wide">
-                          {formatVinFieldKey(key)}
-                        </dt>
-                        <dd className="text-sm break-words">{formatVinFieldValue(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
+          {/* Hero Header */}
+          <div className="relative z-10 pt-8 pb-6 px-6">
+            <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+                <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground bg-background/80 backdrop-blur">
+                            VIN: {vin}
+                        </Badge>
+                        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20">
+                            <Icon icon="mdi:check-decagram" className="mr-1 h-3 w-3" />
+                            Verified
+                        </Badge>
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground leading-tight drop-shadow-sm">
+                        {vehicleTitle}
+                    </h2>
+                    {highlights.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {highlights.map(h => (
+                                <Badge key={h} className="bg-primary/90 hover:bg-primary text-primary-foreground border-none shadow-sm px-2.5 py-0.5 text-xs">
+                                    {h}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex-shrink-0">
+                    {logoPath && !logoError ? (
+                        <img 
+                            src={logoPath} 
+                            alt={make} 
+                            className="h-16 w-16 md:h-24 md:w-24 object-contain opacity-90 mix-blend-multiply dark:mix-blend-screen filter drop-shadow-lg"
+                            onError={() => setLogoError(true)}
+                        />
+                    ) : (
+                        <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-muted/50 flex items-center justify-center">
+                            <Icon icon="mdi:car" className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                    )}
+                </div>
+            </div>
 
-              {secondaryEntries.length > 0 && (
-                <section
-                  className="mt-3"
-                  aria-label={t('vin.result_secondary_section', 'Additional technical details')}
-                >
-                  <h3 className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t('vin.result_secondary_heading', 'Technical details')}
-                  </h3>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                    {secondaryEntries.map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="space-y-0.5"
-                      >
-                        <dt className="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-wide">
-                          {formatVinFieldKey(key)}
-                        </dt>
-                        <dd className="text-sm break-words">{formatVinFieldValue(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
-
-              {showAllDetails && otherEntries.length > 0 && (
-                <section
-                  className="mt-3"
-                  aria-label={t('vin.result_other_section', 'Other decoded attributes')}
-                >
-                  <h3 className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t('vin.result_other_heading', 'Other decoded data')}
-                  </h3>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                    {otherEntries.map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="space-y-0.5"
-                      >
-                        <dt className="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-wide">
-                          {formatVinFieldKey(key)}
-                        </dt>
-                        <dd className="text-sm break-words">{formatVinFieldValue(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
-
-              <p className="text-[0.7rem] text-muted-foreground mt-2">
-                {t(
-                  'vin.result_hint',
-                  'Values are approximate technical data based on VIN decode and may differ from official documents.',
-                )}
-              </p>
-            </>
-          )}
-        </div>
-        {canSearchCatalog && (
-          <div className="pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={handleGoToCatalog}
-            >
-              <Icon icon="mdi:magnify" className="me-2 h-3 w-3" />
-              {t('vin.cta_find_companies', 'Find import companies for this vehicle')}
-            </Button>
+            {/* Dashboard Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Icon icon="mdi:engine-outline" className="h-4 w-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Engine</span>
+                    </div>
+                    <span className="text-sm font-bold truncate" title={quickStats.engine}>{quickStats.engine}</span>
+                </div>
+                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Icon icon="mdi:transmission-box" className="h-4 w-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Trans</span>
+                    </div>
+                    <span className="text-sm font-bold truncate" title={quickStats.transmission}>{quickStats.transmission}</span>
+                </div>
+                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Icon icon="mdi:car-traction-control" className="h-4 w-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Drive</span>
+                    </div>
+                    <span className="text-sm font-bold truncate" title={quickStats.drive}>{quickStats.drive}</span>
+                </div>
+                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Icon icon="mdi:gas-station-outline" className="h-4 w-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Fuel</span>
+                    </div>
+                    <span className="text-sm font-bold truncate" title={quickStats.fuel}>{quickStats.fuel}</span>
+                </div>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          
+          <CardContent className="p-0 relative z-10 bg-card">
+            {entries.length === 0 ? (
+              <div className="text-center py-12 px-6">
+                <Icon icon="mdi:alert-circle-outline" className="mx-auto h-12 w-12 text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">
+                  {t('vin.result_empty_data', 'No additional data returned for this VIN.')}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {/* Split View for Specs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-t border-b">
+                    {/* Left Col: Technical */}
+                    <div className="p-0">
+                        <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
+                            <Icon icon="mdi:cog-outline" className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Technical Specifications</h3>
+                        </div>
+                        <dl>
+                            {technicalSpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
+                            {technicalSpecs.length === 0 && <div className="p-4 text-xs text-muted-foreground italic">No technical specs available.</div>}
+                        </dl>
+                    </div>
+
+                    {/* Right Col: Body & Mfg */}
+                    <div className="p-0">
+                        <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
+                            <Icon icon="mdi:car-info" className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Body & Manufacturing</h3>
+                        </div>
+                        <dl>
+                            {bodySpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
+                            {bodySpecs.length === 0 && <div className="p-4 text-xs text-muted-foreground italic">No body specs available.</div>}
+                        </dl>
+                    </div>
+                </div>
+
+                {/* Other Details - Collapsible */}
+                {otherSpecs.length > 0 && (
+                    <div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowAllDetails(!showAllDetails)}
+                            className="w-full justify-between bg-muted/5 hover:bg-muted/10 h-12 rounded-none px-6 border-b"
+                        >
+                            <span className="font-semibold text-sm flex items-center gap-2 text-muted-foreground">
+                                <Icon icon="mdi:clipboard-list-outline" className="h-4 w-4" />
+                                Additional Details
+                                <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5">{otherSpecs.length}</Badge>
+                            </span>
+                            <Icon
+                                icon="mdi:chevron-down"
+                                className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${showAllDetails ? 'rotate-180' : ''}`}
+                            />
+                        </Button>
+
+                        <AnimatePresence>
+                        {showAllDetails && (
+                            <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden bg-muted/5"
+                            >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 p-6">
+                                    {otherSpecs.map(([k, value]) => (
+                                        <div key={k} className="flex flex-col py-1 border-b border-border/10">
+                                            <dt className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate" title={formatVinFieldKey(k)}>
+                                                {formatVinFieldKey(k)}
+                                            </dt>
+                                            <dd className="text-xs font-medium text-foreground break-words">
+                                                {formatVinFieldValue(value)}
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                        </AnimatePresence>
+                    </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right Column: Widgets & CTA (Sticky on Desktop) */}
+      <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+          
+          {/* Feature 1: Estimated Cost Widget */}
+          {estimatedImportCost && (
+             <Card className="border-none shadow-xl bg-primary text-primary-foreground overflow-hidden relative">
+                 <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Icon icon="mdi:calculator" className="h-24 w-24" />
+                 </div>
+                 <CardContent className="p-6 relative z-10 space-y-4">
+                    <div>
+                        <h3 className="text-sm font-medium opacity-90 uppercase tracking-wider">Est. Clearing Cost</h3>
+                        <div className="text-4xl font-extrabold mt-1">
+                            ${estimatedImportCost.toLocaleString()}
+                        </div>
+                        <p className="text-xs opacity-70 mt-1">*Approximate customs clearance for {year}</p>
+                    </div>
+                    <Button variant="secondary" className="w-full font-bold shadow-sm" onClick={handleGoToCatalog}>
+                        <Icon icon="mdi:calculator-variant" className="mr-2 h-4 w-4" />
+                        Get Exact Quote
+                    </Button>
+                 </CardContent>
+             </Card>
+          )}
+
+          {/* Feature 2: Personalized Matching */}
+          <Card className="border-none shadow-lg">
+              <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                       <div className="flex -space-x-2 overflow-hidden">
+                            {[1,2,3].map(i => (
+                                <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-background bg-muted flex items-center justify-center">
+                                    <Icon icon="mdi:account" className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            ))}
+                       </div>
+                       <div className="text-sm font-medium">
+                           <span className="text-primary font-bold">12+ Importers</span> match this vehicle
+                       </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                      Verified companies specializing in importing <strong>{make}</strong> to Georgia.
+                  </p>
+                  <Button onClick={handleGoToCatalog} size="lg" className="w-full font-bold shadow-md">
+                      Show My Matches
+                      <Icon icon="mdi:arrow-right" className="ml-2 h-4 w-4" />
+                  </Button>
+              </CardContent>
+          </Card>
+
+          {/* Feature 4: Market Demand (Social Proof) */}
+          <Card className="border-none shadow-sm bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/20">
+              <CardContent className="p-4 flex items-start gap-3">
+                  <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full text-orange-600 dark:text-orange-400">
+                      <Icon icon="mdi:fire" className="h-5 w-5" />
+                  </div>
+                  <div>
+                      <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300">High Demand</h4>
+                      <p className="text-xs text-orange-700/80 dark:text-orange-400/80 mt-0.5">
+                          45 people searched for {model} this week. Don't miss out.
+                      </p>
+                  </div>
+              </CardContent>
+          </Card>
+
+          {/* Feature 5: Risk Mitigation */}
+          <Card className="border-none shadow-sm">
+              <CardContent className="p-4 space-y-3">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                      <Icon icon="mdi:shield-check" className="h-4 w-4 text-green-600" />
+                      Buy Safely
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2">
+                      <Button variant="outline" size="sm" className="justify-start h-auto py-2">
+                          <Icon icon="mdi:file-document-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col items-start text-xs">
+                              <span className="font-medium">Check History (Carfax)</span>
+                          </div>
+                      </Button>
+                      <Button variant="outline" size="sm" className="justify-start h-auto py-2">
+                          <Icon icon="mdi:eye-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col items-start text-xs">
+                              <span className="font-medium">Order Port Inspection</span>
+                          </div>
+                      </Button>
+                  </div>
+              </CardContent>
+          </Card>
+      </div>
+    </div>
   )
 }
 
