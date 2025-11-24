@@ -15,11 +15,10 @@ export function HeroWizard() {
     // Smart routing logic
     const cleanInput = input.trim();
     const isVin = cleanInput.length === 17 && !cleanInput.includes(' ');
-    const isUrl = cleanInput.includes('copart') || cleanInput.includes('iaai');
     const isPrice = !isNaN(Number(cleanInput.replace(/[^0-9]/g, '')));
 
     if (isVin) {
-      navigate(`/vin/${cleanInput}`);
+      navigate(`/vin?vin=${encodeURIComponent(cleanInput)}`);
     } else if (isPrice) {
       // Assume auction price, go to catalog with calculator filter
       const price = cleanInput.replace(/[^0-9]/g, '');
@@ -33,12 +32,15 @@ export function HeroWizard() {
   return (
     <div className="w-full max-w-3xl mx-auto text-center space-y-8">
       <div className="space-y-4">
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
-          <span className="block text-primary mb-2">Fair Car Import</span>
-          From USA to Georgia
+        <h1
+          id="home-hero-heading"
+          className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]"
+        >
+          <span className="block text-primary mb-2">TrustedImporters.Ge</span>
+          See real import cost from USA to Georgia
         </h1>
         <p className="text-lg text-slate-600 max-w-xl mx-auto">
-          We compare 37 verified companies in 1 click. No hidden fees.
+          Enter VIN or auction budget to see full estimated cost and move to trusted companies in one step.
         </p>
       </div>
 
@@ -52,7 +54,7 @@ export function HeroWizard() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className="h-14 md:h-16 pl-12 text-lg md:text-xl border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-slate-300"
-              placeholder="Enter Budget (e.g. 5000$), VIN, or Link..." 
+              placeholder="Enter VIN, auction budget or car model..." 
             />
           </div>
           <Button 

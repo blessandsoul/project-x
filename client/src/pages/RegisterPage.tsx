@@ -47,6 +47,9 @@ const RegisterPage = () => {
         <CardHeader className="space-y-2 text-center">
           <Icon icon="mdi:account-plus" className="mx-auto h-10 w-10 text-primary" />
           <CardTitle className="text-2xl font-bold">{t('auth.register.title')}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('auth.register.subtitle', 'Create an account to save your calculations and favorite companies.')}
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>

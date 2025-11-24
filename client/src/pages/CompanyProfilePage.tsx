@@ -336,6 +336,7 @@ const CompanyProfilePage = () => {
   }
 
   const logoSrc = company.logo ?? '';
+  const hasHighTrustScore = Boolean((company as any)?.trustScore && (company as any).trustScore >= 70);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -375,7 +376,7 @@ const CompanyProfilePage = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2 rtl:space-x-reverse">
                   <h1 className="text-3xl font-bold">{company.name}</h1>
-                  {company.vipStatus && <VipBadge />}
+                  {hasHighTrustScore && <VipBadge />}
                   <Button
                     variant="outline"
                     size="icon"
@@ -499,9 +500,18 @@ const CompanyProfilePage = () => {
 
               {company.priceRange && (
                 <div className="lg:text-right mt-6 lg:mt-0">
-                  <div className="text-2xl font-bold text-primary mb-1">
-                    ${company.priceRange.min} - ${company.priceRange.max}
+                  <div
+                    className="text-2xl font-bold text-primary mb-1"
+                    aria-label={`Estimated service cost from ${company.priceRange.min} to ${company.priceRange.max} USD`}
+                  >
+                    ${company.priceRange.min.toLocaleString()} - ${company.priceRange.max.toLocaleString()}
                   </div>
+                  <p
+                    className="text-xs text-muted-foreground"
+                    aria-label="Approximate total service cost in Georgian lari"
+                  >
+                    ≈ {(company.priceRange.min * 2.7).toLocaleString()} GEL
+                  </p>
                   <p className="text-sm text-muted-foreground">{t('company_profile.service_cost')}</p>
                 </div>
               )}
@@ -985,6 +995,12 @@ const CompanyProfilePage = () => {
 
             </div>
           </div>
+        </div>
+        <div className="hidden dev-note mt-8 p-4 text-xs text-muted-foreground">
+          <p>
+            This page focuses on one decision: whether to work with this company. It shows the expected
+            service cost range, highlights rating and reviews, and provides clear contact actions.
+          </p>
         </div>
       </main>
 

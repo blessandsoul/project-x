@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/company/EmptyState';
 import { Input } from '@/components/ui/input';
@@ -121,7 +120,7 @@ const CompanyCatalogPage = () => {
   const { t } = useTranslation();
   const {
     searchTerm, setSearchTerm, minRating, setMinRating, priceRange, setPriceRange,
-    city, setCity, isVipOnly, setIsVipOnly, onboardingFree, setOnboardingFree,
+    city, isVipOnly, setIsVipOnly, onboardingFree, setOnboardingFree,
     sortBy, setSortBy, page, setPage, resetAll
   } = useCatalogQueryParams();
 
@@ -156,72 +155,11 @@ const CompanyCatalogPage = () => {
   const totalResults = filteredCompanies.length;
   const totalPages = Math.ceil(totalResults / pageSize);
   const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
-<<<<<<< Updated upstream
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
-
-  const paginatedCompanies = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredCompanies.slice(startIndex, startIndex + pageSize);
-  }, [filteredCompanies, currentPage, pageSize]);
-
-  const hasRatingFilter = minRating > 0;
-  const hasVipFilter = isVipOnly;
-  const hasPriceFilter =
-    priceRange[0] > DEFAULT_PRICE_RANGE[0] || priceRange[1] < DEFAULT_PRICE_RANGE[1];
-  const hasCityFilter = city.trim().length > 0;
-  const hasOnboardingFilter = onboardingFree;
-
-  const hasAnyActiveFilter =
-    hasRatingFilter || hasVipFilter || hasPriceFilter || hasCityFilter || hasOnboardingFilter ||
-    searchTerm.trim().length > 0 || sortBy !== 'newest';
-
-  const handleResetAllFilters = () => {
-    setSearchTerm('');
-    setMinRating(0);
-    setPriceRange(DEFAULT_PRICE_RANGE);
-    setCity('');
-    setIsVipOnly(false);
-    setOnboardingFree(false);
-    setSortBy('newest');
-    setPage(1);
-
-    // Ensure URL is fully reset so filters are URL-dependent and sharable
-    navigate('/catalog', { replace: true });
-  };
-=======
-  const paginatedCompanies = filteredCompanies.slice((currentPage - 1) * pageSize, currentPage * pageSize);
->>>>>>> Stashed changes
-
-  const scrollToTopSmooth = () => {
-    if (typeof window === 'undefined') return;
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handlePrevPage = () => {
-    setPage((prev) => {
-      const nextPage = Math.max(1, prev - 1);
-      if (nextPage !== prev) {
-        scrollToTopSmooth();
-      }
-      return nextPage;
-    });
-  };
-
-  const handleNextPage = () => {
-    setPage((prev) => {
-      const nextPage = Math.min(totalPages, prev + 1);
-      if (nextPage !== prev) {
-        scrollToTopSmooth();
-      }
-      return nextPage;
-    });
-  };
+  const paginatedCompanies = useMemo(
+    () => filteredCompanies.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredCompanies, currentPage, pageSize],
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -260,12 +198,12 @@ const CompanyCatalogPage = () => {
                     <label className="text-xs font-bold text-slate-500 uppercase">
                        Service Cost (${localPriceRange[0]} - ${localPriceRange[1]})
                     </label>
-                    <Slider 
-                       value={localPriceRange} 
-                       onValueChange={setLocalPriceRange} 
-                       onValueCommit={setPriceRange} 
-                       max={5000} 
-                       step={100} 
+                    <Slider
+                       value={localPriceRange}
+                       onValueChange={(value) => setLocalPriceRange(value as [number, number])}
+                       onValueCommit={setPriceRange}
+                       max={5000}
+                       step={100}
                     />
                 </div>
 
@@ -282,78 +220,6 @@ const CompanyCatalogPage = () => {
 
                 <Button variant="outline" className="w-full" onClick={resetAll}>Reset Filters</Button>
               </div>
-<<<<<<< Updated upstream
-
-              {!isLoading && totalPages > 1 && (
-                <nav
-                  className="mt-6 flex items-center justify-between gap-4"
-                  aria-label={t('catalog.pagination.label')}
-                >
-                  <p className="text-xs text-muted-foreground">
-                    {t('catalog.pagination.page')} {currentPage} / {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrevPage}
-                      disabled={currentPage === 1}
-                      aria-label={t('catalog.pagination.prev')}
-                      motionVariant="scale"
-                    >
-                      <Icon icon="mdi:chevron-left" className="me-1 h-4 w-4" />
-                      {t('catalog.pagination.prev')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
-                      aria-label={t('catalog.pagination.next')}
-                      motionVariant="scale"
-                    >
-                      {t('catalog.pagination.next')}
-                      <Icon icon="mdi:chevron-right" className="ms-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </nav>
-              )}
-
-              {!isLoading && totalResults === 0 && (
-                <Card className="mt-6 p-12">
-                  <EmptyState
-                    icon="mdi:magnify-remove"
-                    title={t('catalog.results.empty_title')}
-                    description={t('catalog.results.empty_description')}
-                    action={(
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <Button
-                          onClick={() => setSearchTerm('')}
-                          motionVariant="scale"
-                        >
-                          {t('catalog.search.clear')}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleResetAllFilters}
-                          motionVariant="scale"
-                          className="inline-flex items-center gap-1"
-                        >
-                          <Icon
-                            icon="mdi:filter-remove-outline"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
-                          <span>{t('catalog.tags.reset_all')}</span>
-                        </Button>
-                      </div>
-                    )}
-                  />
-                </Card>
-              )}
-=======
->>>>>>> Stashed changes
             </div>
           </aside>
 
@@ -364,7 +230,7 @@ const CompanyCatalogPage = () => {
                 <div className="relative w-full sm:max-w-xs">
                    <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                    <Input 
-                      placeholder="Search companies..." 
+                      placeholder="მოძებნეთ კომპანიები..." 
                       value={searchTerm} 
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9 bg-slate-50 border-slate-200"

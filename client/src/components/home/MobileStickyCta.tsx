@@ -54,21 +54,6 @@ export function MobileStickyCta() {
           <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
           <span className="truncate text-sm font-medium">კომპანიების კატალოგი</span>
         </Button>
-
-        <Button
-          size="sm"
-          variant="default"
-          className="flex-1"
-          onClick={() => {
-            trackStickyCtaClick('quote')
-            navigate('/leads/vehicle')
-          }}
-          aria-label="მიიღე განახლებული შეთავაზებები"
-          motionVariant="scale"
-        >
-          <Icon icon="mdi:cars" className="mr-2 h-4 w-4" />
-          <span className="truncate text-sm font-semibold">მიიღე შეთავაზებები</span>
-        </Button>
       </div>
     </div>
   )

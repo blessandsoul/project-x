@@ -41,6 +41,7 @@ export interface Company {
   phone_number: string | null;
   rating: number;
   reviewCount: number;
+  trustScore?: number;
   created_at: string;
   updated_at: string;
   // Extended fields often used in UI but might need optionality if not always fetched

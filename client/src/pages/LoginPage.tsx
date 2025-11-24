@@ -56,6 +56,9 @@ const LoginPage = () => {
         <CardHeader className="space-y-2 text-center">
           <Icon icon="mdi:car" className="mx-auto h-10 w-10 text-primary" />
           <CardTitle className="text-2xl font-bold">{t('auth.login.title')}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('auth.login.subtitle', 'Sign in to save your calculations and favorite companies.')}
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>

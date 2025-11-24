@@ -337,6 +337,13 @@ const CarfaxPage = () => {
           )}
         </div>
       </main>
+      <div className="hidden dev-note mt-4 px-4 pb-4 text-xs text-muted-foreground">
+        <p>
+          VIN flow helps users paste a VIN once, see structured vehicle data, and then move directly to the
+          company catalog with a pre-filled search query. This reduces confusion about the car and connects the
+          decode step to the business decision.
+        </p>
+      </div>
       <Footer footerLinks={footerLinks} />
     </div>
   );

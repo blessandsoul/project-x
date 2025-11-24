@@ -65,6 +65,13 @@ const generateCompanies = (count = 20) => {
     const minPrice = baseFee + customsFee + serviceFee + brokerFee;
     const maxPrice = minPrice + pricePerMile * 1000;
 
+    const vipStatus = faker.datatype.boolean({ probability: 0.3 });
+
+    const ratingScore = (avgRating / 5) * 70;
+    const reviewScore = Math.min(20, Math.log10(reviewCount + 1) * 10);
+    const vipBonus = vipStatus ? 10 : 0;
+    const trustScore = Math.round(Math.min(100, ratingScore + reviewScore + vipBonus));
+
     return {
       id: (i + 1).toString(),
       slug,
@@ -87,7 +94,8 @@ const generateCompanies = (count = 20) => {
       pricingFormula: null,
       rating: Math.round(avgRating * 10) / 10,
       reviewCount,
-      vipStatus: faker.datatype.boolean({ probability: 0.3 }),
+      vipStatus,
+      trustScore,
       onboarding: {
         isFree: faker.datatype.boolean({ probability: 0.4 }),
         endsAt: onboardingEndsAt

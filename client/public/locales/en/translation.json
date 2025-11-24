@@ -178,6 +178,7 @@
     },
     "login": {
       "title": "Sign In",
+      "subtitle": "Sign in to save your calculations and favorite companies.",
       "email": "Email",
       "password": "Password",
       "submit": "Sign In",
@@ -191,6 +192,7 @@
     },
     "register": {
       "title": "Register",
+      "subtitle": "Create an account to save your calculations and favorite companies.",
       "name": "Name",
       "email": "Email",
       "password": "Password",

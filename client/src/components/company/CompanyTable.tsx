@@ -44,12 +44,12 @@ export function CompanyTable({ companies }: CompanyTableProps) {
                     <div>
                       <div className="flex items-center gap-1.5">
                          <span className="font-bold text-slate-900 text-base">{company.name}</span>
-                         {company.vipStatus && (
+                         {company.trustScore !== undefined && company.trustScore >= 70 && (
                             <Tooltip>
                                <TooltipTrigger>
                                   <Icon icon="mdi:check-decagram" className="h-4 w-4 text-blue-500" />
                                </TooltipTrigger>
-                               <TooltipContent>Verified: License + 5 reviews</TooltipContent>
+                               <TooltipContent>Verified: high trust score based on reviews and transparency</TooltipContent>
                             </Tooltip>
                          )}
                       </div>
