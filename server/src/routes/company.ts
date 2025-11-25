@@ -69,6 +69,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       is_vip,
       onboarding_free,
       search,
+      name,
       order_by,
       order_direction,
     } = request.query as {
@@ -83,22 +84,29 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       is_vip?: string;
       onboarding_free?: string;
       search?: string;
+      name?: string;
       order_by?: string;
       order_direction?: string;
     };
 
-    if (typeof search === 'string') {
-      const trimmed = search.trim();
-      if (trimmed.length > 0 && trimmed.length < 4) {
+    const effectiveSearch = typeof search === 'string' && search.trim().length > 0
+      ? search
+      : typeof name === 'string' && name.trim().length > 0
+        ? name
+        : undefined;
+
+    if (typeof effectiveSearch === 'string') {
+      const trimmed = effectiveSearch.trim();
+      if (trimmed.length > 0 && trimmed.length < 3) {
         return reply.status(400).send({
           error: 'SEARCH_TOO_SHORT',
-          message: 'search parameter must be at least 4 characters long when provided',
+          message: 'search parameter must be at least 3 characters long when provided',
         });
       }
     }
 
-    const parsedLimit = typeof limit === 'number' ? limit : NaN;
-    const parsedOffset = typeof offset === 'number' ? offset : NaN;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
+    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
 
     let typedOrderBy: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
     if (order_by === 'rating' || order_by === 'cheapest' || order_by === 'name' || order_by === 'newest') {
@@ -119,7 +127,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
         offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
       },
-      { limit: 20, maxLimit: 100 },
+      { limit: 10, maxLimit: 100 },
     );
 
     const params = {
@@ -133,7 +141,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       city: city && city.trim().length > 0 ? city : undefined,
       isVip: typeof is_vip === 'string' ? is_vip === 'true' : undefined,
       isOnboardingFree: typeof onboarding_free === 'string' ? onboarding_free === 'true' : undefined,
-      search: search && search.trim().length > 0 ? search.trim() : undefined,
+      search: effectiveSearch && effectiveSearch.trim().length > 0 ? effectiveSearch.trim() : undefined,
       orderBy: typedOrderBy,
       orderDirection: typedOrderDirection,
     };

@@ -362,8 +362,9 @@ export async function searchCompaniesFromApi(
   }
 
   const trimmedSearch = params.search?.trim() ?? ''
-  if (trimmedSearch.length >= 4) {
-    searchParams.set('search', trimmedSearch)
+  if (trimmedSearch.length >= 3) {
+    // Backend accepts `name` as an alias for `search` with the same rules
+    searchParams.set('name', trimmedSearch)
   }
 
   if (typeof params.minRating === 'number' && params.minRating > 0) {

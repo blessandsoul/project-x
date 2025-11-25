@@ -51,12 +51,13 @@ Search companies with filters, pagination and sorting. This endpoint is intended
 
 **Query params:**
 
-- `limit` (optional, number) – page size, default 20, max 100.
+- `limit` (optional, number) – page size, default 10, max 100.
 - `offset` (optional, number) – number of companies to skip, default 0.
 - `search` (optional, string) – case‑insensitive search on company `name`.
-  - When provided, must be **at least 4 characters** long.
+  - When provided, must be **at least 3 characters** long.
   - Shorter non‑empty values cause `400 Bad Request` with:
     - `error: "SEARCH_TOO_SHORT"`.
+- `name` (optional, string) – alias for `search` with the **same rules** (min 3 characters, `SEARCH_TOO_SHORT` on shorter non‑empty values).
 - `min_rating` (optional, number) – minimum average rating.
 - `min_base_price` (optional, number) – minimum `base_price`.
 - `max_base_price` (optional, number) – maximum `base_price`.
