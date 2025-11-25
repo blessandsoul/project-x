@@ -159,7 +159,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
               </SheetTrigger>
               <SheetContent side="left" className="w-[280px] sm:w-[340px]">
                 <SheetHeader>
-                  <SheetTitle className="text-left font-bold">Menu</SheetTitle>
+                  <SheetTitle className="text-left font-bold">{t('header.menu')}</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 flex flex-col gap-4">
                   <nav className="flex flex-col space-y-1">

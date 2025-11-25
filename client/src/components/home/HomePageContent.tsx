@@ -3,7 +3,7 @@ import { HeroSection } from '@/components/home/HeroSection'
 import { BenefitsSection } from '@/components/home/BenefitsSection'
 
 const TestimonialsSectionLazy = lazy(() =>
-  import('@/components/home/TestimonialsSection').then((mod) => ({
+  import('@/components/home/testimonials').then((mod) => ({
     default: mod.TestimonialsSection,
   })),
 )

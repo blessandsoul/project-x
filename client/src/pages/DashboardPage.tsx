@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion, useReducedMotion } from 'framer-motion'
+import { useReducedMotion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import Header from '@/components/Header/index.tsx'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { SectionCards } from '@/components/section-cards'
 import { DealerDashboardSections } from '@/components/dashboard/DealerDashboardSections'
 import { CompanyDashboardSections, type CompanyLeadBubble } from '@/components/dashboard/CompanyDashboardSections'
 import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
@@ -686,6 +685,23 @@ export default function DashboardPage() {
             </Breadcrumb>
           </header>
           <main className="flex flex-1 flex-col" aria-label="Dashboard main content">
+            {/* Greeting Section */}
+            <div className="px-4 py-4 md:px-6 md:py-6 pb-0 md:pb-0">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {(() => {
+                  const hour = new Date().getHours()
+                  const greeting = hour < 12 ? t('common.greeting.morning') : hour < 18 ? t('common.greeting.afternoon') : t('common.greeting.evening')
+                  const name = (user as any)?.firstName || user?.email?.split('@')[0] || t('common.user')
+                  return `${greeting}, ${name}.`
+                })()}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {role === 'user' && t('dashboard.user.welcome_subtitle')}
+                {role === 'dealer' && t('dashboard.dealer.welcome_subtitle')}
+                {role === 'company' && t('dashboard.company.welcome_subtitle')}
+              </p>
+            </div>
+
             {/* Dev: role switcher for quickly viewing different dashboards */}
             <div className="border-b px-4 py-2 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
               <Button
@@ -773,13 +789,9 @@ export default function DashboardPage() {
 
               return (
                 <div
-                  className="flex flex-1 flex-col gap-4 p-4"
+                  className="flex flex-1 flex-col p-4 md:p-6"
                   aria-label="Dashboard sections"
                 >
-                  <motion.div {...getSectionMotionProps(0)}>
-                    <SectionCards role={role} />
-                  </motion.div>
-
                   {renderRoleSections()}
                 </div>
               )

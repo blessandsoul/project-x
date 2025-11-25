@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ export const CatalogFilters = ({
   resetAll,
   className
 }: CatalogFiltersProps) => {
+  const { t } = useTranslation();
   const [localPriceRange, setLocalPriceRange] = useState(priceRange);
 
   // Sync local state with prop
@@ -54,11 +56,11 @@ export const CatalogFilters = ({
     <div className="space-y-6">
       {/* Search */}
       <div className="space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Search</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.search')}</label>
         <div className="relative">
           <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
-            placeholder="Company name..." 
+            placeholder={t('catalog.filters.search_placeholder', 'Company name...')} 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 bg-white"
@@ -70,7 +72,7 @@ export const CatalogFilters = ({
 
       {/* City Search */}
       <div className="space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">City</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.city_placeholder')}</label>
         <div className="relative">
           <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
@@ -86,16 +88,16 @@ export const CatalogFilters = ({
 
       {/* Rating */}
       <div className="space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Min Rating</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.rating')}</label>
         <Select value={minRating.toString()} onValueChange={(v) => setMinRating(Number(v))}>
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Any Rating" />
+            <SelectValue placeholder={t('catalog.filters.rating_all')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Any Rating</SelectItem>
-            <SelectItem value="3">3+ Stars</SelectItem>
-            <SelectItem value="4">4+ Stars (Trusted)</SelectItem>
-            <SelectItem value="5">5 Stars Only</SelectItem>
+            <SelectItem value="0">{t('catalog.filters.rating_all')}</SelectItem>
+            <SelectItem value="3">3+ {t('common.stars')}</SelectItem>
+            <SelectItem value="4">4+ {t('common.stars')}</SelectItem>
+            <SelectItem value="5">5 {t('common.stars')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -103,7 +105,7 @@ export const CatalogFilters = ({
       {/* Price Range */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Service Cost</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.price')}</label>
           <span className="text-xs font-medium text-slate-700">
             ${localPriceRange[0]} - ${localPriceRange[1]}
           </span>
@@ -127,10 +129,10 @@ export const CatalogFilters = ({
               htmlFor="vip"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
             >
-              Verified Partners
+              {t('catalog.filters.vip_only')}
               <Icon icon="mdi:crown" className="h-3.5 w-3.5 text-amber-500" />
             </label>
-            <p className="text-[10px] text-slate-500">Show only vetted companies</p>
+            <p className="text-[10px] text-slate-500">{t('catalog.filters.vip_desc')}</p>
           </div>
         </div>
 
@@ -141,16 +143,16 @@ export const CatalogFilters = ({
               htmlFor="onboarding"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Free Consultation
+              {t('catalog.filters.free_onboarding')}
             </label>
-            <p className="text-[10px] text-slate-500">No initial fees</p>
+            <p className="text-[10px] text-slate-500">{t('catalog.filters.no_fees')}</p>
           </div>
         </div>
       </div>
 
       <Button variant="outline" className="w-full" onClick={resetAll}>
         <Icon icon="mdi:refresh" className="mr-2 h-4 w-4" />
-        Reset Filters
+        {t('catalog.filters.reset')}
       </Button>
     </div>
   );
@@ -163,7 +165,7 @@ export const CatalogFilters = ({
           <div className="p-2 bg-slate-100 rounded-lg">
             <Icon icon="mdi:filter-variant" className="h-5 w-5 text-slate-700" />
           </div>
-          <h3 className="font-bold text-slate-900">Filters</h3>
+          <h3 className="font-bold text-slate-900">{t('catalog.filters.title', 'Filters')}</h3>
         </div>
         <FilterContent />
       </div>
@@ -174,17 +176,17 @@ export const CatalogFilters = ({
           <Button variant="outline" className="lg:hidden w-full h-12 border-slate-200 shadow-sm bg-white justify-between px-4">
             <div className="flex items-center gap-2">
               <Icon icon="mdi:filter-variant" className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold text-slate-700">Filters</span>
+              <span className="font-semibold text-slate-700">{t('catalog.filters.title', 'Filters')}</span>
             </div>
             {(minRating > 0 || isVipOnly || onboardingFree || city) && (
-               <Badge variant="secondary" className="bg-slate-100 text-slate-900 h-6">Active</Badge>
+               <Badge variant="secondary" className="bg-slate-100 text-slate-900 h-6">{t('common.active')}</Badge>
             )}
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-full sm:w-[400px] p-0 flex flex-col h-full">
           <SheetHeader className="px-6 py-4 border-b border-slate-100">
             <SheetTitle className="text-left flex items-center gap-2">
-              <Icon icon="mdi:filter-variant" /> Filters
+              <Icon icon="mdi:filter-variant" /> {t('catalog.filters.title', 'Filters')}
             </SheetTitle>
           </SheetHeader>
           
@@ -195,7 +197,7 @@ export const CatalogFilters = ({
           <SheetFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
             <SheetClose asChild>
               <Button className="w-full h-12 text-base font-semibold shadow-md">
-                Show Results
+                {t('catalog.filters.show_results', 'Show Results')}
               </Button>
             </SheetClose>
           </SheetFooter>

@@ -2,8 +2,10 @@ import { useCostCalculator } from '@/hooks/useCostCalculator';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 
 export function CostCalculatorWidget() {
+  const { t } = useTranslation();
   const { values, updateValue, breakdown } = useCostCalculator();
 
   if (!breakdown) return null;
@@ -13,7 +15,7 @@ export function CostCalculatorWidget() {
       <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
         <h3 className="font-bold text-slate-800 flex items-center gap-2">
           <Icon icon="mdi:calculator" className="text-primary" />
-          Import Calculator
+          {t('home.price_calculator.widget_title')}
         </h3>
       </div>
       
@@ -22,7 +24,7 @@ export function CostCalculatorWidget() {
         <div className="space-y-4">
           <div>
             <div className="flex justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase">Auction Price</label>
+              <label className="text-xs font-semibold text-slate-500 uppercase">{t('home.price_calculator.auction_price')}</label>
               <span className="font-mono font-bold text-slate-900">${values.auctionPrice}</span>
             </div>
             <Slider
@@ -36,7 +38,7 @@ export function CostCalculatorWidget() {
 
           <div>
             <div className="flex justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase">Engine Volume (L)</label>
+              <label className="text-xs font-semibold text-slate-500 uppercase">{t('home.price_calculator.engine_volume')}</label>
               <span className="font-mono font-bold text-slate-900">{values.engineVolume.toFixed(1)} L</span>
             </div>
             <Slider
@@ -54,15 +56,15 @@ export function CostCalculatorWidget() {
         {/* Breakdown */}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-slate-600">
-            <span>Shipping to Poti/Batumi</span>
+            <span>{t('home.price_calculator.shipping_poti')}</span>
             <span>${breakdown.shipping}</span>
           </div>
           <div className="flex justify-between text-slate-600">
-            <span>Est. Customs Clearance</span>
+            <span>{t('home.price_calculator.est_customs')}</span>
             <span>${breakdown.customs}</span>
           </div>
           <div className="flex justify-between text-slate-600">
-             <span>Broker & Port Fees</span>
+             <span>{t('home.price_calculator.broker_fees')}</span>
              <span>${breakdown.brokerFee}</span>
           </div>
         </div>
@@ -70,7 +72,7 @@ export function CostCalculatorWidget() {
         {/* Total */}
         <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
            <div className="flex justify-between items-end">
-              <span className="text-sm font-medium text-slate-600">Total Estimated Cost</span>
+              <span className="text-sm font-medium text-slate-600">{t('home.price_calculator.total_estimated')}</span>
               <div className="text-right">
                  <span className="block text-2xl font-bold text-primary leading-none">
                     ${breakdown.total.toLocaleString()}

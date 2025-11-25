@@ -67,6 +67,34 @@ export function AuctionVehicleCard({
     return 3 + (seed % 25); // Random number between 3 and 27
   }, [item.id, item.vehicle_id]);
 
+  // Helpers for translation
+  const formatMileage = (mileage: number | null | undefined) => {
+    if (!mileage) return 'N/A';
+    const k = (mileage / 1000).toFixed(0);
+    return `${k}k ${t('common.miles_short')}`;
+  };
+
+  const translateFuel = (fuel: string | null | undefined) => {
+    if (!fuel) return 'N/A';
+    const key = fuel.toLowerCase();
+    if (key.includes('gas') || key.includes('petrol')) return t('common.fuel_gas');
+    if (key.includes('diesel')) return t('common.fuel_diesel');
+    if (key.includes('hybrid')) return t('common.fuel_hybrid');
+    if (key.includes('electric')) return t('common.fuel_electric');
+    return fuel;
+  };
+
+  const translateDrive = (drive: string | null | undefined) => {
+    if (!drive) return 'N/A';
+    const key = drive.toLowerCase();
+    if (key.includes('fwd') || key.includes('front')) return t('common.drive_types.fwd');
+    if (key.includes('rwd') || key.includes('rear')) return t('common.drive_types.rwd');
+    if (key.includes('awd') || key.includes('all')) return t('common.drive_types.awd');
+    if (key.includes('4wd')) return t('common.drive_types.4wd');
+    if (key.includes('full')) return t('common.drive_types.full');
+    return drive;
+  };
+
   const isHot = watcherCount > 15;
   const isNew = item.year >= new Date().getFullYear() - 1;
 
@@ -125,7 +153,7 @@ export function AuctionVehicleCard({
               {isNew && !isHot && (
                 <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1">
                   <Icon icon="mdi:star-four-points" className="w-3 h-3" />
-                  NEW
+                  {t('common.badges.new')}
                 </Badge>
               )}
 
@@ -133,7 +161,7 @@ export function AuctionVehicleCard({
               {isHot && (
                 <Badge className="bg-orange-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1 animate-pulse">
                   <Icon icon="mdi:fire" className="w-3 h-3" />
-                  HOT
+                  {t('common.badges.hot')}
                 </Badge>
               )}
             </div>
@@ -213,15 +241,15 @@ export function AuctionVehicleCard({
           <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
             <div className="flex flex-col items-center justify-center text-center gap-0.5">
               <Icon icon="mdi:speedometer" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium truncate w-full">{item.mileage ? `${(item.mileage / 1000).toFixed(0)}k mi` : 'N/A'}</span>
+              <span className="text-xs font-medium truncate w-full">{formatMileage(item.mileage)}</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
               <Icon icon="mdi:gas-station" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{item.fuel_type || 'N/A'}</span>
+              <span className="text-xs font-medium capitalize truncate w-full">{translateFuel(item.fuel_type)}</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
               <Icon icon="mdi:car-traction-control" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{item.drive || 'N/A'}</span>
+              <span className="text-xs font-medium capitalize truncate w-full">{translateDrive(item.drive)}</span>
             </div>
           </div>
 

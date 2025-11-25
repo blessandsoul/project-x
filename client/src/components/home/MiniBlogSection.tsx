@@ -26,7 +26,7 @@ const POSTS: Post[] = [
     tagKey: 'blog.post1.tag',
     image: '/cars/1.webp',
     categoryColor: 'bg-blue-500',
-    takeaways: ['Check VIN history', 'Inspect body paint', 'Verify engine noise']
+    takeaways: ['1', '2', '3']
   },
   {
     id: 2,
@@ -36,7 +36,7 @@ const POSTS: Post[] = [
     tagKey: 'blog.post2.tag',
     image: '/cars/2.webp',
     categoryColor: 'bg-purple-500',
-    takeaways: ['Review shipping terms', 'Check insurance coverage', 'Confirm hidden fees']
+    takeaways: ['1', '2', '3']
   },
   {
     id: 3,
@@ -46,7 +46,7 @@ const POSTS: Post[] = [
     tagKey: 'blog.post3.tag',
     image: '/cars/3.webp',
     categoryColor: 'bg-green-500',
-    takeaways: ['Calculate customs duty', 'Compare shipping routes', 'Book in advance']
+    takeaways: ['1', '2', '3']
   },
 ]
 
@@ -148,12 +148,16 @@ export function MiniBlogSection() {
                         {t('home.blog.takeaways_title')}
                       </p>
                       <ul className="space-y-1.5">
-                        {post.takeaways.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-white">
-                            <Icon icon="mdi:check-circle" className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
+                        {post.takeaways.map((item, i) => {
+                          // Extract base key from titleKey (e.g., 'blog.post1.title' -> 'blog.post1')
+                          const baseKey = post.titleKey.replace('.title', '')
+                          return (
+                            <li key={i} className="flex items-start gap-2 text-xs text-white">
+                              <Icon icon="mdi:check-circle" className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                              <span>{t(`home.blog.posts.${baseKey}.takeaways.${item}`)}</span>
+                            </li>
+                          )
+                        })}
                       </ul>
                     </div>
                   </div>
@@ -179,7 +183,7 @@ export function MiniBlogSection() {
                   
                   <div className="pt-1">
                     <span className="group/link inline-flex items-center gap-1 text-sm font-bold text-primary decoration-primary/30 underline-offset-4 transition-all hover:underline">
-                      Read Article <Icon icon="mdi:arrow-right" className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />
+                      {t('home.blog.read_article')} <Icon icon="mdi:arrow-right" className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />
                     </span>
                   </div>
                 </div>

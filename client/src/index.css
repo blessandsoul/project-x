@@ -65,15 +65,16 @@
   --shadow-glow: 0 0 20px rgba(0, 71, 0, 0.15);
 }
 
-<<<<<<< Updated upstream
-/* * {
-  outline: 1px green solid !important;
-} */
-=======
-* {
-  outline: none; /* Remove default outline, we use ring */
+/* Language Specific Font Overrides */
+:root[lang="ar"] {
+  --font-sans: 'Cairo', sans-serif;
+  --font-heading: 'Cairo', sans-serif;
 }
->>>>>>> Stashed changes
+
+:root[lang="ka"] {
+  --font-sans: 'Noto Sans Georgian', sans-serif;
+  --font-heading: 'Noto Sans Georgian', sans-serif;
+}
 
 .dark {
   --color-background: #020617; /* Slate 950 */

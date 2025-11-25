@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, Trans } from 'react-i18next'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -146,7 +146,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
   const SpecRow = ({ label, value, index }: { label: string; value: unknown, index: number }) => (
     <div className={`flex justify-between py-2 px-3 ${index % 2 === 0 ? 'bg-muted/30' : 'bg-transparent'} border-b border-border/20 last:border-0`}>
       <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        {formatVinFieldKey(label)}
+        {formatVinFieldKey(label, t)}
       </dt>
       <dd className="text-xs sm:text-sm font-semibold text-foreground text-right pl-4">
         {formatVinFieldValue(value)}
@@ -172,7 +172,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                     className="w-full h-full object-cover opacity-50"
                 />
                 <div className="absolute bottom-2 right-2 z-20 text-[10px] text-muted-foreground/50">
-                    Photo by {carImage.photographer} / Unsplash
+                    {t('vin.photo_credit', { photographer: carImage.photographer })}
                 </div>
             </div>
           )}
@@ -187,7 +187,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                         </Badge>
                         <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20">
                             <Icon icon="mdi:check-decagram" className="mr-1 h-3 w-3" />
-                            Verified
+                            {t('common.verified')}
                         </Badge>
                     </div>
                     <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground leading-tight drop-shadow-sm">
@@ -224,28 +224,28 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                 <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Icon icon="mdi:engine-outline" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Engine</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.engine')}</span>
                     </div>
                     <span className="text-sm font-bold truncate" title={quickStats.engine}>{quickStats.engine}</span>
                 </div>
                 <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Icon icon="mdi:transmission-box" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Trans</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.transmission')}</span>
                     </div>
                     <span className="text-sm font-bold truncate" title={quickStats.transmission}>{quickStats.transmission}</span>
                 </div>
                 <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Icon icon="mdi:car-traction-control" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Drive</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.drive')}</span>
                     </div>
                     <span className="text-sm font-bold truncate" title={quickStats.drive}>{quickStats.drive}</span>
                 </div>
                 <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Icon icon="mdi:gas-station-outline" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Fuel</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.fuel')}</span>
                     </div>
                     <span className="text-sm font-bold truncate" title={quickStats.fuel}>{quickStats.fuel}</span>
                 </div>
@@ -268,7 +268,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                     <div className="p-0">
                         <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
                             <Icon icon="mdi:cog-outline" className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Technical Specifications</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">{t('vin.tech_specs_title')}</h3>
                         </div>
                         <dl>
                             {technicalSpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
@@ -280,7 +280,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                     <div className="p-0">
                         <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
                             <Icon icon="mdi:car-info" className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Body & Manufacturing</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">{t('vin.body_specs_title')}</h3>
                         </div>
                         <dl>
                             {bodySpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
@@ -299,7 +299,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                         >
                             <span className="font-semibold text-sm flex items-center gap-2 text-muted-foreground">
                                 <Icon icon="mdi:clipboard-list-outline" className="h-4 w-4" />
-                                Additional Details
+                                {t('vin.additional_details')}
                                 <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5">{otherSpecs.length}</Badge>
                             </span>
                             <Icon
@@ -320,8 +320,8 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 p-6">
                                     {otherSpecs.map(([k, value]) => (
                                         <div key={k} className="flex flex-col py-1 border-b border-border/10">
-                                            <dt className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate" title={formatVinFieldKey(k)}>
-                                                {formatVinFieldKey(k)}
+                                            <dt className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate" title={formatVinFieldKey(k, t)}>
+                                                {formatVinFieldKey(k, t)}
                                             </dt>
                                             <dd className="text-xs font-medium text-foreground break-words">
                                                 {formatVinFieldValue(value)}
@@ -351,15 +351,15 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                  </div>
                  <CardContent className="p-6 relative z-10 space-y-4">
                     <div>
-                        <h3 className="text-sm font-medium opacity-90 uppercase tracking-wider">Est. Clearing Cost</h3>
+                        <h3 className="text-sm font-medium opacity-90 uppercase tracking-wider">{t('vin.est_clearing_cost')}</h3>
                         <div className="text-4xl font-extrabold mt-1">
                             ${estimatedImportCost.toLocaleString()}
                         </div>
-                        <p className="text-xs opacity-70 mt-1">*Approximate customs clearance for {year}</p>
+                        <p className="text-xs opacity-70 mt-1">{t('vin.est_clearing_note', { year })}</p>
                     </div>
                     <Button variant="secondary" className="w-full font-bold shadow-sm" onClick={handleGoToCatalog}>
                         <Icon icon="mdi:calculator-variant" className="mr-2 h-4 w-4" />
-                        Get Exact Quote
+                        {t('vin.get_exact_quote')}
                     </Button>
                  </CardContent>
              </Card>
@@ -377,14 +377,14 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                             ))}
                        </div>
                        <div className="text-sm font-medium">
-                           <span className="text-primary font-bold">12+ Importers</span> match this vehicle
+                           <span className="text-primary font-bold">{t('vin.importers_match', { count: 12 })}</span>
                        </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                      Verified companies specializing in importing <strong>{make}</strong> to Georgia.
+                      <Trans i18nKey="vin.verified_importers_desc" values={{ make }} components={{ strong: <strong /> }} />
                   </p>
                   <Button onClick={handleGoToCatalog} size="lg" className="w-full font-bold shadow-md">
-                      Show My Matches
+                      {t('vin.show_matches')}
                       <Icon icon="mdi:arrow-right" className="ml-2 h-4 w-4" />
                   </Button>
               </CardContent>
@@ -397,9 +397,9 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                       <Icon icon="mdi:fire" className="h-5 w-5" />
                   </div>
                   <div>
-                      <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300">High Demand</h4>
+                      <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300">{t('vin.high_demand')}</h4>
                       <p className="text-xs text-orange-700/80 dark:text-orange-400/80 mt-0.5">
-                          45 people searched for {model} this week. Don't miss out.
+                          {t('vin.high_demand_desc', { count: 45, model })}
                       </p>
                   </div>
               </CardContent>
@@ -410,19 +410,19 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
               <CardContent className="p-4 space-y-3">
                   <h4 className="text-sm font-bold flex items-center gap-2">
                       <Icon icon="mdi:shield-check" className="h-4 w-4 text-green-600" />
-                      Buy Safely
+                      {t('vin.buy_safely')}
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
                       <Button variant="outline" size="sm" className="justify-start h-auto py-2">
                           <Icon icon="mdi:file-document-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
                           <div className="flex flex-col items-start text-xs">
-                              <span className="font-medium">Check History (Carfax)</span>
+                              <span className="font-medium">{t('vin.check_history')}</span>
                           </div>
                       </Button>
                       <Button variant="outline" size="sm" className="justify-start h-auto py-2">
                           <Icon icon="mdi:eye-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
                           <div className="flex flex-col items-start text-xs">
-                              <span className="font-medium">Order Port Inspection</span>
+                              <span className="font-medium">{t('vin.order_inspection')}</span>
                           </div>
                       </Button>
                   </div>

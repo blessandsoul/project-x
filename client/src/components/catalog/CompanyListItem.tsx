@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ interface CompanyListItemProps {
 
 export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -31,15 +33,15 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
   
   // 1. Determine "Best For" Badge
   const bestForBadge = useMemo(() => {
-    if (company.vipStatus) return { label: 'Luxury Expert', icon: 'mdi:diamond-stone', color: 'bg-purple-50 text-purple-700 border-purple-100' };
-    if ((company.priceRange?.min ?? 0) < 500) return { label: 'Best Economy', icon: 'mdi:piggy-bank', color: 'bg-green-50 text-green-700 border-green-100' };
-    if (company.rating >= 4.9) return { label: 'Top Rated', icon: 'mdi:trophy', color: 'bg-amber-50 text-amber-700 border-amber-100' };
+    if (company.vipStatus) return { label: t('catalog.badges.luxury_expert', 'Luxury Expert'), icon: 'mdi:diamond-stone', color: 'bg-purple-50 text-purple-700 border-purple-100' };
+    if ((company.priceRange?.min ?? 0) < 500) return { label: t('catalog.badges.best_economy', 'Best Economy'), icon: 'mdi:piggy-bank', color: 'bg-green-50 text-green-700 border-green-100' };
+    if (company.rating >= 4.9) return { label: t('catalog.badges.top_rated', 'Top Rated'), icon: 'mdi:trophy', color: 'bg-amber-50 text-amber-700 border-amber-100' };
     return null;
-  }, [company]);
+  }, [company, t]);
 
   // 2. Mock Review Snippet (Simulating backend data)
   const reviewSnippet = useMemo(() => {
-    if (company.rating >= 4.8) return "Привезли BMW X5 за 45 дней, состояние идеальное. Рекомендую!";
+    if (company.rating >= 4.8) return "Привезли BMW X5 за 45 дней, состояние идеальное. Рекомендую!"; // Keep as is or use a generic translated string
     if (company.rating >= 4.5) return "Хорошая коммуникация, менеджер всегда на связи.";
     return "Прозрачные условия и честный расчет стоимости.";
   }, [company.rating]);
@@ -83,7 +85,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                      />
                    </div>
                  </TooltipTrigger>
-                 <TooltipContent side="right"><p>Add to Compare</p></TooltipContent>
+                 <TooltipContent side="right"><p>{t('catalog.card.add_to_compare')}</p></TooltipContent>
                </Tooltip>
              </TooltipProvider>
           </div>
@@ -104,7 +106,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                   <TooltipTrigger asChild>
                      <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm animate-pulse" />
                   </TooltipTrigger>
-                  <TooltipContent><p>Online now: Replies in ~15m</p></TooltipContent>
+                  <TooltipContent><p>{t('catalog.card.online_now')}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
@@ -113,7 +115,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           {/* Official Partners (Mock Visuals) */}
           {company.vipStatus && (
              <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-70 grayscale group-hover:grayscale-0 transition-all">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Official</span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{t('common.official')}</span>
                 <div className="flex gap-1">
                    <Icon icon="mdi:shield-check" className="h-3 w-3 text-blue-600" />
                    <Icon icon="mdi:gavel" className="h-3 w-3 text-red-600" />
@@ -176,7 +178,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
               <span className="text-slate-300">|</span>
               <div className="flex items-center gap-1 text-slate-600">
                  <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-slate-400" />
-                 45-60 Days
+                 45-60 {t('common.days')}
               </div>
               <span className="text-slate-300">|</span>
               <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-1.5 rounded-full">
@@ -202,7 +204,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                 <Tooltip delayDuration={100}>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-help">
-                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">Service Fee</span>
+                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">{t('catalog.card.service_fee')}</span>
                        <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-slate-400" />
                     </div>
                   </TooltipTrigger>
@@ -219,7 +221,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
               </div>
               {company.priceRange?.max && (
                  <span className="text-[10px] text-slate-400 font-medium">
-                   Up to {formatCurrency(company.priceRange.max)}
+                   {t('catalog.card.up_to')} {formatCurrency(company.priceRange.max)}
                  </span>
               )}
            </div>
@@ -233,7 +235,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                  navigate(`/company/${company.id}`);
                }}
              >
-               View Profile
+               {t('catalog.card.view_profile')}
              </Button>
              {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
              {isCompareMode && (
@@ -245,7 +247,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                  }}
                >
                  <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
-                 <span>Compare</span>
+                 <span>{t('catalog.results.compare')}</span>
                </div>
              )}
            </div>

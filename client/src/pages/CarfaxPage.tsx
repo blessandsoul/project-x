@@ -209,7 +209,7 @@ const CarfaxPage = () => {
                     <div className="flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                             <Icon icon="mdi:history" className="h-4 w-4" />
-                            <span>{t('vin.history_title', 'Recent Checks')}:</span>
+                            <span>{t('vin.recent_checks')}:</span>
                              <Button
                                 type="button"
                                 variant="link"
@@ -217,7 +217,7 @@ const CarfaxPage = () => {
                                 className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive transition-colors"
                                 onClick={handleClearHistory}
                              >
-                                {t('vin.history_clear', 'Clear All')}
+                                {t('common.clear_all')}
                              </Button>
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
@@ -240,7 +240,7 @@ const CarfaxPage = () => {
                                             handleRemoveHistoryItem(item); 
                                         }}
                                         className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted text-muted-foreground opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground shadow-sm"
-                                        aria-label={t('vin.history_item_remove', 'Remove VIN from history')}
+                                        aria-label={t('vin.remove_history_tooltip')}
                                     >
                                         <Icon icon="mdi:close" className="h-3 w-3" />
                                     </button>
@@ -293,7 +293,7 @@ const CarfaxPage = () => {
                         </CardContent>
                     </Card>
                     <p className="text-center text-sm text-muted-foreground animate-pulse">
-                        {t('vin.loading_hint', 'Contacting the VIN service...')}
+                        {t('vin.loading_hint')}
                     </p>
                 </div>
             )}
@@ -303,7 +303,7 @@ const CarfaxPage = () => {
                 <div className="text-center py-12 opacity-40 select-none pointer-events-none">
                     <Icon icon="mdi:car-search" className="h-32 w-32 mx-auto text-muted-foreground/30 mb-6" />
                     <p className="text-lg font-medium text-muted-foreground">
-                        {t('vin.empty_state_hint', 'Enter a VIN above to verify vehicle details.')}
+                        {t('vin.empty_state_hint')}
                     </p>
                 </div>
             )}

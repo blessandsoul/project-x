@@ -196,7 +196,7 @@ const CompanyCatalogPage = () => {
               {t('catalog.title')}
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl">
-              Compare trusted auto importers, check ratings, and find the best rates for your vehicle delivery.
+              {t('catalog.subtitle')}
             </p>
           </motion.div>
         </div>
@@ -228,7 +228,7 @@ const CompanyCatalogPage = () => {
              {/* Results Header */}
              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
                 <p className="text-sm font-medium text-slate-600">
-                  Showing <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> of <span className="font-bold text-slate-900">{totalResults}</span> companies
+                  {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
                 </p>
                 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -240,19 +240,19 @@ const CompanyCatalogPage = () => {
                       className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200"
                    >
                       <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
-                      <span className="text-sm font-medium">Compare</span>
+                      <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
                    </Toggle>
 
-                   <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">Sort by:</span>
+                   <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as CatalogSortBy)}>
                       <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 shadow-sm">
                          <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                         <SelectItem value="rating">Highest Rated</SelectItem>
-                         <SelectItem value="cheapest">Lowest Fees</SelectItem>
-                         <SelectItem value="newest">Experience (Years)</SelectItem>
-                         <SelectItem value="name">Name (A-Z)</SelectItem>
+                         <SelectItem value="rating">{t('catalog.sort.rating')}</SelectItem>
+                         <SelectItem value="cheapest">{t('catalog.sort.cheapest')}</SelectItem>
+                         <SelectItem value="newest">{t('catalog.sort.newest')}</SelectItem>
+                         <SelectItem value="name">{t('catalog.sort.name')}</SelectItem>
                       </SelectContent>
                    </Select>
                 </div>
@@ -296,10 +296,10 @@ const CompanyCatalogPage = () => {
                  </motion.div>
              ) : (
                  <EmptyState 
-                    title="No companies found" 
-                    description="Try adjusting your filters to see more results." 
+                    title={t('catalog.results.empty_title')} 
+                    description={t('catalog.results.empty_description')} 
                     icon="mdi:clipboard-text-off-outline"
-                    action={<Button onClick={resetAll} variant="outline">Clear Filters</Button>}
+                    action={<Button onClick={resetAll} variant="outline">{t('catalog.filters.reset')}</Button>}
                  />
              )}
 
@@ -361,7 +361,7 @@ const CompanyCatalogPage = () => {
                className="shadow-sm bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 h-8 rounded-full px-4"
             >
                <Icon icon="mdi:close" className="h-4 w-4 mr-1" />
-               Cancel
+               {t('catalog.comparison.cancel')}
             </Button>
             
             <Button 
@@ -374,7 +374,7 @@ const CompanyCatalogPage = () => {
                    {selectedCompanies.length}
                  </span>
                </div>
-               <span className="font-bold text-lg tracking-tight">Compare Now</span>
+               <span className="font-bold text-lg tracking-tight">{t('catalog.comparison.compare_now')}</span>
             </Button>
          </div>
       )}

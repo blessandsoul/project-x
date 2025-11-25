@@ -117,7 +117,7 @@ export function AuctionFilters({
                <SheetHeader className="px-6 py-4 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
                  <SheetTitle className="text-xl font-bold flex items-center gap-2">
                     <Icon icon="mdi:tune" className="w-5 h-5 text-primary" />
-                    {t('pages.auction.more_filters')}
+                    {t('auction.more_filters')}
                  </SheetTitle>
                </SheetHeader>
 
@@ -300,9 +300,9 @@ export function AuctionFilters({
                              <SelectTrigger><SelectValue /></SelectTrigger>
                              <SelectContent>
                                 <SelectItem value="all">{t('common.all')}</SelectItem>
-                                <SelectItem value="fwd">FWD</SelectItem>
-                                <SelectItem value="rwd">RWD</SelectItem>
-                                <SelectItem value="4wd">4WD / AWD</SelectItem>
+                                <SelectItem value="fwd">{t('common.fwd')}</SelectItem>
+                                <SelectItem value="rwd">{t('common.rwd')}</SelectItem>
+                                <SelectItem value="4wd">{t('common.awd')}</SelectItem>
                              </SelectContent>
                           </Select>
                        </div>
