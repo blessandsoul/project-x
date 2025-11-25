@@ -27,7 +27,7 @@ import type { CatalogMake, CatalogModel } from '@/api/catalog';
 export interface FilterState {
   searchQuery: string;
   searchKind: 'all' | 'car' | 'moto' | 'van';
-  auctionFilter: 'all' | 'Copart' | 'IAAI' | 'Manheim';
+  auctionFilter: 'all' | 'Copart' | 'IAAI';
   fuelType: string;
   category: string;
   drive: string;
@@ -39,7 +39,6 @@ export interface FilterState {
   selectedMakeId: string;
   selectedModelId: string;
   buyNowOnly: boolean;
-  showVinCodes: boolean;
   limit: number;
 }
 
@@ -117,7 +116,7 @@ export function AuctionFilters({
                <SheetHeader className="px-6 py-4 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
                  <SheetTitle className="text-xl font-bold flex items-center gap-2">
                     <Icon icon="mdi:tune" className="w-5 h-5 text-primary" />
-                    {t('auction.more_filters')}
+                    {t('pages.auction.more_filters')}
                  </SheetTitle>
                </SheetHeader>
 
@@ -300,9 +299,9 @@ export function AuctionFilters({
                              <SelectTrigger><SelectValue /></SelectTrigger>
                              <SelectContent>
                                 <SelectItem value="all">{t('common.all')}</SelectItem>
-                                <SelectItem value="fwd">{t('common.fwd')}</SelectItem>
-                                <SelectItem value="rwd">{t('common.rwd')}</SelectItem>
-                                <SelectItem value="4wd">{t('common.awd')}</SelectItem>
+                                <SelectItem value="front">Front wheel drive</SelectItem>
+                                <SelectItem value="rear">Rear wheel drive</SelectItem>
+                                <SelectItem value="full">All wheel drive</SelectItem>
                              </SelectContent>
                           </Select>
                        </div>
@@ -320,19 +319,10 @@ export function AuctionFilters({
                        />
                     </div>
                     <Separator />
-                    <div className="flex items-center justify-between">
-                       <label htmlFor="vin-codes" className="text-sm font-medium cursor-pointer">{t('auction.filters.show_vin')}</label>
-                       <Checkbox 
-                          id="vin-codes" 
-                          checked={filters.showVinCodes} 
-                          onCheckedChange={(checked) => updateFilter('showVinCodes', !!checked)} 
-                       />
-                    </div>
-                    <Separator />
                     <div className="space-y-2">
                        <label className="text-sm font-medium">{t('auction.filters.auction')}</label>
                         <div className="flex flex-wrap gap-2">
-                          {(['all', 'Copart', 'IAAI', 'Manheim'] as const).map((source) => (
+                          {(['all', 'Copart', 'IAAI'] as const).map((source) => (
                              <button
                                 key={source}
                                 onClick={() => updateFilter('auctionFilter', source)}

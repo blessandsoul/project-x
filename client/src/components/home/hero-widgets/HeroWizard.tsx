@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export function HeroWizard() {
-  const { t } = useTranslation();
   const [input, setInput] = useState('');
   const navigate = useNavigate();
 
@@ -14,21 +12,10 @@ export function HeroWizard() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Smart routing logic
     const cleanInput = input.trim();
-    const isVin = cleanInput.length === 17 && !cleanInput.includes(' ');
-    const isPrice = !isNaN(Number(cleanInput.replace(/[^0-9]/g, '')));
 
-    if (isVin) {
-      navigate(`/vin?vin=${encodeURIComponent(cleanInput)}`);
-    } else if (isPrice) {
-      // Assume auction price, go to catalog with calculator filter
-      const price = cleanInput.replace(/[^0-9]/g, '');
-      navigate(`/catalog?priceMin=${price}&priceMax=${Number(price) + 5000}`); // Loose range for demo
-    } else {
-      // Default to text search in catalog
-      navigate(`/catalog?q=${encodeURIComponent(cleanInput)}`);
-    }
+    // Always search in live auctions by query
+    navigate(`/auction-listings?q=${encodeURIComponent(cleanInput)}`);
   };
 
   return (
@@ -38,25 +25,25 @@ export function HeroWizard() {
           id="home-hero-heading"
           className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]"
         >
-          <span className="block text-primary mb-2">{t('header.brand')}</span>
-          {t('home.hero.wizard.title')}
+          <span className="block text-primary mb-2">TrustedImporters.Ge</span>
+          See real import cost from USA to Georgia
         </h1>
         <p className="text-lg text-slate-600 max-w-xl mx-auto">
-          {t('home.hero.wizard.subtitle')}
+          Enter VIN or auction budget to see full estimated cost and move to trusted companies in one step.
         </p>
       </div>
 
       <div className="bg-white p-2 rounded-2xl shadow-2xl shadow-primary/10 border border-slate-100 relative z-10 transform transition-all hover:scale-[1.01]">
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2">
           <div className="relative flex-1">
-            <div className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400 pointer-events-none">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
               <Icon icon="mdi:search" className="h-6 w-6" />
             </div>
             <Input 
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="h-14 md:h-16 pl-12 rtl:pl-4 rtl:pr-12 text-lg md:text-xl border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-slate-300 text-start"
-              placeholder={t('home.hero.wizard.placeholder')} 
+              className="h-14 md:h-16 pl-12 text-lg md:text-xl border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-slate-300"
+              placeholder="Search live auctions by make, model or year" 
             />
           </div>
           <Button 
@@ -64,7 +51,7 @@ export function HeroWizard() {
             type="submit"
             className="h-14 md:h-16 px-8 md:px-12 text-lg font-bold rounded-xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
           >
-            {t('home.hero.wizard.calculate')}
+            Calculate
           </Button>
         </form>
       </div>
@@ -74,19 +61,19 @@ export function HeroWizard() {
           <div className="bg-green-100 text-green-700 p-1 rounded-full">
             <Icon icon="mdi:check" className="h-3 w-3" />
           </div>
-          {t('home.hero.wizard.verified_companies')}
+          37 Verified Companies
         </div>
         <div className="flex items-center gap-2">
           <div className="bg-green-100 text-green-700 p-1 rounded-full">
             <Icon icon="mdi:check" className="h-3 w-3" />
           </div>
-          {t('home.hero.wizard.fixed_prices')}
+          Fixed Prices
         </div>
         <div className="flex items-center gap-2">
           <div className="bg-green-100 text-green-700 p-1 rounded-full">
             <Icon icon="mdi:check" className="h-3 w-3" />
           </div>
-          {t('home.hero.wizard.official_contracts')}
+          Official Contracts
         </div>
       </div>
     </div>

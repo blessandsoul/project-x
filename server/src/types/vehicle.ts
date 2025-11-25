@@ -86,6 +86,7 @@ export interface Vehicle {
   retail_value?: number | null;
   repair_cost?: number | null;
   buy_it_now_price?: number | null;
+  buy_it_now?: number | null;
   price_future?: number | null;
   final_bid?: number | null;
   calc_price?: number | null;

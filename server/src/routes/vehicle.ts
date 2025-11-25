@@ -39,6 +39,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       search?: string;
       page?: string;
       limit?: string;
+      buy_now?: string;
     };
 
     const filters: {
@@ -55,6 +56,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       category?: string;
       drive?: string;
       source?: string;
+      buyNow?: boolean;
     } = {};
 
     // Optional combined search param: search="make model year".
@@ -143,6 +145,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       filters.source = query.source.trim();
     }
 
+    // Optional flag: buy_now=true → only lots with active buy_it_now
+    if (typeof query.buy_now === 'string' && query.buy_now.toLowerCase() === 'true') {
+      filters.buyNow = true;
+    }
+
     const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
 
@@ -228,6 +235,61 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return reply.send(vehicle);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /vehicles/:id/similar
+  //
+  // Fetch a list of vehicles similar to the given vehicle ID. Similarity is
+  // based on brand_name/model_name, vehicle_type, engine_fuel, transmission,
+  // year range and price band around calc_price. This endpoint is intended
+  // for "You may also like" style UI blocks and can be tuned in the
+  // VehicleModel.findSimilarById implementation.
+  // ---------------------------------------------------------------------------
+  fastify.get('/vehicles/:id/similar', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { limit, year_range, price_radius } = request.query as {
+      limit?: string;
+      year_range?: string;
+      price_radius?: string;
+    };
+
+    const vehicleId = parseInt(id, 10);
+    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
+      throw new ValidationError('Invalid vehicle id');
+    }
+
+    const exists = await vehicleModel.existsById(vehicleId);
+    if (!exists) {
+      throw new NotFoundError('Vehicle');
+    }
+
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : 10;
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+
+    const parsedYearRange = year_range ? Number.parseInt(year_range, 10) : 2;
+    const safeYearRange = Number.isFinite(parsedYearRange) && parsedYearRange > 0
+      ? parsedYearRange
+      : 2;
+
+    const parsedPriceRadius = price_radius ? Number.parseFloat(price_radius) : 0.2;
+    const safePriceRadius = Number.isFinite(parsedPriceRadius) && parsedPriceRadius > 0
+      ? parsedPriceRadius
+      : 0.2;
+
+    const items = await vehicleModel.findSimilarById(vehicleId, {
+      limit: safeLimit,
+      yearRange: safeYearRange,
+      priceRadius: safePriceRadius,
+    });
+
+    return reply.send({
+      vehicleId,
+      items,
+      limit: safeLimit,
+      yearRange: safeYearRange,
+      priceRadius: safePriceRadius,
+    });
   });
 
   // ---------------------------------------------------------------------------

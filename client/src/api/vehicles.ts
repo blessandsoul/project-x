@@ -7,6 +7,7 @@ import type {
   VehiclesSearchFilters,
   VehicleQuote,
   VehiclePhoto,
+  VehicleSearchItem,
 } from '@/types/vehicles'
 
 export async function fetchVehicleFull(id: number): Promise<VehicleFullResponse> {
@@ -51,6 +52,14 @@ export interface VehiclesCompareRequest {
 export interface VehiclesCompareResponse {
   currency: 'USD' | 'GEL'
   vehicles: VehicleQuotesResponse[]
+}
+
+export interface VehicleSimilarResponse {
+  vehicleId: number
+  items: VehicleSearchItem[]
+  limit: number
+  yearRange: number
+  priceRadius: number
 }
 
 export async function calculateVehicleQuotes(
@@ -116,4 +125,28 @@ export async function searchVehicles(filters: VehiclesSearchFilters & { page?: n
   const path = query.length ? `/vehicles/search?${query}` : '/vehicles/search'
 
   return apiGet<SearchVehiclesResponse>(path)
+}
+
+export async function fetchSimilarVehicles(
+  id: number,
+  options?: { limit?: number; yearRange?: number; priceRadius?: number },
+): Promise<VehicleSimilarResponse> {
+  const params = new URLSearchParams()
+
+  if (typeof options?.limit === 'number') {
+    params.set('limit', String(options.limit))
+  }
+  if (typeof options?.yearRange === 'number') {
+    params.set('year_range', String(options.yearRange))
+  }
+  if (typeof options?.priceRadius === 'number') {
+    params.set('price_radius', String(options.priceRadius))
+  }
+
+  const query = params.toString()
+  const path = query.length
+    ? `/vehicles/${id}/similar?${query}`
+    : `/vehicles/${id}/similar`
+
+  return apiGet<VehicleSimilarResponse>(path)
 }

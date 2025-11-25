@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useTranslation, Trans } from 'react-i18next'
 import { Icon } from '@iconify/react'
 
 // Components
@@ -12,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { VipBadge } from '@/components/company/VipBadge'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -29,14 +28,15 @@ import { Textarea } from '@/components/ui/textarea'
 // Hooks & Utils
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
 import { cn } from '@/lib/utils'
-import type { VehicleQuote } from '@/types/vehicles'
+import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
 import { createLeadFromQuotes } from '@/api/leads'
+import { fetchSimilarVehicles } from '@/api/vehicles'
 import { navigationItems, footerLinks } from '@/config/navigation'
+import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 
 // --- Sub-components ---
 
 const SocialProofWidget = () => {
-    const { t } = useTranslation();
     const [isVisible, setIsVisible] = useState(false)
     
     useEffect(() => {
@@ -60,7 +60,7 @@ const SocialProofWidget = () => {
                 </div>
             </div>
             <span className="text-[10px] text-muted-foreground">
-                <span className="font-semibold text-foreground">3 {t('vehicle_details.social_proof.people')}</span> {t('vehicle_details.social_proof.viewing')}
+                <span className="font-semibold text-foreground">3 people</span> viewing
             </span>
             <button onClick={() => setIsVisible(false)} className="ml-1 text-muted-foreground/50 hover:text-foreground transition-colors">
                 <Icon icon="mdi:close" className="h-3 w-3" />
@@ -70,7 +70,6 @@ const SocialProofWidget = () => {
 }
 
 const AuctionTimer = ({ dateStr }: { dateStr?: string | null }) => {
-    const { t } = useTranslation();
     const targetDate = useMemo(() => {
         const d = dateStr ? new Date(dateStr) : new Date()
         if (isNaN(d.getTime()) || d < new Date()) {
@@ -88,7 +87,7 @@ const AuctionTimer = ({ dateStr }: { dateStr?: string | null }) => {
             const diff = targetDate.getTime() - now.getTime()
             
             if (diff <= 0) {
-                setTimeLeft(t('vehicle_details.started'))
+                setTimeLeft("Started")
                 return
             }
 
@@ -99,19 +98,18 @@ const AuctionTimer = ({ dateStr }: { dateStr?: string | null }) => {
             setTimeLeft(`${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`)
         }, 1000)
         return () => clearInterval(interval)
-    }, [targetDate, t])
+    }, [targetDate])
 
     return (
         <div className="flex items-center gap-1.5 text-red-600/90 bg-red-50/50 px-2 py-1 rounded-md border border-red-100/50">
             <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{t('vehicle_details.ends_in')}:</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Ends in:</span>
             <span className="font-mono font-bold text-xs tabular-nums">{timeLeft}</span>
         </div>
     )
 }
 
 const MarketPriceWidget = ({ price }: { price: number }) => {
-    const { t } = useTranslation();
     const marketPrice = Math.round(price * 1.2)
     const savings = marketPrice - price
     const percent = Math.round((savings / marketPrice) * 100)
@@ -119,31 +117,30 @@ const MarketPriceWidget = ({ price }: { price: number }) => {
     return (
         <div className="mt-4 pt-4 border-t border-dashed">
             <div className="flex justify-between items-center mb-2">
-                <span className="text-xs text-muted-foreground">{t('vehicle_details.market_price.average')}</span>
+                <span className="text-xs text-muted-foreground">Market Average</span>
                 <span className="text-xs font-medium text-muted-foreground line-through decoration-red-400/50">${marketPrice.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-600 font-medium">
                     <Icon icon="mdi:trending-down" className="h-4 w-4" />
-                    <span>{percent}% {t('vehicle_details.market_price.below_market')}</span>
+                    <span>{percent}% below market</span>
                 </div>
-                <span className="font-bold text-emerald-700">{t('vehicle_details.market_price.save')} ${savings.toLocaleString()}</span>
+                <span className="font-bold text-emerald-700">Save ${savings.toLocaleString()}</span>
             </div>
         </div>
     )
 }
 
 const DamageViewer = ({ vehicle }: { vehicle: any }) => {
-    const { t } = useTranslation();
     const [isUnlocked, setIsUnlocked] = useState(false)
     const [isLiking, setIsLiking] = useState(false)
     
-    const damagePrimary = vehicle?.damage_main_damages || t('vehicle_details.condition_report.primary_damage', 'Front End')
-    const damageSecondary = vehicle?.damage_secondary_damages || t('vehicle_details.condition_report.secondary_damage', 'Minor Dents/Scratches')
+    const damagePrimary = vehicle?.damage_main_damages || "Front End"
+    const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
     const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
-    const runAndDrive = vehicle?.run_and_drive || t('vehicle_details.condition_report.run_drive', 'Run & Drive')
-    const airbags = vehicle?.airbags || t('vehicle_details.condition_report.intact')
-    const odoBrand = vehicle?.odometer_brand || t('vehicle_details.condition_report.actual')
+    const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
+    const airbags = vehicle?.airbags || "Intact"
+    const odoBrand = vehicle?.odometer_brand || "Actual"
     const estValue = Number(vehicle?.est_retail_value) || 12500
     
     const handleUnlock = () => {
@@ -160,9 +157,9 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
             <div className="flex items-start justify-between mb-6">
                 <h3 className="font-medium text-sm flex items-center gap-2">
                     <Icon icon="mdi:car-info" className="text-muted-foreground" />
-                    {t('vehicle_details.condition_report.title')}
+                    Condition Report
                 </h3>
-                <Badge variant="outline" className="font-normal text-[10px] text-muted-foreground">{t('vehicle_details.condition_report.ai_analysis')}</Badge>
+                <Badge variant="outline" className="font-normal text-[10px] text-muted-foreground">AI Analysis</Badge>
             </div>
             
             <div className={cn("flex flex-col lg:flex-row gap-8 transition-all duration-500", !isUnlocked && "blur-md opacity-50 select-none pointer-events-none")}>
@@ -188,14 +185,14 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                     {/* Damage Details */}
                     <div className="space-y-3 pt-2">
                         <div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('vehicle_details.condition_report.primary_damage')}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Primary Damage</span>
                             <div className="text-red-600 font-bold text-sm flex items-center gap-1">
                                 <Icon icon="mdi:alert-circle" className="h-3.5 w-3.5" />
                                 {damagePrimary}
                             </div>
                         </div>
                         <div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('vehicle_details.condition_report.secondary_damage')}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Secondary</span>
                             <div className="text-amber-600 font-medium text-xs flex items-center gap-1">
                                 <Icon icon="mdi:alert-outline" className="h-3.5 w-3.5" />
                                 {damageSecondary}
@@ -209,16 +206,16 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                     {/* Estimate Block */}
                     <div className="space-y-3">
                         <div className="pl-3 border-l-2 border-blue-500/50">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle_details.condition_report.repair_estimate')}</div>
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">AI Repair Estimate</div>
                             <div className="text-xl font-bold text-foreground tracking-tight">
                                 $800 - $1,200
                             </div>
                             <div className="text-[10px] text-muted-foreground mt-1">
-                                {t('vehicle_details.condition_report.approx')} <span className="font-semibold text-foreground">10-15%</span> {t('vehicle_details.condition_report.of_retail')}
+                                Approx. <span className="font-semibold text-foreground">10-15%</span> of retail value
                             </div>
                         </div>
                         <div className="bg-muted/20 rounded p-2.5 flex justify-between items-center">
-                            <span className="text-[10px] text-muted-foreground">{t('vehicle_details.condition_report.est_retail')}</span>
+                            <span className="text-[10px] text-muted-foreground">Est. Retail Value</span>
                             <span className="text-xs font-bold">${estValue.toLocaleString()}</span>
                         </div>
                     </div>
@@ -226,28 +223,28 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                     {/* Technical Status */}
                     <div className="grid grid-cols-2 gap-2">
                         <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle_details.condition_report.engine')}</div>
+                            <div className="text-[10px] text-muted-foreground mb-1">Engine</div>
                             <div className="text-xs font-medium flex items-center gap-1.5 text-emerald-600">
                                 <Icon icon="mdi:engine" className="h-3.5 w-3.5" />
                                 {runAndDrive}
                             </div>
                         </div>
                         <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle_details.condition_report.keys')}</div>
+                            <div className="text-[10px] text-muted-foreground mb-1">Keys</div>
                             <div className={cn("text-xs font-medium flex items-center gap-1.5", hasKeys ? "text-emerald-600" : "text-red-500")}>
                                 <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="h-3.5 w-3.5" />
-                                {hasKeys ? t('vehicle_details.condition_report.present') : t('vehicle_details.condition_report.missing')}
+                                {hasKeys ? "Present" : "Missing"}
                             </div>
                         </div>
                         <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle_details.condition_report.airbags')}</div>
+                            <div className="text-[10px] text-muted-foreground mb-1">Airbags</div>
                             <div className="text-xs font-medium flex items-center gap-1.5">
                                 <Icon icon="mdi:airbag" className="h-3.5 w-3.5" />
                                 {airbags}
                             </div>
                         </div>
                         <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle_details.condition_report.odometer')}</div>
+                            <div className="text-[10px] text-muted-foreground mb-1">Odometer</div>
                             <div className="text-xs font-medium flex items-center gap-1.5">
                                 <Icon icon="mdi:counter" className="h-3.5 w-3.5" />
                                 {odoBrand}
@@ -265,8 +262,8 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                             <Icon icon="mdi:facebook" className="h-6 w-6" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="font-semibold text-sm">{t('vehicle_details.condition_report.unlock_title')}</h4>
-                            <p className="text-xs text-muted-foreground">{t('vehicle_details.condition_report.unlock_desc')}</p>
+                            <h4 className="font-semibold text-sm">Unlock Condition Report</h4>
+                            <p className="text-xs text-muted-foreground">Like our page to see detailed AI damage analysis & repair estimates.</p>
                         </div>
                         <Button 
                             onClick={handleUnlock} 
@@ -281,7 +278,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                             ) : (
                                 <>
                                     <Icon icon="mdi:thumb-up" className="h-3 w-3" />
-                                    {t('vehicle_details.condition_report.like_fb')}
+                                    Like on Facebook
                                 </>
                             )}
                         </Button>
@@ -301,7 +298,6 @@ const QuoteBreakdownModal = ({
     isOpen: boolean; 
     onClose: () => void 
 }) => {
-    const { t } = useTranslation();
     if (!quote) return null
 
     // Helper to safely format numbers
@@ -313,7 +309,7 @@ const QuoteBreakdownModal = ({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Icon icon="mdi:calculator" className="text-primary h-5 w-5" />
-                        {t('vehicle_details.comparison.table.breakdown')}
+                        Price Breakdown
                     </DialogTitle>
                     <DialogDescription>
                         Detailed quote from <span className="font-semibold text-foreground">{quote.company_name}</span>
@@ -323,25 +319,25 @@ const QuoteBreakdownModal = ({
                 <div className="space-y-4 py-2">
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle_details.price_card.auction_price')}</span>
+                            <span className="text-muted-foreground">Auction Price (Lot)</span>
                             <span className="font-medium">{fmt(quote.breakdown?.base_price)}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-dashed">
                             <span className="text-muted-foreground flex items-center gap-1">
                                 <Icon icon="mdi:truck-delivery" className="h-3 w-3" />
-                                {t('vehicle_details.comparison.table.sea_land')}
+                                Inland + Ocean Shipping
                             </span>
                             <span className="font-medium">{fmt(quote.breakdown?.shipping_total)}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-dashed">
                             <span className="text-muted-foreground flex items-center gap-1">
                                 <Icon icon="mdi:police-badge" className="h-3 w-3" />
-                                {t('vehicle_details.price_card.customs')}
+                                Customs Clearance
                             </span>
                             <span className="font-medium">{fmt(quote.breakdown?.customs_fee)}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle_details.price_card.service_fees')}</span>
+                            <span className="text-muted-foreground">Service & Broker Fees</span>
                             <span className="font-medium">{fmt(quote.breakdown?.broker_fee)}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-dashed text-xs text-muted-foreground">
@@ -351,7 +347,7 @@ const QuoteBreakdownModal = ({
                     </div>
 
                     <div className="bg-primary/5 p-3 rounded-lg flex justify-between items-center">
-                        <span className="font-bold text-primary uppercase text-xs tracking-wider">{t('vehicle_details.price_card.est_total')}</span>
+                        <span className="font-bold text-primary uppercase text-xs tracking-wider">Total Estimated</span>
                         <span className="font-bold text-xl text-foreground">{fmt(quote.total_price)}</span>
                     </div>
                     
@@ -465,17 +461,16 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
 }
 
 const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
-  const { t } = useTranslation();
   if (!vehicle) return null
 
   const specs = [
-    { icon: 'mdi:engine', label: t('vehicle_details.specs.engine'), value: vehicle.engine_volume ? `${vehicle.engine_volume}L` : 'N/A' },
-    { icon: 'mdi:car-shift-pattern', label: t('vehicle_details.specs.transmission'), value: vehicle.transmission || 'Automatic' },
-    { icon: 'mdi:car-traction-control', label: t('vehicle_details.specs.drive'), value: vehicle.drive || 'FWD' },
-    { icon: 'mdi:counter', label: t('vehicle_details.specs.mileage'), value: `${vehicle.mileage?.toLocaleString() || '0'} mi` },
-    { icon: 'mdi:calendar', label: t('vehicle_details.specs.year'), value: vehicle.year },
-    { icon: 'mdi:gas-station', label: t('vehicle_details.specs.fuel'), value: vehicle.engine_fuel || 'Gasoline' },
-    { icon: 'mdi:barcode', label: t('vehicle_details.specs.vin'), value: vehicle.vin, copy: true },
+    { icon: 'mdi:engine', label: 'Engine', value: vehicle.engine_volume ? `${vehicle.engine_volume}L` : 'N/A' },
+    { icon: 'mdi:car-shift-pattern', label: 'Transmission', value: vehicle.transmission || 'Automatic' },
+    { icon: 'mdi:car-traction-control', label: 'Drive', value: vehicle.drive || 'FWD' },
+    { icon: 'mdi:counter', label: 'Mileage', value: `${vehicle.mileage?.toLocaleString() || '0'} mi` },
+    { icon: 'mdi:calendar', label: 'Year', value: vehicle.year },
+    { icon: 'mdi:gas-station', label: 'Fuel', value: vehicle.engine_fuel || 'Gasoline' },
+    { icon: 'mdi:barcode', label: 'VIN', value: vehicle.vin, copy: true },
   ]
 
   return (
@@ -512,7 +507,6 @@ const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
 }
 
 const CarfaxWidget = () => {
-    const { t } = useTranslation();
     return (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
             {/* Background Pattern */}
@@ -534,7 +528,7 @@ const CarfaxWidget = () => {
                     />
                 </div>
                 <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
-                    {t('vehicle_details.carfax.recommended')}
+                    RECOMMENDED
                 </div>
             </div>
 
@@ -543,21 +537,21 @@ const CarfaxWidget = () => {
                 <div>
                     <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-2">
                         <Icon icon="mdi:shield-check" className="text-blue-600" />
-                        {t('vehicle_details.carfax.title')}
+                        Get Full Vehicle History
                     </h3>
                     <p className="text-sm text-slate-600 mt-1 max-w-md">
-                        {t('vehicle_details.carfax.description')}
+                        Don't buy blindly! Check for hidden accidents, odometer rollbacks, structural damage, and service records.
                     </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
                     <Button className="bg-[#1877F2] hover:bg-[#1465D0] text-white font-semibold h-10 shadow-sm group">
                         <Icon icon="mdi:file-document" className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                        {t('vehicle_details.carfax.get_report')}
+                        Get Carfax Report
                     </Button>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                         <span className="line-through decoration-red-400">$39.99</span>
-                        <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{t('vehicle_details.carfax.free_with_order')}</span>
+                        <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">FREE with Order</span>
                     </div>
                 </div>
             </div>
@@ -584,7 +578,6 @@ const QuoteRow = ({
     onViewBreakdown: (e: React.MouseEvent) => void;
     isMultiSelectMode: boolean;
 }) => {
-  const { t } = useTranslation();
   const totalPrice = Number(quote.total_price) || 0
   const rating = 4.8 // Mock rating
   const reviews = 120 // Mock reviews
@@ -614,12 +607,12 @@ const QuoteRow = ({
                 <span className="ml-0.5 font-medium text-foreground">{rating}</span>
             </div>
             <span className="text-muted-foreground/60">•</span>
-            <span>{reviews} {t('common.reviews')}</span>
+            <span>{reviews} reviews</span>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <span className="ml-1 inline-flex items-center gap-0.5 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help">
                         <Icon icon="mdi:check-decagram" className="h-3 w-3" />
-                        {t('common.verified')}
+                        Verified
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>Verified Importer</TooltipContent>
@@ -629,8 +622,8 @@ const QuoteRow = ({
       </TableCell>
       <TableCell>
         <div className="flex flex-col text-sm">
-          <span className="font-medium">{quote.delivery_time_days || '45-60'} {t('common.days')}</span>
-          <span className="text-xs text-muted-foreground">{t('vehicle_details.comparison.table.sea_land')}</span>
+          <span className="font-medium">{quote.delivery_time_days || '45-60'} days</span>
+          <span className="text-xs text-muted-foreground">Sea + Land to Poti</span>
         </div>
       </TableCell>
       <TableCell className="text-right">
@@ -638,7 +631,7 @@ const QuoteRow = ({
           <span className={cn("font-bold text-lg", priceColor || "text-foreground")}>
             ${totalPrice.toLocaleString()}
           </span>
-          <span className="text-xs text-muted-foreground">{t('vehicle_details.comparison.table.all_inclusive')}</span>
+          <span className="text-xs text-muted-foreground">All inclusive</span>
         </div>
       </TableCell>
       <TableCell className="text-right">
@@ -652,7 +645,7 @@ const QuoteRow = ({
                         onClick={onViewBreakdown}
                     >
                         <Icon icon="mdi:calculator" className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t('vehicle_details.comparison.table.breakdown')}</span>
+                        <span className="hidden sm:inline">Breakdown</span>
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>See Price Breakdown</TooltipContent>
@@ -668,7 +661,7 @@ const QuoteRow = ({
                         onToggle() // This triggers the lead modal in single select mode
                     }}
                 >
-                    {t('vehicle_details.comparison.table.order')}
+                    Order
                 </Button>
             )}
          </div>
@@ -677,104 +670,82 @@ const QuoteRow = ({
   )
 }
 
-const SimilarVehicles = ({ currentVehicle }: { currentVehicle: any }) => {
-    const { t } = useTranslation();
-    // Mock data - in real app use currentVehicle to filter
-    console.log(currentVehicle); // Suppress unused warning
-    const similar = [
-        { 
-            id: 101, 
-            title: "2020 Toyota Camry SE", 
-            price: 4500, 
-            image: "https://images.unsplash.com/photo-1621007947382-bb3c3968e3bb?q=80&w=2670&auto=format&fit=crop",
-            lot: "58392011",
-            location: "GA - SAVANNAH",
-            odometer: "45,230 mi"
-        },
-        { 
-            id: 102, 
-            title: "2019 Honda Accord Sport", 
-            price: 5200, 
-            image: "https://images.unsplash.com/photo-1592198084033-aade902d1aae?q=80&w=2670&auto=format&fit=crop",
-            lot: "39201822",
-            location: "CA - LOS ANGELES",
-            odometer: "32,100 mi"
-        },
-        { 
-            id: 103, 
-            title: "2021 Ford Fusion Titanium", 
-            price: 3100, 
-            image: "https://images.unsplash.com/photo-1551830447-45ea720087fa?q=80&w=2669&auto=format&fit=crop",
-            lot: "48291022",
-            location: "TX - HOUSTON",
-            odometer: "68,450 mi"
+const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
+  const navigate = useNavigate()
+  const [similarItems, setSimilarItems] = useState<VehicleSearchItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const run = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetchSimilarVehicles(baseVehicleId, { limit: 3 })
+        if (!isMounted) return
+        const items = Array.isArray(response.items) ? response.items.slice(0, 3) : []
+        setSimilarItems(items)
+      } catch (err) {
+        if (!isMounted) return
+        const message = err instanceof Error ? err.message : 'Failed to load similar vehicles'
+        setError(message)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
         }
-    ]
+      }
+    }
 
-    const navigate = useNavigate()
+    run()
 
+    return () => {
+      isMounted = false
+    }
+  }, [baseVehicleId])
+
+  if (isLoading) {
     return (
-        <div className="space-y-4 pt-8 border-t">
-            <h2 className="text-xl font-bold">{t('vehicle_details.similar.title')}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {similar.map((item) => (
-                    <div 
-                        key={item.id} 
-                        className="group relative bg-card rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden" 
-                        onClick={() => navigate(`/catalog`)}
-                    >
-                        {/* Image Section */}
-                        <div className="aspect-[4/3] overflow-hidden bg-muted relative">
-                            <img 
-                                src={item.image} 
-                                alt={item.title} 
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end text-white">
-                                <div>
-                                    <p className="text-[10px] font-medium opacity-90">{t('vehicle_details.similar.current_bid')}</p>
-                                    <p className="text-lg font-bold leading-none">${item.price.toLocaleString()}</p>
-                                </div>
-                                <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] backdrop-blur-sm">
-                                    {item.odometer}
-                                </Badge>
-                            </div>
-                            <div className="absolute top-2 right-2">
-                                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full bg-black/20 hover:bg-black/40 text-white">
-                                    <Icon icon="mdi:heart-outline" className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Content Section */}
-                        <div className="p-3 space-y-2">
-                            <div>
-                                <h3 className="font-semibold text-sm truncate" title={item.title}>{item.title}</h3>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
-                                    <span className="flex items-center gap-0.5">
-                                        <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                                        {item.location}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{t('vehicle_details.lot')}: {item.lot}</span>
-                                </div>
-                            </div>
-                            
-                            <div className="pt-2 border-t border-dashed flex items-center justify-between">
-                                <div className="text-[10px] text-muted-foreground">
-                                    {t('vehicle_details.similar.est_repair')}: <span className="font-medium text-foreground">$1.2k</span>
-                                </div>
-                                <div className="text-xs font-bold text-primary flex items-center gap-1">
-                                    {t('vehicle_details.similar.view')} <Icon icon="mdi:arrow-right" className="h-3 w-3" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+      <div className="space-y-4 pt-8 border-t">
+        <h2 className="text-xl font-bold">Similar Vehicles You Might Like</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl hidden sm:block" />
+          <Skeleton className="h-64 rounded-xl hidden sm:block" />
         </div>
+      </div>
     )
+  }
+
+  if (error || !similarItems.length) {
+    return null
+  }
+
+  return (
+    <div className="space-y-4 pt-8 border-t">
+      <h2 className="text-xl font-bold">Similar Vehicles You Might Like</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {similarItems.slice(0, 3).map((item) => (
+          <AuctionVehicleCard
+            key={item.id}
+            item={item}
+            priority={false}
+            onOpenGallery={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+            onCalculate={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+            onViewDetails={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // --- Main Page Component ---
@@ -782,7 +753,6 @@ const SimilarVehicles = ({ currentVehicle }: { currentVehicle: any }) => {
 const VehicleDetailsPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { t } = useTranslation();
   const { vehicle, photos, quotes, isLoading } = useVehicleDetails(id ? Number(id) : null)
 
   // State: Selection & Unlock
@@ -940,9 +910,9 @@ const VehicleDetailsPage = () => {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-24 md:pb-8">
         {/* Breadcrumbs & Title Section */}
         <nav className="flex items-center text-sm text-muted-foreground mb-6 overflow-hidden">
-          <button onClick={() => navigate('/')} className="hover:text-primary transition-colors shrink-0">{t('vehicle_details.breadcrumbs.home')}</button>
+          <button onClick={() => navigate('/')} className="hover:text-primary transition-colors shrink-0">Home</button>
           <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <button onClick={() => navigate('/catalog')} className="hover:text-primary transition-colors shrink-0">{t('vehicle_details.breadcrumbs.catalog')}</button>
+          <button onClick={() => navigate('/catalog')} className="hover:text-primary transition-colors shrink-0">Vehicles</button>
           <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
           <span className="text-foreground font-medium truncate">{vehicle.year} {vehicle.make} {vehicle.model}</span>
         </nav>
@@ -952,10 +922,10 @@ const VehicleDetailsPage = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="space-y-2">
               <div className="flex items-center gap-3 mb-1">
-                <Badge variant="outline" className="uppercase tracking-wider text-[10px]">{t('vehicle_details.lot')}: {vehicle.source_lot_id}</Badge>
+                <Badge variant="outline" className="uppercase tracking-wider text-[10px]">Lot: {vehicle.source_lot_id}</Badge>
                 {vehicle.is_new && (
                     <Badge className="bg-emerald-600 hover:bg-emerald-700 animate-pulse shadow-sm border-none">
-                        {t('vehicle_details.new_arrival')}
+                        New Arrival
                     </Badge>
                 )}
               </div>
@@ -969,7 +939,7 @@ const VehicleDetailsPage = () => {
                 </span>
                 <span className="flex items-center gap-1">
                   <Icon icon="mdi:calendar-clock" className="h-4 w-4" />
-                  {t('vehicle_details.sale_date')}: {vehicle.sold_at_date || t('vehicle_details.upcoming')}
+                  Sale Date: {vehicle.sold_at_date || 'Upcoming'}
                 </span>
                 <AuctionTimer dateStr={vehicle.sold_at_date} />
               </div>
@@ -988,22 +958,18 @@ const VehicleDetailsPage = () => {
               <div className="p-4 border-b bg-muted/10 space-y-4">
                 <div className="bg-indigo-50/50 border border-indigo-100/50 text-indigo-900/80 px-3 py-2 rounded-md flex items-center gap-2 text-[11px] font-medium">
                     <Icon icon="mdi:gift-outline" className="h-3.5 w-3.5" />
-                    <span>
-                        <Trans i18nKey="vehicle_details.comparison.promo">
-                            Order before 26.11 to get <span className="font-bold underline decoration-indigo-300/50">Free Carfax Report</span> ($40 value) included!
-                        </Trans>
-                    </span>
+                    <span>Order before 26.11 to get <span className="font-bold underline decoration-indigo-300/50">Free Carfax Report</span> ($40 value) included!</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
                         <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
-                        {isMultiSelectMode ? t('vehicle_details.comparison.select_title') : t('vehicle_details.comparison.title')}
+                        {isMultiSelectMode ? "Select Companies" : "Compare & Order"}
                         </h2>
                         {!isMultiSelectMode && (
                             <p className="text-xs text-muted-foreground mt-1">
-                                {t('vehicle_details.comparison.subtitle')}
+                                Click on a row to order, or select multiple to compare.
                             </p>
                         )}
                     </div>
@@ -1014,11 +980,11 @@ const VehicleDetailsPage = () => {
                                 onClick={() => setIsMultiSelectMode(true)}
                                 className="text-xs"
                             >
-                                {t('vehicle_details.comparison.select_multiple')}
+                                Select Multiple Companies
                             </Button>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground font-medium">{t('vehicle_details.comparison.selected')}:</span>
+                                <span className="text-sm text-muted-foreground font-medium">Selected:</span>
                                 <Badge variant={selectedCompanyIds.length > 0 ? "default" : "secondary"}>
                                     {selectedCompanyIds.length} / {hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT}
                                 </Badge>
@@ -1031,7 +997,7 @@ const VehicleDetailsPage = () => {
                                     }}
                                     className="text-xs h-8 px-2"
                                 >
-                                    {t('vehicle_details.comparison.cancel')}
+                                    Cancel
                                 </Button>
                             </div>
                         )}
@@ -1047,7 +1013,7 @@ const VehicleDetailsPage = () => {
                         className="h-8 text-xs"
                     >
                         {filterVip ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : null}
-                        {t('vehicle_details.comparison.filters.vip')}
+                        VIP Only
                     </Button>
                     <Button 
                         variant={filterRating ? "default" : "outline"} 
@@ -1056,7 +1022,7 @@ const VehicleDetailsPage = () => {
                         className="h-8 text-xs"
                     >
                         {filterRating ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle_details.comparison.filters.rating')}
+                        Rating 4.5+
                     </Button>
                     <Button 
                         variant={filterFast ? "default" : "outline"} 
@@ -1065,7 +1031,7 @@ const VehicleDetailsPage = () => {
                         className="h-8 text-xs"
                     >
                         {filterFast ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:lightning-bolt" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle_details.comparison.filters.fast')}
+                        Fast Delivery
                     </Button>
                 </div>
               </div>
@@ -1075,10 +1041,10 @@ const VehicleDetailsPage = () => {
                     <TableHeader>
                     <TableRow>
                         {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
-                        <TableHead className="w-[200px]">{t('vehicle_details.comparison.table.company')}</TableHead>
-                        <TableHead>{t('vehicle_details.comparison.table.delivery')}</TableHead>
-                        <TableHead className="text-right">{t('vehicle_details.comparison.table.total_price')}</TableHead>
-                        <TableHead className="text-right w-[100px]">{t('vehicle_details.comparison.table.action')}</TableHead>
+                        <TableHead className="w-[200px]">Company</TableHead>
+                        <TableHead>Delivery</TableHead>
+                        <TableHead className="text-right">Total Price</TableHead>
+                        <TableHead className="text-right w-[100px]">Action</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1114,8 +1080,8 @@ const VehicleDetailsPage = () => {
                     {filteredQuotes.length === 0 && (
                         <TableRow>
                         <TableCell colSpan={isMultiSelectMode ? 5 : 5} className="text-center h-32 text-muted-foreground">
-                            <p>{t('vehicle_details.comparison.table.no_match')}</p>
-                            <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>{t('vehicle_details.comparison.table.clear_filters')}</Button>
+                            <p>No companies match your filters.</p>
+                            <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>Clear Filters</Button>
                         </TableCell>
                         </TableRow>
                     )}
@@ -1124,7 +1090,7 @@ const VehicleDetailsPage = () => {
               </div>
             </div>
 
-            <SimilarVehicles currentVehicle={vehicle} />
+            <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
 
           {/* Right Column: Sticky Price Card */}
@@ -1134,7 +1100,7 @@ const VehicleDetailsPage = () => {
               <CardHeader className="pb-4 border-b">
                 <div className="flex justify-between items-start">
                     <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
-                    {t('vehicle_details.price_card.est_total')}
+                    Estimated Total Cost
                     </CardDescription>
                     <Badge variant="outline" className="bg-background text-[10px] font-normal">
                         USD / GEL
@@ -1152,19 +1118,19 @@ const VehicleDetailsPage = () => {
                 {/* Breakdown */}
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle_details.price_card.auction_price')}</span>
+                    <span className="text-muted-foreground">Auction Price (Est.)</span>
                     <span>${auctionPrice.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle_details.price_card.shipping')}</span>
+                    <span className="text-muted-foreground">Shipping (USA to GE)</span>
                     <span>${shippingPrice.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle_details.price_card.customs')}</span>
+                    <span className="text-muted-foreground">Customs & Excise</span>
                     <span>${customsPrice.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">{t('vehicle_details.price_card.service_fees')}</span>
+                    <span className="text-muted-foreground">Service Fees</span>
                     <span>${brokerFee}</span>
                   </div>
                 </div>
@@ -1183,12 +1149,12 @@ const VehicleDetailsPage = () => {
                     disabled={selectedCompanyIds.length === 0}
                   >
                     {selectedCompanyIds.length > 0 
-                        ? t('vehicle_details.price_card.send_request', { count: selectedCompanyIds.length })
-                        : t('vehicle_details.price_card.select_to_order')
+                        ? `Send Request to ${selectedCompanyIds.length} Companies` 
+                        : "Select Companies to Order"
                     }
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
-                    {t('vehicle_details.price_card.select_hint')}
+                    Select at least 1 company from the list to proceed.
                   </p>
                 </div>
 
@@ -1204,7 +1170,7 @@ const VehicleDetailsPage = () => {
       {/* Mobile Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t p-4 md:hidden z-50 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] safe-area-bottom">
         <div>
-           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t('vehicle_details.price_card.est_total')}</p>
+           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Est.</p>
            <p className="text-xl font-extrabold text-primary leading-none">${totalPrice.toLocaleString()}</p>
         </div>
         <Button 
