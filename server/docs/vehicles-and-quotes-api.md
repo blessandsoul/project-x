@@ -310,6 +310,104 @@ Delete a vehicle from the database.
 
 ---
 
+## Vehicle Favorites API
+
+Endpoints for managing user's favorite vehicles. Routes defined in: `src/routes/favorites.ts`
+
+### GET `/favorites/vehicles`
+
+**Description:**
+
+List the authenticated user's favorite vehicles with pagination.
+
+**Method:** `GET`
+
+**Authentication:** Required (JWT)
+
+**Query params:**
+
+- `page` (optional, number) – page number, default 1.
+- `limit` (optional, number) – items per page, default 20.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 123,
+      "brand_name": "Toyota",
+      "model_name": "Corolla",
+      "year": 2018,
+      "calc_price": 7300,
+      "primary_photo_url": "https://.../full.jpg"
+    }
+  ],
+  "total": 15,
+  "limit": 20,
+  "page": 1,
+  "totalPages": 1
+}
+```
+
+**Error responses:**
+
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
+### POST `/favorites/vehicles/:vehicleId`
+
+**Description:**
+
+Add a vehicle to the user's favorites.
+
+**Method:** `POST`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 201**
+
+```jsonc
+{
+  "success": true
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
+### DELETE `/favorites/vehicles/:vehicleId`
+
+**Description:**
+
+Remove a vehicle from the user's favorites.
+
+**Method:** `DELETE`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 204** – No content on success.
+
+**Error responses:**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
 ### GET `/vehicles/:id/photos`
 
 **Description:**

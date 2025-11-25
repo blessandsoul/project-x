@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
+import { withCache, buildCacheKeyFromObject, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
 
 /**
  * Vehicle Routes
@@ -159,24 +160,45 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
 
     // If an Authorization header is present, attempt to authenticate so
     // we can optionally attach is_favorite flags. If authentication
-    // fails, we treat the request as anonymous.
+    // fails, we treat the request as anonymous (don't block the search).
     const authHeader = (request.headers as any).authorization;
     if (authHeader) {
       try {
         await (fastify as any).authenticate(request, reply);
-      } catch {
+      } catch (authError) {
+        // Check if reply was already sent (e.g., 401 response)
         if (reply.sent) {
           return;
         }
+        // Log the auth failure for debugging but continue as anonymous
+        fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
+        // Ensure request.user is undefined for anonymous access
+        (request as any).user = undefined;
       }
     }
 
-    const total = await vehicleModel.countByFilters(filters);
+    // Cache key based on filters (excluding user-specific data like favorites)
+    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset });
+
+    // Try to get cached results (only the base search, not user-specific favorites)
+    const cachedResult = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.SHORT, // 5 minutes
+      async () => {
+        const total = await vehicleModel.countByFilters(filters);
+        if (total === 0) {
+          return { items: [], total: 0 };
+        }
+        const items = await vehicleModel.searchByFilters(filters, limit, offset);
+        return { items, total };
+      },
+    );
+
+    const { items, total } = cachedResult;
     if (total === 0) {
       return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
-
-    const items = await vehicleModel.searchByFilters(filters, limit, offset);
 
     // If user is authenticated, mark which vehicles are already in favorites
     let itemsWithFavoriteFlag = items;

@@ -14,9 +14,32 @@ import {
 } from '../types/company.js';
 import { DatabaseError } from '../types/errors.js';
 
+/**
+ * Safely parse JSON with logging on failure.
+ * Returns the original value if parsing fails.
+ */
+function safeJsonParse(value: unknown, fieldName: string, recordId?: number): unknown {
+  if (!value || typeof value !== 'string') {
+    return value;
+  }
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    // Log warning for corrupted JSON data
+    console.warn(
+      `[CompanyModel] Failed to parse ${fieldName} JSON${recordId ? ` for record ${recordId}` : ''}:`,
+      err instanceof Error ? err.message : 'Unknown error',
+    );
+    return value; // Return original string if parse fails
+  }
+}
+
 export class CompanyModel extends BaseModel {
+  private fastifyInstance: FastifyInstance;
+
   constructor(fastify: FastifyInstance) {
     super(fastify);
+    this.fastifyInstance = fastify;
   }
 
   async create(companyData: CompanyCreate): Promise<Company> {
@@ -95,23 +118,8 @@ export class CompanyModel extends BaseModel {
     }
 
     const row = rows[0];
-
-    if (row.final_formula) {
-      try {
-        row.final_formula = JSON.parse(row.final_formula as string);
-      } catch {
-        // leave as-is if parse fails
-      }
-    }
-
-    if (row.services) {
-      try {
-        row.services = JSON.parse(row.services as string);
-      } catch {
-        // leave as-is if parse fails
-      }
-    }
-
+    row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+    row.services = safeJsonParse(row.services, 'services', row.id);
     return row as Company;
   }
 
@@ -122,21 +130,8 @@ export class CompanyModel extends BaseModel {
     );
 
     for (const row of rows) {
-      if (row.final_formula) {
-        try {
-          row.final_formula = JSON.parse(row.final_formula as string);
-        } catch {
-          // ignore parse error
-        }
-      }
-
-      if (row.services) {
-        try {
-          row.services = JSON.parse(row.services as string);
-        } catch {
-          // ignore parse error
-        }
-      }
+      row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+      row.services = safeJsonParse(row.services, 'services', row.id);
     }
 
     return rows as Company[];
@@ -156,21 +151,8 @@ export class CompanyModel extends BaseModel {
     );
 
     for (const row of rows) {
-      if (row.final_formula) {
-        try {
-          row.final_formula = JSON.parse(row.final_formula as string);
-        } catch {
-          // ignore parse error
-        }
-      }
-
-      if (row.services) {
-        try {
-          row.services = JSON.parse(row.services as string);
-        } catch {
-          // ignore parse error
-        }
-      }
+      row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+      row.services = safeJsonParse(row.services, 'services', row.id);
     }
 
     return rows as Company[];
@@ -375,13 +357,7 @@ export class CompanyModel extends BaseModel {
     );
 
     for (const row of rows) {
-      if (row.breakdown) {
-        try {
-          row.breakdown = JSON.parse(row.breakdown as string);
-        } catch {
-          // ignore parse error
-        }
-      }
+      row.breakdown = safeJsonParse(row.breakdown, 'breakdown', row.id);
     }
 
     return rows as CompanyQuote[];
@@ -403,13 +379,7 @@ export class CompanyModel extends BaseModel {
     );
 
     for (const row of rows) {
-      if (row.breakdown) {
-        try {
-          row.breakdown = JSON.parse(row.breakdown as string);
-        } catch {
-          // ignore parse error
-        }
-      }
+      row.breakdown = safeJsonParse(row.breakdown, 'breakdown', row.id);
     }
 
     return rows as CompanyQuote[];
@@ -442,14 +412,7 @@ export class CompanyModel extends BaseModel {
     );
 
     const row = rows[0];
-    if (row.breakdown) {
-      try {
-        row.breakdown = JSON.parse(row.breakdown as string);
-      } catch {
-        // ignore parse error
-      }
-    }
-
+    row.breakdown = safeJsonParse(row.breakdown, 'breakdown', row.id);
     return row as CompanyQuote;
   }
 
@@ -469,13 +432,7 @@ export class CompanyModel extends BaseModel {
       );
       if (!rows.length) return null;
       const row = rows[0];
-      if (row.breakdown) {
-        try {
-          row.breakdown = JSON.parse(row.breakdown as string);
-        } catch {
-          // ignore
-        }
-      }
+      row.breakdown = safeJsonParse(row.breakdown, 'breakdown', row.id);
       return row as CompanyQuote;
     }
 
@@ -491,13 +448,7 @@ export class CompanyModel extends BaseModel {
     );
     if (!rows.length) return null;
     const row = rows[0];
-    if (row.breakdown) {
-      try {
-        row.breakdown = JSON.parse(row.breakdown as string);
-      } catch {
-        // ignore
-      }
-    }
+    row.breakdown = safeJsonParse(row.breakdown, 'breakdown', row.id);
     return row as CompanyQuote;
   }
 
@@ -641,21 +592,8 @@ export class CompanyModel extends BaseModel {
     );
 
     for (const row of rows) {
-      if (row.final_formula) {
-        try {
-          row.final_formula = JSON.parse(row.final_formula as string);
-        } catch {
-          // ignore parse error
-        }
-      }
-
-      if (row.services) {
-        try {
-          row.services = JSON.parse(row.services as string);
-        } catch {
-          // ignore parse error
-        }
-      }
+      row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+      row.services = safeJsonParse(row.services, 'services', row.id);
     }
 
     return { items: rows as Company[], total };

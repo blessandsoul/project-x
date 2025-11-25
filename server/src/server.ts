@@ -7,12 +7,16 @@ import fastifyCookie from '@fastify/cookie';
 import fastifySensible from '@fastify/sensible';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import fastifyCompress from '@fastify/compress';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { v4 as uuidv4 } from 'uuid';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import cron from 'node-cron';
 import { databasePlugin } from './config/database.js';
-import { auctionApiPlugin } from './config/auctionApi.js';
+import { redisPlugin } from './config/redis.js';
 import { authPlugin } from './middleware/auth.js';
 import { errorHandlerPlugin } from './middleware/errorHandler.js';
 import { healthRoutes } from './routes/health.js';
@@ -28,7 +32,6 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
 import { CatalogModel } from './models/CatalogModel.js';
-import 'dotenv/config.js'
 /**
  * Fastify Server Application
  *
@@ -66,7 +69,36 @@ const fastify = Fastify({
       },
   // Protect against excessively large request bodies (basic DoS mitigation)
   bodyLimit: 5 * 1024 * 1024, // 5 MiB
+  // Generate unique request IDs for tracing
+  genReqId: () => uuidv4(),
 }).withTypeProvider<ZodTypeProvider>();
+
+// ---------------------------------------------------------------------------
+// Request ID tracking - add request ID to all responses for debugging
+// ---------------------------------------------------------------------------
+fastify.addHook('onRequest', async (request, reply) => {
+  // Attach request ID to reply headers for client-side correlation
+  reply.header('X-Request-Id', request.id);
+  // Track request start time for performance monitoring
+  (request as any).startTime = Date.now();
+});
+
+// Log slow requests (> 1 second) for performance monitoring
+const SLOW_REQUEST_THRESHOLD_MS = 1000;
+fastify.addHook('onResponse', async (request, reply) => {
+  const startTime = (request as any).startTime;
+  if (startTime) {
+    const duration = Date.now() - startTime;
+    if (duration > SLOW_REQUEST_THRESHOLD_MS) {
+      fastify.log.warn({
+        method: request.method,
+        url: request.url,
+        statusCode: reply.statusCode,
+        duration: `${duration}ms`,
+      }, 'Slow request detected');
+    }
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Security-related configuration derived from environment variables
@@ -86,7 +118,62 @@ const globalRateLimitMax = process.env.RATE_LIMIT_MAX
 
 const globalRateLimitWindow = process.env.RATE_LIMIT_TIME_WINDOW || '1 minute';
 
+// ---------------------------------------------------------------------------
 // Register plugins
+// ---------------------------------------------------------------------------
+
+// Response compression for better performance
+await fastify.register(fastifyCompress, {
+  global: true,
+  encodings: ['gzip', 'deflate'],
+});
+
+// OpenAPI/Swagger documentation - only in development
+if (!isProd) {
+  await fastify.register(fastifySwagger, {
+    openapi: {
+      openapi: '3.0.0',
+      info: {
+        title: 'Project-X API',
+        description: 'API documentation for Project-X server',
+        version: '1.0.0',
+      },
+      servers: [
+        {
+          url: `http://localhost:${process.env.PORT || 3000}`,
+          description: 'Development server',
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+      tags: [
+        { name: 'Health', description: 'Health check endpoints' },
+        { name: 'Users', description: 'User authentication and profile management' },
+        { name: 'Companies', description: 'Company management and search' },
+        { name: 'Vehicles', description: 'Vehicle catalog and VIN decoding' },
+        { name: 'Leads', description: 'Lead management for quotes' },
+        { name: 'Favorites', description: 'User favorites management' },
+        { name: 'Dashboard', description: 'Dashboard statistics' },
+      ],
+    },
+  });
+
+  await fastify.register(fastifySwaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      docExpansion: 'list',
+      deepLinking: true,
+    },
+  });
+}
+
 // Allow static assets (e.g., company logos) to be embedded from other origins
 // such as the SPA dev server (localhost:5173) by relaxing the
 // Cross-Origin-Resource-Policy header. Without this, browsers may block
@@ -145,10 +232,9 @@ await fastify.register(rateLimit, {
   allowList: [],
 });
 await fastify.register(databasePlugin);
+await fastify.register(redisPlugin);
 await fastify.register(authPlugin);
 await fastify.register(errorHandlerPlugin);
-// to auth in auction-api.app
-// await fastify.register(auctionApiPlugin);
 
 // Register routes
 await fastify.register(healthRoutes);
@@ -162,45 +248,13 @@ await fastify.register(catalogRoutes);
 await fastify.register(leadRoutes);
 await fastify.register(dashboardRoutes);
 
-// fastify.get('/heavy', async (request, reply) => {
-//   // Simulate some CPU work
-//   let total = 0;
-//   const iterations = 5_000_000;
-//   for (let i = 0; i < iterations; i++) {
-//     total += i % 10;
-//   }
-
-//   // Simulate an async operation (e.g. external API / DB call)
-//   await new Promise((resolve) => setTimeout(resolve, 50));
-
-//   reply.send({
-//     total,
-//     iterations,
-//     timestamp: new Date().toISOString(),
-//   });
-// });
-
 // ---------------------------------------------------------------------------
 // Background jobs
 // ---------------------------------------------------------------------------
 
-// Use pre-obtained API_TOKEN from env and refresh active lots every hour.
 const auctionApiService = new AuctionApiService(fastify);
 const fxRateService = new FxRateService(fastify);
 const catalogModel = new CatalogModel(fastify);
-
-// cron.schedule('0 * * * *', async () => {
-//   const now = new Date();
-//   const time = auctionApiService.buildHourStartTimeString(now);
-
-//   try {
-//     fastify.log.info({ time }, 'Running hourly auction active lots refresh job');
-//     await auctionApiService.getActiveLotsHourly(time);
-//     fastify.log.info({ time }, 'Auction active lots refresh job completed');
-//   } catch (error) {
-//     fastify.log.error({ error, time }, 'Auction active lots refresh job failed');
-//   }
-// });
 
 // Refresh USD->GEL FX rate once per day. The FxRateService checks the
 // exchange_rates table first and only calls the external API if there is
@@ -229,26 +283,33 @@ cron.schedule('0 3 1 * *', async () => {
   }
 });
 
-// Run an initial fetch on startup so the cache is warm before the first cron tick.
-(async () => {
-  try {
-    fastify.log.info('Running initial FX rate fetch on startup');
-    await fxRateService.ensureTodayUsdGelRate();
-    fastify.log.info('Initial FX rate fetch completed');
-  } catch (error) {
-    fastify.log.error({ error }, 'Initial FX rate fetch failed');
-  }
-})();
-//   try {
-//     fastify.log.info({ time }, 'Running initial auction active lots fetch on startup');
-//     await auctionApiService.getActiveLotsHourly(time);
-//     fastify.log.info({ time }, 'Initial auction active lots fetch completed');
-//   } catch (error) {
-//     fastify.log.error({ error, time }, 'Initial auction active lots fetch failed');
-//   }
-// })();
+// Note: FX rate is fetched in start() before server listens.
+// This ensures the rate is available before accepting requests.
 
+// ---------------------------------------------------------------------------
+// Graceful shutdown handlers
+// ---------------------------------------------------------------------------
+const gracefulShutdown = async (signal: string) => {
+  fastify.log.info({ signal }, 'Received shutdown signal, closing server gracefully...');
+
+  try {
+    // Close Fastify server (stops accepting new connections)
+    await fastify.close();
+    fastify.log.info('Server closed successfully');
+    process.exit(0);
+  } catch (err) {
+    fastify.log.error({ err }, 'Error during graceful shutdown');
+    process.exit(1);
+  }
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// ---------------------------------------------------------------------------
 // Start server
+// ---------------------------------------------------------------------------
 const start = async () => {
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -260,7 +321,14 @@ const start = async () => {
     await fxRateService.ensureTodayUsdGelRate();
 
     await fastify.listen({ port, host });
-    console.log(`Server listening on http://${host}:${port}`);
+    fastify.log.info(`Server listening on http://${host}:${port}`);
+    fastify.log.info(`API documentation available at http://${host}:${port}/docs`);
+
+    // Signal PM2 that the app is ready (for cluster mode with wait_ready: true)
+    if (process.send) {
+      process.send('ready');
+      fastify.log.info('Sent ready signal to PM2');
+    }
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

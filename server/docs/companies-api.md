@@ -378,6 +378,60 @@ Delete a company. Underlying logic is responsible for cleaning up related social
 
 ---
 
+## Company Logo Upload
+
+### POST `/companies/:id/logo`
+
+**Description:**
+
+Upload or replace a company's logo image. The logo is processed and stored on disk with SEO-friendly filenames based on the company slug.
+
+**Method:** `POST`
+
+**Authentication:** Required (JWT)
+
+**Authorization:** Admin or company owner only
+
+**Content-Type:** `multipart/form-data`
+
+**Path params:**
+
+- `id` – numeric company ID
+
+**Request body:**
+
+- `file`: Image file (JPEG, PNG, WebP, GIF)
+
+**Processing:**
+
+- Original image saved as `{slug}-original.{ext}`
+- Resized to 256x256 (preserving aspect ratio) saved as `{slug}.{ext}`
+- Quality: 90% for JPEG/WebP, compression level 9 for PNG
+- Files stored in `/uploads/companies/{slug}/logos/`
+
+**Response 201**
+
+```jsonc
+{
+  "logoUrl": "/uploads/companies/acme-shipping/logos/acme-shipping.png",
+  "originalLogoUrl": "/uploads/companies/acme-shipping/logos/acme-shipping-original.png"
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – no file provided or not an image.
+- `401 Unauthorized` – missing/invalid token.
+- `403 Forbidden` – not authorized to upload logo for this company.
+- `404 Not Found` – company does not exist.
+
+**Notes:**
+
+- Logo URLs are returned in company responses as `logo_url` and `original_logo_url`.
+- The `logo` field in company create/update is deprecated; use this endpoint instead.
+
+---
+
 ## Social Links API
 
 Social links are optional URLs pointing to a company’s social profiles.

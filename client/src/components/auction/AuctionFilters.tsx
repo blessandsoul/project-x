@@ -186,7 +186,7 @@ export function AuctionFilters({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">{t('common.all')}</SelectItem>
-                              {catalogMakes.map(make => (
+                              {(catalogMakes ?? []).map(make => (
                                  <SelectItem key={make.makeId} value={String(make.makeId)}>{make.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -204,7 +204,7 @@ export function AuctionFilters({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">{t('common.all')}</SelectItem>
-                              {catalogModels.map(model => (
+                              {(catalogModels ?? []).map(model => (
                                  <SelectItem key={model.modelId} value={String(model.modelId)}>{model.name}</SelectItem>
                               ))}
                             </SelectContent>

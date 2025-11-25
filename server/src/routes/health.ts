@@ -23,10 +23,16 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/health', async (request, reply) => {
     const vinController = new VinController(fastify);
+    const memUsage = process.memoryUsage();
     const healthChecks = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      memory: {
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB',
+        rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+      },
       services: {} as any
     };
 
@@ -45,6 +51,26 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         error: error instanceof Error ? error.message : 'Database connection failed'
       };
       overallHealthy = false;
+    }
+
+    // Redis health check (non-critical - doesn't affect overall health)
+    try {
+      if (fastify.redis) {
+        const pong = await fastify.redis.ping();
+        healthChecks.services.redis = {
+          status: pong === 'PONG' ? 'healthy' : 'unhealthy',
+        };
+      } else {
+        healthChecks.services.redis = {
+          status: 'disabled',
+        };
+      }
+    } catch (error) {
+      healthChecks.services.redis = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Redis check failed',
+      };
+      // Redis is optional, don't mark overall as unhealthy
     }
 
     // VIN service health check
