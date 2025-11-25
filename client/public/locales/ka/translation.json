@@ -221,22 +221,6 @@
     "filters": {
       "title": "ფილტრები",
       "geography": "გეოგრაფია",
-      "city_placeholder": "ქალაქი (მაგ. თბილისი)",
-      "services": "სერვისები",
-      "services_soon": "სერვისების ფილტრი მალე დაემატება",
-      "price": "ფასი",
-      "rating": "მინიმალური რეიტინგი",
-      "rating_all": "ყველა",
-      "rating_3_plus": "3+",
-      "rating_4_plus": "4+",
-      "rating_5": "5",
-      "vip_only": "მხოლოდ VIP კომპანიები",
-      "free_onboarding": "უფასო რეგისტრაცია"
-    },
-    "search": {
-      "placeholder": "კომპანიების ძებნა...",
-      "clear": "ძიების გასუფთავება"
-    },
     "sort": {
       "label": "სორტირება",
       "newest": "ახალი დამატებული",

@@ -28,9 +28,11 @@ import { Textarea } from '@/components/ui/textarea'
 // Hooks & Utils
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
 import { cn } from '@/lib/utils'
-import type { VehicleQuote } from '@/types/vehicles'
+import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
 import { createLeadFromQuotes } from '@/api/leads'
+import { fetchSimilarVehicles } from '@/api/vehicles'
 import { navigationItems, footerLinks } from '@/config/navigation'
+import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 
 // --- Sub-components ---
 
@@ -668,101 +670,82 @@ const QuoteRow = ({
   )
 }
 
-const SimilarVehicles = ({ currentVehicle }: { currentVehicle: any }) => {
-    const similar = [
-        { 
-            id: 101, 
-            title: "2020 Toyota Camry SE", 
-            price: 4500, 
-            image: "https://images.unsplash.com/photo-1621007947382-bb3c3968e3bb?q=80&w=2670&auto=format&fit=crop",
-            lot: "58392011",
-            location: "GA - SAVANNAH",
-            odometer: "45,230 mi"
-        },
-        { 
-            id: 102, 
-            title: "2019 Honda Accord Sport", 
-            price: 5200, 
-            image: "https://images.unsplash.com/photo-1592198084033-aade902d1aae?q=80&w=2670&auto=format&fit=crop",
-            lot: "39201822",
-            location: "CA - LOS ANGELES",
-            odometer: "32,100 mi"
-        },
-        { 
-            id: 103, 
-            title: "2021 Ford Fusion Titanium", 
-            price: 3100, 
-            image: "https://images.unsplash.com/photo-1551830447-45ea720087fa?q=80&w=2669&auto=format&fit=crop",
-            lot: "48291022",
-            location: "TX - HOUSTON",
-            odometer: "68,450 mi"
+const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
+  const navigate = useNavigate()
+  const [similarItems, setSimilarItems] = useState<VehicleSearchItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const run = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetchSimilarVehicles(baseVehicleId, { limit: 3 })
+        if (!isMounted) return
+        const items = Array.isArray(response.items) ? response.items.slice(0, 3) : []
+        setSimilarItems(items)
+      } catch (err) {
+        if (!isMounted) return
+        const message = err instanceof Error ? err.message : 'Failed to load similar vehicles'
+        setError(message)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
         }
-    ]
+      }
+    }
 
-    const navigate = useNavigate()
+    run()
 
+    return () => {
+      isMounted = false
+    }
+  }, [baseVehicleId])
+
+  if (isLoading) {
     return (
-        <div className="space-y-4 pt-8 border-t">
-            <h2 className="text-xl font-bold">Similar Vehicles You Might Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {similar.map((item) => (
-                    <div 
-                        key={item.id} 
-                        className="group relative bg-card rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden" 
-                        onClick={() => navigate(`/catalog`)}
-                    >
-                        {/* Image Section */}
-                        <div className="aspect-[4/3] overflow-hidden bg-muted relative">
-                            <img 
-                                src={item.image} 
-                                alt={item.title} 
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end text-white">
-                                <div>
-                                    <p className="text-[10px] font-medium opacity-90">Current Bid</p>
-                                    <p className="text-lg font-bold leading-none">${item.price.toLocaleString()}</p>
-                                </div>
-                                <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] backdrop-blur-sm">
-                                    {item.odometer}
-                                </Badge>
-                            </div>
-                            <div className="absolute top-2 right-2">
-                                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full bg-black/20 hover:bg-black/40 text-white">
-                                    <Icon icon="mdi:heart-outline" className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Content Section */}
-                        <div className="p-3 space-y-2">
-                            <div>
-                                <h3 className="font-semibold text-sm truncate" title={item.title}>{item.title}</h3>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
-                                    <span className="flex items-center gap-0.5">
-                                        <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                                        {item.location}
-                                    </span>
-                                    <span>•</span>
-                                    <span>Lot: {item.lot}</span>
-                                </div>
-                            </div>
-                            
-                            <div className="pt-2 border-t border-dashed flex items-center justify-between">
-                                <div className="text-[10px] text-muted-foreground">
-                                    Est. Repair: <span className="font-medium text-foreground">$1.2k</span>
-                                </div>
-                                <div className="text-xs font-bold text-primary flex items-center gap-1">
-                                    View <Icon icon="mdi:arrow-right" className="h-3 w-3" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+      <div className="space-y-4 pt-8 border-t">
+        <h2 className="text-xl font-bold">Similar Vehicles You Might Like</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl hidden sm:block" />
+          <Skeleton className="h-64 rounded-xl hidden sm:block" />
         </div>
+      </div>
     )
+  }
+
+  if (error || !similarItems.length) {
+    return null
+  }
+
+  return (
+    <div className="space-y-4 pt-8 border-t">
+      <h2 className="text-xl font-bold">Similar Vehicles You Might Like</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {similarItems.slice(0, 3).map((item) => (
+          <AuctionVehicleCard
+            key={item.id}
+            item={item}
+            priority={false}
+            onOpenGallery={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+            onCalculate={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+            onViewDetails={() => {
+              navigate({ pathname: `/vehicle/${item.id}` })
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // --- Main Page Component ---
@@ -1107,7 +1090,7 @@ const VehicleDetailsPage = () => {
               </div>
             </div>
 
-            <SimilarVehicles currentVehicle={vehicle} />
+            <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
 
           {/* Right Column: Sticky Price Card */}

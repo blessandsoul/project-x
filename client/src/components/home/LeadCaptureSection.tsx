@@ -300,7 +300,6 @@ export function LeadCaptureSection() {
                         <SelectItem value="any">{t('home.lead_capture.auction_source_any')}</SelectItem>
                         <SelectItem value="copart">Copart</SelectItem>
                         <SelectItem value="iaai">IAAI</SelectItem>
-                        <SelectItem value="manheim">Manheim</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.auctionSource ? (

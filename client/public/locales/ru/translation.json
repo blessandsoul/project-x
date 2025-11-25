@@ -233,12 +233,13 @@
       "services_soon": "Фильтры услуг скоро появятся",
       "price": "Цена",
       "rating": "Минимальный Рейтинг",
-      "rating_all": "Все",
-      "rating_3_plus": "3+",
-      "rating_4_plus": "4+",
-      "rating_5": "5",
-      "vip_only": "Только VIP Компании",
-      "free_onboarding": "Бесплатное Сопровождение"
+        "rating_all": "Все",
+        "rating_3_plus": "3+",
+        "rating_4_plus": "4+",
+        "rating_5": "5",
+        "vip_only": "Только VIP Компании",
+        "free_onboarding": "Бесплатное Сопровождение",
+        "buy_now_only": "Купить Сейчас"
     },
     "search": {
       "placeholder": "Поиск компаний...",

@@ -12,21 +12,10 @@ export function HeroWizard() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Smart routing logic
     const cleanInput = input.trim();
-    const isVin = cleanInput.length === 17 && !cleanInput.includes(' ');
-    const isPrice = !isNaN(Number(cleanInput.replace(/[^0-9]/g, '')));
 
-    if (isVin) {
-      navigate(`/vin?vin=${encodeURIComponent(cleanInput)}`);
-    } else if (isPrice) {
-      // Assume auction price, go to catalog with calculator filter
-      const price = cleanInput.replace(/[^0-9]/g, '');
-      navigate(`/catalog?priceMin=${price}&priceMax=${Number(price) + 5000}`); // Loose range for demo
-    } else {
-      // Default to text search in catalog
-      navigate(`/catalog?q=${encodeURIComponent(cleanInput)}`);
-    }
+    // Always search in live auctions by query
+    navigate(`/auction-listings?q=${encodeURIComponent(cleanInput)}`);
   };
 
   return (
@@ -54,7 +43,7 @@ export function HeroWizard() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className="h-14 md:h-16 pl-12 text-lg md:text-xl border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-slate-300"
-              placeholder="Enter VIN, auction budget or car model..." 
+              placeholder="Search live auctions by make, model or year" 
             />
           </div>
           <Button 

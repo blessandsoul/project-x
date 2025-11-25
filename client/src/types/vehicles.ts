@@ -36,6 +36,7 @@ export interface VehicleDetails extends VehicleSummary {
   repair_cost?: number | string | null
   final_bid?: number | string | null
   buy_it_now_price?: number | string | null
+  buy_it_now?: number | string | null
   seller?: string | null
   seller_type?: string | null
   sale_title_type?: string | null
@@ -129,6 +130,7 @@ export interface VehiclesSearchFilters {
   source?: string
   price_from?: number
   price_to?: number
+  buy_now?: boolean
   limit?: number
   offset?: number
 }

@@ -200,12 +200,13 @@
       "services_soon": "عوامل تصفية الخدمات قادمة قريبا",
       "price": "السعر",
       "rating": "الحد الأدنى للتقييم",
-      "rating_all": "الكل",
-      "rating_3_plus": "3+",
-      "rating_4_plus": "4+",
-      "rating_5": "5",
-      "vip_only": "شركات VIP فقط",
-      "free_onboarding": "تأهيل مجاني"
+        "rating_all": "الكل",
+        "rating_3_plus": "3+",
+        "rating_4_plus": "4+",
+        "rating_5": "5",
+        "vip_only": "شركات VIP فقط",
+        "free_onboarding": "تأهيل مجاني",
+        "buy_now_only": "شراء الآن فقط"
     },
     "search": {
       "placeholder": "بحث عن الشركات...",

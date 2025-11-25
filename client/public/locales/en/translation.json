@@ -40,7 +40,7 @@
     "up_to": "Up to",
     "auction": "Auction",
     "fuel": "Fuel",
-    "fuel_gas": "Gas",
+    "fuel_gas": "Petrol",
     "fuel_diesel": "Diesel",
     "fuel_hybrid": "Hybrid",
     "fuel_electric": "Electric",
@@ -265,7 +265,8 @@
       "rating_4_plus": "4+",
       "rating_5": "5",
       "vip_only": "VIP Companies Only",
-      "free_onboarding": "Free Onboarding"
+      "free_onboarding": "Free Onboarding",
+      "buy_now_only": "Buy Now"
     },
     "search": {
       "placeholder": "Search companies...",
@@ -1169,7 +1170,7 @@
         "price": "Price",
         "auction": "Auction",
         "fuel": "Fuel",
-        "buy_now_only": "Buy Now Only",
+        "buy_now_only": "Buy Now",
         "show_vin": "Show VIN Codes",
         "additional_title": "Additional Filters",
         "company_importer": "Company / Importer",
@@ -1498,7 +1499,7 @@
       "price": "Price",
       "auction": "Auction",
       "fuel": "Fuel",
-      "buy_now_only": "Buy Now Only",
+      "buy_now_only": "Buy Now",
       "show_vin": "Show VIN Codes",
       "additional_title": "Additional Filters",
       "company_importer": "Company / Importer",

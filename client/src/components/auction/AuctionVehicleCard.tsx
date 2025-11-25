@@ -61,6 +61,23 @@ export function AuctionVehicleCard({
   }
   const displayPrice = priceRaw != null && Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
 
+  // Buy Now price (only when strictly positive)
+  let buyNowRaw: number | null = null;
+  if (item.buy_it_now_price != null) {
+    const numeric = typeof item.buy_it_now_price === 'number'
+      ? item.buy_it_now_price
+      : Number(item.buy_it_now_price);
+    if (Number.isFinite(numeric) && numeric > 0) buyNowRaw = numeric;
+  } else if (item.buy_it_now != null) {
+    const numeric = typeof item.buy_it_now === 'number'
+      ? item.buy_it_now
+      : Number(item.buy_it_now);
+    if (Number.isFinite(numeric) && numeric > 0) buyNowRaw = numeric;
+  }
+
+  const hasBuyNow = buyNowRaw != null;
+  const buyNowPriceLabel = hasBuyNow ? formatMoney(buyNowRaw) : null;
+
   // Social Proof & Badges
   const watcherCount = useMemo(() => {
     const seed = typeof item.id === 'number' ? item.id : item.vehicle_id || 0;
@@ -195,6 +212,19 @@ export function AuctionVehicleCard({
                 {item.year} {item.make} {item.model}
               </h3>
             </div>
+            {hasBuyNow && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Badge className="bg-emerald-500/90 text-white border-none h-5 px-2 text-[10px] font-semibold tracking-wide flex items-center gap-1">
+                  <Icon icon="mdi:flash" className="w-3 h-3" />
+                  {t('auction.filters.buy_now_only')}
+                </Badge>
+                {buyNowPriceLabel && (
+                  <span className="text-xs font-semibold text-emerald-700">
+                    {buyNowPriceLabel}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {item.run_and_drive ? (
                 <>
