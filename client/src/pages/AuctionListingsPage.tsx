@@ -57,13 +57,18 @@ const buildFiltersFromDraftState = (
   const hasExactYear = typeof input.exactYear === 'number' && !Number.isNaN(input.exactYear);
   const hasMinMileage = typeof input.minMileage === 'number' && !Number.isNaN(input.minMileage);
 
+  // Only include price filters if they have meaningful values (not 0)
+  const priceFrom = input.priceRange[0];
+  const priceTo = input.priceRange[1];
+  const hasPriceFilter = priceFrom > 0 || priceTo > 0;
+
   const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
     search: trimmedSearch.length > 0 ? trimmedSearch : undefined,
     make: input.selectedMakeName,
     model: input.selectedModelName,
-    mileage_to: input.maxMileage[0],
-    price_from: input.priceRange[0],
-    price_to: input.priceRange[1],
+    mileage_to: input.maxMileage[0] !== 200000 ? input.maxMileage[0] : undefined,
+    price_from: hasPriceFilter && priceFrom > 0 ? priceFrom : undefined,
+    price_to: hasPriceFilter && priceTo > 0 ? priceTo : undefined,
     fuel_type: input.fuelType === 'all' ? undefined : input.fuelType,
     // category codes: 'v', 'c', 'a'; 'all' means no category filter
     category: input.category === 'all' ? undefined : input.category,
@@ -80,10 +85,15 @@ const buildFiltersFromDraftState = (
   if (hasExactYear) {
     baseFilters.year = input.exactYear as number;
   } else {
+    // Only include year filters if they have meaningful values (not 0)
     const fromYear = Math.min(input.yearRange[0], input.yearRange[1]);
     const toYear = Math.max(input.yearRange[0], input.yearRange[1]);
-    baseFilters.year_from = fromYear;
-    baseFilters.year_to = toYear;
+    const hasYearFilter = fromYear > 0 || toYear > 0;
+    
+    if (hasYearFilter) {
+      if (fromYear > 0) baseFilters.year_from = fromYear;
+      if (toYear > 0) baseFilters.year_to = toYear;
+    }
   }
 
   if (hasMinMileage) {
@@ -268,40 +278,45 @@ const AuctionListingsPage = () => {
       searchParams.delete('drive');
     }
 
+    // Year range - only add to URL if values are meaningful (not 0)
     const [yearFrom, yearTo] = yearRange;
-    if (yearFrom !== 2010 || yearTo !== 2024) {
+    if (yearFrom > 0) {
       searchParams.set('yearFrom', String(yearFrom));
-      searchParams.set('yearTo', String(yearTo));
     } else {
       searchParams.delete('yearFrom');
+    }
+    if (yearTo > 0) {
+      searchParams.set('yearTo', String(yearTo));
+    } else {
       searchParams.delete('yearTo');
     }
 
-    if (typeof exactYear === 'number' && !Number.isNaN(exactYear)) {
+    if (typeof exactYear === 'number' && !Number.isNaN(exactYear) && exactYear > 0) {
       searchParams.set('yearExact', String(exactYear));
     } else {
       searchParams.delete('yearExact');
     }
 
-    if (maxMileage[0] !== 200000) {
+    if (maxMileage[0] !== 200000 && maxMileage[0] > 0) {
       searchParams.set('maxMileage', String(maxMileage[0]));
     } else {
       searchParams.delete('maxMileage');
     }
 
-    if (typeof minMileage === 'number' && !Number.isNaN(minMileage)) {
+    if (typeof minMileage === 'number' && !Number.isNaN(minMileage) && minMileage > 0) {
       searchParams.set('minMileage', String(minMileage));
     } else {
       searchParams.delete('minMileage');
     }
 
-    if (priceRange[0] !== 500) {
+    // Price range - only add to URL if values are meaningful (not 0)
+    if (priceRange[0] > 0) {
       searchParams.set('priceMin', String(priceRange[0]));
     } else {
       searchParams.delete('priceMin');
     }
 
-    if (priceRange[1] !== 30000) {
+    if (priceRange[1] > 0) {
       searchParams.set('priceMax', String(priceRange[1]));
     } else {
       searchParams.delete('priceMax');
@@ -447,11 +462,11 @@ const AuctionListingsPage = () => {
         typeof appliedFilters.year_from === 'number' ||
         typeof appliedFilters.year_to === 'number'
       ) {
-        const from = appliedFilters.year_from ?? 2010;
-        const to = appliedFilters.year_to ?? 2024;
-        const isDefaultYearRange = from === 2010 && to === 2024;
-        if (!isDefaultYearRange) {
-          labels.push({ id: 'yearRange', label: `${t('auction.filters.year')}: ${from}-${to}` });
+        const from = appliedFilters.year_from ?? 0;
+        const to = appliedFilters.year_to ?? 0;
+        // Only show chip if at least one value is meaningful (not 0)
+        if (from > 0 || to > 0) {
+          labels.push({ id: 'yearRange', label: `${t('auction.filters.year')}: ${from || '?'}-${to || '?'}` });
         }
       }
 
@@ -459,11 +474,11 @@ const AuctionListingsPage = () => {
         typeof appliedFilters.price_from === 'number' ||
         typeof appliedFilters.price_to === 'number'
       ) {
-        const from = appliedFilters.price_from ?? 500;
-        const to = appliedFilters.price_to ?? 30000;
-        const isDefaultPriceRange = from === 500 && to === 30000;
-        if (!isDefaultPriceRange) {
-          labels.push({ id: 'price', label: `${t('auction.filters.price')}: $${from}-$${to}` });
+        const from = appliedFilters.price_from ?? 0;
+        const to = appliedFilters.price_to ?? 0;
+        // Only show chip if at least one value is meaningful (not 0)
+        if (from > 0 || to > 0) {
+          labels.push({ id: 'price', label: `${t('auction.filters.price')}: $${from || '?'}-$${to || '?'}` });
         }
       }
 
@@ -1086,14 +1101,14 @@ const AuctionListingsPage = () => {
                    }}
                 >
                    <Icon icon="mdi:compare" className="w-4 h-4" />
-                   <span className="hidden sm:inline">{t('auction.price_comparison')}</span>
+                   <span className="text-xs font-medium">{t('auction.price_comparison')}</span>
                    {selectedVehicleIds.length > 0 && <Badge variant="secondary" className="ml-1 h-5 px-1.5 bg-orange-500 text-white">{selectedVehicleIds.length}</Badge>}
                 </Button>
                 
                 {showCompareCheckboxes && selectedVehicleIds.length > 0 && (
                     <Button 
                        size="sm" 
-                       className="h-9 bg-orange-600 hover:bg-orange-700 text-white" 
+                       className="hidden sm:inline-flex h-9 bg-orange-600 hover:bg-orange-700 text-white" 
                        onClick={() => {
                           setIsCompareOpen(true);
                           setIsCompareLoading(true);
@@ -1163,8 +1178,11 @@ const AuctionListingsPage = () => {
                            showCompareCheckbox={showCompareCheckboxes}
                            onToggleSelect={(checked: boolean) => {
                               const id = item.vehicle_id ?? item.id;
+                              const isMobile = window.innerWidth < 640;
+                              const limit = isMobile ? 2 : 5;
+                              
                               setSelectedVehicleIds(prev => 
-                                 checked ? (prev.length < 5 ? [...prev, id] : prev) : prev.filter(pid => pid !== id)
+                                 checked ? (prev.length < limit ? [...prev, id] : prev) : prev.filter(pid => pid !== id)
                               );
                            }}
                            onOpenGallery={() => handleOpenBackendGallery(item, item.primary_photo_url || item.primary_thumb_url || '')}
@@ -1244,6 +1262,36 @@ const AuctionListingsPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Mobile Floating Compare Button */}
+      <AnimatePresence>
+        {showCompareCheckboxes && selectedVehicleIds.length > 0 && (
+           <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="fixed bottom-16 right-4 z-50 sm:hidden"
+           >
+              <Button 
+                 size="lg" 
+                 className="rounded-full shadow-xl bg-orange-600 hover:bg-orange-700 text-white px-6"
+                 onClick={() => {
+                    setIsCompareOpen(true);
+                    setIsCompareLoading(true);
+                    setCompareError(null);
+                    setCompareResult(null);
+                    compareVehicles({ vehicle_ids: selectedVehicleIds })
+                       .then(setCompareResult)
+                       .catch((err) => setCompareError(err.message))
+                       .finally(() => setIsCompareLoading(false));
+                 }}
+              >
+                 <Icon icon="mdi:compare" className="w-5 h-5 mr-2" />
+                 {t('common.compare')} ({selectedVehicleIds.length})
+              </Button>
+           </motion.div>
+        )}
+      </AnimatePresence>
       <Footer footerLinks={Object.values(navigationItems).flat()} />
 
       <ComparisonModal 

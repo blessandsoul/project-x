@@ -270,8 +270,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // ---------------------------------------------------------------------------
   fastify.get('/vehicles/:id/similar', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { limit, year_range, price_radius } = request.query as {
+    const { limit, offset, year_range, price_radius } = request.query as {
       limit?: string;
+      offset?: string;
       year_range?: string;
       price_radius?: string;
     };
@@ -289,6 +290,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     const parsedLimit = limit ? Number.parseInt(limit, 10) : 10;
     const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
 
+    const parsedOffset = offset ? Number.parseInt(offset, 10) : 0;
+    const safeOffset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+
     const parsedYearRange = year_range ? Number.parseInt(year_range, 10) : 2;
     const safeYearRange = Number.isFinite(parsedYearRange) && parsedYearRange > 0
       ? parsedYearRange
@@ -299,8 +303,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       ? parsedPriceRadius
       : 0.2;
 
-    const items = await vehicleModel.findSimilarById(vehicleId, {
+    const { items, total } = await vehicleModel.findSimilarById(vehicleId, {
       limit: safeLimit,
+      offset: safeOffset,
       yearRange: safeYearRange,
       priceRadius: safePriceRadius,
     });
@@ -308,7 +313,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({
       vehicleId,
       items,
+      offset: safeOffset,
       limit: safeLimit,
+      total,
       yearRange: safeYearRange,
       priceRadius: safePriceRadius,
     });

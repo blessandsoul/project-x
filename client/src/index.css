@@ -187,6 +187,10 @@
   }
 }
 
+/* * {
+  outline: 1px solid green;
+} */
+
 @layer utilities {
   /* Removed Glassmorphism - Strict Business Style */
   

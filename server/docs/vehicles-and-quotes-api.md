@@ -231,6 +231,8 @@ later without changing the public API.
 
 - `limit` (number, default `10`)
   - Maximum number of similar vehicles to return.
+- `offset` (number, default `0`)
+  - Number of records to skip for pagination.
 - `year_range` (number, default `2`)
   - Year window around the base vehicle year.
   - Example: if base year = `2015` and `year_range=2`, then similar vehicles
@@ -269,7 +271,9 @@ later without changing the public API.
       "primary_thumb_url": "https://.../thumb_min.jpg"
     }
   ],
+  "offset": 0,
   "limit": 10,
+  "total": 42,
   "yearRange": 2,
   "priceRadius": 0.2
 }

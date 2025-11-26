@@ -65,7 +65,6 @@ function AppRoutes() {
     <motion.div
       {...pageMotionProps}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="pb-20 md:pb-0"
     >
       {children}
     </motion.div>

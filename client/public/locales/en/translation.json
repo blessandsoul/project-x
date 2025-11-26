@@ -42,6 +42,8 @@
     "vans": "Vans",
     "miles_short": "mi",
     "view_photos": "View Photos",
+    "from": "From",
+    "to": "To",
     "page": "Page",
     "prev": "Previous",
     "next": "Next",
@@ -76,7 +78,10 @@
     "sign_in": "Sign In",
     "menu": "Menu",
     "profile": "Profile",
-    "sign_out": "Sign Out"
+    "sign_out": "Sign Out",
+    "language": "Language",
+    "open_profile_menu": "Open profile menu",
+    "avatar_alt": "User avatar"
   },
   "home": {
     "hero": {
@@ -198,6 +203,9 @@
     "twitter": "Twitter",
     "github": "GitHub",
     "linkedin": "LinkedIn",
+    "home": "Home",
+    "catalog": "Catalog",
+    "auctionListings": "Auctions",
     "cta": {
       "title": "Have Questions?",
       "subtitle": "Contact us and get free consultation",
@@ -289,6 +297,18 @@
       "category": "Category",
       "year": "Year",
       "price": "Price"
+    },
+    "compare": {
+      "title": "Compare Total Cost",
+      "subtitle": "Side-by-side comparison of total import cost from different companies.",
+      "error_title": "Failed to load comparison",
+      "no_quotes": "No price quotes found for selected vehicles.",
+      "no_quotes_for_vehicle": "No quotes available for this vehicle",
+      "best_badge": "BEST",
+      "total_to_georgia": "Total to Georgia",
+      "distance": "Distance",
+      "other_offers": "Other Offers",
+      "no_other_offers": "No other offers"
     }
   },
   "pages": {

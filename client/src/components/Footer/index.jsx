@@ -24,11 +24,11 @@ const Footer = ({ footerLinks, onNavigate }) => {
 
   return (
     <footer className="border-t bg-background" role="contentinfo">
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-8 md:py-12">
-        <div className="grid gap-8 md:grid-cols-4">
+      <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10 text-center md:text-left">
+        <div className="grid gap-6 md:gap-8 md:grid-cols-4">
           {/* Brand & trust section */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center md:justify-start space-x-2">
               <Icon icon="mdi:home" className="h-6 w-6" />
               <span className="font-logo-bebas text-xl tracking-wide">
                 <span className="font-bold">Trusted</span>{' '}
@@ -52,36 +52,46 @@ const Footer = ({ footerLinks, onNavigate }) => {
           </div>
 
           {/* Links sections */}
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
             <h4 className="text-sm font-medium">{t('footer.company')}</h4>
-            <nav className="flex flex-col space-y-2" aria-label="Footer company navigation">
-              {footerLinks.slice(0, 3).map((link) => (
-                <button
-                  key={link.id}
-                  type="button"
-                  onClick={() => onNavigate?.(link.href)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
-                >
-                  {t(`footer.${link.id}`)}
-                </button>
-              ))}
+            <nav
+              className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-1"
+              aria-label="Footer company navigation"
+            >
+              {footerLinks.slice(0, 3).map((link) => {
+                const isPrivacy = link.id === 'privacy';
+
+                return (
+                  <button
+                    key={link.id}
+                    type="button"
+                    onClick={() => onNavigate?.(link.href)}
+                    className={`w-full rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-center md:text-left ${isPrivacy ? 'col-span-2' : ''}`}
+                  >
+                    {t(`footer.${link.id}`)}
+                  </button>
+                );
+              })}
             </nav>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
             <h4 className="text-sm font-medium">{t('footer.support')}</h4>
-            <nav className="flex flex-col space-y-2" aria-label="Footer support navigation">
+            <nav
+              className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-1"
+              aria-label="Footer support navigation"
+            >
               <button
                 type="button"
                 onClick={() => onNavigate?.('/help')}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
+                className="w-full rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-center md:text-left"
               >
                 {t('footer.help')}
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate?.('/contact')}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
+                className="w-full rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-center md:text-left"
               >
                 {t('footer.contact')}
               </button>
@@ -92,7 +102,7 @@ const Footer = ({ footerLinks, onNavigate }) => {
           <div className="space-y-4">
             <div className="space-y-3">
               <h4 className="text-sm font-medium">{t('footer.connect')}</h4>
-              <div className="flex space-x-2">
+              <div className="flex justify-center md:justify-start space-x-2">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Icon icon="mdi:twitter" className="h-4 w-4" />
                   <span className="sr-only">{t('footer.twitter')}</span>
@@ -121,10 +131,10 @@ const Footer = ({ footerLinks, onNavigate }) => {
           </div>
         </div>
 
-        <Separator className="my-8" />
+        <Separator className="my-4 md:my-6" />
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-muted-foreground text-center md:text-left">
             © {currentYear}{' '}
             <span className="font-logo-bebas inline-flex items-baseline gap-1">
               <span className="font-bold">Trusted</span>{' '}
@@ -132,7 +142,7 @@ const Footer = ({ footerLinks, onNavigate }) => {
             </span>{' '}
             {t('footer.copyright')}
           </p>
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center md:justify-end space-x-4 text-sm text-muted-foreground">
             <button
               onClick={() => onNavigate?.('/privacy')}
               className="hover:text-foreground transition-colors"
