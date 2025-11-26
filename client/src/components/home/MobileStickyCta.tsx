@@ -12,6 +12,7 @@ export function MobileStickyCta() {
   const [isHidden, setIsHidden] = useState(false)
 
   const isCatalogPage = location.pathname === '/catalog' || location.pathname === '/companies'
+  const isVehiclePage = location.pathname.startsWith('/vehicle/')
 
   useEffect(() => {
     let lastScrollY = window.scrollY || 0

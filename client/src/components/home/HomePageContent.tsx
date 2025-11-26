@@ -17,10 +17,10 @@ const MiniBlogSectionLazy = lazy(() =>
 export const HomePageContent = () => {
   return (
     <main className="flex-1" role="main" aria-labelledby="home-hero-heading">
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6">
-        {/* Hero & Best Offers (inside HeroSection) */}
-        <HeroSection />
+      {/* Hero & Best Offers (inside HeroSection) */}
+      <HeroSection />
 
+      <div className="container mx-auto px-2 sm:px-4 lg:px-6">
         {/* Why Our Platform */}
         <BenefitsSection />
 

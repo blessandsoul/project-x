@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
+import confetti from 'canvas-confetti'
 
 // Components
 import Header from '@/components/Header/index.tsx'
@@ -37,37 +38,57 @@ import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 
 // --- Sub-components ---
 
-const SocialProofWidget = () => {
+const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: () => void; count: number }) => {
     const { t } = useTranslation()
-    const [isVisible, setIsVisible] = useState(false)
     
     useEffect(() => {
-        const timer = setTimeout(() => setIsVisible(true), 3000)
-        return () => clearTimeout(timer)
-    }, [])
+        if (isOpen) {
+            const duration = 3 * 1000
+            const animationEnd = Date.now() + duration
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 }
 
-    if (!isVisible) return null
+            const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
+
+            const interval: any = setInterval(function() {
+                const timeLeft = animationEnd - Date.now()
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval)
+                }
+
+                const particleCount = 50 * (timeLeft / duration)
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } })
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } })
+            }, 250)
+            
+            return () => clearInterval(interval)
+        }
+    }, [isOpen])
 
     return (
-        <div className="fixed bottom-20 left-4 z-40 bg-background/80 backdrop-blur-md border shadow-sm rounded-full py-1.5 px-3 flex items-center gap-3 animate-in slide-in-from-bottom-4 fade-in duration-700 hover:shadow-md transition-all">
-            <div className="flex -space-x-2">
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-background overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="" />
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md text-center">
+                <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                    <Icon icon="mdi:check-bold" className="h-8 w-8" />
                 </div>
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-background overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="" />
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-center">{t('vehicle.success_modal.title')}</DialogTitle>
+                    <DialogDescription className="text-center pt-2">
+                        {t('vehicle.success_modal.description', { count })}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <p className="text-sm text-muted-foreground">
+                        {t('vehicle.success_modal.manager_contact')}
+                    </p>
                 </div>
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[7px] font-bold text-muted-foreground">
-                    +1
-                </div>
-            </div>
-            <span className="text-[10px] text-muted-foreground">
-                <span className="font-semibold text-foreground">3 people</span> {t('vehicle.social_proof.people_viewing')}
-            </span>
-            <button onClick={() => setIsVisible(false)} className="ml-1 text-muted-foreground/50 hover:text-foreground transition-colors">
-                <Icon icon="mdi:close" className="h-3 w-3" />
-            </button>
-        </div>
+                <DialogFooter className="sm:justify-center">
+                    <Button onClick={onClose} className="w-full sm:w-auto min-w-[150px] font-bold bg-emerald-600 hover:bg-emerald-700">
+                        {t('common.great_thanks')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -144,8 +165,8 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
     const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
     const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
-    const airbags = vehicle?.airbags || "Intact"
-    const odoBrand = vehicle?.odometer_brand || "Actual"
+    // const airbags = vehicle?.airbags || "Intact"
+    // const odoBrand = vehicle?.odometer_brand || "Actual"
     const estValue = Number(vehicle?.est_retail_value) || 12500
     
     const handleUnlock = () => {
@@ -158,8 +179,8 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     }
 
     return (
-        <div className="bg-card rounded-xl border shadow-sm p-5 relative overflow-hidden">
-            <div className="flex items-start justify-between mb-6">
+        <div className="bg-card rounded-xl border shadow-sm p-3 sm:p-5 relative overflow-hidden">
+            <div className="flex items-start justify-between mb-4 sm:mb-6">
                 <h3 className="font-medium text-sm flex items-center gap-2">
                     <Icon icon="mdi:car-info" className="text-muted-foreground" />
                     {t('vehicle.condition_report')}
@@ -167,11 +188,11 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                 <Badge variant="outline" className="font-normal text-[10px] text-muted-foreground">{t('vehicle.ai_analysis')}</Badge>
             </div>
             
-            <div className={cn("flex flex-col lg:flex-row gap-8 transition-all duration-500", !isUnlocked && "blur-md opacity-50 select-none pointer-events-none")}>
-                {/* Left: Visual + Damage Tags */}
-                <div className="flex gap-6 flex-shrink-0">
-                    {/* SVG Skeleton */}
-                    <div className="relative w-24 h-40 flex-shrink-0 opacity-80">
+            <div className={cn("flex flex-row gap-3 sm:gap-8 transition-all duration-500", !isUnlocked && "blur-[2px] sm:blur-md opacity-60 select-none pointer-events-none")}>
+                {/* Left: Visual + Damage Tags - Compact on Mobile */}
+                <div className="flex gap-3 sm:gap-6 flex-shrink-0">
+                    {/* SVG Skeleton - Smaller on Mobile */}
+                    <div className="relative w-16 h-28 sm:w-24 sm:h-40 flex-shrink-0 opacity-80">
                         <svg viewBox="0 0 100 200" className="w-full h-full text-muted-foreground/30">
                             <path d="M20,40 Q20,10 50,10 Q80,10 80,40 L80,160 Q80,190 50,190 Q20,190 20,160 Z" fill="none" stroke="currentColor" strokeWidth="4" />
                             <rect x="10" y="45" width="10" height="20" rx="2" fill="currentColor" />
@@ -181,78 +202,61 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                         </svg>
                         {/* Damage Highlight - Minimalist Dot */}
                         <div className="absolute top-2 left-1/2 -translate-x-1/2">
-                            <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
-                                <div className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
                             </div>
                         </div>
                     </div>
 
-                    {/* Damage Details */}
-                    <div className="space-y-3 pt-2">
+                    {/* Damage Details - Compact */}
+                    <div className="space-y-2 sm:space-y-3 pt-1">
                         <div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('vehicle.primary_damage')}</span>
-                            <div className="text-red-600 font-bold text-sm flex items-center gap-1">
-                                <Icon icon="mdi:alert-circle" className="h-3.5 w-3.5" />
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.primary_damage')}</span>
+                            <div className="text-red-600 font-bold text-xs sm:text-sm flex items-center gap-1 leading-tight">
+                                <Icon icon="mdi:alert-circle" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                                 {damagePrimary}
                             </div>
                         </div>
                         <div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t('vehicle.secondary_damage')}</span>
-                            <div className="text-amber-600 font-medium text-xs flex items-center gap-1">
-                                <Icon icon="mdi:alert-outline" className="h-3.5 w-3.5" />
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.secondary_damage')}</span>
+                            <div className="text-amber-600 font-medium text-[10px] sm:text-xs flex items-center gap-1 leading-tight">
+                                <Icon icon="mdi:alert-outline" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                                 {damageSecondary}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right: AI Estimate & Tech Specs */}
-                <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-6 border-t lg:border-t-0 lg:border-l border-border/50 pt-6 lg:pt-0 lg:pl-6">
+                {/* Right: AI Estimate & Tech Specs - Stacked tightly */}
+                <div className="flex-1 w-full grid grid-cols-1 gap-3 sm:gap-6 border-l border-border/50 pl-3 sm:pl-6">
                     {/* Estimate Block */}
-                    <div className="space-y-3">
-                        <div className="pl-3 border-l-2 border-blue-500/50">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle.ai_repair_estimate')}</div>
-                            <div className="text-xl font-bold text-foreground tracking-tight">
-                                $800 - $1,200
-                            </div>
-                            <div className="text-[10px] text-muted-foreground mt-1">
-                                Approx. <span className="font-semibold text-foreground">10-15%</span> of retail value
+                    <div className="space-y-1.5 sm:space-y-3">
+                        <div className="pl-2 sm:pl-3 border-l-2 border-blue-500/50">
+                            <div className="text-[8px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle.ai_repair_estimate')}</div>
+                            <div className="text-sm sm:text-xl font-bold text-foreground tracking-tight">
+                                $800 - $1.2k
                             </div>
                         </div>
-                        <div className="bg-muted/20 rounded p-2.5 flex justify-between items-center">
-                            <span className="text-[10px] text-muted-foreground">{t('vehicle.retail_value')}</span>
-                            <span className="text-xs font-bold">${estValue.toLocaleString()}</span>
+                        <div className="bg-muted/20 rounded p-1.5 sm:p-2.5 flex justify-between items-center">
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">{t('vehicle.retail_value')}</span>
+                            <span className="text-[10px] sm:text-xs font-bold">${estValue.toLocaleString()}</span>
                         </div>
                     </div>
                     
-                    {/* Technical Status */}
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle.engine_status')}</div>
-                            <div className="text-xs font-medium flex items-center gap-1.5 text-emerald-600">
-                                <Icon icon="mdi:engine" className="h-3.5 w-3.5" />
-                                {runAndDrive}
+                    {/* Technical Status - 2 cols on mobile too */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
+                        <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
+                            <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.engine_status')}</div>
+                            <div className="text-[10px] sm:text-xs font-medium flex items-center gap-1 text-emerald-600">
+                                <Icon icon="mdi:engine" className="h-3 w-3" />
+                                <span className="truncate">{runAndDrive}</span>
                             </div>
                         </div>
-                        <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle.keys')}</div>
-                            <div className={cn("text-xs font-medium flex items-center gap-1.5", hasKeys ? "text-emerald-600" : "text-red-500")}>
-                                <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="h-3.5 w-3.5" />
-                                {hasKeys ? t('vehicle.keys_present') : t('vehicle.keys_missing')}
-                            </div>
-                        </div>
-                        <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle.airbags')}</div>
-                            <div className="text-xs font-medium flex items-center gap-1.5">
-                                <Icon icon="mdi:airbag" className="h-3.5 w-3.5" />
-                                {airbags}
-                            </div>
-                        </div>
-                        <div className="bg-muted/10 rounded p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[10px] text-muted-foreground mb-1">{t('vehicle.odometer')}</div>
-                            <div className="text-xs font-medium flex items-center gap-1.5">
-                                <Icon icon="mdi:counter" className="h-3.5 w-3.5" />
-                                {odoBrand}
+                        <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
+                            <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.keys')}</div>
+                            <div className={cn("text-[10px] sm:text-xs font-medium flex items-center gap-1", hasKeys ? "text-emerald-600" : "text-red-500")}>
+                                <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="h-3 w-3" />
+                                <span className="truncate">{hasKeys ? t('vehicle.keys_present') : t('vehicle.keys_missing')}</span>
                             </div>
                         </div>
                     </div>
@@ -261,18 +265,18 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
 
             {/* Lock Overlay */}
             {!isUnlocked && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] p-4 text-center">
-                    <div className="bg-background/95 p-6 rounded-xl shadow-lg border border-border/50 max-w-xs space-y-4">
-                        <div className="mx-auto w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                            <Icon icon="mdi:facebook" className="h-6 w-6" />
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] p-4 text-center">
+                    <div className="bg-background/95 p-4 sm:p-6 rounded-xl shadow-lg border border-border/50 max-w-xs space-y-3 sm:space-y-4">
+                        <div className="mx-auto w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                            <Icon icon="mdi:facebook" className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="font-semibold text-sm">{t('vehicle.unlock_report')}</h4>
-                            <p className="text-xs text-muted-foreground">{t('vehicle.unlock_desc')}</p>
+                            <h4 className="font-semibold text-xs sm:text-sm">{t('vehicle.unlock_report')}</h4>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">{t('vehicle.unlock_desc')}</p>
                         </div>
                         <Button 
                             onClick={handleUnlock} 
-                            className="w-full bg-[#1877F2] hover:bg-[#1864D9] text-white h-9 text-xs font-medium gap-2"
+                            className="w-full bg-[#1877F2] hover:bg-[#1864D9] text-white h-8 sm:h-9 text-[10px] sm:text-xs font-medium gap-2"
                             disabled={isLiking}
                         >
                             {isLiking ? (
@@ -387,7 +391,7 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         
         {/* Top Actions */}
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button 
@@ -421,12 +425,30 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
         </div>
 
         {/* Counter */}
-        <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium">
+        <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium z-10">
           {activeIndex + 1} / {photos.length}
+        </div>
+
+        {/* Social Proof - Integrated into Image */}
+        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pr-3 pl-1 py-1 z-10">
+            <div className="flex -space-x-2">
+                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="" />
+                </div>
+                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="" />
+                </div>
+                <div className="h-5 w-5 rounded-full bg-white text-black border-2 border-white/10 flex items-center justify-center text-[7px] font-bold">
+                    +1
+                </div>
+            </div>
+            <span className="text-[10px] text-white font-medium">
+                <span className="font-bold">3</span> {t('vehicle.social_proof.viewing_now')}
+            </span>
         </div>
         
         {/* Navigation Arrows (Desktop) */}
-        <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button 
                 onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev > 0 ? prev - 1 : photos.length - 1) }}
                 className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
@@ -434,7 +456,7 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
                 <Icon icon="mdi:chevron-left" className="h-5 w-5" />
             </button>
         </div>
-        <div className="absolute inset-y-0 right-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-y-0 right-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button 
                 onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0) }}
                 className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
@@ -452,7 +474,7 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
                 key={idx}
                 onClick={() => setActiveIndex(idx)}
                 className={cn(
-                "relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg border-2 snap-start transition-all",
+                "relative h-16 w-24 sm:h-20 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg border-2 snap-start transition-all",
                 activeIndex === idx 
                     ? "border-primary ring-2 ring-primary/20" 
                     : "border-transparent opacity-70 hover:opacity-100"
@@ -482,14 +504,14 @@ const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
       {specs.map((spec, idx) => (
-        <div key={idx} className="flex flex-col p-3 bg-muted/40 hover:bg-muted/60 transition-colors rounded-xl border">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1.5">
-            <Icon icon={spec.icon} className="h-4 w-4" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">{spec.label}</span>
+        <div key={idx} className="flex flex-col p-2 sm:p-3 bg-muted/40 hover:bg-muted/60 transition-colors rounded-xl border">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1">
+            <Icon icon={spec.icon} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">{spec.label}</span>
           </div>
-          <div className="font-semibold text-sm truncate flex items-center gap-2">
+          <div className="font-semibold text-xs sm:text-sm truncate flex items-center gap-2">
             {spec.value}
             {spec.copy && (
               <Tooltip>
@@ -686,6 +708,10 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const [similarItems, setSimilarItems] = useState<VehicleSearchItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Desktop Slider State
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const ITEMS_PER_VIEW_DESKTOP = 3
 
   useEffect(() => {
     let isMounted = true
@@ -695,9 +721,9 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
       setError(null)
 
       try {
-        const response = await fetchSimilarVehicles(baseVehicleId, { limit: 3 })
+        const response = await fetchSimilarVehicles(baseVehicleId, { limit: 20 })
         if (!isMounted) return
-        const items = Array.isArray(response.items) ? response.items.slice(0, 3) : []
+        const items = Array.isArray(response.items) ? response.items : []
         setSimilarItems(items)
       } catch (err) {
         if (!isMounted) return
@@ -717,6 +743,19 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     }
   }, [baseVehicleId])
 
+  // Autoplay for Desktop
+  useEffect(() => {
+    if (similarItems.length <= ITEMS_PER_VIEW_DESKTOP) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex(prev => 
+        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
+      )
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [similarItems.length])
+
   if (isLoading) {
     return (
       <div className="space-y-4 pt-8 border-t">
@@ -734,26 +773,66 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     return null
   }
 
+  // Desktop Navigation Handlers
+  const handlePrev = () => {
+    setCurrentIndex(prev => Math.max(0, prev - 1))
+  }
+
+  const handleNext = () => {
+    setCurrentIndex(prev => 
+        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
+    )
+  }
+
   return (
-    <div className="space-y-4 pt-8 border-t">
-      <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {similarItems.slice(0, 3).map((item) => (
-          <AuctionVehicleCard
-            key={item.id}
-            item={item}
-            priority={false}
-            onOpenGallery={() => {
-              navigate({ pathname: `/vehicle/${item.id}` })
-            }}
-            onCalculate={() => {
-              navigate({ pathname: `/vehicle/${item.id}` })
-            }}
-            onViewDetails={() => {
-              navigate({ pathname: `/vehicle/${item.id}` })
-            }}
-          />
+    <div className="space-y-4 pt-8 border-t overflow-hidden">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
+        
+        {/* Desktop Controls */}
+        <div className="hidden md:flex gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
+                <Icon icon="mdi:chevron-left" className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext}>
+                <Icon icon="mdi:chevron-right" className="h-4 w-4" />
+            </Button>
+        </div>
+      </div>
+
+      {/* Mobile Slider (Snap Scroll) */}
+      <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
+        {similarItems.map((item) => (
+          <div key={item.id} className="min-w-[85vw] snap-center">
+            <AuctionVehicleCard
+                item={item}
+                priority={false}
+                onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+            />
+          </div>
         ))}
+      </div>
+
+      {/* Desktop Slider (Transform) */}
+      <div className="hidden md:block relative overflow-hidden">
+        <div 
+            className="flex gap-4 transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentIndex * (100 / ITEMS_PER_VIEW_DESKTOP)}%)` }}
+        >
+            {similarItems.map((item) => (
+                <div key={item.id} className="min-w-[calc(33.333%-11px)] flex-shrink-0">
+                    <AuctionVehicleCard
+                        item={item}
+                        priority={false}
+                        onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                        onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                        onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                    />
+                </div>
+            ))}
+        </div>
       </div>
     </div>
   )
@@ -781,6 +860,7 @@ const VehicleDetailsPage = () => {
 
   // State: Lead Modal
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [formName, setFormName] = useState('')
   const [formPhone, setFormPhone] = useState('')
   const [contactMethod, setContactMethod] = useState('whatsapp')
@@ -789,6 +869,29 @@ const VehicleDetailsPage = () => {
   // State: Unlock Form
   const [unlockReview, setUnlockReview] = useState('')
   const [unlockLiked, setUnlockLiked] = useState(false)
+
+  // State: Mobile CTA Visibility
+  const [isCtaVisible, setIsCtaVisible] = useState(true)
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY || 0
+    const handleScroll = () => {
+        const currentY = window.scrollY || 0
+        const delta = currentY - lastScrollY
+        
+        if (Math.abs(delta) < 10) return
+
+        if (currentY > 100 && delta > 0) {
+            setIsCtaVisible(false)
+        } else if (delta < 0) {
+            setIsCtaVisible(true)
+        }
+        lastScrollY = currentY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Constants
   const FREE_LIMIT = 3
@@ -931,7 +1034,7 @@ const VehicleDetailsPage = () => {
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8 min-w-0">
             <div className="space-y-2">
               <div className="flex items-center gap-3 mb-1">
                 <Badge variant="outline" className="uppercase tracking-wider text-[10px]">{t('vehicle.lot')}: {vehicle.source_lot_id}</Badge>
@@ -941,35 +1044,29 @@ const VehicleDetailsPage = () => {
                     </Badge>
                 )}
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
                 {vehicle.year} {vehicle.make} {vehicle.model}
               </h1>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Icon icon="mdi:map-marker" className="h-4 w-4 text-primary" />
                   {vehicle.city || vehicle.state || 'USA Auction'}
                 </span>
                 <span className="flex items-center gap-1">
                   <Icon icon="mdi:calendar-clock" className="h-4 w-4" />
-                  {t('vehicle.sale_date')}: {vehicle.sold_at_date || t('vehicle.upcoming')}
+                  <span className="hidden sm:inline">{t('vehicle.sale_date')}:</span> {vehicle.sold_at_date || t('vehicle.upcoming')}
                 </span>
                 <AuctionTimer dateStr={vehicle.sold_at_date} />
               </div>
             </div>
 
             <VehicleGallery photos={photos} />
-            
-            <DamageViewer vehicle={vehicle} />
-
-            <VehicleSpecs vehicle={vehicle} />
-
-            <CarfaxWidget />
 
             {/* Transparency Table with Filters */}
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
               <div className="p-4 border-b bg-muted/10 space-y-4">
-                <div className="bg-indigo-50/50 border border-indigo-100/50 text-indigo-900/80 px-3 py-2 rounded-md flex items-center gap-2 text-[11px] font-medium">
-                    <Icon icon="mdi:gift-outline" className="h-3.5 w-3.5" />
+                <div className="bg-indigo-50/50 border border-indigo-100/50 text-indigo-900/80 px-3 py-2 rounded-md flex items-start sm:items-center gap-2 text-[11px] font-medium">
+                    <Icon icon="mdi:gift-outline" className="h-3.5 w-3.5 mt-0.5 sm:mt-0 shrink-0" />
                     <span dangerouslySetInnerHTML={{ __html: t('vehicle.quotes.promo_text') }} />
                 </div>
 
@@ -980,7 +1077,7 @@ const VehicleDetailsPage = () => {
                         {isMultiSelectMode ? t('vehicle.quotes.select_companies') : t('vehicle.quotes.title')}
                         </h2>
                         {!isMultiSelectMode && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
                                 {t('vehicle.quotes.click_to_order')}
                             </p>
                         )}
@@ -990,16 +1087,18 @@ const VehicleDetailsPage = () => {
                             <Button 
                                 size="sm" 
                                 onClick={() => setIsMultiSelectMode(true)}
-                                className="text-xs"
+                                className="text-xs w-full sm:w-auto"
                             >
                                 {t('vehicle.quotes.select_multiple')}
                             </Button>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground font-medium">{t('vehicle.quotes.selected')}:</span>
-                                <Badge variant={selectedCompanyIds.length > 0 ? "default" : "secondary"}>
-                                    {selectedCompanyIds.length} / {hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT}
-                                </Badge>
+                            <div className="flex items-center gap-2 w-full justify-between sm:justify-end">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground font-medium">{t('vehicle.quotes.selected')}:</span>
+                                    <Badge variant={selectedCompanyIds.length > 0 ? "default" : "secondary"}>
+                                        {selectedCompanyIds.length} / {hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT}
+                                    </Badge>
+                                </div>
                                 <Button 
                                     size="sm" 
                                     variant="ghost"
@@ -1022,7 +1121,7 @@ const VehicleDetailsPage = () => {
                         variant={filterVip ? "default" : "outline"} 
                         size="sm" 
                         onClick={() => setFilterVip(!filterVip)}
-                        className="h-8 text-xs"
+                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
                     >
                         {filterVip ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : null}
                         {t('vehicle.quotes.vip_only')}
@@ -1031,7 +1130,7 @@ const VehicleDetailsPage = () => {
                         variant={filterRating ? "default" : "outline"} 
                         size="sm" 
                         onClick={() => setFilterRating(!filterRating)}
-                        className="h-8 text-xs"
+                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
                     >
                         {filterRating ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />}
                         {t('vehicle.quotes.rating_filter')}
@@ -1040,7 +1139,7 @@ const VehicleDetailsPage = () => {
                         variant={filterFast ? "default" : "outline"} 
                         size="sm" 
                         onClick={() => setFilterFast(!filterFast)}
-                        className="h-8 text-xs"
+                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
                     >
                         {filterFast ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:lightning-bolt" className="mr-1 h-3 w-3 text-amber-500" />}
                         {t('vehicle.quotes.fast_delivery')}
@@ -1048,7 +1147,8 @@ const VehicleDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                     <TableHeader>
                     <TableRow>
@@ -1089,24 +1189,96 @@ const VehicleDetailsPage = () => {
                             />
                         )
                     })}
-                    {filteredQuotes.length === 0 && (
-                        <TableRow>
-                        <TableCell colSpan={isMultiSelectMode ? 5 : 5} className="text-center h-32 text-muted-foreground">
-                            <p>{t('vehicle.quotes.no_match')}</p>
-                            <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
-                        </TableCell>
-                        </TableRow>
-                    )}
                     </TableBody>
                 </Table>
               </div>
+
+              {/* Mobile Card List View */}
+              <div className="md:hidden space-y-0 divide-y">
+                  {filteredQuotes.map((quote) => {
+                      const originalIndex = quotes.findIndex(q => q.company_id === quote.company_id)
+                      let vipLabel: string | undefined
+                      let vipVariant: 'diamond' | 'gold' | 'silver' | 'default' = 'default'
+                      if (originalIndex === 0) { vipLabel = 'Diamond'; vipVariant = 'diamond' }
+                      else if (originalIndex === 1) { vipLabel = 'Gold'; vipVariant = 'gold' }
+
+                      const priceColor = getPriceColor(Number(quote.total_price))
+                      const isSelected = selectedCompanyIds.includes(quote.company_id)
+
+                      return (
+                        <div 
+                            key={quote.company_id}
+                            className={cn(
+                                "p-4 active:bg-muted/50 transition-colors",
+                                isSelected ? "bg-primary/5" : ""
+                            )}
+                            onClick={() => handleRowClick(quote)}
+                        >
+                            <div className="flex justify-between items-start gap-3">
+                                <div className="flex items-start gap-3">
+                                    {isMultiSelectMode && (
+                                        <Checkbox 
+                                            checked={isSelected} 
+                                            onCheckedChange={() => handleRowClick(quote)} 
+                                            className="mt-1"
+                                        />
+                                    )}
+                                    <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-sm">{quote.company_name}</span>
+                                            {vipLabel && <VipBadge label={vipLabel} variant={vipVariant} className="scale-90 origin-left" />}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                            <div className="flex items-center text-amber-500">
+                                                <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
+                                                <span className="ml-0.5 font-medium text-foreground">4.8</span>
+                                            </div>
+                                            <span>•</span>
+                                            <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className={cn("font-bold text-base", priceColor)}>
+                                        ${Number(quote.total_price).toLocaleString()}
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-6 text-[10px] px-2 -mr-2 text-muted-foreground"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setActiveBreakdownQuote(quote)
+                                        }}
+                                    >
+                                        {t('vehicle.quotes.breakdown')}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                      )
+                  })}
+              </div>
+
+              {filteredQuotes.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                    <p>{t('vehicle.quotes.no_match')}</p>
+                    <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
+                </div>
+              )}
             </div>
+
+            <CarfaxWidget />
+            
+            <DamageViewer vehicle={vehicle} />
+
+            <VehicleSpecs vehicle={vehicle} />
 
             <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
 
-          {/* Right Column: Sticky Price Card */}
-          <div className="lg:col-span-1 sticky top-24 space-y-4">
+          {/* Right Column: Sticky Price Card - Hidden on Mobile, Visible on Tablet+ */}
+          <div className="hidden md:block lg:col-span-1 sticky top-24 space-y-4">
             <Card className="shadow-lg border-primary/20 overflow-hidden relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
               <CardHeader className="pb-4 border-b">
@@ -1177,10 +1349,15 @@ const VehicleDetailsPage = () => {
         </div>
       </main>
 
-      <SocialProofWidget />
+      {/* Success Modal */}
+      <SuccessModal isOpen={isSuccessModalOpen} onClose={() => setIsSuccessModalOpen(false)} count={selectedCompanyIds.length || 1} />
 
       {/* Mobile Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t p-4 md:hidden z-50 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] safe-area-bottom">
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t p-4 md:hidden z-50 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] safe-area-bottom transition-transform duration-300",
+        isCtaVisible ? "translate-y-0" : "translate-y-full",
+        !isCtaVisible && "hidden"
+      )}>
         <div>
            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t('vehicle.mobile_cta.total_est')}</p>
            <p className="text-xl font-extrabold text-primary leading-none">${totalPrice.toLocaleString()}</p>
