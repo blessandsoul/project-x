@@ -22,10 +22,12 @@ module.exports = {
       wait_ready: true, // Wait for process.send('ready') before considering app online
       listen_timeout: 10000, // Time to wait for app to listen
 
-      // Auto-restart settings
+      // Auto-restart settings (ALWAYS KEEP RUNNING)
+      autorestart: true, // Always restart on crash
       max_memory_restart: "500M", // Restart if memory exceeds 500MB
       restart_delay: 1000, // Wait 1s between restarts
-      max_restarts: 10, // Max restarts within min_uptime window
+      exp_backoff_restart_delay: 100, // Exponential backoff on repeated crashes (100ms -> 15s max)
+      max_restarts: -1, // Unlimited restarts (-1 = infinite)
       min_uptime: 5000, // Consider app crashed if it exits within 5s
 
       // Logging
