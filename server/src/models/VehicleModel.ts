@@ -307,18 +307,22 @@ export class VehicleModel extends BaseModel {
     id: number,
     options?: {
       limit?: number;
+      offset?: number;
       yearRange?: number;
       priceRadius?: number;
     },
-  ): Promise<Vehicle[]> {
+  ): Promise<{ items: Vehicle[]; total: number }> {
     const base = await this.findById(id);
     if (!base) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const limit = Number.isFinite(options?.limit || 0) && (options?.limit || 0) > 0
       ? (options as any).limit
       : 10;
+    const offset = Number.isFinite(options?.offset) && (options?.offset as number) >= 0
+      ? (options as any).offset
+      : 0;
     const yearRange = Number.isFinite(options?.yearRange || 0) && (options?.yearRange || 0) > 0
       ? (options as any).yearRange
       : 2;
@@ -350,6 +354,13 @@ export class VehicleModel extends BaseModel {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Count query for pagination
+    const countQuery = `SELECT COUNT(*) AS total FROM vehicles ${where}`;
+    const countResult = await this.executeQuery(countQuery, [...params]);
+    const total = Array.isArray(countResult) && countResult.length > 0
+      ? Number((countResult[0] as any).total)
+      : 0;
 
     const query = `
       SELECT
@@ -388,13 +399,14 @@ export class VehicleModel extends BaseModel {
       ORDER BY
         RAND(),
         id DESC
-      LIMIT ?
+      LIMIT ? OFFSET ?
     `;
 
-    params.push(limit);
+    params.push(limit, offset);
 
     const rows = await this.executeQuery(query, params);
-    return Array.isArray(rows) ? (rows as Vehicle[]) : [];
+    const items = Array.isArray(rows) ? (rows as Vehicle[]) : [];
+    return { items, total };
   }
 
   async getPhotosByVehicleId(vehicleId: number): Promise<VehiclePhoto[]> {
