@@ -52,17 +52,31 @@
       "awd": "دفع رباعي",
       "4wd": "4x4",
       "full": "دفع كامل"
-    }
+    },
+    "page": "صفحة",
+    "prev": "السابق",
+    "next": "التالي",
+    "client": "عميل",
+    "greeting": {
+      "morning": "صباح الخير",
+      "afternoon": "مساء الخير",
+      "evening": "مساء الخير"
+    },
+    "offer": "عرض",
+    "reviews": "مراجعات"
   },
   "navigation": {
     "home": "الرئيسية",
     "catalog": "الكتالوج",
     "auctionListings": "المزادات",
-    "carfax": "فحص VIN"
+    "carfax": "فحص VIN",
+    "dashboard": "لوحة التحكم"
   },
   "header": {
     "sign_in": "تسجيل الدخول",
-    "menu": "القائمة"
+    "menu": "القائمة",
+    "profile": "الملف الشخصي",
+    "sign_out": "تسجيل الخروج"
   },
   "home": {
     "hero": {
@@ -274,7 +288,8 @@
       "category": "الفئة",
       "year": "السنة",
       "price": "السعر"
-    }
+    },
+    "load_more": "تحميل المزيد"
   },
   "pages": {
     "auction": {
@@ -455,5 +470,233 @@
       "select": "اختر"
     },
     "not_found": "السيارة غير موجودة"
+  },
+  "sidebar": {
+    "company_name": "Acme Inc.",
+    "quick_create": "إنشاء سريع",
+    "dashboard": "لوحة التحكم",
+    "lifecycle": "دورة الحياة",
+    "analytics": "التحليلات",
+    "projects": "المشاريع",
+    "team": "الفريق",
+    "documents": "المستندات",
+    "data_library": "مكتبة البيانات",
+    "reports": "التقارير",
+    "word_assistant": "مساعد Word",
+    "more": "المزيد",
+    "settings": "الإعدادات",
+    "get_help": "المساعدة",
+    "search": "بحث",
+    "open": "فتح",
+    "share": "مشاركة"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "error": {
+      "load": "فشل تحميل بيانات لوحة التحكم",
+      "quotes": "فشل تحميل العروض",
+      "leads": "فشل تحميل الطلبات"
+    },
+    "roles": {
+      "user": "مستخدم",
+      "dealer": "وكيل",
+      "company": "شركة"
+    },
+    "user": {
+      "welcome_subtitle": "نظرة عامة على نشاطك والتوصيات.",
+      "confirm_clear_favorites": "هل أنت متأكد من مسح المفضلة",
+      "confirm_clear_recent": "هل أنت متأكد من مسح المشاهدات الأخيرة",
+      "guides": {
+        "guide1": "كيفية اختيار سيارة في المزاد",
+        "guide2": "فهم الرسوم الجمركية",
+        "guide3": "العمل مع المستوردين",
+        "title": "أدلة مفيدة"
+      },
+      "offers": {
+        "description": "عرض خاص متاح"
+      },
+      "reminders": {
+        "reviews": "اترك مراجعة للشركات التي شاهدتها مؤخرا",
+        "offers": "تحقق من العروض الجديدة من شركات VIP",
+        "favorites": "أضف شركات إلى المفضلة للوصول السريع"
+      },
+      "quick_search": {
+        "title": "بحث سريع",
+        "nl_prefix": "أحتاج",
+        "any_service": "أي خدمة",
+        "nl_in": "في",
+        "any_location": "أي موقع",
+        "nl_budget": "بميزانية",
+        "submit": "البحث عن شركات"
+      },
+      "actions": {
+        "title": "إجراءات سريعة",
+        "new_search": "بحث جديد",
+        "new_search_desc": "ابحث عن مستوردين يطابقون معاييرك",
+        "fill_brief": "ملء الطلب",
+        "fill_brief_desc": "احصل على عروض مخصصة من الشركات"
+      },
+      "stats": {
+        "requests": "الطلبات",
+        "favorites": "المفضلة",
+        "viewed": "المشاهدات"
+      },
+      "quotes": {
+        "title": "عروضك",
+        "empty": "لا توجد عروض بعد",
+        "create": "إنشاء طلب"
+      },
+      "favorites": {
+        "title": "المفضلة",
+        "empty": "لا توجد مفضلات بعد"
+      },
+      "recent": {
+        "title": "المشاهدات الأخيرة",
+        "empty": "لا توجد مشاهدات أخيرة"
+      }
+    },
+    "dealer": {
+      "welcome_subtitle": "إدارة طلباتك وتتبع الأداء.",
+      "requests": {
+        "status": {
+          "new": "جديد",
+          "processing": "قيد المعالجة",
+          "closed": "مغلق"
+        },
+        "title": "الطلبات الأخيرة",
+        "reply": "رد"
+      },
+      "reminders": {
+        "slow": "بعض الطلبات تنتظر الرد لفترة طويلة",
+        "no_notes": "طلبات جديدة اليوم - لا تنس إضافة ملاحظات"
+      },
+      "tasks": {
+        "task1": "مراجعة الطلبات الجديدة",
+        "task2": "متابعة العملاء المنتظرين",
+        "task3": "تحديث معلومات الأسعار"
+      },
+      "stats": {
+        "today_new": "جديد اليوم",
+        "week_new": "جديد هذا الأسبوع",
+        "in_progress": "قيد التنفيذ",
+        "closed": "مغلق"
+      },
+      "funnel": {
+        "title": "إحصائيات القمع",
+        "profile_views": "مشاهدات الملف",
+        "requests": "الطلبات",
+        "deals": "الصفقات",
+        "views": "المشاهدات"
+      },
+      "requests_title": "الطلبات الأخيرة",
+      "reminders_title": "التذكيرات",
+      "promoted": {
+        "title": "الأكثر ترويجا",
+        "responses": "ردود"
+      },
+      "reviews": {
+        "title": "ملخص المراجعات",
+        "average": "متوسط التقييم",
+        "total": "إجمالي المراجعات",
+        "latest": "أحدث المراجعات"
+      },
+      "traffic": {
+        "title": "إحصائيات الزيارات",
+        "total_views": "إجمالي المشاهدات",
+        "from_search": "من البحث",
+        "from_catalog": "من الكتالوج",
+        "from_offers": "من العروض",
+        "total": "الإجمالي",
+        "search": "البحث",
+        "catalog": "الكتالوج",
+        "offers": "العروض"
+      },
+      "tasks_title": "مهام اليوم",
+      "comparison": {
+        "title": "المقارنة",
+        "leads_delta": "الطلبات",
+        "conversion_delta": "التحويل",
+        "margin_delta": "الهامش",
+        "leads_count": "الطلبات",
+        "conversion": "التحويل",
+        "margin": "الهامش"
+      },
+      "leads": {
+        "today_new": "جديد اليوم",
+        "week_new": "جديد هذا الأسبوع",
+        "in_progress": "قيد التنفيذ",
+        "closed": "مغلق"
+      },
+      "actions": {
+        "title": "إجراءات سريعة",
+        "add_offer": "إضافة عرض",
+        "launch_promo": "إطلاق عرض ترويجي",
+        "update_prices": "تحديث الأسعار"
+      },
+      "top_offers": {
+        "title": "أفضل العروض"
+      }
+    },
+    "company": {
+      "welcome_subtitle": "نظرة عامة على شبكتك وأداء العلامة التجارية.",
+      "segments": {
+        "segment1": "المشترون لأول مرة",
+        "segment2": "العملاء المتكررون",
+        "segment3": "عملاء الأعمال"
+      },
+      "alerts": {
+        "rating": "{{count}} وكلاء لديهم تقييم منخفض",
+        "leads_drop": "انخفض حجم الطلبات هذا الأسبوع"
+      },
+      "actions": {
+        "add_dealer": "إضافة وكيل",
+        "edit_terms": "تعديل الشروط",
+        "disable_location": "تعطيل الموقع"
+      },
+      "goals": {
+        "leads": "هدف الطلبات الشهرية",
+        "rating": "هدف متوسط التقييم",
+        "coverage": "التغطية الجغرافية"
+      },
+      "stats": {
+        "profile_views": "مشاهدات الملف",
+        "active_dealers": "الوكلاء النشطون",
+        "active_companies": "الشركات النشطة"
+      },
+      "brand_health": {
+        "title": "صحة العلامة التجارية",
+        "reviews": "مراجعات"
+      },
+      "service_quality": {
+        "title": "جودة الخدمة",
+        "handled": "معالج",
+        "avg_reply": "متوسط الرد",
+        "handled_label": "معالج",
+        "handled_requests": "الطلبات المعالجة"
+      },
+      "leads_bubble": {
+        "title": "الطلبات الواردة",
+        "subtitle": "طلبات جديدة من المستخدمين",
+        "empty": "لا توجد طلبات بعد"
+      },
+      "risks": {
+        "title": "المخاطر والتنبيهات"
+      },
+      "goals_title": "الأهداف",
+      "dealer_activity": {
+        "title": "نشاط الوكلاء حسب المنطقة",
+        "leads_label": "طلبات"
+      },
+      "campaigns": {
+        "title": "الحملات التسويقية",
+        "impressions": "ظهور",
+        "clicks": "نقرات",
+        "leads": "طلبات"
+      },
+      "segments_title": "شرائح الجمهور",
+      "competitors": {
+        "title": "المنافسون"
+      }
+    }
   }
 }

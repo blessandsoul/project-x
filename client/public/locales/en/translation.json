@@ -45,6 +45,12 @@
     "page": "Page",
     "prev": "Previous",
     "next": "Next",
+    "client": "Client",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
     "badges": {
       "new": "New",
       "hot": "Hot"
@@ -55,17 +61,22 @@
       "awd": "All Wheel Drive",
       "4wd": "4WD",
       "full": "Full Drive"
-    }
+    },
+    "offer": "Offer",
+    "reviews": "reviews"
   },
   "navigation": {
     "home": "Home",
     "catalog": "Catalog",
     "auctionListings": "Auctions",
-    "carfax": "VIN Check"
+    "carfax": "VIN Check",
+    "dashboard": "Dashboard"
   },
   "header": {
     "sign_in": "Sign In",
-    "menu": "Menu"
+    "menu": "Menu",
+    "profile": "Profile",
+    "sign_out": "Sign Out"
   },
   "home": {
     "hero": {
@@ -459,5 +470,233 @@
       "select": "Select"
     },
     "not_found": "Vehicle not found"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "error": {
+      "load": "Failed to load dashboard data",
+      "quotes": "Failed to load quotes",
+      "leads": "Failed to load leads"
+    },
+    "roles": {
+      "user": "User",
+      "dealer": "Dealer",
+      "company": "Company"
+    },
+    "user": {
+      "welcome_subtitle": "Here is your activity overview and recommendations.",
+      "confirm_clear_favorites": "Are you sure you want to clear all favorites?",
+      "confirm_clear_recent": "Are you sure you want to clear recently viewed?",
+      "guides": {
+        "guide1": "How to choose a car at auction",
+        "guide2": "Understanding customs fees",
+        "guide3": "Working with importers",
+        "title": "Useful Guides"
+      },
+      "offers": {
+        "description": "Special offer available"
+      },
+      "reminders": {
+        "reviews": "Leave a review for recently viewed companies",
+        "offers": "Check new offers from VIP companies",
+        "favorites": "Add companies to favorites for quick access"
+      },
+      "quick_search": {
+        "title": "Quick Search",
+        "nl_prefix": "I need",
+        "any_service": "any service",
+        "nl_in": "in",
+        "any_location": "any location",
+        "nl_budget": "with budget",
+        "submit": "Find Companies"
+      },
+      "actions": {
+        "title": "Quick Actions",
+        "new_search": "New Search",
+        "new_search_desc": "Find importers matching your criteria",
+        "fill_brief": "Fill Brief",
+        "fill_brief_desc": "Get personalized quotes from companies"
+      },
+      "stats": {
+        "requests": "Requests",
+        "favorites": "Favorites",
+        "viewed": "Viewed"
+      },
+      "quotes": {
+        "title": "Your Quotes",
+        "empty": "No quotes yet",
+        "create": "Create Request"
+      },
+      "favorites": {
+        "title": "Favorites",
+        "empty": "No favorites yet"
+      },
+      "recent": {
+        "title": "Recently Viewed",
+        "empty": "No recently viewed"
+      }
+    },
+    "dealer": {
+      "welcome_subtitle": "Manage your leads and track performance.",
+      "requests": {
+        "status": {
+          "new": "New",
+          "processing": "Processing",
+          "closed": "Closed"
+        },
+        "title": "Recent Requests",
+        "reply": "Reply"
+      },
+      "reminders": {
+        "slow": "Some leads are waiting too long for response",
+        "no_notes": "New leads today - do not forget to add notes"
+      },
+      "tasks": {
+        "task1": "Review new leads",
+        "task2": "Follow up with pending clients",
+        "task3": "Update pricing information"
+      },
+      "stats": {
+        "today_new": "New Today",
+        "week_new": "New This Week",
+        "in_progress": "In Progress",
+        "closed": "Closed"
+      },
+      "funnel": {
+        "title": "Funnel Stats",
+        "profile_views": "Profile Views",
+        "requests": "Requests",
+        "deals": "Deals",
+        "views": "Views"
+      },
+      "requests_title": "Recent Requests",
+      "reminders_title": "Reminders",
+      "promoted": {
+        "title": "Top Promoted",
+        "responses": "responses"
+      },
+      "reviews": {
+        "title": "Reviews Summary",
+        "average": "Average Rating",
+        "total": "Total Reviews",
+        "latest": "Latest Reviews"
+      },
+      "traffic": {
+        "title": "Traffic Stats",
+        "total_views": "Total Views",
+        "from_search": "From Search",
+        "from_catalog": "From Catalog",
+        "from_offers": "From Offers",
+        "total": "Total",
+        "search": "Search",
+        "catalog": "Catalog",
+        "offers": "Offers"
+      },
+      "tasks_title": "Tasks for Today",
+      "comparison": {
+        "title": "Comparison",
+        "leads_delta": "Leads",
+        "conversion_delta": "Conversion",
+        "margin_delta": "Margin",
+        "leads_count": "Leads",
+        "conversion": "Conversion",
+        "margin": "Margin"
+      },
+      "leads": {
+        "today_new": "New Today",
+        "week_new": "New This Week",
+        "in_progress": "In Progress",
+        "closed": "Closed"
+      },
+      "actions": {
+        "title": "Quick Actions",
+        "add_offer": "Add Offer",
+        "launch_promo": "Launch Promo",
+        "update_prices": "Update Prices"
+      },
+      "top_offers": {
+        "title": "Top Offers"
+      }
+    },
+    "company": {
+      "welcome_subtitle": "Overview of your network and brand performance.",
+      "segments": {
+        "segment1": "First-time buyers",
+        "segment2": "Repeat customers",
+        "segment3": "Business clients"
+      },
+      "alerts": {
+        "rating": "{{count}} dealers have low ratings",
+        "leads_drop": "Lead volume dropped this week"
+      },
+      "actions": {
+        "add_dealer": "Add Dealer",
+        "edit_terms": "Edit Terms",
+        "disable_location": "Disable Location"
+      },
+      "goals": {
+        "leads": "Monthly leads target",
+        "rating": "Average rating goal",
+        "coverage": "Geographic coverage"
+      },
+      "stats": {
+        "profile_views": "Profile Views",
+        "active_dealers": "Active Dealers",
+        "active_companies": "Active Companies"
+      },
+      "brand_health": {
+        "title": "Brand Health",
+        "reviews": "reviews"
+      },
+      "service_quality": {
+        "title": "Service Quality",
+        "handled": "handled",
+        "avg_reply": "avg reply",
+        "handled_label": "Handled",
+        "handled_requests": "Handled Requests"
+      },
+      "leads_bubble": {
+        "title": "Incoming Leads",
+        "subtitle": "New leads from users",
+        "empty": "No leads yet"
+      },
+      "risks": {
+        "title": "Risks & Alerts"
+      },
+      "goals_title": "Goals",
+      "dealer_activity": {
+        "title": "Dealer Activity by Region",
+        "leads_label": "leads"
+      },
+      "campaigns": {
+        "title": "Marketing Campaigns",
+        "impressions": "imp",
+        "clicks": "clk",
+        "leads": "leads"
+      },
+      "segments_title": "Audience Segments",
+      "competitors": {
+        "title": "Competitors"
+      }
+    }
+  },
+  "sidebar": {
+    "company_name": "Acme Inc.",
+    "quick_create": "Quick Create",
+    "dashboard": "Dashboard",
+    "lifecycle": "Lifecycle",
+    "analytics": "Analytics",
+    "projects": "Projects",
+    "team": "Team",
+    "documents": "Documents",
+    "data_library": "Data Library",
+    "reports": "Reports",
+    "word_assistant": "Word Assistant",
+    "more": "More",
+    "settings": "Settings",
+    "get_help": "Get Help",
+    "search": "Search",
+    "open": "Open",
+    "share": "Share"
   }
 }
