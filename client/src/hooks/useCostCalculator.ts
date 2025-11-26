@@ -69,7 +69,7 @@ export function useCostCalculator() {
   }, [values]);
 
   const updateValue = (key: keyof typeof DEFAULT_VALUES, value: number | boolean) => {
-    setValues(prev => ({ ...prev, [key]: value }));
+    setValues((prev: typeof DEFAULT_VALUES) => ({ ...prev, [key]: value }));
   };
 
   return {

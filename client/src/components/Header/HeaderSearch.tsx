@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface HeaderSearchProps {
