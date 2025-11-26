@@ -1,1674 +1,463 @@
 {
   "common": {
-    "min": "min",
-    "reviews": "reviews",
-    "days": "days",
-    "status": "Status",
+    "user": "User",
+    "verified": "Verified",
     "view_all": "View All",
+    "loading": "Loading...",
+    "error": "Error",
     "save": "Save",
     "cancel": "Cancel",
-    "user": "User",
-    "date": "Date",
-    "type": "Type",
-    "description": "Description",
-    "warning": "Warning",
-    "check": "Check",
-    "all": "All",
-    "retry": "Retry",
-    "page": "Page",
-    "prev": "Prev",
-    "next": "Next",
-    "mileage": "Mileage",
-    "distance": "Distance",
-    "currency": "Currency",
-    "vehicle": "Vehicle",
-    "hours_short": "h",
-    "cars": "Cars",
-    "motorcycles": "Motorcycles",
-    "vans": "Vans",
+    "close": "Close",
     "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "stars": "stars",
+    "days": "days",
+    "official": "Official",
+    "all": "All",
     "filters": "Filters",
+    "reset": "Reset",
+    "show_results": "Show Results",
+    "clear_all": "Clear All",
+    "retry": "Retry",
     "reset_filters": "Reset Filters",
+    "compare": "Compare",
+    "details": "Details",
+    "sort_by": "Sort by:",
     "make": "Make",
-    "select_make": "Select Make",
     "model": "Model",
+    "select_make": "Select Make",
     "select_model": "Select Model",
-    "first_select_make": "First Select Make",
-    "year": "Year",
-    "old": "Old",
     "price": "Price",
-    "up_to": "Up to",
-    "auction": "Auction",
+    "year": "Year",
     "fuel": "Fuel",
-    "fuel_gas": "Petrol",
+    "drive": "Drive",
+    "fuel_gas": "Gasoline",
     "fuel_diesel": "Diesel",
     "fuel_hybrid": "Hybrid",
     "fuel_electric": "Electric",
-    "fuel_flexible": "Flexible fuel",
-    "category": "Category",
-    "drive": "Drive",
-    "items_per_page": "Items per page",
-    "apply": "Apply",
-    "sort_by": "Sort by:",
-    "view_details": "View Details",
-    "details": "Details",
+    "fuel_flexible": "Flexible",
+    "cars": "Cars",
+    "motorcycles": "Motorcycles",
+    "vans": "Vans",
+    "miles_short": "mi",
     "view_photos": "View Photos",
-    "clear_all": "Clear All",
-    "close": "Close",
-    "company": "Company",
-    "name": "Name",
-    "phone": "Phone",
-    "client": "Client",
-    "any": "Any"
-  },
-  "header": {
-    "brand": "TrustedImporters.Ge",
-    "menu": "Menu",
-    "sign_in": "Sign In",
-    "profile": "Profile",
-    "sign_out": "Sign Out",
-    "language": "Language",
-    "open_profile_menu": "Open profile menu",
-    "avatar_alt": "User avatar"
+    "page": "Page",
+    "prev": "Previous",
+    "next": "Next",
+    "badges": {
+      "new": "New",
+      "hot": "Hot"
+    },
+    "drive_types": {
+      "fwd": "Front Wheel Drive",
+      "rwd": "Rear Wheel Drive",
+      "awd": "All Wheel Drive",
+      "4wd": "4WD",
+      "full": "Full Drive"
+    }
   },
   "navigation": {
     "home": "Home",
-    "search": "Search",
-    "catalog": "Catalog",
-    "dashboard": "Dashboard",
-    "logisticsRadar": "Logistics Radar",
-    "auctionListings": "Active Auctions",
-    "carfax": "VIN Check"
-  },
-  "vin": {
-    "title": "VIN Check",
-    "subtitle": "Enter VIN to decode basic vehicle information.",
-    "check_card_title": "Check VIN",
-    "vin_label": "VIN Code",
-    "vin_placeholder": "e.g. 1HGCM82633A004352",
-    "vin_hint": "VIN must contain 17 characters (digits and latin letters, except I, O, Q).",
-    "check_btn": "Check",
-    "empty_info": "Enter VIN code to see decode result.",
-    "result_title": "VIN Decode Result",
-    "result_vin_label": "VIN Code",
-    "result_data_label": "Raw Response Data",
-    "error_vin_required": "Please enter VIN code.",
-    "error_vin_length": "VIN must be exactly 17 characters.",
-    "error_decode_failed": "VIN decode failed. Please try again."
-  },
-  "content": {
-    "title": "Find a Trusted Importer",
-    "subtitle": "Your guide to the world of auto imports",
-    "description": "We help you connect with the best auto importers, compare prices, and make the best decision.",
-    "find_companies": "Find Companies",
-    "view_catalog": "View Catalog",
-    "ready_to_start": "Ready to Start?",
-    "join_thousands": "Join thousands of users who already enjoy our service.",
-    "start_import": "Start Import",
-    "features": {
-      "delivery": {
-        "title": "Fast Delivery",
-        "description": "Our partners ensure timely and safe vehicle transportation."
-      },
-      "trust": {
-        "title": "Why users trust TrustedImporters.Ge",
-        "description": "Key reasons why users choose our platform and recommend it to others.",
-        "items": {
-          "experience": "Verified experience in US to Georgia imports",
-          "reviews": "Real reviews and transparent ratings",
-          "docs": "Support with documents and process",
-          "privacy": "Respect for your privacy and data"
-        }
-      },
-      "security": {
-        "title": "Security",
-        "description": "All companies are verified and hold a high reputation in the market."
-      },
-      "price": {
-        "title": "Best Prices",
-        "description": "Get competitive offers and save money."
-      }
-    }
-  },
-  "system": {
-    "errors": {
-      "sidebar_provider": "useSidebar must be used within a SidebarProvider.",
-      "form_field": "useFormField should be used within <FormField>",
-      "chart_container": "useChart must be used within a <ChartContainer />"
-    }
-  },
-  "footer": {
-    "description": "The site helps you select a reliable auto importer with reasonable prices and services — all offers and prices in one place for easy comparison.",
-    "home": "Home",
     "catalog": "Catalog",
     "auctionListings": "Auctions",
-    "stats": {
-      "region": "Importing cars from USA to Georgia",
-      "cars": "1000+ Imported Cars",
-      "years": "10+ Years Experience"
-    },
-    "company": "Company",
-    "support": "Support",
-    "connect": "Connect",
-    "help": "Help Center",
-    "contact": "Contact",
-    "privacy": "Privacy Policy",
-    "terms": "Terms & Conditions",
-    "copyright": "All rights reserved.",
-    "cta": {
-      "title": "Need Consultation?",
-      "subtitle": "Get personal advice on your next vehicle import.",
-      "button": "Get Consultation"
-    },
-    "twitter": "Twitter",
-    "github": "GitHub",
-    "linkedin": "LinkedIn"
+    "carfax": "VIN Check"
   },
-  "auth": {
-    "error": {
-      "profile_response": "Invalid server response for profile",
-      "profile_load": "An error occurred while loading profile",
-      "not_authorized": "User is not authorized",
-      "profile_update_response": "Invalid server response for profile update",
-      "profile_invalid": "Profile data is invalid",
-      "profile_update": "An error occurred while updating profile",
-      "delete_request_invalid": "Invalid profile delete request",
-      "delete_account": "An error occurred while deleting account",
-      "login_invalid": "Invalid login credentials",
-      "email_password_incorrect": "Incorrect email or password",
-      "login_generic": "An error occurred during login",
-      "login_response": "Invalid server response for login",
-      "register_response": "Invalid server response for registration",
-      "register_invalid": "Invalid registration data",
-      "conflict": "This email or username is already in use",
-      "register_generic": "An error occurred during registration"
-    },
-    "login": {
-      "title": "Sign In",
-      "subtitle": "Sign in to save your calculations and favorite companies.",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Sign In",
-      "loading": "Signing in...",
-      "no_account": "Don't have an account?",
-      "register_link": "Register",
-      "error": {
-        "required": "Please enter email and password",
-        "generic": "An error occurred during login"
-      }
-    },
-    "register": {
-      "title": "Register",
-      "subtitle": "Create an account to save your calculations and favorite companies.",
-      "name": "Name",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Register",
-      "loading": "Registering...",
-      "has_account": "Already have an account?",
-      "login_link": "Sign In",
-      "error": {
-        "required": "Please fill all fields",
-        "generic": "An error occurred during registration"
-      }
-    },
-    "social": {
-      "continue_with": "Or continue with",
-      "google": "Google",
-      "facebook": "Facebook"
-    },
-    "account_type": "Account Type",
-    "phone_optional": "Phone (Optional)",
-    "contact_phone": "Contact Phone",
-    "company_legal_name": "Company Legal Name",
-    "header": {
-      "account": "Account",
-      "subtitle": "Login or Register on"
-    },
-    "roles": {
-      "user": {
-        "title": "Client",
-        "desc": "Who searches for companies and leaves requests"
-      },
-      "dealer": {
-        "title": "Dealer",
-        "desc": "Individual looking for clients for import"
-      },
-      "company": {
-        "title": "Company",
-        "desc": "Auto import/service company with full profile"
-      }
-    },
-    "placeholders": {
-      "email": "you@example.com",
-      "password": "••••••••",
-      "name": "George",
-      "phone": "+1 555 000 0000",
-      "company_name": "Logistics Pro Inc.",
-      "dealer_name": "Auto Kings LLC",
-      "license": "XX-XXXXXXX"
-    }
-  },
-  "catalog": {
-    "title": "Import Companies Catalog",
-    "subtitle": "Explore all available companies",
-    "filters": {
-      "title": "Filters",
-      "geography": "Geography",
-      "city_placeholder": "City (e.g. Tbilisi)",
-      "services": "Services",
-      "services_soon": "Service filters coming soon",
-      "price": "Price",
-      "rating": "Minimum Rating",
-      "rating_all": "All",
-      "rating_3_plus": "3+",
-      "rating_4_plus": "4+",
-      "rating_5": "5",
-      "vip_only": "VIP Companies Only",
-      "free_onboarding": "Free Onboarding",
-      "buy_now_only": "Buy Now"
-    },
-    "search": {
-      "placeholder": "Search companies...",
-      "clear": "Clear Search"
-    },
-    "sort": {
-      "label": "Sort",
-      "newest": "Newest",
-      "rating": "By Rating",
-      "cheapest": "Price (Low to High)",
-      "name": "By Name"
-    },
-    "results": {
-      "showing": "Showing",
-      "connector": "companies",
-      "of": "of",
-      "empty_title": "No companies found",
-      "empty_description": "Try different keywords or clear filters"
-    },
-    "card": {
-      "add_favorite": "Add to favorites",
-      "remove_favorite": "Remove from favorites",
-      "founded": "Founded:"
-    },
-    "pagination": {
-      "page": "Page",
-      "prev": "Back",
-      "next": "Next",
-      "label": "Catalog pages navigation"
-    },
-    "tags": {
-      "active": "Active filters:",
-      "search": "Search:",
-      "sort": "Sort:",
-      "reset_all": "Reset all filters"
-    },
-    "error": {
-      "fetch": "Failed to load companies. Please try again.",
-      "retry": "Retry"
-    }
-  },
-  "dashboard": {
-    "title": "Dashboard",
-    "roles": {
-      "user": "User",
-      "dealer": "Dealer",
-      "company": "Company"
-    },
-    "error": {
-      "load": "Failed to load dashboard. Please try again later.",
-      "quotes": "Failed to load quotes. Please try again later.",
-      "leads": "Failed to load leads. Please try again later."
-    },
-    "cards": {
-      "leads": "Leads",
-      "listings": "Listings",
-      "deals": "Deals",
-      "margin": "Margin",
-      "views": "Views",
-      "quotes": "Quotes",
-      "conversion": "Conv.",
-      "rating": "Rating",
-      "total": "Total",
-      "new": "New",
-      "accounts": "Accounts",
-      "growth": "Growth"
-    },
-    "user": {
-      "quotes": {
-        "title": "Open Requests / Quotes",
-        "empty": "You have no open requests at this moment. Start cooperation from a company page.",
-        "rating": "Rating",
-        "deals": "deals",
-        "budget": "Total Budget",
-        "service_fee": "Service Fee",
-        "duration_label": "Estimated Duration",
-        "duration": "{{count}} days",
-        "view_dialog": "View Dialog",
-        "compare": "Compare",
-        "remove_compare": "Remove Compare",
-        "compare_selected": "Compare Offers ({{count}}/3)",
-        "dialog": {
-          "description": "Detailed information about company offer and terms.",
-          "company": "Company",
-          "financials": "Financial Terms",
-          "terms": "Terms & Conditions",
-          "tech_details": "Technical Details",
-          "comment": "Company Comment",
-          "demo_actions_hint": "Demo buttons for future actions.",
-          "action": {
-            "message": "Write Message",
-            "contact": "Share Contact",
-            "questions": "Send Additional Questions",
-            "accept": "Accept Offer",
-            "reject": "Reject Offer"
-          }
-        }
-      },
-      "compare": {
-        "title": "Compare Offers",
-        "description": "Max 3 offers for comparison. This is a demo view.",
-        "headers": {
-          "company": "Company",
-          "budget": "Budget",
-          "service_fee": "Service Fee",
-          "duration": "Duration",
-          "status": "Status"
-        }
-      },
-      "offers": {
-        "title": "Special Offers",
-        "empty": "No special offers at this moment.",
-        "view": "View",
-        "description": "Special import price for next 30 days.",
-        "status": {
-          "selected": "Selected",
-          "pending": "Pending",
-          "rejected": "Rejected",
-          "expired": "Expired",
-          "accepted": "Accepted"
-        }
-      },
-      "quick_search": {
-        "title": "Quick Search by Company",
-        "service": "Service Category",
-        "any": "Any",
-        "geography": "State / Region",
-        "budget": "Budget",
-        "budget_ranges": {
-          "low": "< 4 000$",
-          "medium": "4 000–8 000$",
-          "high": "> 8 000$"
-        },
-        "submit": "Find Company"
-      },
-      "actions": {
-        "title": "Quick Actions",
-        "new_search": "Start New Search",
-        "fill_brief": "Fill Common Brief",
-        "go_to_requests": "Go to Your Requests"
-      },
-      "favorites": {
-        "title": "Favorite Companies",
-        "clear": "Clear",
-        "empty": "No favorite companies added yet."
-      },
-      "recent": {
-        "title": "Recently Viewed Companies",
-        "clear": "Clear",
-        "empty": "No history in this session."
-      },
-      "stats": {
-        "title": "Your Activity Stats",
-        "viewed": "Viewed Companies",
-        "favorites": "Favorites",
-        "requests": "Sent Requests"
-      },
-      "guides": {
-        "title": "Useful Guides & Articles",
-        "empty": "Guides coming soon.",
-        "read": "Read",
-        "guide1": "How to choose a trusted importer from USA",
-        "guide2": "What to check in contract before signing",
-        "guide3": "TOP mistakes clients make during import"
-      },
-      "reminders": {
-        "title": "Reminders",
-        "empty": "No active reminders.",
-        "reviews": "You haven't viewed all reviews of recently viewed companies.",
-        "offers": "You have unseen special offers from some companies.",
-        "favorites": "Add interesting companies to favorites for quick access."
-      },
-      "confirm_clear_favorites": "Are you sure you want to clear favorite companies?",
-      "confirm_clear_recent": "Are you sure you want to clear recently viewed history?"
-    },
-    "company": {
-      "leads_bubble": {
-        "title": "New Client Requests",
-        "subtitle": "Requests from users for specific vehicles",
-        "empty": "You have no new client requests right now.",
-        "status": {
-          "new": "New",
-          "offer_sent": "Offer Sent",
-          "won": "Won",
-          "lost": "Lost",
-          "expired": "Expired"
-        },
-        "expired": "Expired",
-        "minutes_left": "{{count}} min left",
-        "hours_left": "{{hours}}h {{minutes}}m left",
-        "budget_not_specified": "Budget not specified",
-        "priority": {
-          "price": "Priority: price",
-          "speed": "Priority: speed",
-          "premium": "Priority: premium service"
-        }
-      },
-      "stats": {
-        "title": "Network Statistics",
-        "profile_views": "Profile Views",
-        "active_dealers": "Active Dealers",
-        "active_companies": "Active Companies"
-      },
-      "dealer_activity": {
-        "title": "Dealer Activity by State",
-        "empty": "No activity data yet.",
-        "leads_label": "leads / activity"
-      },
-      "brand_health": {
-        "title": "Brand Health",
-        "description": "Overall brand perception across all network dealers."
-      },
-      "service_quality": {
-        "title": "Service Quality",
-        "reply_time": "Avg. Reply Time",
-        "handled_requests": "Handled Requests",
-        "description": "Data is illustrated, will be replaced with real API data."
-      },
-      "campaigns": {
-        "title": "Marketing Campaigns",
-        "empty": "No active campaigns."
-      },
-      "segments": {
-        "title": "Audience Segments",
-        "empty": "No segmentation data.",
-        "segment1": "Tbilisi / Full Import",
-        "segment2": "Batumi / Customs + Delivery",
-        "segment3": "Kutaisi / Budget Import"
-      },
-      "competitors": {
-        "title": "Competitor Monitoring",
-        "empty": "No competitor data.",
-        "rating": "Rating",
-        "trend_up": "Growth",
-        "trend_down": "Decline"
-      },
-      "risks": {
-        "title": "Risks & Alerts",
-        "empty": "No risks detected."
-      },
-      "alerts": {
-        "rating": "Several companies have rating below 4.0 ({{count}}).",
-        "leads_drop": "Lead count decreased in some regions compared to previous period."
-      },
-      "network_actions": {
-        "title": "Dealer Network Management"
-      },
-      "actions": {
-        "add_dealer": "Add New Dealer",
-        "edit_terms": "Edit Terms",
-        "disable_location": "Disable Location Temporarily"
-      },
-      "goals": {
-        "title": "Plans & Goals",
-        "empty": "Goals not configured.",
-        "leads": "Increase leads by +20%",
-        "rating": "Increase avg rating to 4.5",
-        "coverage": "Expand coverage to 3 new states"
-      }
-    },
-    "dealer": {
-      "leads": {
-        "title": "Leads Panel",
-        "today_new": "New Today",
-        "week_new": "New This Week",
-        "in_progress": "In Progress",
-        "closed": "Closed"
-      },
-      "funnel": {
-        "title": "Sales Funnel",
-        "views": "Profile Views",
-        "requests": "Requests",
-        "deals": "Deals"
-      },
-      "actions": {
-        "title": "Quick Actions",
-        "add_offer": "Add New Offer",
-        "launch_promo": "Launch Promo",
-        "update_prices": "Update Prices"
-      },
-      "requests": {
-        "title": "New Client Requests",
-        "empty": "No new requests.",
-        "reply": "Reply",
-        "processed": "Processed"
-      },
-      "reminders": {
-        "title": "Lead Reminders",
-        "empty": "No critical reminders.",
-        "slow": "Some leads waiting for reply > 24h. Check statuses.",
-        "no_notes": "No notes added for today's new leads."
-      },
-      "top_offers": {
-        "title": "Top Offers / Positions",
-        "empty": "No top offers."
-      },
-      "reviews": {
-        "title": "Client Reviews",
-        "empty": "No reviews yet.",
-        "manage": "Manage Reviews"
-      },
-      "traffic": {
-        "title": "Dealer Profile Traffic",
-        "total": "Total Views",
-        "search": "From Search",
-        "catalog": "From Catalog",
-        "offers": "From Offers"
-      },
-      "tasks": {
-        "title": "Today's Tasks",
-        "empty": "No tasks for today.",
-        "task1": "Call main client and approve terms",
-        "task2": "Send commercial offer to 2 new leads",
-        "task3": "Update prices on popular items"
-      },
-      "comparison": {
-        "title": "Comparison vs Previous Period",
-        "leads_count": "Leads Count",
-        "conversion": "Conversion",
-        "margin": "Avg. Margin"
-      }
-    }
+  "header": {
+    "sign_in": "Sign In",
+    "menu": "Menu"
   },
   "home": {
-    "steps": {
-      "step1": "Step 1 — Find a Trusted Company",
-      "step2": "Step 2 — Why Users Trust Us",
-      "step3": "Step 3 — Stories and Knowledge",
-      "step4": "Step 4 — Final Step"
-    },
     "hero": {
-      "badge": "Trusted import platform from USA to Georgia",
-      "title_prefix": "Find Trusted Companies",
-      "title_suffix": "for Import from USA",
-      "vehicle_types": {
-        "cars": "Cars",
-        "motorcycles": "Motorcycles",
-        "atvs": "ATVs",
-        "quads": "Quads"
-      },
-      "description": "Compare prices, ratings, and services in one place. Transparent terms, verified importers, and support in your language.",
-      "how_it_works_title": "How it works: 3 simple steps",
-      "step1": "Choose budget and origin.",
-      "step2": "Specify desired type: sedan, SUV, premium, etc.",
-      "step3": "Get matched with suitable import companies.",
-      "cta_find": "Find Company",
-      "cta_catalog": "View Catalog",
-      "promise": "In a few minutes we will get at least 3 trusted company options based on your requirements.",
-      "verified": "Verified Importers",
-      "transparent": "Transparent Prices",
-      "support": "Support in your language",
-      "card": {
-        "successful_imports": "Successful Imports",
-        "buyer_protection": "Buyer Protection",
-        "stats_title": "Platform Statistics",
-        "company": "Company",
-        "vip_importer": "VIP Importer",
-        "avg_rating": "Average Rating",
-        "trusted_brand": "Trusted Importers.Ge",
-        "live_viewing": "{{count}} users are comparing prices right now",
-        "examples_title": "Some examples of companies presented on the platform:",
-        "data_source": "Data is based on import companies in the catalog and their user reviews.",
-        "viewing_companies": "Currently {{count}} users are viewing import companies.",
-        "viewing_vehicles": "Currently {{count}} users are viewing vehicle lots."
-      }
-    },
-    "error": {
-      "companies_load": "Problem loading company data",
-      "companies_load_desc": "Showing temporary data while real list cannot be loaded. Try again later or view full catalog."
-    },
-    "empty": {
-      "no_companies": "No companies added yet",
-      "no_companies_desc": "Verified import companies will appear here soon. For now, explore platform features."
-    },
-    "lead_capture": {
-      "title": "Didn't find what you were looking for?",
-      "description": "Leave a request and companies will contact you themselves with the best offers.",
-      "response_time": "Avg. response time: 15 min",
-      "privacy_guarantee": "Your data is protected",
-      "form_title": "Request for Auto Import",
-      "name_label": "Your Name",
-      "contact_label": "Contact Number or Email",
-      "contact_placeholder": "+995 555 00 00 00",
-      "budget_label": "Max Budget (USD)",
-      "car_type_label": "Vehicle Type",
-      "car_type_placeholder": "Select Type",
-      "car_type_any": "Any",
-      "car_type_sedan": "Sedan",
-      "car_type_suv": "Jeep / SUV",
-      "car_type_hatchback": "Hatchback",
-      "car_type_premium": "Premium",
-      "auction_source_label": "Auction",
-      "auction_source_placeholder": "Select Source",
-      "auction_source_any": "Any",
-      "message_label": "Additional Details",
-      "message_placeholder": "e.g. specific model, year, color...",
-      "priority_label": "What is most important?",
-      "priority_placeholder": "Select Priority",
-      "priority_price": "Low Price",
-      "priority_speed": "Fast Delivery",
-      "priority_premium": "Premium Service",
-      "advanced_show": "Show advanced parameters",
-      "advanced_hide": "Hide advanced parameters",
-      "advanced_hint": "Optional parameters for more precise search",
-      "brand_label": "Brand",
-      "brand_placeholder": "e.g. Toyota",
-      "model_label": "Model",
-      "model_placeholder": "e.g. Camry",
-      "year_from_label": "Year From",
-      "year_from_placeholder": "2015",
-      "color_label": "Color",
-      "color_placeholder": "Any",
-      "color_any": "Any",
-      "color_white": "White",
-      "color_black": "Black",
-      "color_grey": "Grey",
-      "color_blue": "Blue",
-      "color_red": "Red",
-      "consent_label": "I agree to the processing of my personal data",
-      "submit_btn": "Send Request",
-      "submitting_btn": "Sending...",
-      "success_message": "Request sent successfully!",
-      "validation": {
-        "name_required": "Name is required",
-        "contact_required": "Contact is required",
-        "car_type_required": "Car type is required",
-        "auction_source_required": "Auction source is required",
-        "priority_required": "Priority is required",
-        "consent_required": "Consent is required"
-      },
-      "placeholders": {
-        "contact_hint": "e.g. +1 555 ... or @username",
-        "details": "e.g. I want a family SUV...",
-        "brands": "e.g. Toyota, BMW, Mercedes-Benz",
-        "models": "e.g. Camry, X5, C-Class",
-        "year": "e.g. 2015",
-        "color": "Select color or leave empty"
-      }
-    },
-    "quick_search": {
-      "title": "Quick Company Search",
-      "state_label": "State in USA",
-      "state_placeholder": "Select State",
-      "service_label": "Service",
-      "service_placeholder": "Select Service",
-      "rating_label": "Min. Rating",
-      "rating_all": "All",
-      "vip_only": "VIP Companies Only",
-      "search_btn": "Find Trusted Companies",
-      "reset_btn": "Clear All",
-      "presets_title": "Popular Scenarios",
-      "presets_description": "Choose common combinations for quick results.",
-      "preset_1": "High Rating • California • VIP",
-      "preset_2": "Budget Sedan • Florida • 3+",
-      "preset_3": "Premium • Georgia • 5★ • VIP"
+      "title": "TrustedImporters.Ge",
+      "subtitle": "See real import cost from USA to Georgia",
+      "description": "Enter VIN or auction budget to see full estimated cost and move to trusted companies in one step.",
+      "search_placeholder": "Search live auctions by make, model or year",
+      "calculate_btn": "Calculate",
+      "verified_companies": "37 Verified Companies",
+      "fixed_prices": "Fixed Prices",
+      "official_contracts": "Official Contracts"
     },
     "price_calculator": {
-      "title": "Calculate Total Cost",
-      "description": "Select a budget range to estimate the cost of importing a car from USA to Georgia.",
-      "budget_label": "Car Budget, USD",
-      "budget_range_aria": "Car budget range",
-      "estimated_total_label": "Estimated Total Cost",
-      "disclaimer": "Calculation includes service fees and customs duties and is approximate.",
-      "secure_payment": "Secure Payment",
-      "secure_payment_tooltip": "Funds are blocked in parts and released to the importer only after confirmation. Use for reference only.",
-      "estimate_note": "This is an estimate. Actual cost may vary by company, auction, and customs.",
-      "find_btn": "Find Companies for this Budget"
+      "widget_title": "Price Calculator",
+      "auction_price": "Auction Price",
+      "engine_volume": "Engine Volume",
+      "shipping_poti": "Shipping to Poti",
+      "est_customs": "Est. Customs",
+      "broker_fees": "Broker Fees",
+      "total_estimated": "Total Estimated"
     },
-    "audience": {
-      "title": "Who is this platform for?",
-      "description": "Choose the scenario that fits you best to see relevant companies.",
-      "first_time": {
-        "title": "First Time Importing",
-        "description": "Need a step-by-step guide — from auction to delivery, with full document and communication support.",
-        "cta": "For Beginners"
-      },
-      "reseller": {
-        "title": "Dealers & Resellers",
-        "description": "Looking for a stable partner with wholesale prices, fast logistics, and predictable schedule.",
-        "cta": "Find Partner"
-      },
-      "safe_first": {
-        "title": "Max Reliability, Min Risk",
-        "description": "Want only verified companies, transparent contracts, and high ratings from past clients.",
-        "cta": "Top Rated Companies"
-      },
-      "budget": {
-        "title": "Min Budget, Max Value",
-        "description": "Budget is key — willing to wait longer for a better price.",
-        "cta": "Affordable Offers"
-      }
-    },
-    "ready_scenarios": {
-      "title": "Ready Search Scenarios",
-      "subtitle": "Mini Quiz",
-      "mini_quiz": "Mini Quiz",
-      "description": "Choose the scenario closest to your needs. Filters will adjust automatically.",
-      "scenarios": {
-        "budget-10k": {
-          "label": "Budget • Under $10k",
-          "description": "Convenient options for a first or daily car."
+    "benefits": {
+      "title": "Why Our Platform",
+      "subtitle": "We offer the best service for car import",
+      "items": {
+        "verified": {
+          "title": "Verified Companies",
+          "description": "All companies undergo strict verification and vetting process."
         },
-        "family-suv": {
-          "label": "Family SUV",
-          "description": "Comfortable and safe SUVs for the family."
+        "transparent": {
+          "title": "Transparent Pricing",
+          "description": "No hidden fees. You see exactly what you pay."
         },
-        "premium-25k": {
-          "label": "Premium • Under $25k",
-          "description": "Balance between premium class and reasonable budget."
+        "reviews": {
+          "title": "Real Reviews",
+          "description": "Read real customer experiences and ratings."
         },
-        "for-resale": {
-          "label": "For Resale",
-          "description": "Companies experienced with resellers."
+        "support": {
+          "title": "24/7 Support",
+          "description": "Our team is ready to help you anytime."
         }
       }
     },
     "testimonials": {
-      "title": "What clients say about importers",
-      "description": "Real feedback and ratings for import companies on TrustedImporters.Ge.",
-      "ticker_message": "{{user}} rated {{company}} {{rating}}★ on TrustedImporters.Ge",
+      "title": "What Clients Say",
+      "error": "Failed to load reviews",
       "filters": {
-        "all": "All Reviews",
+        "all": "All",
         "speed": "Speed",
         "price": "Price",
-        "quality": "Condition",
-        "service": "Service",
-        "docs": "Documents"
+        "quality": "Quality",
+        "docs": "Documentation"
       },
       "stats": {
-        "satisfaction": "Satisfied with timelines",
-        "quality": "Quality Score",
-        "repeat": "Repeat clients"
+        "satisfaction": "Satisfaction",
+        "quality": "Quality"
       },
+      "empty": {
+        "title": "No reviews found",
+        "description": "No one has left a review yet."
+      },
+      "view_catalog_btn": "View Catalog",
       "card": {
-        "bought": "Purchased",
         "client_since": "Client since {{year}}",
-        "orders_count": "{{count}} orders"
-      },
-      "empty": {
-        "title": "No reviews loaded yet",
-        "description": "We will show real client reviews here as soon as they are available."
-      },
-      "view_catalog_btn": "View Catalog",
-      "error": "Failed to load reviews. Please try again later."
-    },
-    "how_it_works": {
-      "title": "How It Works",
-      "description": "Full process from one page: from selection to final delivery.",
-      "steps": {
-        "1": {
-          "title": "Choose Company",
-          "description": "Search importers by filters and ratings."
-        },
-        "2": {
-          "title": "Connect",
-          "description": "Agree on details, terms, and service scope."
-        },
-        "3": {
-          "title": "Docs & Payment",
-          "description": "Company helps with documentation and payment organization."
-        },
-        "4": {
-          "title": "Car in Georgia",
-          "description": "Ordered car arrives at the port and is handed over to you."
-        }
-      }
-    },
-    "featured_companies": {
-      "title": "VIP Importers",
-      "description": "High-rated companies with transparent conditions.",
-      "view_all": "View All Companies",
-      "empty_title": "VIP Companies Not Shown Yet",
-      "empty_desc": "Verified importers will appear here as soon as they are added. For now, you can view all companies in the catalog.",
-      "top_partner": "Top Partner",
-      "vip_diamond": "Diamond VIP",
-      "vip_gold": "Gold VIP",
-      "vip_silver": "Silver VIP",
-      "vip_labels": {
-        "diamond": "Diamond VIP",
-        "gold": "Gold VIP",
-        "silver": "Silver VIP"
-      },
-      "reviews_count": "({{count}} reviews)",
-      "full_cycle": "USA → GEO Full Cycle",
-      "docs_customs": "Docs / Customs / Delivery",
-      "deals_label": "Deals",
-      "deals_tooltip": "Approximate number of closed deals calculated from review count (≈ reviewCount × 3).",
-      "satisfaction_label": "Satisfaction",
-      "satisfaction_tooltip": "Approximate satisfaction level calculated from average rating (rating/5).",
-      "deals": "Deals",
-      "satisfaction": "Satisfaction",
-      "established": "Founded: {{year}}",
-      "response_time": "Avg. reply: {{hours}} h",
-      "response_time_tooltip": "Average time it takes for the company to reply to the first message.",
-      "avg_response_time": "Avg. Reply Time",
-      "avg_response_time_tooltip": "Average time it takes for the company to reply."
-    },
-    "benefits": {
-      "title": "Why Our Platform",
-      "subtitle": "Key advantages that make your decision easier.",
-      "items": {
-        "verified": {
-          "title": "Verified Importers",
-          "description": "All companies undergo minimum checks for reliability and experience."
-        },
-        "transparent": {
-          "title": "Transparent Prices",
-          "description": "Approximate cost is visible upfront, without hidden fees."
-        },
-        "reviews": {
-          "title": "Real Reviews",
-          "description": "Company ratings are based on buyer reviews and experiences."
-        },
-        "support": {
-          "title": "Support in Your Language",
-          "description": "Our team helps clarify unclear issues and make the right choice."
-        }
-      }
-    },
-    "trust": {
-      "title": "Reliability & Safety",
-      "description": "We focus on your peace of mind.",
-      "items": {
-        "experience": "Verified experience in US to Georgia imports",
-        "reviews": "Real reviews and transparent ratings",
-        "docs": "Support with documents and process",
-        "privacy": "Respect for your privacy and data"
-      }
-    },
-    "brands": {
-      "title": "Our Partners",
-      "subtitle": "Trusted banks, logistics, and insurance partners we rely on.",
-      "cta": "How we choose partners"
-    },
-    "cases": {
-      "title": "Real Import Examples",
-      "subtitle": "Several typical cases with price and estimated savings.",
-      "view_catalog": "View Catalog",
-      "empty_title": "Import Examples Not Shown Yet",
-      "empty_description": "Real import examples will appear here soon. For now, you can explore import companies in the catalog.",
-      "demo_case": "Demo Case",
-      "before_label": "Before:",
-      "after_label": "After:",
-      "full_import": "Full Import",
-      "saved": "Saved ≈",
-      "items": {
-        "1": {
-          "title": "BMW X5, 2018",
-          "subtitle": "California → Georgia",
-          "price": "$19,800",
-          "saved_amount": "$1,200 vs Auction Avg",
-          "before": "Family spent over 6 months looking for a safe SUV locally, but prices always exceeded budget.",
-          "after": "Through TrustedImporters.Ge, they got an X5 in 6 weeks via full import and saved enough for maintenance.",
-          "quote": "\"We thought X5 was just a dream, now it's our family car.\""
-        },
-        "2": {
-          "title": "Toyota Camry, 2019",
-          "subtitle": "Florida → Georgia",
-          "price": "$12,400",
-          "saved_amount": "$900 vs Local Market",
-          "before": "Buyer needed a reliable sedan for daily work and family trips but couldn't find a good option.",
-          "after": "Platform showed several trusted importers, and Camry arrived with minimal mileage and clear history.",
-          "quote": "\"Choosing a first car was scary, but the process was much easier than expected.\""
-        },
-        "3": {
-          "title": "Mercedes-Benz C-Class, 2017",
-          "subtitle": "New York → Georgia",
-          "price": "$17,300",
-          "saved_amount": "$1,500 vs Dealer Offer",
-          "before": "Local dealer's premium sedan offer required upfront payment and had hidden fees.",
-          "after": "TrustedImporters.Ge showed an alternative via US import where client knew exactly what they were paying for.",
-          "quote": "\"Knowing we controlled every step made us feel much calmer.\""
-        }
-      }
-    },
-    "car_cases": {
-      "title": "Real Import Examples",
-      "description": "Several typical cases with price and estimated savings.",
-      "view_catalog_btn": "View Catalog",
-      "empty": {
-        "title": "Import Examples Not Shown Yet",
-        "description": "Real import examples will appear here soon. For now, you can explore import companies in the catalog."
-      },
-      "demo_case_badge": "Demo Case",
-      "before_label": "Before",
-      "after_label": "After",
-      "cases": {
-        "case1": {
-          "title": "BMW X5, 2018",
-          "subtitle": "California → Georgia",
-          "price": "$19,800",
-          "saved": "$1,200 vs Auction Avg",
-          "before": "Family spent over 6 months looking for a safe SUV locally, but prices always exceeded budget.",
-          "after": "Through TrustedImporters.Ge, they got an X5 in 6 weeks via full import and saved enough for maintenance.",
-          "quote": "\"We thought X5 was just a dream, now it's our family car.\""
-        },
-        "case2": {
-          "title": "Toyota Camry, 2019",
-          "subtitle": "Florida → Georgia",
-          "price": "$12,400",
-          "saved": "$900 vs Local Market",
-          "before": "Buyer needed a reliable sedan for daily work and family trips but couldn't find a good option.",
-          "after": "Platform showed several trusted importers, and Camry arrived with minimal mileage and clear history.",
-          "quote": "\"Choosing a first car was scary, but the process was much easier than expected.\""
-        },
-        "case3": {
-          "title": "Mercedes-Benz C-Class, 2017",
-          "subtitle": "New York → Georgia",
-          "price": "$17,300",
-          "saved": "$1,500 vs Dealer Offer",
-          "before": "Local dealer's premium sedan offer required upfront payment and had hidden fees.",
-          "after": "TrustedImporters.Ge showed an alternative via US import where client knew exactly what they were paying for.",
-          "quote": "\"Knowing we controlled every step made us feel much calmer.\""
-        }
-      }
-    },
-    "compare": {
-      "title": "Compare Importers",
-      "description": "Reputation, price, and service in one overview.",
-      "subtitle": "Reputation, price, and service in one overview.",
-      "vip_offers": "Premium / VIP Offers",
-      "vip_offers_title": "Premium / VIP Offers",
-      "standard_offers": "Standard Offers",
-      "standard_offers_title": "Standard Offers",
-      "shipping_price_label": "Shipping price from USA to Georgia port",
-      "trusted_partner": "Trusted Partner",
-      "trusted_partner_tooltip": "Trusted Partner — selected based on our internal evaluation and user feedback.",
-      "secure_payment": "Secure Payment",
-      "secure_payment_tooltip": "Secure Payment — funds are held via a secure channel until the importer confirms the service.",
-      "full_docs": "Full Docs",
-      "full_docs_tooltip": "Full Docs — importer ensures preparation of all necessary import and registration documents.",
-      "list_aria_label": "Comparison list of import companies",
-      "vip_list_aria_label": "VIP importers list",
-      "standard_list_aria_label": "Standard offers list",
-      "badges": {
-        "trusted": "Trusted",
-        "trusted_tooltip": "Trusted importer based on platform checks and user feedback.",
-        "secure": "Secure Payment",
-        "secure_tooltip": "Secure payment flow with funds released after confirmation.",
-        "docs": "Full Docs",
-        "docs_tooltip": "Importer helps with all import-related documentation."
-      },
-      "services": {
-        "documents": "Documents",
-        "shipping": "Transport",
-        "customs": "Customs"
-      },
-      "features": {
-        "documents": "Documents",
-        "transport": "Transport",
-        "customs": "Customs"
-      },
-      "vip_labels": {
-        "diamond": "Diamond VIP",
-        "gold": "Gold VIP",
-        "silver": "Silver VIP"
-      }
-    },
-    "faq": {
-      "title": "FAQ",
-      "subtitle": "Answers to common questions about the import process.",
-      "description": "Answers to common questions about the import process.",
-      "items": {
-        "1": {
-          "question": "How much does it cost to import a car from USA?",
-          "answer": "Price depends on auction price, shipping, insurance, and customs fees. Our platform helps get a preliminary estimate."
-        },
-        "2": {
-          "question": "How long does it take?",
-          "answer": "Average 6-10 weeks, depending on port and shipping route. The company will give you a specific timeline."
-        },
-        "3": {
-          "question": "How are companies verified?",
-          "answer": "We monitor experience, ratings, and user reviews. Suspicious companies do not make it to the recommended list."
-        },
-        "4": {
-          "question": "Can I compare offers from multiple companies?",
-          "answer": "Yes, you can compare prices, services, and ratings across different companies."
-        }
+        "bought": "Bought"
       }
     },
     "blog": {
-      "title": "Blog",
-      "description": "Stories and tips about importing cars from USA to Georgia.",
-      "coming_soon_badge": "Coming soon",
-      "popular_badge": "Popular",
-      "read_time": "{{minutes}} min read",
-      "views": "{{count}} views",
-      "overlay_message": "Blog section is in demo mode. Articles will be published soon.",
-      "takeaways_title": "Key Takeaways",
-      "categories": {
-        "customs": "Customs",
-        "auctions": "Auctions",
-        "tips": "Tips"
-      },
+      "title": "Useful Articles",
+      "description": "Learn useful information about car import",
       "empty": {
-        "title": "No articles yet",
-        "description": "We are preparing useful content about import. Please check back later.",
-        "view_catalog_btn": "View Catalog"
+        "title": "No articles found",
+        "description": "No articles have been published yet."
       },
+      "view_catalog_btn": "View Catalog",
+      "takeaways_title": "Key Takeaways",
+      "read_time": "{{minutes}} min read",
+      "read_article": "Read Article",
       "posts": {
-        "blog": {
-          "post1": {
-            "tag": "Guides",
-            "title": "How to choose a car at auction?",
-            "description": "Key checks before bidding and how to avoid common mistakes."
-          },
-          "post2": {
-            "tag": "Documents",
-            "title": "What is important in the import contract?",
-            "description": "Main clauses in the contract with importer you should pay attention to."
-          },
-          "post3": {
-            "tag": "Savings",
-            "title": "How to save on import without extra risk",
-            "description": "Several strategies to optimize total cost and keep the process safe."
-          }
+        "blog.post1.title": "How to Choose the Right Car at Auction",
+        "blog.post1.description": "Complete guide to selecting a car at auction, tips and tricks from experienced importers.",
+        "blog.post1.tag": "Guide",
+        "blog.post1.takeaways": {
+          "1": "Check vehicle history with VIN",
+          "2": "Consider additional costs",
+          "3": "Choose a trusted company"
+        },
+        "blog.post2.title": "Customs Clearance Process in Georgia",
+        "blog.post2.description": "Everything you need to know about car customs clearance in Georgia.",
+        "blog.post2.tag": "Customs",
+        "blog.post2.takeaways": {
+          "1": "Prepare required documents",
+          "2": "Consider engine volume",
+          "3": "Check excise rates"
+        },
+        "blog.post3.title": "Top 10 Popular Models 2024",
+        "blog.post3.description": "Most demanded cars in Georgia this year.",
+        "blog.post3.tag": "Trends",
+        "blog.post3.takeaways": {
+          "1": "Toyota and Hyundai lead",
+          "2": "Electric vehicles are growing",
+          "3": "SUV segment is popular"
         }
       }
-    },
-    "final_cta": {
-      "title": "Ready to get started?",
-      "description": "Find your dream car today.",
-      "dashboard_btn": "Go to Dashboard",
-      "register_btn": "Start Now"
-    },
-    "vin": {
-      "title": "VIN Check",
-      "subtitle": "Enter VIN to decode basic vehicle information.",
-      "check_card_title": "Check VIN",
-      "vin_label": "VIN Code",
-      "vin_placeholder": "e.g. 1HGCM82633A004352",
-      "vin_hint": "VIN must contain 17 characters (digits and latin letters, except I, O, Q).",
-      "check_btn": "Check",
-      "empty_info": "Enter VIN code to see decode result.",
-      "result_title": "VIN Decode Result",
-      "result_vin_label": "VIN Code",
-      "result_data_label": "Raw Response Data",
-      "error_vin_required": "Please enter VIN code.",
-      "error_vin_length": "VIN must be exactly 17 characters.",
-      "error_decode_failed": "VIN decode failed. Please try again."
-    },
-    "carfax": {
-      "title": "VIN Check",
-      "subtitle": "Enter VIN code to get a trial report on vehicle history. Results are for information only and not a real VIN check result.",
-      "aria_label": "VIN Check Page",
-      "check_card_title": "Check VIN Code",
-      "form_title": "Check VIN Code",
-      "vin_label": "VIN Code",
-      "vin_placeholder": "e.g. 1HGCM82633A004352",
-      "vin_hint": "VIN must contain 17 characters (digits and latin letters, except I, O, Q).",
-      "check_btn": "Check",
-      "empty_state_message": "Enter VIN code to see a trial vehicle history report.",
-      "empty_info": "Enter VIN code to see a trial vehicle history report.",
-      "basic_info": {
-        "title": "Basic Info",
-        "vin_label": "VIN Code",
-        "year_make_model_label": "Year / Make / Model",
-        "engine_label": "Engine",
-        "transmission_label": "Transmission",
-        "mileage_label": "Last Recorded Mileage"
-      },
-      "summary": {
-        "title": "Summary",
-        "owners_count_label": "Owners Count",
-        "owners_count": "{{count}} recorded owner",
-        "accidents_label": "Accident History",
-        "accidents_count": "{{count}} recorded accident",
-        "no_accidents": "No accidents recorded",
-        "lease_label": "Lease / Fleet",
-        "lease_exists": "Lease / Fleet record exists",
-        "no_lease": "No Lease or Fleet record"
-      },
-      "damage_desc": "Damage Description",
-      "events_history": "Event History",
-      "warning_title": "Warning",
-      "warning_text_1": "This page uses test data and is not connected to a real VIN check service. Use results for visualization and design evaluation only.",
-      "warning_text_2": "For real history, integration with official VIN service and valid API key is required.",
-      "error_vin_required": "Please enter VIN code.",
-      "error_vin_length": "VIN must be exactly 17 characters.",
-      "error_decode_failed": "VIN decode failed. Please try again.",
-      "mock": {
-        "damage_summary": "Front part was lightly damaged, front bumper replaced.",
-        "events": {
-          "registration": "First registration in state California.",
-          "service": "Scheduled service at a dealer center.",
-          "accident": "Recorded accident, front bumper replacement.",
-          "inspection": "Technical inspection successfully passed."
-        }
-      }
-    },
-    "auction": {
-      "title": "Auction Vehicles",
-      "description": "Find desired vehicle at top US auctions",
-      "search_placeholder": "Search",
-      "filters": {
-        "advanced": "Advanced Filters",
-        "make": "Make",
-        "model": "Model",
-        "year": "Year",
-        "price": "Price",
-        "auction": "Auction",
-        "fuel": "Fuel",
-        "buy_now_only": "Buy Now",
-        "show_vin": "Show VIN Codes",
-        "additional_title": "Additional Filters",
-        "company_importer": "Company / Importer",
-        "search_by_company": "Search by Company",
-        "vip_only": "VIP Companies Only",
-        "company_filtered_hint": "Showing only lots with offers from this company.",
-        "brand_model_title": "Brand & Model",
-        "select_make": "Select Make",
-        "select_model": "Select Model",
-        "select_make_first": "Select Make First",
-        "vehicle_info_title": "Vehicle Info",
-        "max_mileage": "Max Mileage",
-        "exact_year_min_mileage": "Exact Year / Min Mileage",
-        "tech_data_title": "Technical Data",
-        "category": "Category",
-        "drive": "Drive",
-        "per_page": "Per Page",
-        "reset": "Reset Filters",
-        "apply": "Apply"
-      },
-      "status": {
-        "loading": "Loading real auction data...",
-        "no_results": "No vehicles found with these filters",
-        "found_cars": "Found Vehicles",
-        "try_changing_filters": "Try resetting or changing filters and search again."
-      },
-      "results": {
-        "title": "Real Results (Vehicles + Quotes API)",
-        "sort_label": "Sort"
-      },
-      "sort": {
-        "relevance": "Relevance",
-        "price_low": "Price (Low)",
-        "price_high": "Price (High)",
-        "year_new": "Year (New)",
-        "year_old": "Year (Old)"
-      },
-      "compare": {
-        "button": "Compare Prices",
-        "min_two_warning": "Select at least 2 companies to compare",
-        "select_for_compare": "Select for Compare",
-        "modal_title": "Compare Selected Vehicle Prices",
-        "modal_description": "See the most profitable total prices and delivery times for several vehicles together.",
-        "in_comparison": "In Comparison",
-        "no_offers": "No offers found for selected vehicles."
-      },
-      "error": {
-        "load_failed": "Failed to load real data"
-      },
-      "actions": {
-        "calc_price": "Calculate Cost",
-        "view_details": "View Details"
-      },
-      "price_breakdown": {
-        "auction_price": "Auction Price",
-        "transport": "Transport",
-        "other_fees": "Other Fees",
-        "total_price": "Total Price",
-        "profit": "Profit"
-      },
-      "best_price": "Best Price",
-      "fast_delivery": "Fast Delivery",
-      "placeholders": {
-        "search": "e.g. BMW X5, Camry 2018, VIN..."
-      }
-    },
-    "auction_listings": {
-      "title": "Auctions",
-      "subtitle": "Active Auctions",
-      "empty": "No auctions available at this time."
-    },
-    "onboarding": {
-      "title": "Registration",
-      "subtitle": "Fill in your details",
-      "company": {
-        "title": "Logistics Partner Setup",
-        "description": "Configure your services and pricing to receive quote requests.",
-        "name": "Company Name",
-        "validation": {
-          "name_length": "Company name must be at least 2 characters",
-          "price_negative": "Price cannot be negative"
-        },
-        "success": "Company profile created!",
-        "failure": "Failed to create company profile",
-        "base_fee": "Base Service Fee ($)",
-        "base_fee_desc": "Minimum fee charged per shipment regardless of distance",
-        "price_per_mile": "Price Per Mile ($)",
-        "price_per_mile_desc": "Rate per mile for inland transportation",
-        "services": "Services Provided",
-        "contact_phone": "Contact Phone",
-        "submit": "Activate Service Provider"
-      },
-      "dealer": {
-        "title": "Dealer Registration",
-        "description": "Verify your business to start selling on Project X.",
-        "program": "Verified Partner Program",
-        "business_name": "Business Name",
-        "tax_id": "Tax ID / EIN",
-        "tax_id_desc": "Used for tax verification and invoicing",
-        "license": "License Number",
-        "inventory_size": "Inventory Size",
-        "sales_volume": "Monthly Sales Volume",
-        "feed_url": "Inventory Feed URL (Optional)",
-        "feed_url_desc": "Link to your inventory CSV/XML/JSON file for auto-sync",
-        "feed_format_hint": "We support CSV, XML, and JSON feeds.",
-        "submit": "Create Dealer Profile",
-        "validation": {
-          "name_length": "Business name must be at least 2 characters",
-          "url_invalid": "Please enter a valid URL"
-        },
-        "success": "Dealer profile created!",
-        "failure": "Failed to create dealer profile"
-      },
-      "user": {
-        "title": "Find Your Dream Car",
-        "step_indicator": "Step {{current}} of {{total}}: {{label}}",
-        "steps": {
-          "budget_type": "Budget & Type",
-          "usage_goals": "Usage & Goals"
-        },
-        "budget_range": "Budget Range (USD)",
-        "body_types": "Preferred Body Types",
-        "engine_pref": "Engine Preference",
-        "usage": "Primary Usage",
-        "purchase_time": "Purchase Timeframe",
-        "submit": "Find My Dream Car",
-        "next": "Next Step",
-        "back": "Back",
-        "success": "Preferences saved!",
-        "failure": "Failed to save preferences",
-        "validation": {
-          "budget_min": "Minimum budget cannot be negative",
-          "budget_max": "Maximum budget cannot be negative",
-          "budget_range": "Maximum budget must be greater than or equal to minimum budget"
-        },
-        "goals": {
-          "commute": "Daily Commute",
-          "family": "Family",
-          "resale": "Resale / Business",
-          "fun": "Fun / Weekend",
-          "other": "Other"
-        },
-        "timeframes": {
-          "immediate": "Immediately",
-          "1-3_months": "1-3 Months",
-          "3-6_months": "3-6 Months",
-          "planning": "Just Looking / Planning"
-        }
-      },
-      "placeholders": {
-        "company_name": "Logistics Pro Inc.",
-        "dealer_name": "Auto Kings LLC",
-        "license": "XX-XXXXXXX",
-        "dealer_license": "Dealer License #",
-        "sales_volume": "Monthly Sales Volume",
-        "feed_url": "https://example.com/feed.csv",
-        "buying_time": "When do you plan to buy?",
-        "usage": "Select usage..."
-      }
-    },
-    "vehicle_details": {
-      "title": "Vehicle Details"
     }
   },
-  "company_profile": {
-    "not_found": {
-      "title": "Company Not Found",
-      "description": "The requested company does not exist.",
-      "back_to_catalog": "Back to Catalog"
-    },
-    "back": "Back",
-    "reviews_count": "reviews",
-    "founded": "Founded",
-    "contact_btn": "Contact",
-    "contact": {
-      "title": "Contact Company",
-      "description": "Fill out the form to send a question to {{name}}.",
-      "name": "Your Name",
-      "email": "Email",
-      "message": "Message",
-      "submit": "Send",
-      "loading": "Sending..."
-    },
-    "email_btn": "Email",
-    "website_btn": "Website",
-    "service_cost": "Service Cost",
-    "services": {
-      "title": "Services"
-    },
-    "cars": {
-      "title": "Imported Car Examples",
-      "mileage": "Mileage"
-    },
-    "reviews": {
-      "title": "Reviews",
-      "write": "Write Review",
-      "your_rating": "Your Rating",
-      "comment_label": "Comment",
-      "comment_placeholder": "Please tell us about your experience...",
-      "submit": "Send",
-      "cancel": "Cancel",
-      "empty": "This company has no reviews yet.",
-      "prev": "Prev",
-      "next": "Next",
-      "delete_confirm": "Are you sure you want to delete this review?"
-    },
-    "contact_info": {
-      "title": "Contact Information"
-    },
+  "footer": {
+    "description": "Georgia's leading platform for car import from USA.",
     "stats": {
-      "title": "Statistics",
-      "rating": "Rating",
-      "reviews": "Reviews",
-      "founded": "Founded",
-      "services": "Services"
+      "region": "Georgia, Caucasus",
+      "cars": "10,000+ Cars",
+      "years": "5+ Years Experience"
     },
+    "company": "Company",
+    "support": "Support",
+    "help": "Help",
+    "contact": "Contact",
+    "connect": "Follow Us",
+    "twitter": "Twitter",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
     "cta": {
-      "title": "Interested?",
-      "description": "Contact the company for details",
-      "button": "Send Message"
+      "title": "Have Questions?",
+      "subtitle": "Contact us and get free consultation",
+      "button": "Contact Us"
     },
-    "error": {
-      "reviews_load": "Failed to load reviews",
-      "review_submit": "Failed to submit review. Please try again.",
-      "review_length": "Review must be at least 10 characters"
+    "copyright": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "catalog": {
+    "title": "Import Companies Catalog",
+    "subtitle": "Find the best company for your car import from USA to Georgia",
+    "results": {
+      "showing": "Showing",
+      "connector": "of",
+      "of": "companies",
+      "compare": "Compare",
+      "sort_label": "Sort by:",
+      "empty_title": "No companies found",
+      "empty_description": "Try different filters or clear your search"
     },
-    "favorites": {
-      "add": "Add to Favorites",
-      "remove": "Remove from Favorites"
+    "sort": {
+      "rating": "By Rating",
+      "cheapest": "By Price",
+      "newest": "Newest"
+    },
+    "filters": {
+      "title": "Filters",
+      "search_placeholder": "Search companies...",
+      "country": "Country",
+      "country_placeholder": "Georgia, USA...",
+      "city_placeholder": "City",
+      "rating": "Rating",
+      "rating_all": "All Ratings",
+      "price": "Price Range",
+      "vip_only": "VIP Only",
+      "vip_desc": "Premium companies with extra guarantees",
+      "reset": "Reset",
+      "apply": "Apply",
+      "show_results": "Show Results"
+    },
+    "badges": {
+      "luxury_expert": "Luxury Expert",
+      "best_economy": "Best Economy",
+      "top_rated": "Top Rated"
+    },
+    "card": {
+      "add_to_compare": "Add to compare",
+      "online_now": "Online now",
+      "service_fee": "Service Fee",
+      "up_to": "up to",
+      "view_profile": "View Profile"
+    },
+    "comparison": {
+      "cancel": "Cancel",
+      "compare_now": "Compare"
     }
-  },
-  "profile": {
-    "title": "Profile",
-    "edit": "Edit Profile",
-    "not_found": {
-      "title": "Profile not found",
-      "description": "We could not find your profile. Please log in again.",
-      "login_btn": "Back to Login"
-    },
-    "loading": "Loading profile...",
-    "login_again": "Please log in again to view your profile.",
-    "back_to_login": "Back to Login",
-    "username_label": "Username",
-    "username_placeholder": "Your username",
-    "email_label": "Email",
-    "new_password_label": "New Password",
-    "password_placeholder": "••••••••",
-    "edit_title": "Edit Profile",
-    "save_btn": "Save Changes",
-    "saving_btn": "Saving...",
-    "delete_btn": "Delete Account",
-    "deleting_btn": "Deleting account...",
-    "success": {
-      "update": "Profile updated successfully"
-    },
-    "error": {
-      "update_generic": "An error occurred while updating the profile",
-      "delete_generic": "An error occurred while deleting the account"
-    },
-    "delete_confirm": "Are you sure you want to delete your account?"
-  },
-  "sort": {
-    "relevance": "Relevance",
-    "price_low": "Price (Low)",
-    "price_high": "Price (High)",
-    "year_new": "Year (New)",
-    "year_old": "Year (Old)"
   },
   "auction": {
     "active_auctions": "Active Auctions",
-    "description": "View demo listings from COPART, IAAI and Manheim auctions and use quick filters to find lots of interest.",
-    "basic_search": "Basic Search",
-    "transport_type": "What type of transport?",
-    "search_placeholder_label": "Search (Make, Model or VIN)",
-    "search_placeholder": "Ex: BMW X5, Camry 2018, JTMBFREV7JD123456",
-    "search_min_chars": "Min 4 chars for search",
-    "more_filters": "Additional Filters",
-    "quick_filters": "Quick Filters",
-    "company_importer": "Company / Importer",
-    "search_by_company": "Search by Company",
-    "vip_companies_only": "VIP Companies Only",
-    "vip_companies_hint": "Showing only lots where this company has offers.",
-    "brand_and_model": "Brand and Model",
-    "exact_year_min_mileage": "Exact Year / Min Mileage",
-    "technical_data": "Technical Data",
-    "loading_data": "Loading real auction data...",
-    "showing_results": "Showing {{count}} lots from {{total}} (Real API)",
-    "no_results": "No cars found with these filters",
-    "found_cars": "Found cars: {{count}}",
-    "real_results": "Real Results (Vehicles + Quotes API)",
-    "compare_prices": "Compare Vehicle Prices",
+    "description": "Search vehicles on Copart and IAAI auctions in real time",
+    "search_placeholder": "Search make, model or VIN...",
+    "real_results": "Results",
+    "loading_data": "Loading data...",
+    "showing_results": "Showing {{count}} of {{total}} results",
     "price_comparison": "Price Comparison",
-    "select_companies_to_compare": "Select at least 2 companies to compare",
-    "try_resetting": "Try resetting or changing filters and try again.",
-    "real_lot_results": "Real Lot Results",
-    "select_for_comparison": "Select for comparison",
-    "select_vehicle_compare": "Select vehicle for comparison",
+    "no_results": "No results found",
+    "try_resetting": "Try changing or resetting filters",
+    "transport_type": "Transport Type",
+    "brand_and_model": "Brand & Model",
+    "exact_year": "Exact Year",
+    "technical_data": "Technical Data",
+    "quads": "Quads",
     "calculate_cost": "Calculate Cost",
-    "load_more": "Load More",
+    "estimated_total": "Estimated Total",
+    "shipping": "Shipping",
+    "fees": "Fees",
+    "customs": "Customs",
     "total_estimate": "Total Estimate",
     "retail_value": "Retail Value",
-    "compare_selected_prices": "Compare selected vehicle prices",
-    "compare_description": "See most profitable total prices and delivery times for several vehicles together.",
-    "comparing_count": "Comparing: {{count}} vehicles",
-    "no_quotes_found": "No quotes found for selected vehicles.",
-    "service_price_only": "Price for company service only (excluding car price)",
-    "delivery_time": "Approx. delivery time: {{days}} days",
-    "delivery_time_short": "Delivery time: {{days}} days",
-    "company_quotes": "Company quotes for this vehicle",
-    "calculation": "Calculation",
-    "car_price": "Car price at auction",
-    "transportation": "Transportation / Delivery",
-    "company_service": "Company Service (service + broker)",
-    "customs_insurance": "Customs + Insurance",
-    "total_price": "Total Price (Car + Delivery + Service)",
-    "calc_modal_title": "Single Company Calculation",
-    "calc_modal_desc": "View a sample total price from a random company for this lot.",
-    "best_total_price": "Best Total Price",
-    "distance_to_poti": "Distance to Poti",
-    "company_search_placeholder": "e.g. Premium Auto Import...",
+    "load_more": "Load More",
     "filters": {
-      "advanced": "Advanced Filters",
-      "make": "Make",
-      "model": "Model",
-      "year": "Year",
-      "price": "Price",
+      "title": "Filters",
       "auction": "Auction",
       "fuel": "Fuel",
-      "buy_now_only": "Buy Now",
-      "show_vin": "Show VIN Codes",
-      "additional_title": "Additional Filters",
-      "company_importer": "Company / Importer",
-      "search_by_company": "Search by Company",
-      "vip_only": "VIP Companies Only",
-      "company_filtered_hint": "Showing only lots with offers from this company.",
-      "brand_model_title": "Brand & Model",
-      "select_make": "Select Make",
-      "select_model": "Select Model",
-      "select_make_first": "Select Make First",
-      "vehicle_info_title": "Vehicle Info",
-      "max_mileage": "Max Mileage",
-      "exact_year_min_mileage": "Exact Year / Min Mileage",
-      "tech_data_title": "Technical Data",
+      "buy_now_only": "Buy Now Only",
+      "make": "Make",
+      "model": "Model",
       "category": "Category",
-      "drive": "Drive",
-      "per_page": "Per Page",
-      "reset": "Reset Filters",
-      "apply": "Apply"
+      "year": "Year",
+      "price": "Price"
     }
+  },
+  "pages": {
+    "auction": {
+      "more_filters": "More Filters"
+    }
+  },
+  "sort": {
+    "relevance": "Relevance",
+    "price_low": "Price: Low to High",
+    "price_high": "Price: High to Low",
+    "year_new": "Year: Newest",
+    "year_old": "Year: Oldest"
   },
   "error": {
-    "failed_to_load_data": "Failed to load real data"
+    "failed_to_load_data": "Failed to load data",
+    "generic": "An error occurred"
   },
-  "vehicle_details": {
-    "errors": {
-      "not_found": "Vehicle identifier not found.",
-      "fill_name_phone": "Please fill in name and phone number.",
-      "phone_min_length": "Phone number must be at least 3 characters.",
-      "select_min_one_company": "Select at least one company for the request.",
-      "company_id_failed": "Failed to identify selected companies.",
-      "request_failed": "Failed to send request. Please try again."
+  "vin": {
+    "title": "VIN Check",
+    "subtitle": "Enter VIN code to see complete vehicle information",
+    "vin_placeholder": "Enter 17-character VIN...",
+    "check_btn": "Check",
+    "check_btn_loading": "Checking...",
+    "vin_hint": "Enter a 17-character VIN (letters A-Z except I, O, Q and digits 0-9).",
+    "recent_checks": "Recent checks",
+    "remove_history_tooltip": "Remove from history",
+    "loading_hint": "Decoding VIN...",
+    "empty_state_hint": "Enter a VIN code above to see vehicle information",
+    "result_title": "Vehicle Report",
+    "result_empty_data": "No additional data returned for this VIN.",
+    "photo_credit": "Photo by {{photographer}}",
+    "tech_specs_title": "Technical Specifications",
+    "body_specs_title": "Body & Manufacturing",
+    "additional_details": "Additional Details",
+    "specs": {
+      "engine": "Engine",
+      "transmission": "Transmission",
+      "drive": "Drive",
+      "fuel": "Fuel"
     },
-    "support_modal": {
-      "aria_label": "Choose more companies for support",
-      "close_aria": "Close support window",
-      "title": "Unlock choice up to 5 companies",
-      "description": "Like our project on social networks and write a short review to send a request to multiple companies at once.",
-      "liked_project": "I liked the project on social networks",
-      "ready_to_review": "I am ready to share a short review",
-      "your_review_label": "Your short review",
-      "unlock_btn": "Unlock choice up to 5 companies"
+    "est_clearing_cost": "Estimated Clearing Cost",
+    "est_clearing_note": "For {{year}} model year vehicle",
+    "get_exact_quote": "Get Exact Quote",
+    "importers_match": "{{count}} importers match",
+    "verified_importers_desc": "Verified importers specializing in <strong>{{make}}</strong> vehicles",
+    "show_matches": "Show Importers",
+    "high_demand": "High Demand",
+    "high_demand_desc": "{{count}}+ users searching for {{model}} this month",
+    "buy_safely": "Buy Safely",
+    "check_history": "Check History",
+    "order_inspection": "Order Inspection",
+    "error_vin_required": "VIN code is required",
+    "error_vin_length": "VIN must be exactly 17 characters",
+    "error_decode_failed": "Failed to decode VIN"
+  },
+  "vehicle": {
+    "breadcrumb_home": "Home",
+    "breadcrumb_vehicles": "Vehicles",
+    "lot": "Lot",
+    "new_arrival": "New Arrival",
+    "sale_date": "Sale Date",
+    "upcoming": "Upcoming",
+    "ends_in": "Ends in:",
+    "started": "Started",
+    "no_photos": "No Photos Available",
+    "share_link": "Share Link",
+    "save_vehicle": "Save Vehicle",
+    "remove_favorites": "Remove from Favorites",
+    "condition_report": "Condition Report",
+    "ai_analysis": "AI Analysis",
+    "primary_damage": "Primary Damage",
+    "secondary_damage": "Secondary",
+    "ai_repair_estimate": "AI Repair Estimate",
+    "retail_value": "Est. Retail Value",
+    "engine_status": "Engine",
+    "keys": "Keys",
+    "keys_present": "Present",
+    "keys_missing": "Missing",
+    "airbags": "Airbags",
+    "odometer": "Odometer",
+    "unlock_report": "Unlock Condition Report",
+    "unlock_desc": "Like our page to see detailed AI damage analysis & repair estimates.",
+    "like_facebook": "Like on Facebook",
+    "verifying": "Verifying...",
+    "price_breakdown": "Price Breakdown",
+    "detailed_quote": "Detailed quote from",
+    "auction_price": "Auction Price (Lot)",
+    "shipping_total": "Inland + Ocean Shipping",
+    "customs_clearance": "Customs Clearance",
+    "broker_fees": "Service & Broker Fees",
+    "insurance_optional": "Insurance (Optional)",
+    "total_estimated": "Total Estimated",
+    "price_note": "* Final price may vary slightly based on exact auction fees and exchange rates.",
+    "market_average": "Market Average",
+    "below_market": "{{percent}}% below market",
+    "save_amount": "Save ${{amount}}",
+    "specs": {
+      "engine": "Engine",
+      "transmission": "Transmission",
+      "drive": "Drive",
+      "mileage": "Mileage",
+      "year": "Year",
+      "fuel": "Fuel",
+      "vin": "VIN",
+      "copy_vin": "Copy VIN"
     },
-    "request_modal": {
-      "aria_label": "Common request to multiple companies",
-      "close_aria": "Close common request window",
-      "title": "Common request to multiple companies",
-      "selected_companies": "Selected companies: {{names}}",
-      "comment_label": "Comment / Additional wishes",
-      "min_budget": "Min. Budget (USD)",
-      "max_budget": "Max. Budget (USD)",
-      "desired_time": "Desired Time (Days)",
-      "max_time": "Max. Accepted Time (Days)",
-      "damage_tolerance": {
-        "title": "Damage Tolerance",
-        "minimal": "Minimal",
-        "average": "Average",
-        "any": "Any"
-      },
-      "additional_services": {
-        "title": "Additional Services",
-        "full_documents": "Full Documents",
-        "door_delivery": "Door Delivery",
-        "customs_support": "Customs Support"
-      },
-      "contact_channel": {
-        "title": "Preferred Contact Channel",
-        "call": "Call"
-      },
-      "priority": "Priority",
-      "send_btn": "Send",
-      "send_request_btn": "Send Request"
+    "carfax": {
+      "title": "Get Full Vehicle History",
+      "description": "Don't buy blindly! Check for hidden accidents, odometer rollbacks, structural damage, and service records.",
+      "get_report": "Get Carfax Report",
+      "free_with_order": "FREE with Order"
     },
-    "gallery": {
-      "zoom_aria": "Zoom main photo to full screen",
-      "prev_aria": "Previous photos",
-      "select_zoom_aria": "Select this photo to zoom",
-      "next_aria": "Next photos",
-      "unavailable": "Photos unavailable"
-    },
-    "info": {
-      "basic_data": "Basic Data",
-      "engine_transmission": "Engine / Transmission",
-      "color_condition": "Color / Condition",
-      "damages": "Damages",
-      "keys_run_drive": "Keys / Run & Drive",
-      "cylinders_equipment": "Cylinders / Equipment",
-      "docs_auction": "Documents and Auction",
-      "yard_location": "Auction Yard / Location",
-      "market_repair_value": "Market / Repair Value",
-      "calculated_price": "Calculated Price",
-      "seller": "Seller",
-      "title_doc": "TITLE / Document",
-      "sale_date": "Sale Date",
-      "created_updated": "Created / Updated",
-      "airbags_odometer": "AIRBAGS / ODOMETER",
-      "source_lot_salvage": "SOURCE LOT ID / SALVAGE ID",
-      "final_bid_buy_now": "FINAL BID / BUY IT NOW",
-      "buy_now": "BUY NOW",
-      "vehicle_type_key": "VEHICLE TYPE / KEY",
-      "state_city_slug": "STATE / CITY SLUG",
-      "is_new": "IS NEW",
-      "iaai_360_view": "IAAI 360 VIEW",
-      "api_fields": "Additional API Fields (Helper Info)"
-    },
-    "offers": {
-      "title": "Company offers for this vehicle",
-      "recalculating": "Recalculating...",
-      "recalculate": "Recalculate",
-      "compare_text": "Compare total import price and delivery time from various trusted companies from USA to Georgia.",
-      "distance_to_poti": "Distance to Poti",
-      "total_price_disclaimer": "Total price includes vehicle price, transportation, service and broker fees, customs and other fees are approximate.",
-      "no_offers": "No vehicle import offers found at this stage. Try recalculating or returning later, or find another vehicle for import.",
-      "back_to_catalog": "Back to Catalog",
-      "find_other": "Find other vehicle",
-      "best_shipping": "Best Shipping Price",
-      "shipping_desc": "Transportation from USA to Georgia port (other services calculated separately)",
-      "full_service_desc": "Full service: purchase, documents, transportation",
-      "company_filter": "Company Filter",
-      "fast_delivery": "Fast Delivery",
-      "list_aria": "List of company offers",
-      "premium_vip": "Premium / VIP Offers",
-      "standard": "Standard Offers - Lower Price",
-      "discount": "Discount",
-      "approx_savings": "Approx. Savings",
-      "individual_calc": "Individual Calculation",
-      "discount_disclaimer": "Discount is relevant for current calculation and may change.",
-      "trusted_partner": "Trusted Partner",
-      "trusted_partner_desc": "Trusted Partner — selected importer based on our internal evaluation and user reviews.",
-      "secure_payment": "Secure Payment",
-      "secure_payment_desc": "Secure Payment — amount is fixed via trusted channel until importer confirms service.",
-      "documents_full": "Full Documents",
-      "documents_full_desc": "Full Documents — importer provides all necessary import and registration documents.",
-      "documents": "Documents",
-      "transport": "Transport",
-      "customs": "Customs",
-      "select_fee_aria": "Select fee for this company offer",
-      "select_offer_aria": "Select this offer or deselect",
-      "add_to_common_aria": "Add to common request for this company",
+    "quotes": {
+      "title": "Compare & Order",
+      "select_companies": "Select Companies",
+      "click_to_order": "Click on a row to order, or select multiple to compare.",
+      "select_multiple": "Select Multiple Companies",
       "selected": "Selected",
-      "selected_common": "Selected for common request",
-      "select": "Select",
-      "recent_imports": "Recent successful import examples",
-      "import_completed_in": "Import completed in {{days}} days",
-      "see_other_auctions": "See other active auctions",
-      "not_found_msg": "Vehicle not found. Try again or return to search.",
-      "continue_working": "Continue working with offers",
-      "compare_desc": "Compare companies, choose best and return to catalog to see new vehicle.",
-      "back_to_catalog_aria": "Return to company catalog",
-      "go_to_offers_aria": "Go to company offers section",
-      "see_offers": "See Offers",
-      "send_request_aria": "Send request to selected companies"
+      "cancel": "Cancel",
+      "vip_only": "VIP Only",
+      "rating_filter": "Rating 4.5+",
+      "fast_delivery": "Fast Delivery",
+      "company": "Company",
+      "delivery": "Delivery",
+      "total_price": "Total Price",
+      "action": "Action",
+      "days": "days",
+      "sea_land": "Sea + Land to Poti",
+      "all_inclusive": "All inclusive",
+      "reviews": "reviews",
+      "verified": "Verified",
+      "verified_importer": "Verified Importer",
+      "breakdown": "Breakdown",
+      "order": "Order",
+      "no_match": "No companies match your filters.",
+      "clear_filters": "Clear Filters",
+      "promo_text": "Order before 26.11 to get <strong>Free Carfax Report</strong> ($40 value) included!"
     },
-    "checkout": {
-      "aria_label": "Checkout - {{company}}",
-      "close_aria": "Close checkout window",
-      "title": "Checkout",
-      "total_import_price": "Total Import Price",
-      "send_application": "Send Application",
-      "received_aria": "Application Received - {{company}}",
-      "close_confirmation_aria": "Close confirmation window",
-      "received_title": "Application Received",
-      "received_desc": "We will transfer your application to the importer and they will contact you on the next business day.",
-      "contact_importer": "Contact Importer",
-      "go_to_company": "Go to Company Page",
-      "detailed_price_aria": "Detailed Price - {{company}}",
-      "close_price_check_aria": "Close price check",
-      "fullscreen_photo_aria": "Fullscreen photo view",
-      "close": "Close"
-    }
+    "similar": {
+      "title": "Similar Vehicles You Might Like"
+    },
+    "price_card": {
+      "estimated_total": "Estimated Total Cost",
+      "auction_price": "Auction Price (Est.)",
+      "shipping": "Shipping (USA to GE)",
+      "customs": "Customs & Excise",
+      "service_fees": "Service Fees",
+      "send_request": "Send Request to {{count}} Companies",
+      "select_to_order": "Select Companies to Order",
+      "select_hint": "Select at least 1 company from the list to proceed."
+    },
+    "lead_modal": {
+      "title": "Request Vehicle Order",
+      "description": "Send a request to <strong>{{count}} selected companies</strong>.",
+      "your_name": "Your Name",
+      "phone": "Phone Number",
+      "contact_method": "Preferred Contact Method",
+      "whatsapp": "WhatsApp",
+      "phone_call": "Phone",
+      "send_request": "Send Request to {{count}} Companies",
+      "sending": "Sending..."
+    },
+    "unlock_modal": {
+      "title": "Unlock Premium Features",
+      "description": "You reached the limit of 3 free requests. To send up to 5 requests at once, please support us!",
+      "like_project": "1. Like our project",
+      "i_liked": "I liked it!",
+      "write_review": "2. Write a quick review (Optional)",
+      "review_placeholder": "Tell us what you think...",
+      "unlock_btn": "Unlock 5 Requests"
+    },
+    "social_proof": {
+      "people_viewing": "viewing"
+    },
+    "mobile_cta": {
+      "total_est": "Total Est.",
+      "request": "Request ({{count}})",
+      "select": "Select"
+    },
+    "not_found": "Vehicle not found"
   }
 }

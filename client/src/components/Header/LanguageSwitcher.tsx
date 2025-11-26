@@ -25,7 +25,7 @@ const LanguageSwitcher = () => {
     setMounted(true);
   }, []);
 
-  const currentLanguage = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[1]; // Default to EN
+  const currentLanguage = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0]; // Default to KA (Georgian)
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
