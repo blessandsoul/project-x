@@ -157,7 +157,9 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
            </div>
 
            {effectiveMenuUser ? (
-              <UserMenu user={effectiveMenuUser} onLogout={logout} />
+              <div className="hidden md:block">
+                <UserMenu user={effectiveMenuUser} onLogout={logout} />
+              </div>
             ) : (
               <Button
                 asChild

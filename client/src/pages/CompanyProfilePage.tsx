@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import ColorThief from 'colorthief';
 import Header from '@/components/Header/index.tsx';
 import Footer from '@/components/Footer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -54,10 +55,35 @@ const CompanyProfilePage = () => {
   const [editComment, setEditComment] = useState('');
   const [isUpdatingReview, setIsUpdatingReview] = useState(false);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
+  const [gradientColors, setGradientColors] = useState<string[]>([]);
   const reviewsLimit = 5;
   const { user, userRole } = useAuth();
 
+  const logoSrc = company?.logo ?? '';
+  const hasHighTrustScore = Boolean((company as any)?.trustScore && (company as any).trustScore >= 70);
+
   const canWriteReviews = userRole === 'user' || userRole === 'dealer';
+
+  useEffect(() => {
+    if (!logoSrc) return;
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = logoSrc;
+
+    img.onload = () => {
+      try {
+        const colorThief = new ColorThief();
+        const palette = colorThief.getPalette(img, 3);
+        if (palette && palette.length > 0) {
+          const colors = palette.map((rgb: number[]) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`);
+          setGradientColors(colors);
+        }
+      } catch (e) {
+        console.warn('Failed to extract colors from logo', e);
+      }
+    };
+  }, [logoSrc]);
 
   useEffect(() => {
     if (location.search) {
@@ -335,18 +361,46 @@ const CompanyProfilePage = () => {
     );
   }
 
-  const logoSrc = company.logo ?? '';
-  const hasHighTrustScore = Boolean((company as any)?.trustScore && (company as any).trustScore >= 70);
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Ambient Background */}
+      <div className="absolute top-0 left-0 right-0 h-[600px] overflow-hidden pointer-events-none z-0">
+        {gradientColors.length >= 3 ? (
+          <div
+            className="absolute inset-0 transition-colors duration-1000 ease-in-out"
+            style={{
+              background: `
+                linear-gradient(to bottom,
+                  rgba(${gradientColors[0].match(/\d+/g)?.join(',')}, 0.25) 0%,
+                  rgba(${gradientColors[1].match(/\d+/g)?.join(',')}, 0.2) 30%,
+                  rgba(${gradientColors[2].match(/\d+/g)?.join(',')}, 0.15) 60%,
+                  transparent 100%
+                )
+              `,
+              filter: 'saturate(1.5)',
+            }}
+          />
+        ) : logoSrc && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/95 to-background z-10" />
+            <img
+              src={logoSrc}
+              alt=""
+              className="w-full h-full object-cover opacity-20 blur-3xl scale-150"
+              aria-hidden="true"
+            />
+          </>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/60 to-background z-10" />
+      </div>
+
       <Header
         user={null}
         navigationItems={navigationItems}
       />
 
-      <main className="flex-1" role="main">
-        <div className="container mx-auto py-8 px-4 sm:px-6">
+      <main className="flex-1 z-10" role="main">
+        <div className="container mx-auto py-4 lg:py-8 px-4 sm:px-6">
           {/* Header Section */}
           <div className="mb-8">
             <Button
@@ -358,74 +412,97 @@ const CompanyProfilePage = () => {
               {t('company_profile.back')}
             </Button>
 
-            <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-8 rtl:space-x-reverse">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start lg:space-x-8 rtl:space-x-reverse text-center lg:text-start">
               {logoSrc && (
-                <div className="relative mb-4 lg:mb-0 w-full lg:w-auto">
-                  <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden lg:w-28 lg:h-28 lg:aspect-auto">
+                <div className="relative mb-6 lg:mb-0 flex-shrink-0">
+                  <div className="w-32 h-32 mx-auto lg:mx-0 lg:w-28 lg:h-28 rounded-2xl border bg-background p-1 shadow-sm">
                     <img
                       src={logoSrc}
                       alt={company.name}
-                      className="h-full w-full object-cover rounded-2xl lg:w-24 lg:h-24 lg:rounded-xl"
+                      className="h-full w-full object-cover rounded-xl"
                     />
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-md">
-                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-white" />
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md border-2 border-background">
+                    <Icon icon="mdi:check-bold" className="h-4 w-4 text-white" />
                   </div>
                 </div>
               )}
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2 rtl:space-x-reverse">
-                  <h1 className="text-3xl font-bold">{company.name}</h1>
-                  {hasHighTrustScore && <VipBadge />}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 rounded-full ms-2"
-                    onClick={() => toggleFavorite(String(company.id))}
-                    aria-pressed={favorites.includes(String(company.id))}
-                    aria-label={favorites.includes(String(company.id)) ? t('company_profile.favorites.remove') : t('company_profile.favorites.add')}
-                  >
-                    <Icon
-                      icon={favorites.includes(String(company.id)) ? 'mdi:heart' : 'mdi:heart-outline'}
-                      className={favorites.includes(String(company.id)) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
-                    />
-                  </Button>
+              <div className="flex-1 w-full">
+                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center justify-center lg:justify-start space-x-3 mb-2 rtl:space-x-reverse">
+                      <h1 className="text-2xl sm:text-3xl font-bold">{company.name}</h1>
+                      {hasHighTrustScore && <VipBadge />}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 rounded-full flex-shrink-0"
+                        onClick={() => toggleFavorite(String(company.id))}
+                        aria-pressed={favorites.includes(String(company.id))}
+                        aria-label={favorites.includes(String(company.id)) ? t('company_profile.favorites.remove') : t('company_profile.favorites.add')}
+                      >
+                        <Icon
+                          icon={favorites.includes(String(company.id)) ? 'mdi:heart' : 'mdi:heart-outline'}
+                          className={favorites.includes(String(company.id)) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-muted-foreground'}
+                        />
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center lg:justify-start gap-3 text-sm text-muted-foreground mb-4">
+                      <div className="flex items-center bg-muted/50 px-2 py-1 rounded-md">
+                        <CompanyRating rating={company.rating} size="sm" />
+                        <span className="ms-1 text-muted-foreground">
+                          ({company.reviewCount})
+                        </span>
+                      </div>
+                      <div className="flex items-center bg-muted/50 px-2 py-1 rounded-md">
+                        <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 me-1" />
+                        <span>
+                          {company.location?.city ?? ''}
+                          {company.location?.city && company.location?.state ? ', ' : ''}
+                          {company.location?.state ?? ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center bg-muted/50 px-2 py-1 rounded-md">
+                        <Icon icon="mdi:calendar" className="h-3.5 w-3.5 me-1" />
+                        <span>
+                          {t('company_profile.founded')} {company.establishedYear}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-muted-foreground mb-6 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                      {company.description}
+                    </p>
+                  </div>
+
+                  {company.priceRange && (
+                    <div className="w-full lg:w-auto lg:text-right bg-muted/30 p-4 rounded-xl lg:bg-transparent lg:p-0 border lg:border-0">
+                      <p className="text-sm text-muted-foreground mb-1">{t('company_profile.service_cost')}</p>
+                      <div
+                        className="text-2xl font-bold text-primary mb-1"
+                        aria-label={`Estimated service cost from ${company.priceRange.min} to ${company.priceRange.max} USD`}
+                      >
+                        ${company.priceRange.min.toLocaleString()} - ${company.priceRange.max.toLocaleString()}
+                      </div>
+                      <p
+                        className="text-xs text-muted-foreground"
+                        aria-label="Approximate total service cost in Georgian lari"
+                      >
+                        ≈ {(company.priceRange.min * 2.7).toLocaleString()} GEL
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex flex-col gap-2 mb-4 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 rtl:space-x-reverse">
-                  <div className="flex items-center">
-                    <CompanyRating rating={company.rating} size="md" />
-                    <span className="ms-2">
-                      ({company.reviewCount} {t('company_profile.reviews_count')})
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <Icon icon="mdi:map-marker" className="h-4 w-4 me-1" />
-                    <span>
-                      {company.location?.city ?? ''}
-                      {company.location?.city && company.location?.state ? ', ' : ''}
-                      {company.location?.state ?? ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <Icon icon="mdi:calendar" className="h-4 w-4 me-1" />
-                    <span>
-                      {t('company_profile.founded')} {company.establishedYear}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-muted-foreground mb-6 max-w-3xl">
-                  {company.description}
-                </p>
-
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
                     <Button
                       size="lg"
                       onClick={() => setIsContactOpen(true)}
+                      className="flex-1 sm:flex-none w-full sm:w-auto shadow-md"
                     >
-                      <Icon icon="mdi:phone" className="me-2 h-4 w-4" />
+                      <Icon icon="mdi:phone" className="me-2 h-5 w-5" />
                       {t('company_profile.contact_btn')}
                     </Button>
                     <DialogContent className="sm:max-w-md">
@@ -487,40 +564,22 @@ const CompanyProfilePage = () => {
                       </form>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" size="lg">
-                    <Icon icon="mdi:email" className="me-2 h-4 w-4" />
+                  <Button variant="outline" size="lg" className="flex-1 sm:flex-none w-full sm:w-auto bg-background">
+                    <Icon icon="mdi:email" className="me-2 h-5 w-5" />
                     {t('company_profile.email_btn')}
                   </Button>
-                  <Button variant="outline" size="lg">
-                    <Icon icon="mdi:web" className="me-2 h-4 w-4" />
+                  <Button variant="outline" size="lg" className="flex-1 sm:flex-none w-full sm:w-auto bg-background">
+                    <Icon icon="mdi:web" className="me-2 h-5 w-5" />
                     {t('company_profile.website_btn')}
                   </Button>
                 </div>
               </div>
-
-              {company.priceRange && (
-                <div className="lg:text-right mt-6 lg:mt-0">
-                  <div
-                    className="text-2xl font-bold text-primary mb-1"
-                    aria-label={`Estimated service cost from ${company.priceRange.min} to ${company.priceRange.max} USD`}
-                  >
-                    ${company.priceRange.min.toLocaleString()} - ${company.priceRange.max.toLocaleString()}
-                  </div>
-                  <p
-                    className="text-xs text-muted-foreground"
-                    aria-label="Approximate total service cost in Georgian lari"
-                  >
-                    ≈ {(company.priceRange.min * 2.7).toLocaleString()} GEL
-                  </p>
-                  <p className="text-sm text-muted-foreground">{t('company_profile.service_cost')}</p>
-                </div>
-              )}
             </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-6 lg:space-y-8">
               {/* Services */}
               <Card>
                 <CardHeader>
@@ -593,7 +652,7 @@ const CompanyProfilePage = () => {
                         className="flex items-center gap-2"
                       >
                         <Icon icon="mdi:plus" className="h-4 w-4" />
-                        {t('company_profile.reviews.write')}
+                        <span className="hidden sm:inline">{t('company_profile.reviews.write')}</span>
                       </Button>
                     )}
                   </div>
@@ -713,85 +772,94 @@ const CompanyProfilePage = () => {
                     <div className="space-y-4">
                       {reviews.map((review) => (
                         <div key={`review-${review.id}-${review.created_at}`} className="border-b last:border-b-0 pb-4 last:pb-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                              {review.avatar && review.avatar.trim().length > 0 && (
-                                <img
-                                  src={review.avatar}
-                                  alt={review.user_name || `${t('common.user')} #${review.user_id}`}
-                                  className="h-8 w-8 rounded-full object-cover border border-muted"
-                                />
-                              )}
-                              <span className="font-medium">
-                                {review.user_name && review.user_name.trim().length > 0
-                                  ? review.user_name
-                                  : `${t('common.user')} #${review.user_id}`}
-                              </span>
-                              <div className="flex items-center">
+                          <div className="flex items-start gap-3 mb-2">
+                            {review.avatar && review.avatar.trim().length > 0 && (
+                              <img
+                                src={review.avatar}
+                                alt={review.user_name || `${t('common.user')} #${review.user_id}`}
+                                className="h-9 w-9 rounded-full object-cover border border-muted flex-shrink-0 mt-1"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-sm sm:text-base truncate">
+                                  {review.user_name && review.user_name.trim().length > 0
+                                    ? review.user_name
+                                    : `${t('common.user')} #${review.user_id}`}
+                                </span>
+
+                                <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                                  {isReviewOwner(review) && (
+                                    <div className="flex items-center gap-1">
+                                      {editingReviewId === String(review.id) ? (
+                                        <>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleUpdateReview(String(review.id))}
+                                            disabled={isUpdatingReview}
+                                            className="h-6 w-6"
+                                            title={t('common.save')}
+                                          >
+                                            {isUpdatingReview ? (
+                                              <Icon icon="mdi:loading" className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                              <Icon icon="mdi:check" className="h-3.5 w-3.5 text-green-600" />
+                                            )}
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleCancelEditReview}
+                                            disabled={isUpdatingReview}
+                                            className="h-6 w-6"
+                                            title={t('common.cancel')}
+                                          >
+                                            <Icon icon="mdi:close" className="h-3.5 w-3.5 text-muted-foreground" />
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleStartEditReview(review)}
+                                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                            title={t('common.edit')}
+                                          >
+                                            <Icon icon="mdi:pencil" className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDeleteReview(String(review.id))}
+                                            disabled={isDeletingReview}
+                                            className="h-6 w-6 text-muted-foreground hover:text-red-500"
+                                            title={t('common.delete')}
+                                          >
+                                            <Icon icon="mdi:delete" className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    {new Date(review.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center mt-1">
                                 {[...Array(5)].map((_, index) => (
                                   <Icon
                                     key={index}
                                     icon="mdi:star"
-                                    className={`h-4 w-4 ${
+                                    className={`h-3.5 w-3.5 ${
                                       index < review.rating ? 'text-warning fill-current' : 'text-gray-300'
                                     }`}
                                   />
                                 ))}
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {isReviewOwner(review) && (
-                                <div className="flex items-center gap-1">
-                                  {editingReviewId === String(review.id) ? (
-                                    <>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleUpdateReview(String(review.id))}
-                                        disabled={isUpdatingReview}
-                                        className="h-6 px-2 text-xs"
-                                      >
-                                        {isUpdatingReview && (
-                                          <Icon icon="mdi:loading" className="h-3 w-3 animate-spin me-1" />
-                                        )}
-                                        {t('common.save')}
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleCancelEditReview}
-                                        disabled={isUpdatingReview}
-                                        className="h-6 px-2 text-xs"
-                                      >
-                                        {t('common.cancel')}
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleStartEditReview(review)}
-                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                      >
-                                        <Icon icon="mdi:pencil" className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteReview(String(review.id))}
-                                        disabled={isDeletingReview}
-                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-red-500"
-                                      >
-                                        <Icon icon="mdi:delete" className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                              <span className="text-sm text-muted-foreground">
-                                {new Date(review.created_at).toLocaleDateString()}
-                              </span>
                             </div>
                           </div>
                           {editingReviewId === String(review.id) ? (

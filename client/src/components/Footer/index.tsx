@@ -21,8 +21,8 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
 
   return (
     <footer className="border-t bg-background" role="contentinfo">
-      <div className="container mx-auto max-w-6xl px-2 sm:px-4 lg:px-6 py-8 md:py-12">
-        <div className="grid gap-8 md:grid-cols-4">
+      <div className="container mx-auto max-w-6xl px-4 lg:px-6 py-8 md:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand & trust section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -48,38 +48,44 @@ const Footer: React.FC<FooterProps> = ({ footerLinks }) => {
             </div>
           </div>
 
-          {/* Links sections */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">{t('footer.company')}</h4>
-            <nav className="flex flex-col space-y-2" aria-label="Footer company navigation">
-              {footerLinks.slice(0, 3).map((link: FooterLink) => (
-                <Link
-                  key={link.id}
-                  to={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-start"
-                >
-                  {t(link.label)}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          {/* Links sections wrapper - 2 columns side-by-side on all screens */}
+          <div className="col-span-1 md:col-span-2">
+            {/* Links sections */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">{t('footer.company')}</h4>
+              <nav
+                className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-1"
+                aria-label="Footer company navigation"
+              >
+                {footerLinks.slice(0, 3).map((link: FooterLink) => (
+                  <Link
+                    key={link.id}
+                    to={link.href}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors text-start"
+                  >
+                    {t(link.label)}
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">{t('footer.support')}</h4>
-            <nav className="flex flex-col space-y-2" aria-label="Footer support navigation">
-              <Link
-                to="/help"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
-              >
-                {t('footer.help')}
-              </Link>
-              <Link
-                to="/contact"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
-              >
-                {t('footer.contact')}
-              </Link>
-            </nav>
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">{t('footer.support')}</h4>
+              <nav className="flex flex-col space-y-2" aria-label="Footer support navigation">
+                <Link
+                  to="/help"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
+                >
+                  {t('footer.help')}
+                </Link>
+                <Link
+                  to="/contact"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
+                >
+                  {t('footer.contact')}
+                </Link>
+              </nav>
+            </div>
           </div>
 
           {/* Social + CTA */}
