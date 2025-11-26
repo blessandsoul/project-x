@@ -18,9 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CatalogMake, CatalogModel } from '@/api/catalog';
 
@@ -75,6 +73,9 @@ export function AuctionFilters({
 }: AuctionFiltersProps) {
   const { t } = useTranslation();
 
+  const currentYear = new Date().getFullYear() + 1;
+  const years = Array.from({ length: currentYear - 1990 + 1 }, (_, i) => currentYear - i);
+
   const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters({ [key]: value });
   };
@@ -102,7 +103,7 @@ export function AuctionFilters({
         <div className="flex items-center gap-2">
           <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="lg" className="h-11 px-4 gap-2 border-muted-foreground/20 hover:bg-muted/50">
+              <Button variant="outline" size="lg" className="h-10 px-4 gap-2 border-muted-foreground/20 hover:bg-muted/50">
                 <Icon icon="mdi:tune" className="w-5 h-5" />
                 <span>{t('common.filters')}</span>
                 {activeFilterLabels.length > 0 && (
@@ -113,240 +114,245 @@ export function AuctionFilters({
               </Button>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col p-0">
-               <SheetHeader className="px-6 py-4 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
-                 <SheetTitle className="text-xl font-bold flex items-center gap-2">
+               <SheetHeader className="px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
+                 <SheetTitle className="text-lg font-bold flex items-center gap-2">
                     <Icon icon="mdi:tune" className="w-5 h-5 text-primary" />
                     {t('pages.auction.more_filters')}
                  </SheetTitle>
                </SheetHeader>
 
-               <div className="flex-1 px-6 py-6 space-y-8">
-                 {/* Vehicle Type + Category mapping */}
-                 <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                       <Icon icon="mdi:car-side" className="w-4 h-4" />
-                       {t('auction.transport_type')}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
+               <div className="flex-1 px-3 py-3 space-y-2 overflow-y-auto">
+                 {/* Vehicle Type */}
+                 <div className="space-y-1.5">
+                    <div className="grid grid-cols-4 gap-2">
                        {[
-                         // ყველა – no category filter
                          { value: 'all', label: t('common.all'), icon: 'mdi:apps', categoryValue: 'all' as const },
-                         // მანქანები – category "v"
                          { value: 'car', label: t('common.cars'), icon: 'mdi:car', categoryValue: 'v' as const },
-                         // მოტოციკლები – category "c"
-                         { value: 'moto', label: t('common.motorcycles'), icon: 'mdi:motorbike', categoryValue: 'c' as const },
-                         // კვადროციკლები – category "a" (reuses vans icon for now)
-                         { value: 'van', label: t('auction.quads'), icon: 'mdi:van-utility', categoryValue: 'a' as const },
+                         { value: 'moto', label: 'Moto', icon: 'mdi:motorbike', categoryValue: 'c' as const },
+                         { value: 'van', label: 'Quads', icon: 'mdi:van-utility', categoryValue: 'a' as const },
                        ].map((type) => (
                          <button
                             key={type.value}
                             onClick={() => {
                               updateFilter('searchKind', type.value as any);
-                              // Map to category codes expected by backend
-                              if (type.categoryValue === 'all') {
-                                updateFilter('category', 'all');
-                              } else {
-                                updateFilter('category', type.categoryValue);
-                              }
+                              if (type.categoryValue === 'all') updateFilter('category', 'all');
+                              else updateFilter('category', type.categoryValue);
                             }}
-                            className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all ${
+                            className={`flex flex-col items-center justify-center gap-1 p-1.5 rounded-md border text-[10px] font-medium transition-all ${
                               filters.searchKind === type.value
-                              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+                              ? 'border-primary bg-primary/5 text-primary'
                               : 'border-border bg-card hover:bg-muted/50 text-muted-foreground'
                             }`}
                          >
                             <Icon icon={type.icon} className="w-4 h-4" />
-                            {type.label}
+                            <span className="truncate w-full text-center">{type.label}</span>
                          </button>
                        ))}
                     </div>
                  </div>
 
-                 <Separator />
-
                  {/* Make & Model */}
-                 <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                      <Icon icon="mdi:car-info" className="w-4 h-4" />
-                      {t('auction.brand_and_model')}
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-1.5">
-                         <label className="text-xs font-medium text-muted-foreground">{t('common.make')}</label>
-                         <Select
-                           value={filters.selectedMakeId}
-                           onValueChange={(val) => {
-                              updateFilter('selectedMakeId', val);
-                              updateFilter('selectedModelId', 'all');
-                           }}
-                           disabled={isLoadingMakes}
-                         >
-                            <SelectTrigger className="h-10">
-                               <SelectValue placeholder={t('common.select_make')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">{t('common.all')}</SelectItem>
-                              {(catalogMakes ?? []).map(make => (
-                                 <SelectItem key={make.makeId} value={String(make.makeId)}>{make.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                         </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                         <label className="text-xs font-medium text-muted-foreground">{t('common.model')}</label>
-                         <Select
-                           value={filters.selectedModelId}
-                           onValueChange={(val) => updateFilter('selectedModelId', val)}
-                           disabled={filters.selectedMakeId === 'all' || isLoadingModels}
-                         >
-                            <SelectTrigger className="h-10">
-                               <SelectValue placeholder={t('common.select_model')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">{t('common.all')}</SelectItem>
-                              {(catalogModels ?? []).map(model => (
-                                 <SelectItem key={model.modelId} value={String(model.modelId)}>{model.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                         </Select>
-                      </div>
+                 <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-0.5">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.make')}</label>
+                       <Select
+                         value={filters.selectedMakeId}
+                         onValueChange={(val) => {
+                            updateFilter('selectedMakeId', val);
+                            updateFilter('selectedModelId', 'all');
+                         }}
+                         disabled={isLoadingMakes}
+                       >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_make')} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t('common.all')}</SelectItem>
+                            {(catalogMakes ?? []).map(make => (
+                               <SelectItem key={make.makeId} value={String(make.makeId)}>{make.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-0.5">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.model')}</label>
+                       <Select
+                         value={filters.selectedModelId}
+                         onValueChange={(val) => updateFilter('selectedModelId', val)}
+                         disabled={filters.selectedMakeId === 'all' || isLoadingModels}
+                       >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_model')} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t('common.all')}</SelectItem>
+                            {(catalogModels ?? []).map(model => (
+                               <SelectItem key={model.modelId} value={String(model.modelId)}>{model.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                       </Select>
                     </div>
                  </div>
-
-                 <Separator />
 
                  {/* Price Range */}
-                 <div className="space-y-4">
+                 <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Icon icon="mdi:currency-usd" className="w-4 h-4" />
-                        {t('common.price')}
-                      </h3>
-                      <span className="text-xs font-mono font-medium bg-muted px-2 py-1 rounded">
-                         ${filters.priceRange[0]} - ${filters.priceRange[1]}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('common.price')}</span>
+                        <button
+                          onClick={() => updateFilter('priceRange', [0, 0])}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          title={t('common.reset')}
+                        >
+                          <Icon icon="mdi:refresh" className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <Slider
-                      value={filters.priceRange}
-                      min={0}
-                      max={50000}
-                      step={500}
-                      onValueChange={(val) => updateFilter('priceRange', val)}
-                      className="py-4"
-                    />
-                 </div>
-
-                 {/* Year Range */}
-                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Icon icon="mdi:calendar-range" className="w-4 h-4" />
-                        {t('common.year')}
-                      </h3>
-                      <span className="text-xs font-mono font-medium bg-muted px-2 py-1 rounded">
-                         {filters.yearRange[0]} - {filters.yearRange[1]}
-                      </span>
-                    </div>
-                    <Slider
-                      value={filters.yearRange}
-                      min={1990}
-                      max={new Date().getFullYear() + 1}
-                      step={1}
-                      onValueChange={(val) => updateFilter('yearRange', val)}
-                      className="py-4"
-                    />
-                    
-                    <div className="flex items-center gap-4">
-                       <div className="flex-1 space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">{t('auction.exact_year')}</label>
+                    <div className="grid grid-cols-2 gap-2">
+                       <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
                           <Input 
                             type="number" 
-                            placeholder="e.g. 2020" 
-                            value={filters.exactYear}
-                            onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
+                            className="h-9 pl-5 text-xs" 
+                            placeholder={t('common.from')}
+                            value={filters.priceRange[0] || ''}
+                            onChange={(e) => updateFilter('priceRange', [Number(e.target.value), filters.priceRange[1]])}
+                          />
+                       </div>
+                       <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+                          <Input 
+                            type="number" 
+                            className="h-9 pl-5 text-xs" 
+                            placeholder={t('common.to')}
+                            value={filters.priceRange[1] || ''}
+                            onChange={(e) => updateFilter('priceRange', [filters.priceRange[0], Number(e.target.value)])}
                           />
                        </div>
                     </div>
                  </div>
 
-                  <Separator />
+                 {/* Year Range */}
+                 <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('common.year')}</span>
+                         <button
+                            onClick={() => {
+                              updateFilter('yearRange', [0, 0]);
+                              updateFilter('exactYear', '');
+                            }}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title={t('common.reset')}
+                          >
+                            <Icon icon="mdi:refresh" className="w-3 h-3" />
+                          </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                       <Select 
+                          value={String(filters.yearRange[0])} 
+                          onValueChange={(v) => updateFilter('yearRange', [Number(v), filters.yearRange[1]])}
+                       >
+                          <SelectTrigger className="h-9 text-xs">
+                             <SelectValue placeholder={t('common.from')} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                             {years.map((year) => (
+                                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                             ))}
+                          </SelectContent>
+                       </Select>
+
+                       <Select 
+                          value={String(filters.yearRange[1])} 
+                          onValueChange={(v) => updateFilter('yearRange', [filters.yearRange[0], Number(v)])}
+                       >
+                          <SelectTrigger className="h-9 text-xs">
+                             <SelectValue placeholder={t('common.to')} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                             {years.map((year) => (
+                                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                             ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 pt-1">
+                       <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('auction.exact_year')}</span>
+                       <Input 
+                          type="number" 
+                          className="h-7 w-20 text-[10px] px-2 py-0 border-muted-foreground/30"
+                          placeholder="e.g. 2020" 
+                          value={filters.exactYear}
+                          onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
+                        />
+                    </div>
+                 </div>
 
                   {/* Technical Data */}
-                 <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                       <Icon icon="mdi:engine" className="w-4 h-4" />
-                       {t('auction.technical_data')}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">{t('common.fuel')}</label>
-                          <Select value={filters.fuelType} onValueChange={(val) => updateFilter('fuelType', val)}>
-                             <SelectTrigger><SelectValue /></SelectTrigger>
-                             <SelectContent>
-                                <SelectItem value="all">{t('common.all')}</SelectItem>
-                                {/* Backend expects these exact values: petrol, hybrid, electric, diesel, flexible */}
-                                <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
-                                <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
-                                <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
-                                <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
-                                <SelectItem value="flexible">{t('common.fuel_flexible')}</SelectItem>
-                             </SelectContent>
-                          </Select>
-                       </div>
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">{t('common.drive')}</label>
-                          <Select value={filters.drive} onValueChange={(val) => updateFilter('drive', val)}>
-                             <SelectTrigger><SelectValue /></SelectTrigger>
-                             <SelectContent>
-                                <SelectItem value="all">{t('common.all')}</SelectItem>
-                                <SelectItem value="front">Front wheel drive</SelectItem>
-                                <SelectItem value="rear">Rear wheel drive</SelectItem>
-                                <SelectItem value="full">All wheel drive</SelectItem>
-                             </SelectContent>
-                          </Select>
-                       </div>
+                 <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="space-y-0.5">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.fuel')}</label>
+                       <Select value={filters.fuelType} onValueChange={(val) => updateFilter('fuelType', val)}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="all">{t('common.all')}</SelectItem>
+                             <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
+                             <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
+                             <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
+                             <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
+                             <SelectItem value="flexible">{t('common.fuel_flexible')}</SelectItem>
+                          </SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-0.5">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.drive')}</label>
+                       <Select value={filters.drive} onValueChange={(val) => updateFilter('drive', val)}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="all">{t('common.all')}</SelectItem>
+                             <SelectItem value="front">Front</SelectItem>
+                             <SelectItem value="rear">Rear</SelectItem>
+                             <SelectItem value="full">AWD</SelectItem>
+                          </SelectContent>
+                       </Select>
                     </div>
                  </div>
 
                  {/* Toggles */}
-                 <div className="space-y-3 p-4 rounded-lg bg-muted/30 border">
-                    <div className="flex items-center justify-between">
-                       <label htmlFor="buy-now" className="text-sm font-medium cursor-pointer">{t('auction.filters.buy_now_only')}</label>
+                 <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="flex items-center justify-between p-2 rounded-md border bg-muted/20 h-8">
+                       <label htmlFor="buy-now" className="text-[10px] font-bold uppercase cursor-pointer">{t('auction.filters.buy_now_only')}</label>
                        <Checkbox 
                           id="buy-now" 
                           checked={filters.buyNowOnly} 
                           onCheckedChange={(checked) => updateFilter('buyNowOnly', !!checked)} 
+                          className="h-3.5 w-3.5"
                        />
                     </div>
-                    <Separator />
-                    <div className="space-y-2">
-                       <label className="text-sm font-medium">{t('auction.filters.auction')}</label>
-                        <div className="flex flex-wrap gap-2">
-                          {(['all', 'Copart', 'IAAI'] as const).map((source) => (
-                             <button
-                                key={source}
-                                onClick={() => updateFilter('auctionFilter', source)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                   filters.auctionFilter === source
-                                   ? 'bg-primary text-primary-foreground'
-                                   : 'bg-background border hover:bg-muted'
-                                }`}
-                             >
-                                {source === 'all' ? t('common.all') : source}
-                             </button>
-                          ))}
-                        </div>
+                    <div className="flex items-center gap-1 p-1 rounded-md border bg-muted/20 h-8 overflow-hidden">
+                       {(['all', 'Copart', 'IAAI'] as const).map((source) => (
+                          <button
+                             key={source}
+                             onClick={() => updateFilter('auctionFilter', source)}
+                             className={`flex-1 h-full rounded-sm text-[9px] font-bold uppercase transition-colors ${
+                                filters.auctionFilter === source
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'hover:bg-background/50 text-muted-foreground'
+                             }`}
+                          >
+                             {source === 'all' ? 'All' : source}
+                          </button>
+                       ))}
                     </div>
                  </div>
 
                </div>
 
-               <SheetFooter className="px-6 py-4 border-t bg-background sticky bottom-0 z-10">
+               <SheetFooter className="px-4 py-3 border-t bg-background sticky bottom-0 z-10">
                   <div className="flex w-full gap-3">
-                     <Button variant="outline" className="flex-1" onClick={onDrawerReset}>
+                     <Button variant="outline" className="flex-1 h-10 text-sm" onClick={onDrawerReset}>
                         {t('common.reset')}
                      </Button>
-                     <Button className="flex-1" onClick={() => { onApply(); }}>
+                     <Button className="flex-1 h-10 text-sm" onClick={() => { onApply(); }}>
                         {t('common.show_results')}
                      </Button>
                   </div>

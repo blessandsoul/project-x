@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { Icon } from '@iconify/react/dist/iconify.js'
+import { Icon } from '@iconify/react'
 import { trackStickyCtaClick } from '@/lib/homePageEvents'
 
 export function MobileStickyCta() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { t } = useTranslation()
   const [isHidden, setIsHidden] = useState(false)
+
+  const isCatalogPage = location.pathname === '/catalog' || location.pathname === '/companies'
 
   useEffect(() => {
     let lastScrollY = window.scrollY || 0
@@ -41,19 +46,34 @@ export function MobileStickyCta() {
       className={`fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-2 pt-2 shadow-md backdrop-blur md:hidden transform transition-transform duration-200 ease-out will-change-transform ${isHidden ? 'translate-y-full' : 'translate-y-0'}`}
     >
       <div className="container mx-auto flex items-center justify-between gap-2 px-4">
-        <Button
-          size="sm"
-          className="flex-1"
-          onClick={() => {
-            trackStickyCtaClick('catalog')
-            navigate('/catalog')
-          }}
-          aria-label="კომპანიების კატალოგი"
-          motionVariant="scale"
-        >
-          <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
-          <span className="truncate text-sm font-medium">კომპანიების კატალოგი</span>
-        </Button>
+        {isCatalogPage ? (
+          <Button
+            size="sm"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => {
+              navigate('/auction-listings')
+            }}
+            aria-label={t('navigation.auctionListings') || 'Auction Listings'}
+            motionVariant="scale"
+          >
+            <Icon icon="mdi:gavel" className="mr-2 h-4 w-4" />
+            <span className="truncate text-sm font-medium">{t('navigation.auctionListings') || 'Auction Listings'}</span>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              trackStickyCtaClick('catalog')
+              navigate('/catalog')
+            }}
+            aria-label={t('navigation.catalog') || 'Company Catalog'}
+            motionVariant="scale"
+          >
+            <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
+            <span className="truncate text-sm font-medium">{t('navigation.catalog') || 'Company Catalog'}</span>
+          </Button>
+        )}
       </div>
     </div>
   )

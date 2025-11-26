@@ -66,7 +66,7 @@ const CompanyCatalogPage = () => {
   const searchDraftRef = useRef<string>('');
   const countryDraftRef = useRef<string>('');
   const cityDraftRef = useRef<string>('');
-  const priceDraftRef = useRef<[number, number]>([0, 5000]);
+  const priceDraftRef = useRef<[number, number]>([0, 0]);
 
   const toggleComparison = (id: number) => {
     setSelectedCompanies(prev => 
@@ -94,7 +94,7 @@ const CompanyCatalogPage = () => {
           ? options.minBasePrice
           : undefined,
         orderBy: options.orderBy !== 'newest' ? options.orderBy : undefined,
-        maxBasePrice: typeof options.maxBasePrice === 'number' && options.maxBasePrice < 5000
+        maxBasePrice: typeof options.maxBasePrice === 'number' && options.maxBasePrice > 0
           ? options.maxBasePrice
           : undefined,
         isVip: options.isVip === true,
@@ -160,7 +160,7 @@ const CompanyCatalogPage = () => {
       searchParams.delete('min_price');
     }
 
-    if (typeof nextFilters.maxBasePrice === 'number' && nextFilters.maxBasePrice < 5000) {
+    if (typeof nextFilters.maxBasePrice === 'number' && nextFilters.maxBasePrice > 0) {
       searchParams.set('max_price', String(nextFilters.maxBasePrice));
     } else {
       searchParams.delete('max_price');
@@ -212,7 +212,7 @@ const CompanyCatalogPage = () => {
     searchDraftRef.current = search;
     countryDraftRef.current = country;
     cityDraftRef.current = city;
-    priceDraftRef.current = [minBasePrice ?? 0, maxBasePrice ?? 5000];
+    priceDraftRef.current = [minBasePrice ?? 0, maxBasePrice ?? 0];
     void loadCompanies(1, initialFilters);
   }, [loadCompanies]);
 
@@ -240,7 +240,7 @@ const CompanyCatalogPage = () => {
               onPressedChange={setIsCompareMode}
               variant="outline"
               aria-label="Toggle compare mode"
-              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200"
+              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200 flex-1 sm:flex-none"
             >
               <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
               <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
@@ -258,7 +258,7 @@ const CompanyCatalogPage = () => {
                 updateUrlFromFilters(nextFilters, 1);
               }}
             >
-              <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 shadow-sm">
+              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white border-slate-200 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -402,13 +402,13 @@ const CompanyCatalogPage = () => {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 gap-8 items-start">
           {/* Sidebar Filters */}
-          <aside className="lg:col-span-1 sticky top-24 z-30">
+          <aside className="lg:col-span-1 lg:sticky lg:top-24 z-30">
             <CatalogFilters
               initialSearch={filters.search}
               initialCountry={filters.country}
               initialCity={filters.city}
               initialMinRating={filters.minRating}
-              initialPriceRange={[filters.minBasePrice ?? 0, filters.maxBasePrice ?? 5000]}
+              initialPriceRange={[filters.minBasePrice ?? 0, filters.maxBasePrice ?? 0]}
               initialIsVip={filters.isVip}
               onSearchChange={(value) => {
                 searchDraftRef.current = value;
@@ -428,7 +428,7 @@ const CompanyCatalogPage = () => {
                 const effectiveCity = cityDraftRef.current.trim();
                 const effectivePrice = priceDraftRef.current;
                 const nextMinPrice = effectivePrice[0] > 0 ? effectivePrice[0] : undefined;
-                const nextMaxPrice = effectivePrice[1] < 5000 ? effectivePrice[1] : undefined;
+                const nextMaxPrice = effectivePrice[1] > 0 ? effectivePrice[1] : undefined;
 
                 // Check if anything actually changed
                 const hasChanges =
@@ -474,7 +474,7 @@ const CompanyCatalogPage = () => {
                 searchDraftRef.current = '';
                 countryDraftRef.current = '';
                 cityDraftRef.current = '';
-                priceDraftRef.current = [0, 5000];
+                priceDraftRef.current = [0, 0];
                 setFilters(defaultFilters);
                 setPage(1);
                 void loadCompanies(1, defaultFilters);

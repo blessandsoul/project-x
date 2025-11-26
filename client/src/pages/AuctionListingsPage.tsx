@@ -869,8 +869,8 @@ const AuctionListingsPage = () => {
   // touching appliedFilters/backend data or URL. User must still click
   // "Show results" to apply the cleared state.
   const resetDrawerFilters = () => {
-    const defaultYearRange: [number, number] = [2010, 2024];
-    const defaultPriceRange: [number, number] = [500, 30000];
+    const defaultYearRange: [number, number] = [0, 0];
+    const defaultPriceRange: [number, number] = [0, 0];
     const defaultMaxMileage: [number] = [200000];
 
     setAuctionFilter('all');
@@ -891,8 +891,8 @@ const AuctionListingsPage = () => {
   };
 
   const resetFilters = () => {
-    const defaultYearRange: [number, number] = [2010, 2024];
-    const defaultPriceRange: [number, number] = [500, 30000];
+    const defaultYearRange: [number, number] = [0, 0];
+    const defaultPriceRange: [number, number] = [0, 0];
     const defaultMaxMileage: [number] = [200000];
 
     setAuctionFilter('all');
@@ -971,10 +971,10 @@ const AuctionListingsPage = () => {
           setExactYear('');
           break;
         case 'yearRange':
-          setYearRange([2010, 2024]);
+          setYearRange([0, 0]);
           break;
         case 'price':
-          setPriceRange([500, 30000]);
+          setPriceRange([0, 0]);
           break;
         default:
           break;
@@ -986,8 +986,8 @@ const AuctionListingsPage = () => {
         exactYear: id === 'yearExact' ? '' : exactYear,
         minMileage,
         maxMileage,
-        priceRange: id === 'price' ? [500, 30000] : priceRange,
-        yearRange: id === 'yearRange' ? [2010, 2024] : yearRange,
+        priceRange: id === 'price' ? [0, 0] : priceRange,
+        yearRange: id === 'yearRange' ? [0, 0] : yearRange,
         fuelType: id === 'fuel' ? 'all' : fuelType,
         category,
         drive: id === 'drive' ? 'all' : drive,

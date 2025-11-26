@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Icon } from '@iconify/react';
 
-const LANGUAGES = [
+export const LANGUAGES = [
   { code: 'ka', label: 'ქართული', icon: 'circle-flags:ge' },
   { code: 'en', label: 'English', icon: 'circle-flags:us' },
   { code: 'ru', label: 'Русский', icon: 'circle-flags:ru' },

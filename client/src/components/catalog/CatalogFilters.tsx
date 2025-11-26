@@ -1,11 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -53,16 +52,24 @@ export const CatalogFilters = ({
   const countryInputRef = useRef<HTMLInputElement | null>(null);
   const cityInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [priceRange, setPriceRange] = useState<[number, number]>(initialPriceRange ?? [0, 5000]);
+
+  useEffect(() => {
+    if (initialPriceRange) {
+      setPriceRange(initialPriceRange);
+    }
+  }, [initialPriceRange]);
+
   const filterContent = (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Search */}
-      <div className="space-y-2">
+      <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.search')}</label>
         <div className="relative">
           <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder={t('catalog.filters.search_placeholder', 'Company name...')}
-            className="pl-9 bg-white"
+            className="pl-9 bg-white h-9 sm:h-10"
             ref={searchInputRef}
             defaultValue={initialSearch}
             onChange={(e) => {
@@ -78,16 +85,16 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="my-1 sm:my-2" />
 
       {/* Country */}
-      <div className="space-y-2">
+      <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.country', 'Country')}</label>
         <div className="relative">
           <Icon icon="mdi:earth" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
             placeholder={t('catalog.filters.country_placeholder', 'Georgia, USA...')}
-            className="pl-9 bg-white"
+            className="pl-9 bg-white h-9 sm:h-10"
             ref={countryInputRef}
             defaultValue={initialCountry}
             onChange={(e) => {
@@ -102,16 +109,16 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="my-1 sm:my-2" />
 
       {/* City Search */}
-      <div className="space-y-2">
+      <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.city_placeholder')}</label>
         <div className="relative">
           <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
             placeholder="Tbilisi, Batumi..." 
-            className="pl-9 bg-white"
+            className="pl-9 bg-white h-9 sm:h-10"
             ref={cityInputRef}
             defaultValue={initialCity}
             onChange={(e) => {
@@ -126,13 +133,13 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="my-1 sm:my-2" />
 
       {/* Rating */}
-      <div className="space-y-2">
+      <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.rating')}</label>
         <Select
-          defaultValue={initialMinRating && initialMinRating > 0 ? String(initialMinRating) : '0'}
+          value={initialMinRating && initialMinRating > 0 ? String(initialMinRating) : '0'}
           onValueChange={(value) => {
             const parsed = Number(value);
             if (!Number.isNaN(parsed)) {
@@ -140,7 +147,7 @@ export const CatalogFilters = ({
             }
           }}
         >
-          <SelectTrigger className="bg-white">
+          <SelectTrigger className="bg-white h-9 sm:h-10">
             <SelectValue placeholder={t('catalog.filters.rating_all')} />
           </SelectTrigger>
           <SelectContent>
@@ -153,33 +160,66 @@ export const CatalogFilters = ({
       </div>
 
       {/* Price Range */}
-      <div className="space-y-4">
+      <div className="space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.price')}</label>
-          <span className="text-xs font-medium text-slate-700">
-            ${initialPriceRange?.[0] ?? 0} - ${initialPriceRange?.[1] ?? 5000}
-          </span>
+          <div className="flex items-center gap-2">
+             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.price')}</label>
+             <button
+                onClick={() => {
+                  const emptyRange: [number, number] = [0, 0];
+                  setPriceRange(emptyRange);
+                  onPriceRangeChange?.(emptyRange);
+                }}
+                className="text-slate-400 hover:text-blue-600 transition-colors"
+                title={t('common.reset')}
+             >
+                <Icon icon="mdi:refresh" className="w-3 h-3" />
+             </button>
+          </div>
         </div>
-        <Slider
-          defaultValue={initialPriceRange ?? [0, 5000]}
-          max={5000}
-          step={100}
-          className="py-2"
-          onValueChange={(value) => {
-            onPriceRangeChange?.(value as [number, number]);
-          }}
-        />
+        <div className="grid grid-cols-2 gap-2">
+           <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+              <Input 
+                type="number" 
+                className="h-9 pl-5 text-xs bg-white" 
+                placeholder={t('common.from')}
+                value={priceRange[0] || ''}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  const newRange: [number, number] = [val, priceRange[1]];
+                  setPriceRange(newRange);
+                  onPriceRangeChange?.(newRange);
+                }}
+              />
+           </div>
+           <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+              <Input 
+                type="number" 
+                className="h-9 pl-5 text-xs bg-white" 
+                placeholder={t('common.to')}
+                value={priceRange[1] || ''}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  const newRange: [number, number] = [priceRange[0], val];
+                  setPriceRange(newRange);
+                  onPriceRangeChange?.(newRange);
+                }}
+              />
+           </div>
+        </div>
       </div>
 
       {/* Toggles */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center space-x-3 rounded-lg border border-slate-100 p-3 bg-white hover:bg-slate-50 transition-colors">
+      <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
+        <div className="flex items-center space-x-3 rounded-lg border border-slate-100 p-2.5 sm:p-3 bg-white hover:bg-slate-50 transition-colors">
           <Checkbox
             id="vip"
-            defaultChecked={!!initialIsVip}
+            checked={!!initialIsVip}
             onCheckedChange={(checked) => onVipChange?.(!!checked)}
           />
-          <div className="grid gap-1.5 leading-none">
+          <div className="grid gap-1 leading-none">
             <label
               htmlFor="vip"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
@@ -192,7 +232,7 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 lg:flex hidden">
         <Button 
           variant="outline" 
           className="flex-1"
@@ -200,6 +240,8 @@ export const CatalogFilters = ({
             if (searchInputRef.current) searchInputRef.current.value = '';
             if (countryInputRef.current) countryInputRef.current.value = '';
             if (cityInputRef.current) cityInputRef.current.value = '';
+            setPriceRange([0, 0]);
+            onPriceRangeChange?.([0, 0]);
             onResetFilters?.();
           }}
         >
@@ -243,27 +285,44 @@ export const CatalogFilters = ({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-full sm:w-[400px] p-0 flex flex-col h-full">
-          <SheetHeader className="px-6 py-4 border-b border-slate-100">
-            <SheetTitle className="text-left flex items-center gap-2">
+          <SheetHeader className="px-4 py-3 border-b border-slate-100">
+            <SheetTitle className="text-left flex items-center gap-2 text-base">
               <Icon icon="mdi:filter-variant" /> {t('catalog.filters.title', 'Filters')}
             </SheetTitle>
           </SheetHeader>
           
-          <div className="flex-1 px-6 py-6 overflow-y-auto">
+          <div className="flex-1 px-4 py-3 overflow-y-auto">
             {filterContent}
           </div>
           
-          <SheetFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-            <SheetClose asChild>
+          <SheetFooter className="px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex gap-2 w-full">
               <Button
-                className="w-full h-12 text-base font-semibold shadow-md"
+                variant="outline"
+                className="flex-1 h-10 text-sm font-semibold shadow-sm"
                 onClick={() => {
-                  onApplyFilters?.();
+                  if (searchInputRef.current) searchInputRef.current.value = '';
+                  if (countryInputRef.current) countryInputRef.current.value = '';
+                  if (cityInputRef.current) cityInputRef.current.value = '';
+                  setPriceRange([0, 0]);
+                  onPriceRangeChange?.([0, 0]);
+                  onResetFilters?.();
                 }}
               >
-                {t('catalog.filters.show_results', 'Show Results')}
+                <Icon icon="mdi:refresh" className="mr-2 h-4 w-4" />
+                {t('catalog.filters.reset')}
               </Button>
-            </SheetClose>
+              <SheetClose asChild>
+                <Button
+                  className="flex-1 h-10 text-sm font-semibold shadow-md"
+                  onClick={() => {
+                    onApplyFilters?.();
+                  }}
+                >
+                  {t('catalog.filters.show_results', 'Show Results')}
+                </Button>
+              </SheetClose>
+            </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>

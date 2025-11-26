@@ -91,114 +91,117 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           </div>
         )}
 
-        {/* Left: Logo & Partners */}
-        <div className="flex sm:flex-col items-center sm:items-center sm:justify-center gap-3 p-3 sm:w-28 bg-slate-50/30 sm:border-r border-slate-100 shrink-0">
-          <div className="relative h-12 w-12 sm:h-16 sm:w-16 group-hover:scale-105 transition-transform">
-            <Image 
-              src={company.logo ?? ''} 
-              alt={`${company.name} logo`} 
-              className="h-full w-full object-cover rounded-full shadow-sm" 
-            />
-            {/* Online Indicator */}
-            {isOnline && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                     <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm animate-pulse" />
-                  </TooltipTrigger>
-                  <TooltipContent><p>{t('catalog.card.online_now')}</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        {/* Mobile Wrapper for Logo + Info */}
+        <div className="flex flex-row w-full sm:contents">
+          {/* Left: Logo & Partners */}
+          <div className="flex sm:flex-col items-center sm:items-center sm:justify-center gap-3 p-3 sm:w-28 sm:bg-slate-50/30 sm:border-r border-slate-100 shrink-0">
+            <div className="relative h-12 w-12 sm:h-16 sm:w-16 group-hover:scale-105 transition-transform">
+              <Image 
+                src={company.logo ?? ''} 
+                alt={`${company.name} logo`} 
+                className="h-full w-full object-cover rounded-full shadow-sm" 
+              />
+              {/* Online Indicator */}
+              {isOnline && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                       <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm animate-pulse" />
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('catalog.card.online_now')}</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            
+            {/* Official Partners (Mock Visuals) */}
+            {company.vipStatus && (
+               <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-70 grayscale group-hover:grayscale-0 transition-all">
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{t('common.official')}</span>
+                  <div className="flex gap-1">
+                     <Icon icon="mdi:shield-check" className="h-3 w-3 text-blue-600" />
+                     <Icon icon="mdi:gavel" className="h-3 w-3 text-red-600" />
+                  </div>
+               </div>
             )}
           </div>
-          
-          {/* Official Partners (Mock Visuals) */}
-          {company.vipStatus && (
-             <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-70 grayscale group-hover:grayscale-0 transition-all">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{t('common.official')}</span>
-                <div className="flex gap-1">
-                   <Icon icon="mdi:shield-check" className="h-3 w-3 text-blue-600" />
-                   <Icon icon="mdi:gavel" className="h-3 w-3 text-red-600" />
+
+          {/* Middle: Main Info */}
+          <div className="flex-1 flex flex-col justify-center p-3 pl-0 sm:pl-5 space-y-2 min-w-0">
+             {/* Header Row */}
+             <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-lg leading-none group-hover:text-blue-600 transition-colors">
+                  {company.name}
+                </h3>
+                
+                {/* Trust Score Circle (Gamification) */}
+                {company.trustScore && (
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                             <div className="relative h-5 w-5">
+                                <svg className="h-full w-full -rotate-90" viewBox="0 0 24 24">
+                                   <circle className="text-slate-100" strokeWidth="3" stroke="currentColor" fill="transparent" r="10" cx="12" cy="12" />
+                                   <circle 
+                                      className={trustScoreColor} 
+                                      strokeWidth="3" 
+                                      strokeDasharray={62.8}
+                                      strokeDashoffset={62.8 - (62.8 * company.trustScore) / 100}
+                                      strokeLinecap="round" 
+                                      stroke="currentColor" 
+                                      fill="transparent" 
+                                      r="10" cx="12" cy="12" 
+                                   />
+                                </svg>
+                             </div>
+                             <span className={cn("text-xs font-bold", trustScoreColor)}>{company.trustScore}</span>
+                          </div>
+                       </TooltipTrigger>
+                       <TooltipContent side="top"><p>Trust Score: High Reliability</p></TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+                )}
+
+                {bestForBadge && (
+                   <Badge variant="outline" className={cn("h-5 gap-1 px-1.5 border bg-opacity-50", bestForBadge.color)}>
+                      <Icon icon={bestForBadge.icon} className="h-3 w-3" />
+                      <span className="text-[9px] font-bold uppercase tracking-wide">{bestForBadge.label}</span>
+                   </Badge>
+                )}
+             </div>
+
+             {/* Compact Metadata */}
+             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
+                <div className="flex items-center gap-1 text-slate-600">
+                   <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 text-slate-400" />
+                   {company.location?.city || 'Tbilisi'}
+                </div>
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1 text-slate-600">
+                   <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-slate-400" />
+                   45-60 {t('common.days')}
+                </div>
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-1.5 rounded-full">
+                   <Icon icon="mdi:star" className="h-3 w-3" />
+                   {company.rating}
+                   <span className="text-slate-400 font-normal ml-0.5">({company.reviewCount})</span>
                 </div>
              </div>
-          )}
-        </div>
 
-        {/* Middle: Main Info */}
-        <div className="flex-1 flex flex-col justify-center p-3 pl-3 sm:pl-5 space-y-2 min-w-0">
-           {/* Header Row */}
-           <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-bold text-slate-900 text-lg leading-none group-hover:text-blue-600 transition-colors">
-                {company.name}
-              </h3>
-              
-              {/* Trust Score Circle (Gamification) */}
-              {company.trustScore && (
-                 <TooltipProvider>
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                           <div className="relative h-5 w-5">
-                              <svg className="h-full w-full -rotate-90" viewBox="0 0 24 24">
-                                 <circle className="text-slate-100" strokeWidth="3" stroke="currentColor" fill="transparent" r="10" cx="12" cy="12" />
-                                 <circle 
-                                    className={trustScoreColor} 
-                                    strokeWidth="3" 
-                                    strokeDasharray={62.8}
-                                    strokeDashoffset={62.8 - (62.8 * company.trustScore) / 100}
-                                    strokeLinecap="round" 
-                                    stroke="currentColor" 
-                                    fill="transparent" 
-                                    r="10" cx="12" cy="12" 
-                                 />
-                              </svg>
-                           </div>
-                           <span className={cn("text-xs font-bold", trustScoreColor)}>{company.trustScore}</span>
-                        </div>
-                     </TooltipTrigger>
-                     <TooltipContent side="top"><p>Trust Score: High Reliability</p></TooltipContent>
-                   </Tooltip>
-                 </TooltipProvider>
-              )}
-
-              {bestForBadge && (
-                 <Badge variant="outline" className={cn("h-5 gap-1 px-1.5 border bg-opacity-50", bestForBadge.color)}>
-                    <Icon icon={bestForBadge.icon} className="h-3 w-3" />
-                    <span className="text-[9px] font-bold uppercase tracking-wide">{bestForBadge.label}</span>
-                 </Badge>
-              )}
-           </div>
-
-           {/* Compact Metadata */}
-           <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
-              <div className="flex items-center gap-1 text-slate-600">
-                 <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 text-slate-400" />
-                 {company.location?.city || 'Tbilisi'}
-              </div>
-              <span className="text-slate-300">|</span>
-              <div className="flex items-center gap-1 text-slate-600">
-                 <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-slate-400" />
-                 45-60 {t('common.days')}
-              </div>
-              <span className="text-slate-300">|</span>
-              <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-1.5 rounded-full">
-                 <Icon icon="mdi:star" className="h-3 w-3" />
-                 {company.rating}
-                 <span className="text-slate-400 font-normal ml-0.5">({company.reviewCount})</span>
-              </div>
-           </div>
-
-           {/* Social Proof: Review Snippet */}
-           <div className="hidden sm:flex items-start gap-2 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50 max-w-xl">
-              <Icon icon="mdi:format-quote-open" className="h-4 w-4 text-slate-300 shrink-0 mt-0.5" />
-              <p className="text-xs text-slate-600 italic line-clamp-1">
-                 "{reviewSnippet}"
-              </p>
-           </div>
+             {/* Social Proof: Review Snippet */}
+             <div className="hidden sm:flex items-start gap-2 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50 max-w-xl">
+                <Icon icon="mdi:format-quote-open" className="h-4 w-4 text-slate-300 shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-600 italic line-clamp-1">
+                   "{reviewSnippet}"
+                </p>
+             </div>
+          </div>
         </div>
 
         {/* Right: Price & CTA */}
-        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-3 sm:w-44 bg-slate-50/30 sm:border-l border-t sm:border-t-0 border-slate-100">
+        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50/30 sm:border-l border-t sm:border-t-0 border-slate-100">
            <div className="flex flex-col sm:items-end">
               <TooltipProvider>
                 <Tooltip delayDuration={100}>
@@ -215,7 +218,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
               </TooltipProvider>
               
               <div className="flex items-baseline gap-1">
-                 <span className="text-xl font-black text-slate-900 tracking-tight">
+                 <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                    {company.priceRange?.min ? formatCurrency(company.priceRange.min) : 'Ask'}
                  </span>
               </div>
@@ -226,10 +229,11 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
               )}
            </div>
 
-           <div className="flex flex-col gap-2 w-full sm:w-auto">
+           <div className="flex flex-col gap-2 w-auto sm:w-auto">
              <Button 
                size="sm"
-               className="h-9 px-6 bg-slate-900 hover:bg-blue-600 text-white font-bold shadow-sm shadow-slate-200 hover:shadow-blue-200 transition-all w-full"
+               variant="outline"
+               className="h-8 px-4 text-xs font-bold border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-all w-full"
                onClick={(e) => {
                  e.stopPropagation();
                  navigate(`/company/${company.id}`);

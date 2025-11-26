@@ -207,6 +207,35 @@
   .dialog-content[data-state='closed'] {
     animation: dialogContentOut 0.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
   }
+
+  /* Sheet Animations */
+  .sheet-overlay[data-state='open'] {
+    animation: dialogOverlayFadeIn 0.5s ease-out forwards;
+  }
+  .sheet-overlay[data-state='closed'] {
+    animation: dialogOverlayFadeOut 0.5s ease-in forwards;
+  }
+
+  .sheet-content[data-state='open'] {
+    animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .sheet-content[data-state='closed'] {
+    animation: slideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .sheet-content[data-side='right'][data-state='open'] {
+    animation: slideInFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .sheet-content[data-side='right'][data-state='closed'] {
+    animation: slideOutToRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .sheet-content[data-side='left'][data-state='open'] {
+    animation: slideInFromLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .sheet-content[data-side='left'][data-state='closed'] {
+    animation: slideOutToLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 @keyframes dialogOverlayFadeIn {
@@ -227,4 +256,24 @@
 @keyframes dialogContentOut {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOutToRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOutToLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
 }

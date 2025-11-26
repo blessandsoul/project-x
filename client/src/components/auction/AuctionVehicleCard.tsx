@@ -5,6 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
@@ -196,17 +202,11 @@ export function AuctionVehicleCard({
                   className={cn("w-5 h-5", isFavorite && "text-red-500")} 
                 />
               </Button>
-              
-              {/* Watcher Count */}
-              <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[10px] text-white/90 font-medium shadow-sm">
-                <Icon icon="mdi:eye" className="w-3 h-3" />
-                {watcherCount}
-              </div>
             </div>
           </div>
 
           {/* Bottom Image Overlay (Badges) */}
-          <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
+          <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5 pointer-events-none max-w-[70%]">
             {(item.yard_name || item.source) && (
               <>
                 {item.source && (
@@ -222,12 +222,29 @@ export function AuctionVehicleCard({
                   </Badge>
                 )}
                 {item.yard_name && (
-                  <Badge variant="secondary" className="pointer-events-auto text-[10px] px-2 py-0.5 h-5 bg-white/90 text-black backdrop-blur-md border-none shadow-sm max-w-[140px] truncate">
-                    {item.yard_name}
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="secondary" className="pointer-events-auto text-[10px] px-2 py-0.5 h-5 bg-white/90 text-black backdrop-blur-md border-none shadow-sm max-w-full truncate cursor-help">
+                          {item.yard_name.length > 15 ? `${item.yard_name.slice(0, 15)}...` : item.yard_name}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{item.yard_name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </>
             )}
+          </div>
+
+          {/* Watcher Count (Bottom Right) */}
+          <div className="absolute bottom-3 right-3 pointer-events-none">
+             <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[10px] text-white/90 font-medium shadow-sm">
+               <Icon icon="mdi:eye" className="w-3 h-3" />
+               {watcherCount}
+             </div>
           </div>
         </div>
 
