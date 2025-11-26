@@ -197,6 +197,10 @@ const CompanyCatalogPage = () => {
     const orderBy: 'rating' | 'cheapest' | 'newest' =
       sortParam === 'rating' || sortParam === 'cheapest' ? sortParam : 'newest';
 
+    // Read page from URL
+    const pageParam = params.get('page');
+    const initialPage = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
+
     const initialFilters: CatalogFiltersState = {
       search,
       country,
@@ -213,7 +217,7 @@ const CompanyCatalogPage = () => {
     countryDraftRef.current = country;
     cityDraftRef.current = city;
     priceDraftRef.current = [minBasePrice ?? 0, maxBasePrice ?? 0];
-    void loadCompanies(1, initialFilters);
+    void loadCompanies(initialPage, initialFilters);
   }, [loadCompanies]);
 
   const totalResults = totalFromBackend ?? allCompanies.length;
@@ -319,6 +323,7 @@ const CompanyCatalogPage = () => {
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
                 updateUrlFromFilters(filters, nextPage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page <= 1}
               className="rounded-full h-10 w-10 hover:bg-slate-100"
@@ -334,6 +339,7 @@ const CompanyCatalogPage = () => {
                     setPage(p);
                     void loadCompanies(p, filters);
                     updateUrlFromFilters(filters, p);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={`h-10 w-10 rounded-full text-sm font-medium transition-all ${
                     p === currentPage 
@@ -354,6 +360,7 @@ const CompanyCatalogPage = () => {
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
                 updateUrlFromFilters(filters, nextPage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page >= totalPages}
               className="rounded-full h-10 w-10 hover:bg-slate-100"
