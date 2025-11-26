@@ -1,9 +1,13 @@
 import fp from 'fastify-plugin';
-import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { JWTPayload, AuthUser } from '../types/user.js';
+import { JWTPayload, UserRole } from '../types/user.js';
 import { AuthenticationError } from '../types/errors.js';
 import { UserModel } from '../models/UserModel.js';
+import { getFromCache, setInCache } from '../utils/cache.js';
+
+// Cache user data for 5 minutes to reduce DB load on auth
+const USER_CACHE_TTL = 300;
 
 /**
  * Authentication Plugin
@@ -19,12 +23,17 @@ import { UserModel } from '../models/UserModel.js';
  * - Environment variable validation for security
  */
 const ENV_JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'; // Default 7 days
 const JWT_ISSUER = process.env.JWT_ISSUER;
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE;
 
 if (!ENV_JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
+}
+
+// Validate JWT_SECRET strength in production
+if (process.env.NODE_ENV === 'production' && ENV_JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters in production');
 }
 
 const JWT_SECRET: string = ENV_JWT_SECRET;
@@ -96,14 +105,39 @@ const authPlugin = fp(async (fastify) => {
 
       const decoded = verifyToken(token);
 
-	      // Load the latest user record to enforce is_blocked and role from DB.
-	      const dbUser = await userModel.findById(decoded.userId);
-	      if (!dbUser) {
-	        throw new AuthenticationError('User not found');
-	      }
-	      if (dbUser.is_blocked) {
-	        throw new AuthenticationError('Account is blocked');
-	      }
+      // Try to get user from cache first to reduce DB load
+      const cacheKey = `user:auth:${decoded.userId}`;
+      let dbUser = await getFromCache<{
+        id: number;
+        email: string;
+        username: string;
+        role: UserRole;
+        company_id: number | null;
+        is_blocked: boolean;
+      }>(fastify, cacheKey);
+
+      if (!dbUser) {
+        // Cache miss - load from DB
+        const freshUser = await userModel.findById(decoded.userId);
+        if (!freshUser) {
+          throw new AuthenticationError('User not found');
+        }
+
+        // Cache the user data (only essential fields)
+        dbUser = {
+          id: freshUser.id,
+          email: freshUser.email,
+          username: freshUser.username,
+          role: freshUser.role,
+          company_id: freshUser.company_id,
+          is_blocked: freshUser.is_blocked,
+        };
+        await setInCache(fastify, cacheKey, dbUser, USER_CACHE_TTL);
+      }
+
+      if (dbUser.is_blocked) {
+        throw new AuthenticationError('Account is blocked');
+      }
 
       // Add user to request object (including role and company_id for authorization checks).
       request.user = {
@@ -131,16 +165,11 @@ const authPlugin = fp(async (fastify) => {
    * @returns Signed JWT token string
    */
   fastify.decorate('generateToken', (payload: Omit<JWTPayload, 'iat' | 'exp'>) => {
-    const options: SignOptions = {
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN, // Always set expiration (e.g., '7d')
       issuer: JWT_ISSUER || undefined,
       audience: JWT_AUDIENCE || undefined,
-    };
-
-    if (JWT_EXPIRES_IN) {
-      (options as any).expiresIn = JWT_EXPIRES_IN;
-    }
-
-    return jwt.sign(payload, JWT_SECRET, options);
+    } as SignOptions);
   });
 });
 

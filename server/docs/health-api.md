@@ -12,8 +12,9 @@ Routes defined in: `src/routes/health.ts`
 
 Comprehensive health check that verifies:
 
-- App uptime
+- App uptime and memory usage
 - Database connectivity
+- Redis cache connectivity (optional)
 - VIN decoder service health
 
 **Method:** `GET`
@@ -26,13 +27,21 @@ Comprehensive health check that verifies:
 
 ```jsonc
 {
-  "status": "ok", // or "degraded" if any service unhealthy
+  "status": "ok", // or "degraded" if any critical service unhealthy
   "timestamp": "2025-01-01T12:34:56.789Z",
   "uptime": 1234.567, // process uptime in seconds
+  "memory": {
+    "heapUsed": "45 MB",
+    "heapTotal": "65 MB",
+    "rss": "95 MB"
+  },
   "services": {
     "database": {
       "status": "healthy",
       "responseTime": 1733168762930
+    },
+    "redis": {
+      "status": "healthy" // or "disabled" if Redis not configured
     },
     "vinDecoder": {
       "status": "healthy",
@@ -43,17 +52,26 @@ Comprehensive health check that verifies:
 }
 ```
 
-**Response 503 (one or more services unhealthy)**
+**Response 503 (one or more critical services unhealthy)**
 
 ```jsonc
 {
   "status": "degraded",
   "timestamp": "2025-01-01T12:34:56.789Z",
   "uptime": 1234.567,
+  "memory": {
+    "heapUsed": "45 MB",
+    "heapTotal": "65 MB",
+    "rss": "95 MB"
+  },
   "services": {
     "database": {
       "status": "unhealthy",
       "error": "Database connection failed"
+    },
+    "redis": {
+      "status": "unhealthy",
+      "error": "Redis check failed"
     },
     "vinDecoder": {
       "status": "unhealthy",
@@ -63,9 +81,11 @@ Comprehensive health check that verifies:
 }
 ```
 
-**Error conditions**
+**Notes**
 
-- Any thrown error is caught and converted into a 503 with `status: "degraded"`.
+- Redis is optional; its failure does not mark the overall status as "degraded".
+- Database and VIN decoder failures will mark status as "degraded".
+- Memory metrics help identify memory leaks or high usage.
 
 ---
 

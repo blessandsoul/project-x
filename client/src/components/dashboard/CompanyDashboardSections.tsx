@@ -171,452 +171,290 @@ export function CompanyDashboardSections({
 
   const formatExpiresIn = (expiresAt: string | null): string | null => {
     if (!expiresAt) return null
-
     const expiresDate = new Date(expiresAt)
     const now = new Date()
     const diffMs = expiresDate.getTime() - now.getTime()
-
     if (Number.isNaN(diffMs)) return null
-
-    if (diffMs <= 0) {
-      return t('dashboard.company.leads_bubble.expired')
-    }
-
+    if (diffMs <= 0) return t('dashboard.company.leads_bubble.expired')
     const diffMinutesTotal = Math.floor(diffMs / (60 * 1000))
     const hours = Math.floor(diffMinutesTotal / 60)
     const minutes = diffMinutesTotal % 60
-
-    if (hours <= 0) {
-      return t('dashboard.company.leads_bubble.minutes_left', { count: minutes })
-    }
-
+    if (hours <= 0) return t('dashboard.company.leads_bubble.minutes_left', { count: minutes })
     return t('dashboard.company.leads_bubble.hours_left', { hours, minutes })
   }
 
   return (
-    <>
-      <motion.div
-        {...getSectionMotionProps(0)}
-        role="region"
-        aria-label="Company incoming leads"
-      >
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:inbox-arrow-down" className="h-5 w-5" />
-                {t('dashboard.company.leads_bubble.title')}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {t('dashboard.company.leads_bubble.subtitle')}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {newLeadsCount > 0 && (
-                <div
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                  aria-live="polite"
-                >
-                  <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span>{newLeadsCount}</span>
-                  <span>NEW</span>
-                </div>
-              )}
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground"
-              >
-                <Link to="/company/leads">
-                  <span className="inline-flex items-center gap-1">
-                    <span>{t('common.view_all')}</span>
-                    <Icon icon="mdi:arrow-right" className="h-3 w-3" />
-                  </span>
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {companyLeads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t('dashboard.company.leads_bubble.empty')}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {companyLeads.slice(0, 5).map((lead) => {
-                  const statusLabelMap: Record<CompanyLeadBubble['status'], string> = {
-                    NEW: t('dashboard.company.leads_bubble.status.new'),
-                    OFFER_SENT: t('dashboard.company.leads_bubble.status.offer_sent'),
-                    WON: t('dashboard.company.leads_bubble.status.won'),
-                    LOST: t('dashboard.company.leads_bubble.status.lost'),
-                    EXPIRED: t('dashboard.company.leads_bubble.status.expired'),
-                  }
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* LEFT COLUMN: Main Operations (8/12) */}
+      <div className="lg:col-span-8 space-y-6">
+        {/* 1. Network Stats */}
+        <motion.div {...getSectionMotionProps(0)}>
+           <div className="grid grid-cols-3 gap-4">
+              <Card className="shadow-sm">
+                 <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.company.stats.profile_views')}</p>
+                    <p className="text-2xl font-bold text-primary">{animatedTotalProfileViews}</p>
+                 </CardContent>
+              </Card>
+              <Card className="shadow-sm">
+                 <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.company.stats.active_dealers')}</p>
+                    <p className="text-2xl font-bold">{animatedDealersCount}</p>
+                 </CardContent>
+              </Card>
+              <Card className="shadow-sm">
+                 <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.company.stats.active_companies')}</p>
+                    <p className="text-2xl font-bold">{animatedActiveCompanies}</p>
+                 </CardContent>
+              </Card>
+           </div>
+        </motion.div>
 
-                  const statusLabel = statusLabelMap[lead.status]
-
-                  const expiresLabel = formatExpiresIn(lead.expiresAt)
-
-                  return (
-                    <Link
-                      key={lead.id}
-                      to={`/company/leads/${lead.id}`}
-                      className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-start text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="h-10 w-10 overflow-hidden rounded-full border bg-muted">
-                          <img
-                            src={lead.vehicle.imageUrl}
-                            alt={lead.vehicle.title}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="line-clamp-1 font-medium">
-                            {lead.vehicle.year} {lead.vehicle.title}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {lead.summary.budgetUsdMin && lead.summary.budgetUsdMax
-                              ? `$${lead.summary.budgetUsdMin.toLocaleString()} - $${lead.summary.budgetUsdMax.toLocaleString()}`
-                              : t('dashboard.company.leads_bubble.budget_not_specified')}
-                          </span>
-                          {lead.priority && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {lead.priority === 'price' && t('dashboard.company.leads_bubble.priority.price')}
-                              {lead.priority === 'speed' && t('dashboard.company.leads_bubble.priority.speed')}
-                              {lead.priority === 'premium_service' && t('dashboard.company.leads_bubble.priority.premium')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                          data-status={lead.status}
-                        >
-                          <span className="me-1 flex h-1.5 w-1.5 rounded-full bg-primary" />
-                          {statusLabel}
-                        </span>
-                        {Array.isArray((lead as any).leadSummary?.auctionSources) &&
-                          (lead as any).leadSummary.auctionSources.length > 0 && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {(lead as any).leadSummary.auctionSources[0]}
-                            </span>
-                          )}
-                        {expiresLabel && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {expiresLabel}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-      <motion.div
-        {...getSectionMotionProps(1)}
-        role="region"
-        aria-label="Company network statistics and dealer activity"
-      >
-        <div className="grid gap-4 md:grid-cols-3 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:office-building-outline" className="h-5 w-5" />
-                {t('dashboard.company.stats.title')}
-              </CardTitle>
+        {/* 2. Incoming Leads */}
+        <motion.div {...getSectionMotionProps(1)}>
+          <Card className="shadow-sm">
+            <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
+               <div className="space-y-0.5">
+                 <CardTitle className="text-base font-semibold flex items-center gap-2">
+                   <Icon icon="mdi:inbox-arrow-down" className="h-4 w-4 text-primary" />
+                   {t('dashboard.company.leads_bubble.title')}
+                 </CardTitle>
+                 <p className="text-[10px] text-muted-foreground">{t('dashboard.company.leads_bubble.subtitle')}</p>
+               </div>
+               <div className="flex items-center gap-2">
+                 {newLeadsCount > 0 && (
+                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary animate-pulse">
+                     {newLeadsCount} NEW
+                   </span>
+                 )}
+                 <Button asChild variant="ghost" size="sm" className="h-6 text-xs">
+                   <Link to="/company/leads">{t('common.view_all')}</Link>
+                 </Button>
+               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-2xl font-semibold">{animatedTotalProfileViews}</p>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.profile_views')}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold">{animatedDealersCount}</p>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.active_dealers')}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold">{animatedActiveCompanies}</p>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.company.stats.active_companies')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:map-marker-radius-outline" className="h-5 w-5" />
-                {t('dashboard.company.dealer_activity.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {companyDealerActivityByState.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.company.dealer_activity.empty')}</p>
+            <CardContent className="p-0">
+              {companyLeads.length === 0 ? (
+                 <div className="p-8 text-center text-muted-foreground">
+                   <p className="text-sm">{t('dashboard.company.leads_bubble.empty')}</p>
+                 </div>
               ) : (
-                <ul className="space-y-1 text-sm">
-                  {companyDealerActivityByState.map((item) => (
-                    <li
-                      key={item.state}
-                      className="flex items-center justify-between rounded-md border px-3 py-1.5"
-                    >
-                      <span className="line-clamp-1">{item.state}</span>
-                      <span className="text-xs text-muted-foreground">{item.leads} {t('dashboard.company.dealer_activity.leads_label')}</span>
-                    </li>
-                  ))}
-                </ul>
+                 <div className="divide-y">
+                    {companyLeads.slice(0, 5).map(lead => {
+                       const expiresLabel = formatExpiresIn(lead.expiresAt)
+                       return (
+                         <div key={lead.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-3 hover:bg-accent/30 transition-colors group">
+                            <div className="flex items-center gap-3">
+                               <div className="h-10 w-10 shrink-0 rounded-md bg-muted overflow-hidden">
+                                  <img src={lead.vehicle.imageUrl} alt={lead.vehicle.title} className="h-full w-full object-cover" />
+                               </div>
+                               <div>
+                                  <p className="text-sm font-medium leading-none mb-1">{lead.vehicle.year} {lead.vehicle.title}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                     <span>
+                                        {lead.summary.budgetUsdMin ? `$${lead.summary.budgetUsdMin.toLocaleString()}` : 'N/A'} - {lead.summary.budgetUsdMax ? `$${lead.summary.budgetUsdMax.toLocaleString()}` : 'N/A'}
+                                     </span>
+                                     {lead.priority && (
+                                        <span className="inline-flex items-center rounded bg-secondary px-1 py-0.5 text-[10px] font-medium text-secondary-foreground uppercase">
+                                          {lead.priority}
+                                        </span>
+                                     )}
+                                  </div>
+                               </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                               <div className="flex flex-col items-end">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground" data-status={lead.status}>
+                                    {lead.status}
+                                  </span>
+                                  {expiresLabel && <span className="text-[10px] text-red-500 font-medium">{expiresLabel}</span>}
+                               </div>
+                               <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                                  <Link to={`/company/leads/${lead.id}`}>{t('common.view')}</Link>
+                               </Button>
+                            </div>
+                         </div>
+                       )
+                    })}
+                 </div>
               )}
             </CardContent>
           </Card>
+        </motion.div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:heart-pulse" className="h-5 w-5" />
-                {t('dashboard.company.brand_health.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-semibold">{companyBrandHealth.averageRating}</p>
-                <p className="text-xs text-muted-foreground">
-                  / 5 ({companyBrandHealth.totalReviews} {t('common.reviews')})
-                </p>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t('dashboard.company.brand_health.description')}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+        {/* 3. Goals & Activity */}
+        <motion.div {...getSectionMotionProps(2)}>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="shadow-sm">
+                 <CardHeader className="px-4 py-3 border-b">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                       <Icon icon="mdi:target-account" className="h-4 w-4" />
+                       {t('dashboard.company.goals.title')}
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-4 space-y-4">
+                    {companyGoals.map(goal => (
+                       <div key={goal.id} className="space-y-1.5">
+                          <div className="flex justify-between text-xs">
+                             <span>{goal.label}</span>
+                             <span className="font-bold">{goal.progressPercent}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-muted">
+                             <div className="h-full rounded-full bg-primary" style={{ width: `${goal.progressPercent}%` }} />
+                          </div>
+                       </div>
+                    ))}
+                 </CardContent>
+              </Card>
 
-      <motion.div
-        {...getSectionMotionProps(2)}
-        role="region"
-        aria-label="Company service quality and marketing campaigns"
-      >
-        <div className="grid gap-4 md:grid-cols-2 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:headset" className="h-5 w-5" />
-                {t('dashboard.company.service_quality.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.company.service_quality.reply_time')}</p>
-                  <p className="text-xl font-semibold">{animatedAvgReplyMinutes} {t('common.min')}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.company.service_quality.handled_requests')}</p>
-                  <p className="text-xl font-semibold">{animatedHandledPercent}%</p>
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t('dashboard.company.service_quality.description')}
-              </p>
-            </CardContent>
-          </Card>
+              <Card className="shadow-sm">
+                 <CardHeader className="px-4 py-3 border-b">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                       <Icon icon="mdi:map-marker-radius-outline" className="h-4 w-4" />
+                       {t('dashboard.company.dealer_activity.title')}
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-4 space-y-2">
+                    {companyDealerActivityByState.map((item) => (
+                       <div key={item.state} className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
+                          <span className="font-medium">{item.state}</span>
+                          <span className="text-muted-foreground">{item.leads} {t('dashboard.company.dealer_activity.leads_label')}</span>
+                       </div>
+                    ))}
+                 </CardContent>
+              </Card>
+           </div>
+        </motion.div>
+      </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:bullhorn-outline" className="h-5 w-5" />
-                {t('dashboard.company.campaigns.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {companyCampaigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.company.campaigns.empty')}</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {companyCampaigns.map((campaign) => (
-                    <li
-                      key={campaign.id}
-                      className="rounded-md border px-3 py-2 flex flex-col gap-1"
-                    >
-                      <span className="font-medium line-clamp-1">{campaign.name}</span>
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span>Impr: {campaign.impressions.toLocaleString()}</span>
-                        <span>Clicks: {campaign.clicks.toLocaleString()}</span>
-                        <span>Leads: {campaign.leads}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+      {/* RIGHT COLUMN: Analytics & Insights (4/12) */}
+      <aside className="lg:col-span-4 space-y-6">
+         {/* 4. Health & Quality */}
+         <motion.div {...getSectionMotionProps(3)}>
+            <Card className="shadow-sm bg-gradient-to-b from-background to-muted/20">
+               <CardContent className="p-4 grid grid-cols-2 gap-4 divide-x">
+                  <div className="text-center pr-2">
+                     <p className="text-[10px] uppercase text-muted-foreground font-bold mb-1">{t('dashboard.company.brand_health.title')}</p>
+                     <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-2xl font-bold">{companyBrandHealth.averageRating}</span>
+                        <Icon icon="mdi:star" className="h-4 w-4 text-yellow-400" />
+                     </div>
+                     <p className="text-[10px] text-muted-foreground">{companyBrandHealth.totalReviews} reviews</p>
+                  </div>
+                  <div className="text-center pl-2">
+                     <p className="text-[10px] uppercase text-muted-foreground font-bold mb-1">{t('dashboard.company.service_quality.handled_requests')}</p>
+                     <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-2xl font-bold text-emerald-600">{animatedHandledPercent}%</span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground">{animatedAvgReplyMinutes}m avg reply</p>
+                  </div>
+               </CardContent>
+            </Card>
+         </motion.div>
 
-      <motion.div
-        {...getSectionMotionProps(3)}
-        role="region"
-        aria-label="Company audience segments and competitors"
-      >
-        <div className="grid gap-4 md:grid-cols-2 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:account-group-outline" className="h-5 w-5" />
-                {t('dashboard.company.segments.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {companyAudienceSegments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.company.segments.empty')}</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {companyAudienceSegments.map((segment) => (
-                    <li
-                      key={segment.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <span className="line-clamp-2 me-2">{segment.label}</span>
-                      <span className="text-xs text-muted-foreground">{segment.sharePercent}%</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+         {/* 5. Risks/Alerts */}
+         {companyAlerts.length > 0 && (
+            <motion.div {...getSectionMotionProps(4)}>
+               <Card className="shadow-sm border-red-100 bg-red-50/30">
+                  <CardHeader className="px-4 py-2 border-b border-red-100">
+                     <CardTitle className="text-xs font-bold text-red-800 flex items-center gap-2">
+                        <Icon icon="mdi:alert-circle-outline" className="h-4 w-4" />
+                        {t('dashboard.company.risks.title')}
+                     </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                     <ul className="divide-y divide-red-100">
+                        {companyAlerts.map(alert => (
+                           <li key={alert.id} className="p-3 text-xs text-red-700 flex items-start gap-2">
+                              <Icon icon="mdi:circle-medium" className="h-4 w-4 mt-0.5 shrink-0" />
+                              {alert.text}
+                           </li>
+                        ))}
+                     </ul>
+                  </CardContent>
+               </Card>
+            </motion.div>
+         )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:shield-search-outline" className="h-5 w-5" />
-                {t('dashboard.company.competitors.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {companyCompetitors.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.company.competitors.empty')}</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {companyCompetitors.map((competitor) => (
-                    <li
-                      key={competitor.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium line-clamp-1">{competitor.name}</span>
-                        <span className="text-xs text-muted-foreground">{t('dashboard.company.competitors.rating')}: {competitor.rating}</span>
-                      </div>
-                      <span className="flex items-center gap-1 text-xs">
-                        <Icon
-                          icon={competitor.trend === 'up' ? 'mdi:trending-up' : 'mdi:trending-down'}
-                          className="h-3 w-3"
-                        />
-                        {competitor.trend === 'up' ? t('dashboard.company.competitors.trend_up') : t('dashboard.company.competitors.trend_down')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+         {/* 6. Campaigns */}
+         <motion.div {...getSectionMotionProps(5)}>
+            <Card className="shadow-sm">
+               <CardHeader className="px-4 py-3 border-b">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                     <Icon icon="mdi:bullhorn-outline" className="h-4 w-4" />
+                     {t('dashboard.company.campaigns.title')}
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-0">
+                  <ul className="divide-y">
+                     {companyCampaigns.map(camp => (
+                        <li key={camp.id} className="p-3 hover:bg-accent/30 transition-colors">
+                           <p className="text-xs font-bold mb-1">{camp.name}</p>
+                           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                              <span><span className="font-medium">{camp.impressions}</span> imp</span>
+                              <span><span className="font-medium">{camp.clicks}</span> clk</span>
+                              <span className="text-primary font-medium">{camp.leads} leads</span>
+                           </div>
+                        </li>
+                     ))}
+                  </ul>
+               </CardContent>
+            </Card>
+         </motion.div>
 
-      <motion.div
-        {...getSectionMotionProps(4)}
-        role="region"
-        aria-label="Company risks, alerts and network actions"
-      >
-        <div className="grid gap-4 md:grid-cols-2 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:alert-outline" className="h-5 w-5" />
-                {t('dashboard.company.risks.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {companyAlerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.company.risks.empty')}</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {companyAlerts.map((alert) => (
-                    <li
-                      key={alert.id}
-                      className="flex items-center gap-2 rounded-md border px-3 py-2"
-                    >
-                      <Icon icon="mdi:alert-circle-outline" className="h-4 w-4 text-muted-foreground" />
-                      <span className="line-clamp-2">{alert.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:account-cog-outline" className="h-5 w-5" />
-                {t('dashboard.company.network_actions.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {companyNetworkActions.map((action) => (
-                <Button
-                  key={action.id}
-                  variant="outline"
-                  className="justify-start gap-2 text-sm"
-                >
-                  <Icon icon={action.icon} className="h-4 w-4" />
-                  {action.label}
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
-
-      <motion.div
-        {...getSectionMotionProps(5)}
-        role="region"
-        aria-label="Company goals and progress"
-      >
-        <Card className="mt-2">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Icon icon="mdi:target-account" className="h-5 w-5" />
-              {t('dashboard.company.goals.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {companyGoals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('dashboard.company.goals.empty')}</p>
-            ) : (
-              <ul className="space-y-3 text-sm">
-                {companyGoals.map((goal) => (
-                  <li key={goal.id} className="space-y-1">
-                    <p className="line-clamp-2">{goal.label}</p>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div
-                        className="h-2 rounded-full bg-primary"
-                        style={{ width: `${goal.progressPercent}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{goal.progressPercent}%</p>
-                  </li>
+         {/* 7. Segments & Competitors (Tabs) */}
+         <motion.div {...getSectionMotionProps(6)}>
+            <Card className="shadow-sm">
+               <CardContent className="p-4 space-y-4">
+                  <div className="space-y-2">
+                     <p className="text-xs font-semibold flex items-center gap-2">
+                        <Icon icon="mdi:account-group-outline" className="h-4 w-4" />
+                        {t('dashboard.company.segments.title')}
+                     </p>
+                     <div className="space-y-1">
+                        {companyAudienceSegments.map(seg => (
+                           <div key={seg.id} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">{seg.label}</span>
+                              <span className="font-medium">{seg.sharePercent}%</span>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                  <div className="h-px bg-muted" />
+                  <div className="space-y-2">
+                     <p className="text-xs font-semibold flex items-center gap-2">
+                        <Icon icon="mdi:shield-search-outline" className="h-4 w-4" />
+                        {t('dashboard.company.competitors.title')}
+                     </p>
+                     <div className="space-y-1">
+                        {companyCompetitors.map(comp => (
+                           <div key={comp.id} className="flex items-center justify-between text-xs">
+                              <span>{comp.name}</span>
+                              <div className="flex items-center gap-1">
+                                 <span className="font-medium">{comp.rating}</span>
+                                 <Icon icon={comp.trend === 'up' ? 'mdi:trending-up' : 'mdi:trending-down'} className={`h-3 w-3 ${comp.trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`} />
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </CardContent>
+            </Card>
+         </motion.div>
+         
+         {/* 8. Actions */}
+         <motion.div {...getSectionMotionProps(7)}>
+             <div className="grid grid-cols-1 gap-2">
+                {companyNetworkActions.map(action => (
+                   <Button key={action.id} variant="outline" className="justify-start gap-2 h-8 text-xs bg-background">
+                      <Icon icon={action.icon} className="h-4 w-4 text-muted-foreground" />
+                      {action.label}
+                   </Button>
                 ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-    </>
+             </div>
+         </motion.div>
+      </aside>
+    </div>
   )
 }

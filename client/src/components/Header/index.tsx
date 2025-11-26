@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@iconify/react/dist/iconify.js';
+import { Icon } from '@iconify/react';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
-import AuthDrawer from '@/components/AuthDrawer';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import UserMenu from './UserMenu';
-import LanguageSwitcher from './LanguageSwitcher';
+import LanguageSwitcher, { LANGUAGES } from './LanguageSwitcher';
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -32,21 +34,16 @@ interface HeaderProps {
 const STORAGE_KEY_USER = 'projectx_auth_user';
 
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user: authUser, isAuthenticated, logout } = useAuth();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
-  let storedUser: User | null = null;
 
+  let storedUser: User | null = null;
   if (typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY_USER);
-      if (raw) {
-        storedUser = JSON.parse(raw) as User;
-      }
-    } catch {
-      storedUser = null;
-    }
+      if (raw) storedUser = JSON.parse(raw) as User;
+    } catch { storedUser = null; }
   }
 
   const effectiveUser = authUser ?? storedUser ?? (isAuthenticated ? authUser : user ?? null);
@@ -60,17 +57,22 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
       }
     : null;
 
-  useEffect(() => {
-    const handleOpenAuth = () => {
-      setIsAuthOpen(true);
-    };
+  const getInitials = (name: string): string => {
+    if (!name) return '';
+    const parts = name.split(' ').filter(Boolean);
+    const first = parts[0]?.charAt(0) ?? '';
+    const second = parts[1]?.charAt(0) ?? '';
+    return `${first}${second}`.toUpperCase();
+  };
 
-    window.addEventListener('projectx:open-auth', handleOpenAuth);
-
-    return () => {
-      window.removeEventListener('projectx:open-auth', handleOpenAuth);
-    };
-  }, []);
+  const handleLanguageChange = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+    try {
+      localStorage.setItem('i18nextLng', langCode);
+    } catch (e) {
+      console.error('Failed to save language preference', e);
+    }
+  };
 
   useEffect(() => {
     let lastScrollY = window.scrollY || 0;
@@ -112,98 +114,229 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
 
   return (
     <header
-      className={`${isSticky ? 'sticky top-0 ' : ''}z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transform transition-transform duration-200 ease-out will-change-transform ${isHidden ? '-translate-y-full' : 'translate-y-0'}`}
+      className={cn(
+        'z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transform transition-transform duration-200 ease-out will-change-transform',
+        isSticky && 'sticky top-0',
+        isHidden ? '-translate-y-full' : 'translate-y-0'
+      )}
       role="banner"
     >
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 flex h-14 items-center">
-        <div className="me-4 hidden md:flex">
-          <Link to="/" className="me-6 flex items-center space-x-2">
-            <Icon icon="mdi:home" className="h-6 w-6" />
-            <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
-              <span className="font-bold">Trusted</span>{' '}
-              <span className="font-normal">Importers.Ge</span>
-            </span>
-          </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            {navigationItems.map((item: NavigationItem) => (
-              <NavLink
-                key={item.id}
-                to={item.href}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'transition-colors text-primary'
-                    : 'transition-colors text-foreground/60 hover:text-foreground/80'
-                }
-              >
-                {t(item.label)}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            {/* Mobile menu button */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="md:hidden"
-                  size="icon"
-                  aria-label={t('header.menu')}
-                >
-                  <Icon icon="mdi:menu" className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col gap-4 p-4 md:hidden">
-                <SheetHeader>
-                  <SheetTitle>
-                    <span className="font-logo-bebas text-2xl tracking-wide">
-                      <span className="font-bold">Trusted</span>{' '}
-                      <span className="font-normal">Importers.Ge</span>
-                    </span>
-                  </SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col space-y-2">
-                  {navigationItems.map((item: NavigationItem) => (
-                    <SheetClose asChild key={item.id}>
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive }) =>
-                          isActive
-                            ? 'flex items-center rounded-md px-3 py-2 text-base font-semibold text-primary bg-primary/5'
-                            : 'flex items-center rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-muted'
-                        }
-                      >
-                        {t(item.label)}
-                      </NavLink>
-                    </SheetClose>
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
+            <Icon icon="mdi:shield-check" className="h-6 w-6" />
           </div>
+          <span className="hidden sm:inline-block font-sans text-xl font-bold tracking-tight text-slate-900">
+            Trusted<span className="font-medium text-slate-600">Importers</span>
+          </span>
+        </Link>
 
-          <nav className="flex items-center gap-2">
-            <LanguageSwitcher />
-            
-            {effectiveMenuUser ? (
+        {/* Desktop navigation */}
+        <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.id}
+              to={item.href}
+              className={({ isActive }) =>
+                cn(
+                  'transition-colors hover:text-foreground',
+                  isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
+                )
+              }
+            >
+              {t(item.label)}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 shrink-0">
+           <div className="hidden md:block">
+              <LanguageSwitcher />
+           </div>
+
+           {effectiveMenuUser ? (
               <UserMenu user={effectiveMenuUser} onLogout={logout} />
             ) : (
               <Button
-                variant="default"
+                asChild
+                variant="outline"
                 size="sm"
-                onClick={() => setIsAuthOpen(true)}
-                aria-label={t('header.sign_in')}
+                className="hidden sm:flex"
               >
-                <Icon icon="mdi:login" className="me-2 h-4 w-4" />
-                {t('header.sign_in')}
+                <Link to="/login">{t('header.sign_in')}</Link>
               </Button>
             )}
-          </nav>
+            
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Icon icon="mdi:menu" className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] p-0 flex flex-col">
+                {/* Header with Branding */}
+                <SheetHeader className="p-6 border-b">
+                  <SheetTitle className="text-left flex items-center gap-2">
+                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white">
+                        <Icon icon="mdi:shield-check" className="h-5 w-5" />
+                      </div>
+                      <span className="font-sans text-lg font-bold tracking-tight text-slate-900">
+                        Trusted<span className="font-medium text-slate-600">Importers</span>
+                      </span>
+                  </SheetTitle>
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto">
+                  <div className="flex flex-col py-6 px-4 gap-6">
+                    
+                    {/* User Info Section */}
+                    {effectiveMenuUser ? (
+                      <div className="flex flex-col gap-4">
+                         <div className="flex items-center gap-3 px-2">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={effectiveMenuUser.avatar} alt={effectiveMenuUser.name} />
+                              <AvatarFallback>{getInitials(effectiveMenuUser.name)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col overflow-hidden">
+                              <span className="font-medium truncate text-sm">{effectiveMenuUser.name}</span>
+                              <span className="text-xs text-muted-foreground truncate">{effectiveMenuUser.email}</span>
+                            </div>
+                         </div>
+                         <div className="grid gap-1">
+                            <SheetClose asChild>
+                              <Link 
+                                to="/dashboard" 
+                                className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"
+                              >
+                                <Icon icon="mdi:view-dashboard-outline" className="h-5 w-5 text-slate-500" />
+                                {t('navigation.dashboard')}
+                              </Link>
+                            </SheetClose>
+                             <SheetClose asChild>
+                              <Link 
+                                to="/catalog" 
+                                className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"
+                              >
+                                <Icon icon="mdi:view-grid-outline" className="h-5 w-5 text-slate-500" />
+                                {t('navigation.catalog')}
+                              </Link>
+                            </SheetClose>
+                             <SheetClose asChild>
+                              <Link 
+                                to="/profile" 
+                                className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"
+                              >
+                                <Icon icon="mdi:account-circle-outline" className="h-5 w-5 text-slate-500" />
+                                {t('header.profile')}
+                              </Link>
+                            </SheetClose>
+                         </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        <SheetClose asChild>
+                          <Button asChild className="w-full justify-start" size="lg">
+                            <Link to="/login">
+                              <Icon icon="mdi:login" className="mr-2 h-5 w-5" />
+                              {t('header.sign_in')}
+                            </Link>
+                          </Button>
+                        </SheetClose>
+                        <SheetClose asChild>
+                           <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                              <Link to="/register">
+                                <Icon icon="mdi:account-plus" className="mr-2 h-5 w-5" />
+                                {t('header.register') || 'Register'}
+                              </Link>
+                           </Button>
+                        </SheetClose>
+                      </div>
+                    )}
+
+                    <Separator />
+
+                    {/* Main Navigation */}
+                    <nav className="flex flex-col gap-1">
+                      <h4 className="px-2 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t('header.menu')}
+                      </h4>
+                      {navigationItems.map((item) => (
+                        <SheetClose asChild key={item.id}>
+                          <NavLink
+                            to={item.href}
+                            className={({ isActive }) =>
+                              cn(
+                                'flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
+                                isActive 
+                                  ? 'bg-primary/10 text-primary' 
+                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                              )
+                            }
+                          >
+                            {t(item.label)}
+                          </NavLink>
+                        </SheetClose>
+                      ))}
+                    </nav>
+
+                    <Separator />
+
+                    {/* Language Selector */}
+                    <div className="space-y-3">
+                       <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                         {t('header.language')}
+                       </h4>
+                       <div className="grid grid-cols-2 gap-2">
+                          {LANGUAGES.map((lang) => (
+                            <Button
+                              key={lang.code}
+                              variant={i18n.language === lang.code ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "w-full justify-start h-9",
+                                i18n.language === lang.code && "bg-primary text-primary-foreground"
+                              )}
+                              onClick={() => handleLanguageChange(lang.code)}
+                            >
+                              <Icon 
+                                icon={lang.icon} 
+                                className="mr-2 h-4 w-4 rounded-full object-cover" 
+                              />
+                              <span className="truncate">{lang.label}</span>
+                            </Button>
+                          ))}
+                       </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Logout Footer */}
+                {effectiveMenuUser && (
+                  <div className="p-4 border-t bg-slate-50 mt-auto">
+                    <SheetClose asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          if (logout) logout();
+                        }}
+                      >
+                        <Icon icon="mdi:logout" className="mr-2 h-5 w-5" />
+                        {t('header.sign_out')}
+                      </Button>
+                    </SheetClose>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
         </div>
       </div>
-      <AuthDrawer open={isAuthOpen} onOpenChange={setIsAuthOpen} />
+      
+      {/* Mobile-only bottom border for separation */}
+      <div className="h-px bg-slate-100 lg:hidden" />
     </header>
   );
 };

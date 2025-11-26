@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
+import { withCache, buildCacheKeyFromObject, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
 
 /**
  * Vehicle Routes
@@ -35,8 +36,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       fuel_type?: string;
       category?: string;
       drive?: string;
+      source?: string;
+      search?: string;
       page?: string;
       limit?: string;
+      buy_now?: string;
     };
 
     const filters: {
@@ -52,7 +56,48 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       fuelType?: string;
       category?: string;
       drive?: string;
+      source?: string;
+      buyNow?: boolean;
     } = {};
+
+    // Optional combined search param: search="make model year".
+    // This is parsed into make/model/year only when those are not
+    // already provided explicitly.
+    if (query.search && query.search.trim().length > 0) {
+      const raw = query.search.trim();
+
+      // Try to extract a reasonable model year (1950–2100) from the search
+      // string and treat the remaining words as make/model.
+      const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
+
+      let derivedYear: number | undefined;
+      let derivedMake: string | undefined;
+      let derivedModel: string | undefined;
+
+      let withoutYear = raw;
+      if (yearMatch && yearMatch[0]) {
+        derivedYear = Number.parseInt(yearMatch[0], 10);
+        withoutYear = raw.replace(yearMatch[0], '').trim();
+      }
+
+      const parts = withoutYear.split(/\s+/).filter(Boolean);
+      if (parts.length > 0) {
+        derivedMake = parts[0];
+      }
+      if (parts.length > 1) {
+        derivedModel = parts.slice(1).join(' ');
+      }
+
+      if (!filters.make && derivedMake) {
+        filters.make = derivedMake;
+      }
+      if (!filters.model && derivedModel) {
+        filters.model = derivedModel;
+      }
+      if (!filters.year && typeof derivedYear === 'number' && Number.isFinite(derivedYear)) {
+        filters.year = derivedYear;
+      }
+    }
 
     if (query.make && query.make.trim().length > 0) {
       filters.make = query.make.trim();
@@ -97,6 +142,14 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     if (query.drive && query.drive.trim().length > 0) {
       filters.drive = query.drive.trim();
     }
+    if (query.source && query.source.trim().length > 0) {
+      filters.source = query.source.trim();
+    }
+
+    // Optional flag: buy_now=true → only lots with active buy_it_now
+    if (typeof query.buy_now === 'string' && query.buy_now.toLowerCase() === 'true') {
+      filters.buyNow = true;
+    }
 
     const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
@@ -107,24 +160,45 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
 
     // If an Authorization header is present, attempt to authenticate so
     // we can optionally attach is_favorite flags. If authentication
-    // fails, we treat the request as anonymous.
+    // fails, we treat the request as anonymous (don't block the search).
     const authHeader = (request.headers as any).authorization;
     if (authHeader) {
       try {
         await (fastify as any).authenticate(request, reply);
-      } catch {
+      } catch (authError) {
+        // Check if reply was already sent (e.g., 401 response)
         if (reply.sent) {
           return;
         }
+        // Log the auth failure for debugging but continue as anonymous
+        fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
+        // Ensure request.user is undefined for anonymous access
+        (request as any).user = undefined;
       }
     }
 
-    const total = await vehicleModel.countByFilters(filters);
+    // Cache key based on filters (excluding user-specific data like favorites)
+    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset });
+
+    // Try to get cached results (only the base search, not user-specific favorites)
+    const cachedResult = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.SHORT, // 5 minutes
+      async () => {
+        const total = await vehicleModel.countByFilters(filters);
+        if (total === 0) {
+          return { items: [], total: 0 };
+        }
+        const items = await vehicleModel.searchByFilters(filters, limit, offset);
+        return { items, total };
+      },
+    );
+
+    const { items, total } = cachedResult;
     if (total === 0) {
       return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
-
-    const items = await vehicleModel.searchByFilters(filters, limit, offset);
 
     // If user is authenticated, mark which vehicles are already in favorites
     let itemsWithFavoriteFlag = items;
@@ -183,6 +257,61 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return reply.send(vehicle);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /vehicles/:id/similar
+  //
+  // Fetch a list of vehicles similar to the given vehicle ID. Similarity is
+  // based on brand_name/model_name, vehicle_type, engine_fuel, transmission,
+  // year range and price band around calc_price. This endpoint is intended
+  // for "You may also like" style UI blocks and can be tuned in the
+  // VehicleModel.findSimilarById implementation.
+  // ---------------------------------------------------------------------------
+  fastify.get('/vehicles/:id/similar', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { limit, year_range, price_radius } = request.query as {
+      limit?: string;
+      year_range?: string;
+      price_radius?: string;
+    };
+
+    const vehicleId = parseInt(id, 10);
+    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
+      throw new ValidationError('Invalid vehicle id');
+    }
+
+    const exists = await vehicleModel.existsById(vehicleId);
+    if (!exists) {
+      throw new NotFoundError('Vehicle');
+    }
+
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : 10;
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+
+    const parsedYearRange = year_range ? Number.parseInt(year_range, 10) : 2;
+    const safeYearRange = Number.isFinite(parsedYearRange) && parsedYearRange > 0
+      ? parsedYearRange
+      : 2;
+
+    const parsedPriceRadius = price_radius ? Number.parseFloat(price_radius) : 0.2;
+    const safePriceRadius = Number.isFinite(parsedPriceRadius) && parsedPriceRadius > 0
+      ? parsedPriceRadius
+      : 0.2;
+
+    const items = await vehicleModel.findSimilarById(vehicleId, {
+      limit: safeLimit,
+      yearRange: safeYearRange,
+      priceRadius: safePriceRadius,
+    });
+
+    return reply.send({
+      vehicleId,
+      items,
+      limit: safeLimit,
+      yearRange: safeYearRange,
+      priceRadius: safePriceRadius,
+    });
   });
 
   // ---------------------------------------------------------------------------

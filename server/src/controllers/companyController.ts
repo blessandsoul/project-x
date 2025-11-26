@@ -1,6 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import fs from 'fs/promises';
-import path from 'path';
 import {
   Company,
   CompanyCreate,
@@ -22,6 +20,7 @@ import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
 import { FxRateService } from '../services/FxRateService.js';
 import { withTransaction } from '../utils/transactions.js';
 import type { PoolConnection } from 'mysql2/promise';
+import { getUserAvatarUrls, getCompanyLogoUrls } from '../services/ImageUploadService.js';
 
 interface CalculatedQuoteResponse {
   company_id: number;
@@ -67,98 +66,25 @@ export class CompanyController {
     this.fxRateService = new FxRateService(fastify);
   }
 
+  /**
+   * Get user avatar URLs using ImageUploadService
+   */
   private async computeUserAvatarUrls(username: string | null | undefined): Promise<{ avatar_url: string | null; original_avatar_url: string | null }> {
-    if (!username || username.trim().length === 0) {
-      return { avatar_url: null, original_avatar_url: null };
-    }
-
-    const safeUsername = username
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    const uploadsRoot = path.join(
-      process.cwd(),
-      'uploads',
-      'users',
-      safeUsername,
-      'avatars',
-    );
-
-    let files: string[];
-    try {
-      files = await fs.readdir(uploadsRoot);
-    } catch {
-      return { avatar_url: null, original_avatar_url: null };
-    }
-
-    const avatarFile = files.find((f) => f.startsWith('avatar.')) || null;
-    const originalFile = files.find((f) => f.startsWith('avatar-original.')) || null;
-
-    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
-
-    const buildUrl = (file: string | null): string | null => {
-      if (!file) return null;
-      const publicPath = `/uploads/users/${safeUsername}/avatars/${file}`;
-      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
-        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
-      }
-      return publicPath;
-    };
-
+    const urls = await getUserAvatarUrls(username);
     return {
-      avatar_url: buildUrl(avatarFile),
-      original_avatar_url: buildUrl(originalFile),
+      avatar_url: urls.url,
+      original_avatar_url: urls.originalUrl,
     };
   }
 
+  /**
+   * Get company logo URLs using ImageUploadService
+   */
   private async computeLogoUrls(slug: string): Promise<{ logo_url: string | null; original_logo_url: string | null }> {
-    const safeSlug = slug
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    const uploadsRoot = path.join(
-      process.cwd(),
-      'uploads',
-      'companies',
-      safeSlug,
-      'logos',
-    );
-
-    let files: string[];
-    try {
-      files = await fs.readdir(uploadsRoot);
-    } catch {
-      return { logo_url: null, original_logo_url: null };
-    }
-
-    let logoFile = files.find((f) => f.startsWith(`${safeSlug}.`)) || null;
-    if (!logoFile) {
-      logoFile = files.find((f) => f.startsWith('logo.')) || null;
-    }
-
-    let originalFile = files.find((f) => f.startsWith(`${safeSlug}-original.`)) || null;
-    if (!originalFile) {
-      originalFile = files.find((f) => f.startsWith('logo-original.')) || null;
-    }
-
-    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
-
-    const buildUrl = (file: string | null): string | null => {
-      if (!file) return null;
-      const publicPath = `/uploads/companies/${safeSlug}/logos/${file}`;
-      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
-        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
-      }
-      return publicPath;
-    };
-
+    const urls = await getCompanyLogoUrls(slug);
     return {
-      logo_url: buildUrl(logoFile),
-      original_logo_url: buildUrl(originalFile),
+      logo_url: urls.url,
+      original_logo_url: urls.originalUrl,
     };
   }
 

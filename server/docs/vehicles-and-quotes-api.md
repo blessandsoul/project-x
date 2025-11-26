@@ -115,7 +115,25 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
 
 **Query params:**
 
-- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
+- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `source`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
+- `buy_now` (optional, boolean-like: `true` / `false`) – when set to `true`, only return vehicles where `buy_it_now` is active (e.g. lot has Buy It Now option). Any other value (or omission) means no filter on this field.
+- `search` (optional, string) – combined free-text search over make/model/year.
+
+  When provided, the backend will try to parse the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+
+  - Extracts a year in the range `1950–2099` from the string (if present) and treats it as `year`.
+  - Uses the first remaining word as `make`.
+  - Uses the remaining words (if any) joined with spaces as `model`.
+
+  Examples:
+
+  - `GET /vehicles/search?search=Toyota` → `make="Toyota"`.
+  - `GET /vehicles/search?search=Toyota Corolla` → `make="Toyota"`, `model="Corolla"`.
+  - `GET /vehicles/search?search=Toyota Corolla 2018` → `make="Toyota"`, `model="Corolla"`, `year=2018`.
+
+  Explicit query params always win over values derived from `search`. For example:
+
+  - `GET /vehicles/search?search=Toyota Corolla 2018&make=Honda&year=2020` → `make="Honda"`, `model="Corolla"`, `year=2020`.
 
 **Response 200 JSON:**
 
@@ -134,6 +152,8 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
       "source": "copart",
       "retail_value": 20000,
       "calc_price": 7300,
+      "buy_it_now_price": 7600,
+      "buy_it_now": 7500,
       "fuel_type": "Gasoline",
       "category": "Sedan",
       "drive": "FWD",
@@ -183,6 +203,91 @@ Return a single vehicle by ID with core fields needed for quotes.
 
 ---
 
+### GET `/vehicles/:id/similar`
+
+**Description:**
+
+Return a list of vehicles **similar** to the given base vehicle ID. Intended for
+"You may also like" / related vehicles blocks in the UI.
+
+Similarity is currently based on:
+
+- same `brand_name` / `model_name` (aliases `make` / `model`)
+
+The backend also _orders_ results so that vehicles with closer `calc_price`
+to the base vehicle appear first when price data is available, but price is
+not a hard filter.
+
+These rules are implemented in `VehicleModel.findSimilarById` and can be tuned
+later without changing the public API.
+
+**Method:** `GET`
+
+**Path params:**
+
+- `id` – numeric vehicle ID to find similar vehicles for.
+
+**Query params (all optional):**
+
+- `limit` (number, default `10`)
+  - Maximum number of similar vehicles to return.
+- `year_range` (number, default `2`)
+  - Year window around the base vehicle year.
+  - Example: if base year = `2015` and `year_range=2`, then similar vehicles
+    must have `year` between `2013` and `2017`.
+- `price_radius` (number, default `0.2` → 20%)
+  - Relative price band around the base vehicle's `calc_price`.
+  - Example: if base `calc_price = 3000` and `price_radius=0.2`, similar
+    vehicles must have `calc_price` between `2400` and `3600`.
+  - If `calc_price` is missing, the backend falls back to `retail_value` when
+    available, otherwise the price filter is skipped.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "vehicleId": 57388039193975,
+  "items": [
+    {
+      "id": 67890123456789,
+      "brand_name": "Ford",
+      "model_name": "Escape",
+      "make": "Ford",
+      "model": "Escape",
+      "year": 2015,
+      "mileage": 120000,
+      "yard_name": "Appleton (WI)",
+      "source": "iaai",
+      "retail_value": 8827.0,
+      "calc_price": 2913.0,
+      "buy_it_now_price": 0,
+      "buy_it_now": 0,
+      "fuel_type": "petrol",
+      "category": "v",
+      "drive": "full",
+      "primary_photo_url": "https://.../full.jpg",
+      "primary_thumb_url": "https://.../thumb_min.jpg"
+    }
+  ],
+  "limit": 10,
+  "yearRange": 2,
+  "priceRadius": 0.2
+}
+```
+
+Notes:
+
+- If **no similar vehicles** match the filters, `items` will be an empty
+  array and the request still returns `200 OK`.
+- If the base vehicle ID does not exist, the backend returns `404 Not Found`.
+
+**Error responses:**
+
+- `404 Not Found` if the base vehicle does not exist.
+- `400 Bad Request` if `id` is not a valid number (handled as `ValidationError`).
+
+---
+
 ### DELETE `/vehicles/:id`
 
 **Description:**
@@ -202,6 +307,104 @@ Delete a vehicle from the database.
 
 - `404 Not Found` if the vehicle does not exist.
 - `400 Bad Request` for invalid `id`.
+
+---
+
+## Vehicle Favorites API
+
+Endpoints for managing user's favorite vehicles. Routes defined in: `src/routes/favorites.ts`
+
+### GET `/favorites/vehicles`
+
+**Description:**
+
+List the authenticated user's favorite vehicles with pagination.
+
+**Method:** `GET`
+
+**Authentication:** Required (JWT)
+
+**Query params:**
+
+- `page` (optional, number) – page number, default 1.
+- `limit` (optional, number) – items per page, default 20.
+
+**Response 200 JSON:**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 123,
+      "brand_name": "Toyota",
+      "model_name": "Corolla",
+      "year": 2018,
+      "calc_price": 7300,
+      "primary_photo_url": "https://.../full.jpg"
+    }
+  ],
+  "total": 15,
+  "limit": 20,
+  "page": 1,
+  "totalPages": 1
+}
+```
+
+**Error responses:**
+
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
+### POST `/favorites/vehicles/:vehicleId`
+
+**Description:**
+
+Add a vehicle to the user's favorites.
+
+**Method:** `POST`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 201**
+
+```jsonc
+{
+  "success": true
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
+### DELETE `/favorites/vehicles/:vehicleId`
+
+**Description:**
+
+Remove a vehicle from the user's favorites.
+
+**Method:** `DELETE`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 204** – No content on success.
+
+**Error responses:**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
 
 ---
 

@@ -8,7 +8,8 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    fallbackLng: 'en',
+    lng: 'ka', // Force Georgian as default language
+    fallbackLng: 'ka',
     supportedLngs: ['ka', 'en', 'ru', 'ar'],
     debug: import.meta.env.DEV,
     
@@ -18,11 +19,12 @@ i18n
 
     backend: {
       // versioned query param to force browsers/dev server to refetch updated translation files
-      loadPath: '/locales/{{lng}}/translation.json?v=3',
+      loadPath: '/locales/{{lng}}/translation.json?v=21',
     },
 
     detection: {
-      order: ['localStorage', 'navigator'],
+      // Only check localStorage, ignore browser language
+      order: ['localStorage'],
       caches: ['localStorage'],
     },
   });

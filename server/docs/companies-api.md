@@ -51,12 +51,13 @@ Search companies with filters, pagination and sorting. This endpoint is intended
 
 **Query params:**
 
-- `limit` (optional, number) – page size, default 20, max 100.
+- `limit` (optional, number) – page size, default 10, max 100.
 - `offset` (optional, number) – number of companies to skip, default 0.
 - `search` (optional, string) – case‑insensitive search on company `name`.
-  - When provided, must be **at least 4 characters** long.
+  - When provided, must be **at least 3 characters** long.
   - Shorter non‑empty values cause `400 Bad Request` with:
     - `error: "SEARCH_TOO_SHORT"`.
+- `name` (optional, string) – alias for `search` with the **same rules** (min 3 characters, `SEARCH_TOO_SHORT` on shorter non‑empty values).
 - `min_rating` (optional, number) – minimum average rating.
 - `min_base_price` (optional, number) – minimum `base_price`.
 - `max_base_price` (optional, number) – maximum `base_price`.
@@ -374,6 +375,60 @@ Delete a company. Underlying logic is responsible for cleaning up related social
 
 - `400 Bad Request` – invalid `id`.
 - `404 Not Found` – company does not exist.
+
+---
+
+## Company Logo Upload
+
+### POST `/companies/:id/logo`
+
+**Description:**
+
+Upload or replace a company's logo image. The logo is processed and stored on disk with SEO-friendly filenames based on the company slug.
+
+**Method:** `POST`
+
+**Authentication:** Required (JWT)
+
+**Authorization:** Admin or company owner only
+
+**Content-Type:** `multipart/form-data`
+
+**Path params:**
+
+- `id` – numeric company ID
+
+**Request body:**
+
+- `file`: Image file (JPEG, PNG, WebP, GIF)
+
+**Processing:**
+
+- Original image saved as `{slug}-original.{ext}`
+- Resized to 256x256 (preserving aspect ratio) saved as `{slug}.{ext}`
+- Quality: 90% for JPEG/WebP, compression level 9 for PNG
+- Files stored in `/uploads/companies/{slug}/logos/`
+
+**Response 201**
+
+```jsonc
+{
+  "logoUrl": "/uploads/companies/acme-shipping/logos/acme-shipping.png",
+  "originalLogoUrl": "/uploads/companies/acme-shipping/logos/acme-shipping-original.png"
+}
+```
+
+**Error responses:**
+
+- `400 Bad Request` – no file provided or not an image.
+- `401 Unauthorized` – missing/invalid token.
+- `403 Forbidden` – not authorized to upload logo for this company.
+- `404 Not Found` – company does not exist.
+
+**Notes:**
+
+- Logo URLs are returned in company responses as `logo_url` and `original_logo_url`.
+- The `logo` field in company create/update is deprecated; use this endpoint instead.
 
 ---
 

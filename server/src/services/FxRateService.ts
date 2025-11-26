@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import axios, { type AxiosError } from 'axios';
+import type { Pool, RowDataPacket } from 'mysql2/promise';
+import { getFromCache, setInCache, CACHE_TTL } from '../utils/cache.js';
 
 interface ExchangeRateApiResponse {
   result: string;
@@ -8,11 +10,22 @@ interface ExchangeRateApiResponse {
   conversion_rates: Record<string, number>;
 }
 
+interface RateRow extends RowDataPacket {
+  rate: number;
+}
+
 export class FxRateService {
   private fastify: FastifyInstance;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
+  }
+
+  /**
+   * Get the MySQL pool from the Fastify instance
+   */
+  private get db(): Pool {
+    return this.fastify.mysql;
   }
 
   private get todayUtcDate(): string {
@@ -28,21 +41,13 @@ export class FxRateService {
     targetCurrency: string,
     rateDate: string,
   ): Promise<number | null> {
-    const anyFastify: any = this.fastify as any;
-    const db = anyFastify.mysql;
-
-    if (!db || typeof db.execute !== 'function') {
-      this.fastify.log.error('MySQL pool is not available on fastify instance');
-      return null;
-    }
-
-    const [rows] = (await db.execute(
+    const [rows] = await this.db.execute<RateRow[]>(
       'SELECT rate FROM exchange_rates WHERE base_currency = ? AND target_currency = ? AND rate_date = ? LIMIT 1',
       [baseCurrency, targetCurrency, rateDate],
-    )) as any[];
+    );
 
-    if (Array.isArray(rows) && rows.length > 0) {
-      const row = rows[0] as { rate: number };
+    const row = rows[0];
+    if (row) {
       return typeof row.rate === 'number' ? row.rate : Number(row.rate);
     }
 
@@ -55,15 +60,7 @@ export class FxRateService {
     rate: number,
     rateDate: string,
   ): Promise<void> {
-    const anyFastify: any = this.fastify as any;
-    const db = anyFastify.mysql;
-
-    if (!db || typeof db.execute !== 'function') {
-      this.fastify.log.error('MySQL pool is not available on fastify instance');
-      return;
-    }
-
-    await db.execute(
+    await this.db.execute(
       `INSERT INTO exchange_rates (base_currency, target_currency, rate, rate_date)
        VALUES (?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
@@ -164,26 +161,30 @@ export class FxRateService {
    * exchange_rates table without calling the external API. This is
    * intended to be used at request time when converting prices for
    * responses, relying on the daily refresh job to keep data fresh.
+   *
+   * Results are cached in Redis for 1 hour to reduce DB load.
    */
   async getLatestUsdGelRate(): Promise<number | null> {
-    const anyFastify: any = this.fastify as any;
-    const db = anyFastify.mysql;
+    const cacheKey = 'fx:usd:gel:latest';
 
-    if (!db || typeof db.execute !== 'function') {
-      this.fastify.log.error('MySQL pool is not available on fastify instance');
-      return null;
+    // Try cache first
+    const cached = await getFromCache<number>(this.fastify, cacheKey);
+    if (cached !== null) {
+      return cached;
     }
 
     try {
-      const [rows] = (await db.execute(
+      const [rows] = await this.db.execute<RateRow[]>(
         'SELECT rate FROM exchange_rates WHERE base_currency = ? AND target_currency = ? ORDER BY rate_date DESC LIMIT 1',
         ['USD', 'GEL'],
-      )) as any[];
+      );
 
-      if (Array.isArray(rows) && rows.length > 0) {
-        const row = rows[0] as { rate: number };
+      const row = rows[0];
+      if (row) {
         const rate = typeof row.rate === 'number' ? row.rate : Number(row.rate);
         if (Number.isFinite(rate) && rate > 0) {
+          // Cache for 1 hour - rate only changes once per day
+          await setInCache(this.fastify, cacheKey, rate, CACHE_TTL.LONG);
           return rate;
         }
       }

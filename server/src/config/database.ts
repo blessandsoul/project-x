@@ -20,21 +20,28 @@ const databasePlugin = fp(async (fastify: FastifyInstance) => {
   // Configure a robust MySQL connection pool. The mysql2/promise import
   // already returns a promise-based pool, so there is no need to call
   // .promise() here.
+  const connectionLimit = process.env.MYSQL_CONNECTION_LIMIT
+    ? parseInt(process.env.MYSQL_CONNECTION_LIMIT, 10)
+    : 20; // Increased default for better concurrency
+
   const pool = mysql.createPool({
     host: process.env.MYSQL_HOST!,
     user: process.env.MYSQL_USER!,
     password: process.env.MYSQL_PASSWORD!,
     database: process.env.MYSQL_DATABASE!,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit,
     queueLimit: 0,
     connectTimeout: 60000,
     // Prevent stale connections from causing first-request failures
-    maxIdle: 10, // Maximum idle connections (same as connectionLimit)
+    maxIdle: connectionLimit, // Maximum idle connections (same as connectionLimit)
     idleTimeout: 60000, // Close idle connections after 60 seconds
     // Test connections/keep them alive to avoid stale connection errors
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000, // Send keepalive packets every 10 seconds
+    // Performance optimizations
+    namedPlaceholders: false, // Slightly faster than named placeholders
+    decimalNumbers: true, // Return decimals as numbers, not strings
   });
 
   // Test the connection

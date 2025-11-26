@@ -1,17 +1,27 @@
 import { FastifyPluginAsync } from 'fastify';
-import fs from 'fs/promises';
-import path from 'path';
-import sharp from 'sharp';
 import { UserController } from '../controllers/userController.js';
 import { UserCompanyActivityModel } from '../models/UserCompanyActivityModel.js';
 import { UserCreate, UserUpdate, UserLogin } from '../types/user.js';
 import { ValidationError, AuthenticationError, NotFoundError, ConflictError, AuthorizationError } from '../types/errors.js';
+import {
+  uploadUserAvatar,
+  deleteUserAvatar,
+  getUserAvatarUrls,
+  validateImageMime,
+} from '../services/ImageUploadService.js';
 
 const loginRateLimitMax = process.env.RATE_LIMIT_USER_LOGIN_MAX
   ? parseInt(process.env.RATE_LIMIT_USER_LOGIN_MAX, 10)
   : 5;
 
 const loginRateLimitWindow = process.env.RATE_LIMIT_USER_LOGIN_WINDOW || '5 minutes';
+
+// Registration rate limit - prevent spam account creation
+const registerRateLimitMax = process.env.RATE_LIMIT_USER_REGISTER_MAX
+  ? parseInt(process.env.RATE_LIMIT_USER_REGISTER_MAX, 10)
+  : 3;
+
+const registerRateLimitWindow = process.env.RATE_LIMIT_USER_REGISTER_WINDOW || '1 hour';
 
 /**
  * User Routes
@@ -61,6 +71,12 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           serviceFee: { type: 'number', minimum: 0, description: 'Optional service fee that can be set later in dashboard.' },
           brokerFee: { type: 'number', minimum: 0, description: 'Optional broker fee that can be set later in dashboard.' },
         },
+      },
+    },
+    config: {
+      rateLimit: {
+        max: registerRateLimitMax,
+        timeWindow: registerRateLimitWindow,
       },
     },
   }, async (request, reply) => {
@@ -160,62 +176,8 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ---------------------------------------------------------------------------
   // User avatar upload & management (/user/avatar)
+  // Uses ImageUploadService for consistent image handling
   // ---------------------------------------------------------------------------
-
-  const resolveAvatarPaths = async (username: string) => {
-    const baseNameSource = username && username.trim().length > 0 ? username : 'user';
-
-    const safeUsername = baseNameSource
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    const uploadsRoot = path.join(process.cwd(), 'uploads', 'users', safeUsername, 'avatars');
-    await fs.mkdir(uploadsRoot, { recursive: true });
-
-    return { uploadsRoot, safeUsername };
-  };
-
-  const buildAvatarUrls = (safeUsername: string, ext: string | null) => {
-    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
-
-    const build = (filename: string | null): string | null => {
-      if (!filename) return null;
-      const publicPath = `/uploads/users/${safeUsername}/avatars/${filename}`;
-      if (baseUrlEnv && baseUrlEnv.trim().length > 0) {
-        return `${baseUrlEnv.replace(/\/$/, '')}${publicPath}`;
-      }
-      return publicPath;
-    };
-
-    if (!ext) {
-      return {
-        avatarUrl: null,
-        originalAvatarUrl: null,
-      };
-    }
-
-    const avatarFilename = `avatar.${ext}`;
-    const originalFilename = `avatar-original.${ext}`;
-
-    return {
-      avatarUrl: build(avatarFilename),
-      originalAvatarUrl: build(originalFilename),
-    };
-  };
-
-  const detectExistingAvatarExt = async (uploadsRoot: string): Promise<string | null> => {
-    try {
-      const files = await fs.readdir(uploadsRoot);
-      const avatarFile = files.find((f) => f.startsWith('avatar.'));
-      if (!avatarFile) return null;
-      const parts = avatarFile.split('.');
-      return parts.length > 1 ? (parts[parts.length - 1] ?? null) : null;
-    } catch {
-      return null;
-    }
-  };
 
   const handleAvatarUpload = async (request: any, reply: any) => {
     if (!request.user || typeof request.user.id !== 'number') {
@@ -228,57 +190,27 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const mime = file.mimetype as string | undefined;
-    if (!mime || !mime.startsWith('image/')) {
+    try {
+      validateImageMime(mime);
+    } catch {
       throw new ValidationError('Avatar must be an image file');
     }
 
     // Load full user to get stable username and role
     const profile = await userController.getProfile(request.user.id);
 
-    // Company-role users must use their company logo as avatar and
-    // are not allowed to upload a separate personal avatar.
+    // Company-role users must use their company logo as avatar
     if (profile.role === 'company') {
       throw new AuthorizationError('Company users must use company logo as avatar');
     }
 
-    const { uploadsRoot, safeUsername } = await resolveAvatarPaths(profile.username);
+    const buffer = await file.toBuffer();
+    const result = await uploadUserAvatar(buffer, mime!, profile.username);
 
-    let ext = 'png';
-    if (mime === 'image/jpeg' || mime === 'image/jpg') {
-      ext = 'jpg';
-    } else if (mime === 'image/webp') {
-      ext = 'webp';
-    }
-
-    const originalFilename = `avatar-original.${ext}`;
-    const originalFilePath = path.join(uploadsRoot, originalFilename);
-
-    const resizedFilename = `avatar.${ext}`;
-    const resizedFilePath = path.join(uploadsRoot, resizedFilename);
-
-    const originalBuffer = await file.toBuffer();
-
-    let pipeline = sharp(originalBuffer).resize(256, 256, {
-      fit: 'inside',
-      withoutEnlargement: true,
+    return reply.code(201).send({
+      avatarUrl: result.url,
+      originalAvatarUrl: result.originalUrl,
     });
-
-    if (ext === 'jpg') {
-      pipeline = pipeline.jpeg({ quality: 90 });
-    } else if (ext === 'webp') {
-      pipeline = pipeline.webp({ quality: 90 });
-    } else {
-      pipeline = pipeline.png({ compressionLevel: 9 });
-    }
-
-    await fs.writeFile(originalFilePath, originalBuffer);
-
-    const buffer = await pipeline.toBuffer();
-    await fs.writeFile(resizedFilePath, buffer);
-
-    const { avatarUrl, originalAvatarUrl } = buildAvatarUrls(safeUsername, ext);
-
-    return reply.code(201).send({ avatarUrl, originalAvatarUrl });
   };
 
   /**
@@ -316,12 +248,12 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const profile = await userController.getProfile(request.user.id);
-    const { uploadsRoot, safeUsername } = await resolveAvatarPaths(profile.username);
+    const urls = await getUserAvatarUrls(profile.username);
 
-    const ext = await detectExistingAvatarExt(uploadsRoot);
-    const { avatarUrl, originalAvatarUrl } = buildAvatarUrls(safeUsername, ext);
-
-    return reply.send({ avatarUrl, originalAvatarUrl });
+    return reply.send({
+      avatarUrl: urls.url,
+      originalAvatarUrl: urls.originalUrl,
+    });
   });
 
   /**
@@ -337,17 +269,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const profile = await userController.getProfile(request.user.id);
-    const { uploadsRoot } = await resolveAvatarPaths(profile.username);
-
-    try {
-      const files = await fs.readdir(uploadsRoot);
-      const toDelete = files.filter((f) => f.startsWith('avatar.'));
-      await Promise.all(
-        toDelete.map((filename) => fs.unlink(path.join(uploadsRoot, filename)).catch(() => undefined)),
-      );
-    } catch {
-      // If directory or files do not exist, treat as already deleted
-    }
+    await deleteUserAvatar(profile.username);
 
     return reply.code(204).send();
   });

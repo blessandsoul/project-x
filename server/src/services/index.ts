@@ -9,3 +9,5 @@ export { VinDecoderService } from './VinDecoderService.js';
 export { ShippingQuoteService } from './ShippingQuoteService.js';
 export { GeoLocatorService } from './GeoLocatorService.js';
 export { AuctionApiService } from './AuctionApiService.js';
+export { FxRateService } from './FxRateService.js';
+export * from './ImageUploadService.js';

@@ -90,6 +90,8 @@ export class VehicleModel extends BaseModel {
       fuelType?: string;
       category?: string;
       drive?: string;
+      source?: string;
+      buyNow?: boolean;
     },
     limit: number = 50,
     offset: number = 0,
@@ -149,6 +151,13 @@ export class VehicleModel extends BaseModel {
       conditions.push('drive LIKE ?');
       params.push(`%${filters.drive}%`);
     }
+    if (filters.source) {
+      conditions.push('source = ?');
+      params.push(filters.source);
+    }
+    if (filters.buyNow) {
+      conditions.push('buy_it_now = 1');
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -165,6 +174,8 @@ export class VehicleModel extends BaseModel {
         source,
         retail_value,
         calc_price,
+        buy_it_now_price,
+        buy_it_now,
         engine_fuel AS fuel_type,
         vehicle_type AS category,
         drive,
@@ -211,6 +222,8 @@ export class VehicleModel extends BaseModel {
     fuelType?: string;
     category?: string;
     drive?: string;
+    source?: string;
+    buyNow?: boolean;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -264,6 +277,10 @@ export class VehicleModel extends BaseModel {
       conditions.push('drive LIKE ?');
       params.push(`%${filters.drive}%`);
     }
+    if (filters.source) {
+      conditions.push('source = ?');
+      params.push(filters.source);
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const query = `SELECT COUNT(*) AS count FROM vehicles ${where}`;
@@ -276,6 +293,108 @@ export class VehicleModel extends BaseModel {
     const row = rows[0] as { count: number | string };
     const value = typeof row.count === 'number' ? row.count : Number(row.count);
     return Number.isFinite(value) ? value : 0;
+  }
+
+  /**
+   * Find vehicles similar to the given base vehicle ID.
+   *
+   * Similarity is currently based only on brand_name/model_name (aliased as
+   * make/model). Additional criteria (such as year ranges, price bands,
+   * vehicle_type, engine_fuel, etc.) can be added later without changing the
+   * public API.
+   */
+  async findSimilarById(
+    id: number,
+    options?: {
+      limit?: number;
+      yearRange?: number;
+      priceRadius?: number;
+    },
+  ): Promise<Vehicle[]> {
+    const base = await this.findById(id);
+    if (!base) {
+      return [];
+    }
+
+    const limit = Number.isFinite(options?.limit || 0) && (options?.limit || 0) > 0
+      ? (options as any).limit
+      : 10;
+    const yearRange = Number.isFinite(options?.yearRange || 0) && (options?.yearRange || 0) > 0
+      ? (options as any).yearRange
+      : 2;
+    const priceRadius = Number.isFinite(options?.priceRadius || 0) && (options?.priceRadius || 0) > 0
+      ? (options as any).priceRadius
+      : 0.2;
+
+    const rawPrice =
+      base && (base as any).calc_price != null
+        ? Number((base as any).calc_price)
+        : base && (base as any).retail_value != null
+          ? Number((base as any).retail_value)
+          : null;
+
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    // Always exclude the base vehicle itself.
+    conditions.push('id <> ?');
+    params.push(id);
+
+    if ((base as any).brand_name) {
+      conditions.push('brand_name = ?');
+      params.push((base as any).brand_name);
+    }
+    if ((base as any).model_name) {
+      conditions.push('model_name = ?');
+      params.push((base as any).model_name);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const query = `
+      SELECT
+        id,
+        brand_name,
+        model_name,
+        brand_name AS make,
+        model_name AS model,
+        year,
+        mileage,
+        yard_name,
+        source,
+        retail_value,
+        calc_price,
+        buy_it_now_price,
+        buy_it_now,
+        engine_fuel AS fuel_type,
+        vehicle_type AS category,
+        drive,
+        (
+          SELECT vp.url
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = vehicles.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS primary_photo_url,
+        (
+          SELECT vp.thumb_url_min
+          FROM vehicle_photos vp
+          WHERE vp.vehicle_id = vehicles.id
+          ORDER BY vp.id ASC
+          LIMIT 1
+        ) AS primary_thumb_url
+      FROM vehicles
+      ${where}
+      ORDER BY
+        RAND(),
+        id DESC
+      LIMIT ?
+    `;
+
+    params.push(limit);
+
+    const rows = await this.executeQuery(query, params);
+    return Array.isArray(rows) ? (rows as Vehicle[]) : [];
   }
 
   async getPhotosByVehicleId(vehicleId: number): Promise<VehiclePhoto[]> {

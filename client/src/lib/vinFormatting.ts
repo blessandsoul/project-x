@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import type { VinDecodeSuccess } from '@/lib/vinApi'
 
 export const VIN_PRIMARY_KEYS = [
@@ -28,35 +29,35 @@ export const VIN_SECONDARY_KEYS = [
   'plant_state',
 ] as const
 
-export const VIN_FIELD_LABELS: Record<string, string> = {
-  make: 'Make',
-  model: 'Model',
-  year: 'Year',
-  model_year: 'Model Year',
-  trim: 'Trim',
-  series: 'Series',
-  body_class: 'Body Class',
-  vehicle_type: 'Vehicle Type',
-  engine_cylinders: 'Engine Cylinders',
-  engine_displacement: 'Engine Displacement',
-  engine_model: 'Engine Model',
-  engine_power: 'Engine Power',
-  fuel_type: 'Fuel Type',
-  transmission_style: 'Transmission',
-  transmission_speeds: 'Transmission Speeds',
-  drive_type: 'Drive Type',
-  doors: 'Doors',
-  gross_vehicle_weight_rating: 'GVWR',
-  manufacturer: 'Manufacturer',
-  plant_country: 'Plant Country',
-  plant_city: 'Plant City',
-  plant_state: 'Plant State',
-}
-
-export const formatVinFieldKey = (rawKey: string): string => {
-  const key = rawKey.toLowerCase()
-  if (VIN_FIELD_LABELS[key]) {
-    return VIN_FIELD_LABELS[key]
+export const formatVinFieldKey = (rawKey: string, t?: TFunction): string => {
+  if (t) {
+    // Try to find a translation for the exact key
+    const key = rawKey.toLowerCase()
+    // Map known keys to translation paths
+    const translationMap: Record<string, string> = {
+      'trim': 'vin.fields.trim',
+      'series': 'vin.fields.series',
+      'body_class': 'vin.fields.body_class',
+      'vehicle_type': 'vin.fields.vehicle_type',
+      'engine_cylinders': 'vin.fields.engine_cylinders',
+      'engine_displacement': 'vin.fields.engine_displacement',
+      'engine_model': 'vin.fields.engine_model',
+      'engine_power': 'vin.fields.engine_power',
+      'fuel_type': 'vin.fields.fuel_type',
+      'transmission_style': 'vin.fields.transmission_style',
+      'transmission_speeds': 'vin.fields.transmission_speeds',
+      'drive_type': 'vin.fields.drive_type',
+      'doors': 'vin.fields.doors',
+      'gross_vehicle_weight_rating': 'vin.fields.gvwr',
+      'manufacturer': 'vin.fields.manufacturer',
+      'plant_country': 'vin.fields.plant_country',
+      'plant_city': 'vin.fields.plant_city',
+      'plant_state': 'vin.fields.plant_state',
+    }
+    
+    if (translationMap[key]) {
+        return t(translationMap[key])
+    }
   }
 
   const withSpaces = rawKey

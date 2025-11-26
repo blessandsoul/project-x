@@ -1,7 +1,4 @@
 import { FastifyPluginAsync } from 'fastify';
-import fs from 'fs/promises';
-import path from 'path';
-import sharp from 'sharp';
 import { CompanyController } from '../controllers/companyController.js';
 import {
   CompanyCreate,
@@ -13,6 +10,17 @@ import {
 import { ValidationError, AuthorizationError } from '../types/errors.js';
 import { parsePagination, buildPaginatedResult } from '../utils/pagination.js';
 import { withIdempotency } from '../utils/idempotency.js';
+import {
+  withCache,
+  buildCacheKey,
+  buildCacheKeyFromObject,
+  invalidateCachePattern,
+  CACHE_TTL,
+} from '../utils/cache.js';
+import {
+  uploadCompanyLogo,
+  validateImageMime,
+} from '../services/ImageUploadService.js';
 
 /**
  * Company, Social Links, and Quotes Routes
@@ -47,7 +55,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * can be created.
    */
   fastify.get('/companies', async (request, reply) => {
-    const companies = await controller.getCompanies();
+    const cacheKey = 'companies:all';
+    const companies = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.MEDIUM, // 10 minutes
+      () => controller.getCompanies(),
+    );
     return reply.send(companies);
   });
 
@@ -69,6 +83,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       is_vip,
       onboarding_free,
       search,
+      name,
       order_by,
       order_direction,
     } = request.query as {
@@ -83,22 +98,29 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       is_vip?: string;
       onboarding_free?: string;
       search?: string;
+      name?: string;
       order_by?: string;
       order_direction?: string;
     };
 
-    if (typeof search === 'string') {
-      const trimmed = search.trim();
-      if (trimmed.length > 0 && trimmed.length < 4) {
+    const effectiveSearch = typeof search === 'string' && search.trim().length > 0
+      ? search
+      : typeof name === 'string' && name.trim().length > 0
+        ? name
+        : undefined;
+
+    if (typeof effectiveSearch === 'string') {
+      const trimmed = effectiveSearch.trim();
+      if (trimmed.length > 0 && trimmed.length < 3) {
         return reply.status(400).send({
           error: 'SEARCH_TOO_SHORT',
-          message: 'search parameter must be at least 4 characters long when provided',
+          message: 'search parameter must be at least 3 characters long when provided',
         });
       }
     }
 
-    const parsedLimit = typeof limit === 'number' ? limit : NaN;
-    const parsedOffset = typeof offset === 'number' ? offset : NaN;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
+    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
 
     let typedOrderBy: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
     if (order_by === 'rating' || order_by === 'cheapest' || order_by === 'name' || order_by === 'newest') {
@@ -119,7 +141,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
         offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
       },
-      { limit: 20, maxLimit: 100 },
+      { limit: 10, maxLimit: 100 },
     );
 
     const params = {
@@ -133,13 +155,21 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       city: city && city.trim().length > 0 ? city : undefined,
       isVip: typeof is_vip === 'string' ? is_vip === 'true' : undefined,
       isOnboardingFree: typeof onboarding_free === 'string' ? onboarding_free === 'true' : undefined,
-      search: search && search.trim().length > 0 ? search.trim() : undefined,
+      search: effectiveSearch && effectiveSearch.trim().length > 0 ? effectiveSearch.trim() : undefined,
       orderBy: typedOrderBy,
       orderDirection: typedOrderDirection,
     };
 
-    const { items, total, limit: effectiveLimit, offset: effectiveOffset } = await controller.searchCompanies(params);
+    // Cache company search results
+    const cacheKey = buildCacheKeyFromObject('companies:search', params);
+    const result = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.SHORT, // 5 minutes
+      () => controller.searchCompanies(params),
+    );
 
+    const { items, total, limit: effectiveLimit, offset: effectiveOffset } = result;
     return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
 
@@ -297,10 +327,8 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * POST /companies/:id/logo
    *
-   * Upload or replace a company logo. The logo is stored on disk under
-   * /uploads/logos with a filename derived from the company slug (or name
-   * if slug is not set), so that files remain human-readable and
-   * SEO-friendly.
+   * Upload or replace a company logo. Uses ImageUploadService for
+   * consistent image processing across the application.
    */
   fastify.post('/companies/:id/logo', {
     preHandler: fastify.authenticate,
@@ -331,75 +359,23 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const mime = file.mimetype as string | undefined;
-    if (!mime || !mime.startsWith('image/')) {
+    try {
+      validateImageMime(mime);
+    } catch {
       throw new ValidationError('Logo must be an image file');
     }
 
     const company = await controller.getCompanyById(companyId);
-
-    const baseNameSource = (company.slug && company.slug.trim().length > 0)
+    const slugOrName = (company.slug && company.slug.trim().length > 0)
       ? company.slug
       : company.name;
 
-    const safeSlug = baseNameSource
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    let ext = 'png';
-    if (mime === 'image/jpeg' || mime === 'image/jpg') {
-      ext = 'jpg';
-    } else if (mime === 'image/webp') {
-      ext = 'webp';
-    }
-
-    const uploadsRoot = path.join(process.cwd(), 'uploads', 'companies', safeSlug, 'logos');
-    await fs.mkdir(uploadsRoot, { recursive: true });
-
-    const originalFilename = `${safeSlug}-original.${ext}`;
-    const originalFilePath = path.join(uploadsRoot, originalFilename);
-
-    const resizedFilename = `${safeSlug}.${ext}`;
-    const resizedFilePath = path.join(uploadsRoot, resizedFilename);
-
-    const originalBuffer = await file.toBuffer();
-
-    // Resize to a typical square logo dimension (256x256) while preserving aspect ratio
-    // and avoiding upscaling very small images.
-    let pipeline = sharp(originalBuffer).resize(256, 256, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    });
-
-    if (ext === 'jpg') {
-      pipeline = pipeline.jpeg({ quality: 90 });
-    } else if (ext === 'webp') {
-      pipeline = pipeline.webp({ quality: 90 });
-    } else {
-      pipeline = pipeline.png({ compressionLevel: 9 });
-    }
-
-    // Save original as uploaded
-    await fs.writeFile(originalFilePath, originalBuffer);
-
-    const buffer = await pipeline.toBuffer();
-    await fs.writeFile(resizedFilePath, buffer);
-
-    const baseUrlEnv = process.env.PUBLIC_UPLOADS_BASE_URL;
-    const resizedPublicPath = `/uploads/companies/${safeSlug}/logos/${resizedFilename}`;
-    const originalPublicPath = `/uploads/companies/${safeSlug}/logos/${originalFilename}`;
-
-    const logoUrl = baseUrlEnv && baseUrlEnv.trim().length > 0
-      ? `${baseUrlEnv.replace(/\/$/, '')}${resizedPublicPath}`
-      : resizedPublicPath;
-
-    const originalLogoUrl = baseUrlEnv && baseUrlEnv.trim().length > 0
-      ? `${baseUrlEnv.replace(/\/$/, '')}${originalPublicPath}`
-      : originalPublicPath;
+    const buffer = await file.toBuffer();
+    const result = await uploadCompanyLogo(buffer, mime!, slugOrName);
 
     return reply.code(201).send({
-      logoUrl,
-      originalLogoUrl,
+      logoUrl: result.url,
+      originalLogoUrl: result.originalUrl,
     });
   });
 
@@ -739,10 +715,17 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       { limit: 5, maxLimit: 50 },
     );
 
-    const fullResult = await controller.calculateQuotesForVehicle(id, currency, {
-      limit: safeLimit,
-      offset: safeOffset,
-    });
+    // Cache quote calculations - same vehicle + currency + pagination = same result
+    const cacheKey = buildCacheKey('quotes:calculate', id, currency || 'USD', safeLimit, safeOffset);
+    const fullResult = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.CALCULATION, // 10 minutes
+      () => controller.calculateQuotesForVehicle(id, currency, {
+        limit: safeLimit,
+        offset: safeOffset,
+      }),
+    );
 
     const total = typeof fullResult.totalCompanies === 'number'
       ? fullResult.totalCompanies
@@ -801,7 +784,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const parsedLimit = limit ? parseInt(limit, 10) : 3;
     const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 3;
 
-    const fullResult = await controller.calculateQuotesForVehicle(id, currency);
+    // Cache cheapest quotes - same vehicle + currency = same result
+    const cacheKey = buildCacheKey('quotes:cheapest', id, currency || 'USD', safeLimit);
+    const fullResult = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.CALCULATION, // 10 minutes
+      () => controller.calculateQuotesForVehicle(id, currency),
+    );
+
     const quotes = fullResult.quotes.slice(0, safeLimit);
     return reply.send({ ...fullResult, quotes });
   });

@@ -75,6 +75,7 @@ export interface Company {
   rating: number;
   reviewCount: number;
   vipStatus: boolean;
+  trustScore?: number;
   onboarding: CompanyOnboarding;
   location: {
     state: string;

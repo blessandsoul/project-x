@@ -1,13 +1,11 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   ArrowUpCircleIcon,
   BarChartIcon,
-  CameraIcon,
   ClipboardListIcon,
   DatabaseIcon,
-  FileCodeIcon,
   FileIcon,
-  FileTextIcon,
   FolderIcon,
   HelpCircleIcon,
   LayoutDashboardIcon,
@@ -32,125 +30,73 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuth()
+  const { t } = useTranslation()
+
+  const navMain = [
     {
-      title: "Dashboard",
+      title: t('sidebar.dashboard'),
       url: "/dashboard",
       icon: LayoutDashboardIcon,
     },
     {
-      title: "Lifecycle",
+      title: t('sidebar.lifecycle'),
       url: "/catalog",
       icon: ListIcon,
     },
     {
-      title: "Analytics",
+      title: t('sidebar.analytics'),
       url: "/dashboard",
       icon: BarChartIcon,
     },
     {
-      title: "Projects",
+      title: t('sidebar.projects'),
       url: "/catalog",
       icon: FolderIcon,
     },
     {
-      title: "Team",
+      title: t('sidebar.team'),
       url: "/dashboard",
       icon: UsersIcon,
     },
-  ],
-  navClouds: [
+  ]
+
+  const navSecondary = [
     {
-      title: "Capture",
-      icon: CameraIcon,
-      isActive: true,
-      url: "/dashboard",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: FileTextIcon,
-      url: "/dashboard",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: FileCodeIcon,
-      url: "/dashboard",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
+      title: t('sidebar.settings'),
       url: "/dashboard",
       icon: SettingsIcon,
     },
     {
-      title: "Get Help",
+      title: t('sidebar.get_help'),
       url: "/",
       icon: HelpCircleIcon,
     },
     {
-      title: "Search",
+      title: t('sidebar.search'),
       url: "/catalog",
       icon: SearchIcon,
     },
-  ],
-  documents: [
+  ]
+
+  const documents = [
     {
-      name: "Data Library",
+      name: t('sidebar.data_library'),
       url: "/dashboard",
       icon: DatabaseIcon,
     },
     {
-      name: "Reports",
+      name: t('sidebar.reports'),
       url: "/dashboard",
       icon: ClipboardListIcon,
     },
     {
-      name: "Word Assistant",
+      name: t('sidebar.word_assistant'),
       url: "/dashboard",
       icon: FileIcon,
     },
-  ],
-}
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useAuth()
+  ]
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -163,16 +109,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <ArrowUpCircleIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">{t('sidebar.company_name')}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} />
+        <NavDocuments items={documents} />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         {user && (

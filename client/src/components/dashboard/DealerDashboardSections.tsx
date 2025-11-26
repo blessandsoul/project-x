@@ -130,365 +130,267 @@ export function DealerDashboardSections({
   const animatedMarginDelta = useAnimatedValue(dealerComparisonStats.marginDeltaPercent)
 
   return (
-    <>
-      <motion.div
-        {...getSectionMotionProps(0)}
-        role="region"
-        aria-label="Dealer leads overview"
-      >
-        <div className="grid gap-4 md:grid-cols-3 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:account-group" className="h-5 w-5" />
-                {t('dashboard.dealer.leads.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.today_new')}</p>
-                  <p className="text-xl font-semibold">{animatedTodayNew}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.week_new')}</p>
-                  <p className="text-xl font-semibold">{animatedWeekNew}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.in_progress')}</p>
-                  <p className="text-xl font-semibold">{animatedInProgress}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.dealer.leads.closed')}</p>
-                  <p className="text-xl font-semibold">{animatedClosed}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* LEFT COLUMN: Main Stats & Pipeline (8/12) */}
+      <div className="lg:col-span-8 space-y-6">
+        {/* 1. Leads Overview */}
+        <motion.div {...getSectionMotionProps(0)}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card className="shadow-sm">
+               <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.dealer.leads.today_new')}</p>
+                  <p className="text-2xl font-bold text-primary">{animatedTodayNew}</p>
+               </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+               <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.dealer.leads.week_new')}</p>
+                  <p className="text-2xl font-bold">{animatedWeekNew}</p>
+               </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+               <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.dealer.leads.in_progress')}</p>
+                  <p className="text-2xl font-bold">{animatedInProgress}</p>
+               </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+               <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">{t('dashboard.dealer.leads.closed')}</p>
+                  <p className="text-2xl font-bold">{animatedClosed}</p>
+               </CardContent>
+            </Card>
+          </div>
+        </motion.div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:chart-timeline-variant" className="h-5 w-5" />
-                {t('dashboard.dealer.funnel.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.views')}</span>
-                  <span className="font-medium">{animatedProfileViews}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.requests')}</span>
-                  <span className="font-medium">{animatedRequests}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.funnel.deals')}</span>
-                  <span className="font-medium">{animatedDeals}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:flash" className="h-5 w-5" />
-                {t('dashboard.dealer.actions.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm">
-              <Button asChild className="justify-start gap-2" variant="outline">
-                <Link to="/catalog">
-                  <Icon icon="mdi:plus-circle-outline" className="h-4 w-4" />
-                  {t('dashboard.dealer.actions.add_offer')}
-                </Link>
-              </Button>
-              <Button asChild className="justify-start gap-2" variant="outline">
-                <Link to="/dashboard">
-                  <Icon icon="mdi:bullhorn-outline" className="h-4 w-4" />
-                  {t('dashboard.dealer.actions.launch_promo')}
-                </Link>
-              </Button>
-              <Button asChild className="justify-start gap-2" variant="outline">
-                <Link to="/catalog">
-                  <Icon icon="mdi:cash-sync" className="h-4 w-4" />
-                  {t('dashboard.dealer.actions.update_prices')}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
-
-      <motion.div
-        {...getSectionMotionProps(1)}
-        role="region"
-        aria-label="Dealer requests and lead reminders"
-      >
-        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:inbox-arrow-down" className="h-5 w-5" />
-                {t('dashboard.dealer.requests.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dealerRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('dashboard.dealer.requests.empty')}
-                </p>
-              ) : (
-                <div className="space-y-2 text-sm">
-                  {dealerRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium line-clamp-1">{request.clientName}</span>
-                        <span className="text-xs text-muted-foreground line-clamp-1">
-                          {request.companyName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{t('common.status')}: {request.status}</span>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Icon icon="mdi:reply-outline" className="h-3 w-3" />
-                          {t('dashboard.dealer.requests.reply')}
-                        </Button>
-                        <Button size="sm" variant="ghost" className="flex items-center gap-1">
-                          <Icon icon="mdi:check-circle-outline" className="h-3 w-3" />
-                          {t('dashboard.dealer.requests.processed')}
-                        </Button>
-                      </div>
+        {/* 2. Funnel & Comparison */}
+        <motion.div {...getSectionMotionProps(1)}>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="shadow-sm">
+                 <CardHeader className="px-4 py-3 border-b">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                       <Icon icon="mdi:chart-timeline-variant" className="h-4 w-4" />
+                       {t('dashboard.dealer.funnel.title')}
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t('dashboard.dealer.funnel.views')}</span>
+                      <span className="font-medium">{animatedProfileViews}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                       <div className="h-full bg-primary/30" style={{ width: '100%' }} />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t('dashboard.dealer.funnel.requests')}</span>
+                      <span className="font-medium">{animatedRequests}</span>
+                    </div>
+                    <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                       <div className="h-full bg-primary/60" style={{ width: `${(dealerFunnelStats.requests / dealerFunnelStats.profileViews) * 100}%` }} />
+                    </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:bell-outline" className="h-5 w-5" />
-                {t('dashboard.dealer.reminders.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dealerLeadReminders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('dashboard.dealer.reminders.empty')}
-                </p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {dealerLeadReminders.map((reminder) => (
-                    <li
-                      key={reminder.id}
-                      className="flex items-center gap-2 rounded-md border px-3 py-2"
-                    >
-                      <Icon icon="mdi:alert-outline" className="h-4 w-4 text-muted-foreground" />
-                      <span className="line-clamp-2">{reminder.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t('dashboard.dealer.funnel.deals')}</span>
+                      <span className="font-medium">{animatedDeals}</span>
+                    </div>
+                    <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                       <div className="h-full bg-primary" style={{ width: `${(dealerFunnelStats.deals / dealerFunnelStats.requests) * 100}%` }} />
+                    </div>
+                 </CardContent>
+              </Card>
 
-      <motion.div
-        {...getSectionMotionProps(2)}
-        role="region"
-        aria-label="Dealer top offers and customer reviews"
-      >
-        <div className="grid gap-4 md:grid-cols-2 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:star-circle-outline" className="h-5 w-5" />
-                {t('dashboard.dealer.top_offers.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dealerTopPromoted.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('dashboard.dealer.top_offers.empty')}
-                </p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {dealerTopPromoted.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <span className="line-clamp-1">{item.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.responses} {t('common.reviews')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:star-outline" className="h-5 w-5" />
-                {t('dashboard.dealer.reviews.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-3 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold">{dealerReviewsSummary.averageRating}</span>
-                <span className="text-xs text-muted-foreground">
-                  / 5 ({dealerReviewsSummary.totalReviews} {t('common.reviews')})
-                </span>
-              </div>
-              {dealerReviewsSummary.latestReviews.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('dashboard.dealer.reviews.empty')}
-                </p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {dealerReviewsSummary.latestReviews.map((review) => (
-                    <li key={review.id} className="rounded-md border px-3 py-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium line-clamp-1">{review.userName}</span>
-                        <span className="flex items-center gap-1 text-xs">
-                          <Icon
-                            icon="mdi:star"
-                            className="h-3 w-3 text-yellow-400 fill-current"
-                          />
-                          {review.rating}
-                        </span>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {review.comment}
+              <Card className="shadow-sm">
+                 <CardHeader className="px-4 py-3 border-b">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                       <Icon icon="mdi:chart-box-outline" className="h-4 w-4" />
+                       {t('dashboard.dealer.comparison.title')}
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-4 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase mb-1">{t('dashboard.dealer.comparison.leads_count')}</p>
+                      <p className={`text-lg font-bold ${animatedLeadsDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {animatedLeadsDelta > 0 ? '+' : ''}{animatedLeadsDelta}%
                       </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="mt-3 flex justify-end">
-                <Button size="sm" variant="outline" className="flex items-center gap-1">
-                  <Icon icon="mdi:comment-edit-outline" className="h-3 w-3" />
-                  {t('dashboard.dealer.reviews.manage')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase mb-1">{t('dashboard.dealer.comparison.conversion')}</p>
+                      <p className={`text-lg font-bold ${animatedConversionDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {animatedConversionDelta > 0 ? '+' : ''}{animatedConversionDelta}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase mb-1">{t('dashboard.dealer.comparison.margin')}</p>
+                      <p className={`text-lg font-bold ${animatedMarginDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {animatedMarginDelta > 0 ? '+' : ''}{animatedMarginDelta}%
+                      </p>
+                    </div>
+                 </CardContent>
+              </Card>
+           </div>
+        </motion.div>
 
-      <motion.div
-        {...getSectionMotionProps(3)}
-        role="region"
-        aria-label="Dealer profile traffic and today tasks"
-      >
-        <div className="grid gap-4 md:grid-cols-2 mt-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:chart-areaspline" className="h-5 w-5" />
-                {t('dashboard.dealer.traffic.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.total')}</span>
-                  <span className="font-medium">{animatedTrafficTotal}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.search')}</span>
-                  <span className="font-medium">{animatedTrafficSearch}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.catalog')}</span>
-                  <span className="font-medium">{animatedTrafficCatalog}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('dashboard.dealer.traffic.offers')}</span>
-                  <span className="font-medium">{animatedTrafficOffers}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* 3. Recent Requests */}
+        <motion.div {...getSectionMotionProps(2)}>
+           <Card className="shadow-sm">
+             <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                   <Icon icon="mdi:inbox-arrow-down" className="h-4 w-4" />
+                   {t('dashboard.dealer.requests.title')}
+                </CardTitle>
+             </CardHeader>
+             <CardContent className="p-0">
+               {dealerRequests.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <p className="text-sm">{t('dashboard.dealer.requests.empty')}</p>
+                  </div>
+               ) : (
+                  <div className="divide-y">
+                    {dealerRequests.map(request => (
+                       <div key={request.id} className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors">
+                          <div>
+                             <p className="font-medium text-sm">{request.clientName}</p>
+                             <p className="text-xs text-muted-foreground">{request.companyName}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                               {request.status}
+                             </span>
+                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                               <Icon icon="mdi:reply-outline" className="h-3 w-3" />
+                               {t('dashboard.dealer.requests.reply')}
+                             </Button>
+                          </div>
+                       </div>
+                    ))}
+                  </div>
+               )}
+             </CardContent>
+           </Card>
+        </motion.div>
+      </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="mdi:checklist" className="h-5 w-5" />
-                {t('dashboard.dealer.tasks.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dealerTasksToday.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.dealer.tasks.empty')}</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {dealerTasksToday.map((task) => (
-                    <li
-                      key={task}
-                      className="flex items-center gap-2 rounded-md border px-3 py-2"
-                    >
-                      <Icon icon="mdi:checkbox-blank-circle-outline" className="h-3 w-3" />
-                      <span className="line-clamp-2">{task}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
+      {/* RIGHT COLUMN: Sidebar (4/12) */}
+      <aside className="lg:col-span-4 space-y-6">
+         {/* 4. Quick Actions */}
+         <motion.div {...getSectionMotionProps(3)}>
+            <Card className="shadow-sm bg-muted/20 border-dashed">
+               <CardHeader className="px-4 py-3 border-b">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                     <Icon icon="mdi:flash" className="h-4 w-4" />
+                     {t('dashboard.dealer.actions.title')}
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-2 grid grid-cols-1 gap-2">
+                  <Button variant="outline" className="justify-start gap-2 h-9 text-sm bg-background">
+                     <Icon icon="mdi:plus-circle-outline" className="h-4 w-4 text-primary" />
+                     {t('dashboard.dealer.actions.add_offer')}
+                  </Button>
+                  <Button variant="outline" className="justify-start gap-2 h-9 text-sm bg-background">
+                     <Icon icon="mdi:bullhorn-outline" className="h-4 w-4 text-primary" />
+                     {t('dashboard.dealer.actions.launch_promo')}
+                  </Button>
+                  <Button variant="outline" className="justify-start gap-2 h-9 text-sm bg-background">
+                     <Icon icon="mdi:cash-sync" className="h-4 w-4 text-primary" />
+                     {t('dashboard.dealer.actions.update_prices')}
+                  </Button>
+               </CardContent>
+            </Card>
+         </motion.div>
 
-      <motion.div
-        {...getSectionMotionProps(4)}
-        role="region"
-        aria-label="Dealer performance comparison with previous period"
-      >
-        <Card className="mt-2">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Icon icon="mdi:chart-box-outline" className="h-5 w-5" />
-              {t('dashboard.dealer.comparison.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.leads_count')}</p>
-                <p className="text-lg font-semibold">
-                  {animatedLeadsDelta > 0 ? '+' : ''}
-                  {animatedLeadsDelta}%
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.conversion')}</p>
-                <p className="text-lg font-semibold">
-                  {animatedConversionDelta > 0 ? '+' : ''}
-                  {animatedConversionDelta}%
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t('dashboard.dealer.comparison.margin')}</p>
-                <p className="text-lg font-semibold">
-                  {animatedMarginDelta > 0 ? '+' : ''}
-                  {animatedMarginDelta}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </>
+         {/* 5. Tasks & Reminders */}
+         <motion.div {...getSectionMotionProps(4)}>
+            <Card className="shadow-sm">
+               <CardHeader className="px-4 py-3 border-b">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                     <Icon icon="mdi:checklist" className="h-4 w-4" />
+                     {t('dashboard.dealer.tasks.title')}
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-0">
+                  <ul className="divide-y">
+                     {dealerTasksToday.map((task, i) => (
+                        <li key={i} className="p-3 flex items-start gap-2 text-sm hover:bg-accent/30">
+                           <Icon icon="mdi:checkbox-blank-circle-outline" className="h-4 w-4 text-muted-foreground mt-0.5" />
+                           <span>{task}</span>
+                        </li>
+                     ))}
+                     {dealerLeadReminders.map(reminder => (
+                        <li key={reminder.id} className="p-3 flex items-start gap-2 text-sm bg-amber-50/50 hover:bg-amber-100/50 text-amber-900">
+                           <Icon icon="mdi:alert-outline" className="h-4 w-4 text-amber-600 mt-0.5" />
+                           <span>{reminder.text}</span>
+                        </li>
+                     ))}
+                  </ul>
+               </CardContent>
+            </Card>
+         </motion.div>
+
+         {/* 6. Traffic Stats */}
+         <motion.div {...getSectionMotionProps(5)}>
+            <Card className="shadow-sm">
+               <CardHeader className="px-4 py-3 border-b">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                     <Icon icon="mdi:chart-areaspline" className="h-4 w-4" />
+                     {t('dashboard.dealer.traffic.title')}
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-muted-foreground">{t('dashboard.dealer.traffic.total')}</span>
+                     <span className="font-bold">{animatedTrafficTotal}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-muted-foreground">{t('dashboard.dealer.traffic.search')}</span>
+                     <span>{animatedTrafficSearch}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-muted-foreground">{t('dashboard.dealer.traffic.catalog')}</span>
+                     <span>{animatedTrafficCatalog}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-muted-foreground">{t('dashboard.dealer.traffic.offers')}</span>
+                     <span>{animatedTrafficOffers}</span>
+                  </div>
+               </CardContent>
+            </Card>
+         </motion.div>
+
+         {/* 7. Top Offers & Reviews */}
+         <motion.div {...getSectionMotionProps(6)}>
+            <Card className="shadow-sm">
+               <CardHeader className="px-4 py-3 border-b">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                     <Icon icon="mdi:star-circle-outline" className="h-4 w-4" />
+                     {t('dashboard.dealer.top_offers.title')}
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-0">
+                  <ul className="divide-y">
+                     {dealerTopPromoted.map(item => (
+                        <li key={item.id} className="p-3 flex items-center justify-between text-sm">
+                           <span className="font-medium truncate">{item.name}</span>
+                           <span className="text-xs text-muted-foreground">{item.responses} {t('common.reviews')}</span>
+                        </li>
+                     ))}
+                  </ul>
+                  <div className="p-3 border-t bg-muted/10">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                           <span className="font-bold">{dealerReviewsSummary.averageRating}</span>
+                           <Icon icon="mdi:star" className="h-3 w-3 text-yellow-400" />
+                           <span className="text-xs text-muted-foreground">({dealerReviewsSummary.totalReviews})</span>
+                        </div>
+                        <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                           <Link to="/reviews">{t('common.view_all')}</Link>
+                        </Button>
+                     </div>
+                  </div>
+               </CardContent>
+            </Card>
+         </motion.div>
+      </aside>
+    </div>
   )
 }

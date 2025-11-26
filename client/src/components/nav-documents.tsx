@@ -1,6 +1,7 @@
 "use client"
 
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import {
   FolderIcon,
@@ -35,10 +36,11 @@ export function NavDocuments({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const { t } = useTranslation()
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Documents</SidebarGroupLabel>
+      <SidebarGroupLabel>{t('sidebar.documents')}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
@@ -55,7 +57,7 @@ export function NavDocuments({
                   className="rounded-sm data-[state=open]:bg-accent"
                 >
                   <MoreHorizontalIcon />
-                  <span className="sr-only">More</span>
+                  <span className="sr-only">{t('sidebar.more')}</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -65,11 +67,11 @@ export function NavDocuments({
               >
                 <DropdownMenuItem>
                   <FolderIcon />
-                  <span>Open</span>
+                  <span>{t('sidebar.open')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <ShareIcon />
-                  <span>Share</span>
+                  <span>{t('sidebar.share')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -78,7 +80,7 @@ export function NavDocuments({
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
             <MoreHorizontalIcon className="text-sidebar-foreground/70" />
-            <span>More</span>
+            <span>{t('sidebar.more')}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

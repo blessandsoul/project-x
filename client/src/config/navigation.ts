@@ -1,10 +1,9 @@
 
 export const navigationItems = [
   { id: 'home', label: 'navigation.home', href: '/' },
-  { id: 'catalog', label: 'navigation.catalog', href: '/catalog' },
-  { id: 'dashboard', label: 'navigation.dashboard', href: '/dashboard' },
-  { id: 'auctionListings', label: 'navigation.auctionListings', href: '/auction-listings' },
-  { id: 'carfax', label: 'navigation.carfax', href: '/vin' }
+  { id: 'catalog', label: 'navigation.catalog', href: '/catalog' }, // "Who carries"
+  { id: 'auctionListings', label: 'navigation.auctionListings', href: '/auction-listings' }, // "Find car"
+  { id: 'carfax', label: 'navigation.carfax', href: '/vin' } // "Check car"
 ];
 
 export const footerLinks = [
