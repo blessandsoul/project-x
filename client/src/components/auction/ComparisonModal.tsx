@@ -45,7 +45,7 @@ export function ComparisonModal({
           onClick={onClose}
         >
           <motion.div
-            className="bg-background w-fit max-w-[95vw] max-h-[90vh] sm:max-h-[85vh] rounded-xl shadow-2xl overflow-y-auto flex flex-col border border-border/50"
+            className="bg-background w-fit max-w-[95vw] max-h-[90vh] rounded-xl shadow-2xl overflow-y-auto flex flex-col border border-border/50 m-auto"
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -103,7 +103,7 @@ export function ComparisonModal({
                           return (
                             <div key={vehicle.vehicle_id} className="w-full sm:w-[320px] flex flex-col gap-1 sm:gap-2.5 min-w-0">
                               {/* Vehicle Header Card */}
-                              <Card className="overflow-hidden bg-transparent border-none shadow-none shrink-0">
+                              <Card className="overflow-hidden bg-transparent border-none shadow-none shrink-0 py-0 gap-0 sm:py-6 sm:gap-6">
                                 <div className="aspect-[16/10] sm:aspect-[4/3] relative group">
                                   <img src={thumb} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -124,7 +124,7 @@ export function ComparisonModal({
 
                               {/* Best Offer Highlight */}
                               {bestQuote ? (
-                                <Card className="bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-200/80 dark:border-emerald-900/50 shadow-sm relative overflow-hidden shrink-0">
+                                <Card className="bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-200/80 dark:border-emerald-900/50 shadow-sm relative overflow-hidden shrink-0 py-0 gap-0 sm:py-6 sm:gap-6">
                                   <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-bl-lg">
                                     {t('auction.compare.best_badge')}
                                   </div>
@@ -155,7 +155,7 @@ export function ComparisonModal({
                               )}
 
                               {/* Vehicle Specs */}
-                              <Card className="mt-0.5 sm:mt-2 border-border/40 shadow-sm bg-card/60 backdrop-blur-sm text-[11px] sm:text-sm">
+                              <Card className="mt-0.5 sm:mt-2 border-border/40 shadow-sm bg-card/60 backdrop-blur-sm text-[11px] sm:text-sm py-0 gap-0 sm:py-6 sm:gap-6">
                                 <CardContent className="p-1 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1">
                                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                                     <span className="text-muted-foreground">
