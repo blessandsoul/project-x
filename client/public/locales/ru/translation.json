@@ -63,7 +63,8 @@
       "evening": "Добрый вечер"
     },
     "offer": "Предложение",
-    "reviews": "отзывов"
+    "reviews": "отзывов",
+    "great_thanks": "Большое спасибо!"
   },
   "navigation": {
     "home": "Главная",
@@ -72,11 +73,20 @@
     "carfax": "Проверка VIN",
     "dashboard": "Панель"
   },
+  "auth": {
+    "error": {
+      "profile_load": "Не удалось загрузить профиль. Пожалуйста, войдите снова."
+    }
+  },
   "header": {
     "sign_in": "Войти",
+    "register": "Регистрация",
     "menu": "Меню",
     "profile": "Профиль",
-    "sign_out": "Выйти"
+    "sign_out": "Выйти",
+    "language": "Язык",
+    "open_profile_menu": "Открыть меню профиля",
+    "avatar_alt": "Аватар пользователя"
   },
   "home": {
     "hero": {
@@ -198,6 +208,9 @@
     "twitter": "Twitter",
     "github": "GitHub",
     "linkedin": "LinkedIn",
+    "home": "Главная",
+    "catalog": "Каталог",
+    "auctionListings": "Аукционы",
     "cta": {
       "title": "Есть вопросы?",
       "subtitle": "Свяжитесь с нами и получите бесплатную консультацию",
@@ -289,7 +302,19 @@
       "year": "Год",
       "price": "Цена"
     },
-    "load_more": "Загрузить ещё"
+    "load_more": "Загрузить ещё",
+    "compare": {
+      "title": "Сравнение полной стоимости",
+      "subtitle": "Сравнение полной стоимости импорта от разных компаний бок о бок.",
+      "error_title": "Не удалось загрузить сравнение",
+      "no_quotes": "Не найдено ценовых предложений для выбранных автомобилей.",
+      "no_quotes_for_vehicle": "Для этого автомобиля нет предложений",
+      "best_badge": "ЛУЧШЕЕ",
+      "total_to_georgia": "Итого до Грузии",
+      "distance": "Расстояние",
+      "other_offers": "Другие предложения",
+      "no_other_offers": "Других предложений нет"
+    }
   },
   "pages": {
     "auction": {
@@ -343,7 +368,27 @@
     "order_inspection": "Заказать осмотр",
     "error_vin_required": "VIN код обязателен",
     "error_vin_length": "VIN должен содержать ровно 17 символов",
-    "error_decode_failed": "Не удалось декодировать VIN"
+    "error_decode_failed": "Не удалось декодировать VIN",
+    "fields": {
+      "trim": "Комплектация",
+      "series": "Серия",
+      "body_class": "Тип кузова",
+      "vehicle_type": "Тип ТС",
+      "engine_cylinders": "Цилиндры",
+      "engine_displacement": "Объем двигателя",
+      "engine_model": "Модель двигателя",
+      "engine_power": "Мощность",
+      "fuel_type": "Тип топлива",
+      "transmission_style": "Тип КПП",
+      "transmission_speeds": "Количество передач",
+      "drive_type": "Тип привода",
+      "doors": "Количество дверей",
+      "gvwr": "Полная масса (GVWR)",
+      "manufacturer": "Производитель",
+      "plant_country": "Страна сборки",
+      "plant_city": "Город сборки",
+      "plant_state": "Штат/регион сборки"
+    }
   },
   "vehicle": {
     "breadcrumb_home": "Главная",
@@ -461,8 +506,14 @@
       "review_placeholder": "Расскажите, что вы думаете...",
       "unlock_btn": "Разблокировать 5 запросов"
     },
+    "success_modal": {
+      "title": "Запрос успешно отправлен",
+      "description": "Ваш запрос был отправлен в {{count}} компаний. Менеджер свяжется с вами в ближайшее время.",
+      "manager_contact": "Наш менеджер свяжется с вами в ближайшее время для уточнения деталей."
+    },
     "social_proof": {
-      "people_viewing": "просматривают"
+      "people_viewing": "просматривают",
+      "viewing_now": "смотрят сейчас"
     },
     "mobile_cta": {
       "total_est": "Итого ориент.",

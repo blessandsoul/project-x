@@ -63,7 +63,8 @@
       "evening": "مساء الخير"
     },
     "offer": "عرض",
-    "reviews": "مراجعات"
+    "reviews": "مراجعات",
+    "great_thanks": "شكراً جزيلاً!"
   },
   "navigation": {
     "home": "الرئيسية",
@@ -72,11 +73,20 @@
     "carfax": "فحص VIN",
     "dashboard": "لوحة التحكم"
   },
+  "auth": {
+    "error": {
+      "profile_load": "تعذر تحميل الملف الشخصي. يُرجى تسجيل الدخول مرة أخرى."
+    }
+  },
   "header": {
     "sign_in": "تسجيل الدخول",
+    "register": "إنشاء حساب",
     "menu": "القائمة",
     "profile": "الملف الشخصي",
-    "sign_out": "تسجيل الخروج"
+    "sign_out": "تسجيل الخروج",
+    "language": "اللغة",
+    "open_profile_menu": "فتح قائمة الملف الشخصي",
+    "avatar_alt": "صورة المستخدم"
   },
   "home": {
     "hero": {
@@ -198,6 +208,9 @@
     "twitter": "تويتر",
     "github": "جيت هب",
     "linkedin": "لينكد إن",
+    "home": "الرئيسية",
+    "catalog": "الكتالوج",
+    "auctionListings": "المزادات",
     "cta": {
       "title": "لديك أسئلة؟",
       "subtitle": "تواصل معنا واحصل على استشارة مجانية",
@@ -289,7 +302,19 @@
       "year": "السنة",
       "price": "السعر"
     },
-    "load_more": "تحميل المزيد"
+    "load_more": "تحميل المزيد",
+    "compare": {
+      "title": "مقارنة التكلفة الكلية",
+      "subtitle": "مقارنة التكلفة الكلية للاستيراد من شركات مختلفة جنباً إلى جنب.",
+      "error_title": "فشل تحميل المقارنة",
+      "no_quotes": "لم يتم العثور على عروض أسعار للسيارات المحددة.",
+      "no_quotes_for_vehicle": "لا توجد عروض متاحة لهذه السيارة",
+      "best_badge": "الأفضل",
+      "total_to_georgia": "الإجمالي إلى جورجيا",
+      "distance": "المسافة",
+      "other_offers": "عروض أخرى",
+      "no_other_offers": "لا توجد عروض أخرى"
+    }
   },
   "pages": {
     "auction": {
@@ -343,11 +368,29 @@
     "order_inspection": "طلب فحص",
     "error_vin_required": "رمز VIN مطلوب",
     "error_vin_length": "يجب أن يتكون VIN من 17 حرفاً بالضبط",
-    "error_decode_failed": "فشل فك تشفير VIN"
+    "error_decode_failed": "فشل فك تشفير VIN",
+    "fields": {
+      "trim": "الفئة",
+      "series": "السلسلة",
+      "body_class": "نوع الهيكل",
+      "vehicle_type": "نوع المركبة",
+      "engine_cylinders": "أسطوانات المحرك",
+      "engine_displacement": "سعة المحرك",
+      "engine_model": "طراز المحرك",
+      "engine_power": "قدرة المحرك",
+      "fuel_type": "نوع الوقود",
+      "transmission_style": "نوع ناقل الحركة",
+      "transmission_speeds": "عدد السرعات",
+      "drive_type": "نوع الدفع",
+      "doors": "عدد الأبواب",
+      "gvwr": "الوزن الإجمالي المسموح (GVWR)",
+      "manufacturer": "الشركة المصنعة",
+      "plant_country": "دولة التصنيع",
+      "plant_city": "مدينة التصنيع",
+      "plant_state": "الولاية/المنطقة (التصنيع)"
+    }
   },
   "vehicle": {
-    "breadcrumb_home": "الرئيسية",
-    "breadcrumb_vehicles": "السيارات",
     "lot": "اللوت",
     "new_arrival": "وصول جديد",
     "sale_date": "تاريخ البيع",
@@ -461,8 +504,14 @@
       "review_placeholder": "أخبرنا برأيك...",
       "unlock_btn": "فتح 5 طلبات"
     },
+    "success_modal": {
+      "title": "تم إرسال الطلب بنجاح",
+      "description": "تم إرسال طلبك إلى {{count}} من الشركات. سيتواصل معك أحد المدراء قريباً.",
+      "manager_contact": "سيتواصل معك مديرنا قريباً لتأكيد جميع التفاصيل."
+    },
     "social_proof": {
-      "people_viewing": "يشاهدون"
+      "people_viewing": "يشاهدون",
+      "viewing_now": "يشاهد الآن"
     },
     "mobile_cta": {
       "total_est": "الإجمالي التقديري",

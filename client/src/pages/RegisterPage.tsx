@@ -126,7 +126,7 @@ const RegisterPage = () => {
                     <div className="pt-2 space-y-2">
                        <div className="bg-blue-50 text-blue-700 text-xs p-3 rounded-md flex items-start gap-2">
                           <Icon icon="mdi:information" className="h-4 w-4 mt-0.5 shrink-0" />
-                          <p>Dealer accounts can list vehicles and manage inventory. Verification required.</p>
+                          <p>{t('auth.register.dealer_info')}</p>
                        </div>
                     </div>
                   </motion.div>
