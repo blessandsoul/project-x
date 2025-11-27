@@ -253,7 +253,7 @@ export function AuctionVehicleCard({
           {/* Header */}
           <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-lg leading-tight line-clamp-1 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
+              <h3 className="font-bold text-lg leading-tight truncate min-w-0 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
                 {item.year} {item.make} {item.model}
               </h3>
             </div>
@@ -284,8 +284,10 @@ export function AuctionVehicleCard({
             </div>
           </div>
 
-          {/* Specs Grid */}
-          <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
+          {/* Bottom Section - Specs + Footer (always aligned) */}
+          <div className="mt-auto flex flex-col gap-3">
+            {/* Specs Grid */}
+            <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
             <div className="flex flex-col items-center justify-center text-center gap-0.5">
               <Icon icon="mdi:speedometer" className="w-4 h-4 text-muted-foreground/70" />
               <span className="text-xs font-medium truncate w-full">{formatMileage(item.mileage)}</span>
@@ -298,10 +300,10 @@ export function AuctionVehicleCard({
               <Icon icon="mdi:car-traction-control" className="w-4 h-4 text-muted-foreground/70" />
               <span className="text-xs font-medium capitalize truncate w-full">{translateDrive(item.drive)}</span>
             </div>
-          </div>
+            </div>
 
-          {/* Footer: Price & Actions */}
-          <div className="mt-auto pt-1 flex items-end justify-between gap-2">
+            {/* Footer: Price & Actions */}
+            <div className="pt-1 flex items-end justify-between gap-2">
             <div className="flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                 {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
@@ -329,6 +331,7 @@ export function AuctionVehicleCard({
                 {t('common.details')}
               </Button>
             </div>
+          </div>
           </div>
         </CardContent>
       </Card>

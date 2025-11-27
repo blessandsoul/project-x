@@ -790,14 +790,16 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
         
         {/* Desktop Controls */}
-        <div className="hidden md:flex gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
-                <Icon icon="mdi:chevron-left" className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext}>
-                <Icon icon="mdi:chevron-right" className="h-4 w-4" />
-            </Button>
-        </div>
+        {similarItems.length > ITEMS_PER_VIEW_DESKTOP && (
+          <div className="hidden md:flex gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
+                  <Icon icon="mdi:chevron-left" className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext} disabled={currentIndex + ITEMS_PER_VIEW_DESKTOP >= similarItems.length}>
+                  <Icon icon="mdi:chevron-right" className="h-4 w-4" />
+              </Button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Slider (Snap Scroll) */}
@@ -819,10 +821,10 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
       <div className="hidden md:block relative overflow-hidden">
         <div 
             className="flex gap-4 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentIndex * (100 / ITEMS_PER_VIEW_DESKTOP)}%)` }}
+            style={{ transform: `translateX(calc(-${currentIndex} * (33.333% + 5.33px)))` }}
         >
             {similarItems.map((item) => (
-                <div key={item.id} className="min-w-[calc(33.333%-11px)] flex-shrink-0">
+                <div key={item.id} className="w-[calc((100%-32px)/3)] flex-shrink-0">
                     <AuctionVehicleCard
                         item={item}
                         priority={false}
