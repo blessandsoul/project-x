@@ -26,6 +26,11 @@ interface CatalogFiltersProps {
   onVipChange?: (value: boolean) => void;
   onApplyFilters?: () => void;
   onResetFilters?: () => void;
+  auctionSource?: 'all' | 'copart' | 'iaai';
+  onAuctionSourceChange?: (value: 'all' | 'copart' | 'iaai') => void;
+  auctionBranches?: Array<{ name: string; address: string }>;
+  auctionBranchValue?: string;
+  onAuctionBranchChange?: (value: string) => void;
 }
 
 export const CatalogFilters = ({
@@ -45,6 +50,11 @@ export const CatalogFilters = ({
   onVipChange,
   onApplyFilters,
   onResetFilters,
+  auctionSource = 'all',
+  onAuctionSourceChange,
+  auctionBranches = [],
+  auctionBranchValue,
+  onAuctionBranchChange,
 }: CatalogFiltersProps) => {
   const { t } = useTranslation();
 
@@ -53,6 +63,7 @@ export const CatalogFilters = ({
   const cityInputRef = useRef<HTMLInputElement | null>(null);
 
   const [priceRange, setPriceRange] = useState<[number, number]>(initialPriceRange ?? [0, 5000]);
+  const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
 
   useEffect(() => {
     if (initialPriceRange) {
@@ -60,8 +71,85 @@ export const CatalogFilters = ({
     }
   }, [initialPriceRange]);
 
+  useEffect(() => {
+    // Reset branch search when auction source or available branches change
+    setAuctionBranchSearch('');
+  }, [auctionSource, auctionBranches]);
+
+  const filteredAuctionBranches = auctionBranches.filter((branch) => {
+    if (!auctionBranchSearch.trim()) return true;
+    const term = auctionBranchSearch.toLowerCase();
+    return (
+      branch.name.toLowerCase().includes(term) ||
+      branch.address.toLowerCase().includes(term)
+    );
+  });
+
   const filterContent = (
     <div className="space-y-3 sm:space-y-6">
+      {/* Auction Filters */}
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.auction', 'Auction')}
+            </label>
+            <Select
+              value={auctionSource}
+              onValueChange={(value: 'all' | 'copart' | 'iaai') => {
+                onAuctionSourceChange?.(value);
+              }}
+            >
+              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Select auction</SelectItem>
+                <SelectItem value="copart">Copart</SelectItem>
+                <SelectItem value="iaai">IAAI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.auction_branch', 'Auction branch')}
+            </label>
+            <Select
+              value={auctionBranchValue ?? ''}
+              onValueChange={(value) => {
+                onAuctionBranchChange?.(value);
+              }}
+              disabled={auctionSource === 'all' || auctionBranches.length === 0}
+            >
+              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
+              >
+                <div className="p-2 border-b bg-white sticky top-0 z-10">
+                  <Input
+                    placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
+                    value={auctionBranchSearch}
+                    onChange={(e) => setAuctionBranchSearch(e.target.value)}
+                    className="h-8 text-xs bg-white"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto">
+                  {filteredAuctionBranches.map((branch) => (
+                    <SelectItem key={branch.address} value={branch.address}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </div>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.search')}</label>

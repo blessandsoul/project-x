@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -15,9 +14,15 @@ interface CompanyListItemProps {
   company: Company;
   className?: string;
   isCompareMode?: boolean;
+  /** Calculated shipping price from selected auction branch. If undefined, shows placeholder. */
+  calculatedShippingPrice?: number;
+  /** Whether an auction branch has been selected */
+  hasAuctionBranch?: boolean;
+  /** Whether shipping prices are currently being loaded */
+  isLoadingShipping?: boolean;
 }
 
-export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
+export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false, isLoadingShipping = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -203,58 +208,88 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         {/* Right: Price & CTA */}
         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50/30 sm:border-l border-t sm:border-t-0 border-slate-100">
            <div className="flex flex-col sm:items-end">
-              <TooltipProvider>
-                <Tooltip delayDuration={100}>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 cursor-help">
-                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">{t('catalog.card.service_fee')}</span>
-                       <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-slate-400" />
+              {hasAuctionBranch ? (
+                // Show calculated shipping price when auction branch is selected
+                isLoadingShipping ? (
+                  // Loading state
+                  <>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      {t('catalog.card.shipping_cost', 'Shipping Cost')}
+                    </span>
+                    <div className="flex items-center gap-2 py-1">
+                      <Icon icon="mdi:loading" className="h-5 w-5 text-blue-500 animate-spin" />
+                      <span className="text-sm text-slate-500 font-medium">
+                        {t('common.calculating', 'Calculating...')}
+                      </span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-[200px] text-xs">
-                    Includes: Auction access, document processing, and pre-bid inspection.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              <div className="flex items-baseline gap-1">
-                 <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                   {company.priceRange?.min ? formatCurrency(company.priceRange.min) : 'Ask'}
-                 </span>
-              </div>
-              {company.priceRange?.max && (
-                 <span className="text-[10px] text-slate-400 font-medium">
-                   {t('catalog.card.up_to')} {formatCurrency(company.priceRange.max)}
-                 </span>
+                  </>
+                ) : (
+                  // Show price or contact
+                  <>
+                    <TooltipProvider>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">{t('catalog.card.shipping_cost', 'Shipping Cost')}</span>
+                             <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-slate-400" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[200px] text-xs">
+                          {t('catalog.card.shipping_tooltip', 'Estimated shipping from selected auction branch to Poti, Georgia.')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <div className="flex items-baseline gap-1">
+                       <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                         {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 
+                           ? formatCurrency(calculatedShippingPrice) 
+                           : t('catalog.card.contact', 'Contact')}
+                       </span>
+                    </div>
+                    {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 ? (
+                      <span className="text-[10px] text-green-600 font-medium flex items-center gap-0.5">
+                        <Icon icon="mdi:map-marker-check" className="h-3 w-3" />
+                        {t('catalog.card.location_based', 'Location-based')}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {t('catalog.card.for_pricing', 'for pricing')}
+                      </span>
+                    )}
+                  </>
+                )
+              ) : (
+                // Show placeholder when no auction branch selected
+                <>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    {t('catalog.card.shipping_cost', 'Shipping Cost')}
+                  </span>
+                  <div className="flex flex-col items-center sm:items-end gap-1">
+                    <span className="text-sm text-slate-400 font-medium">
+                      {t('catalog.card.select_branch', 'Select auction branch')}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {t('catalog.card.to_see_price', 'to see price')}
+                    </span>
+                  </div>
+                </>
               )}
            </div>
 
-           <div className="flex flex-col gap-2 w-auto sm:w-auto">
-             <Button 
-               size="sm"
-               variant="outline"
-               className="h-8 px-4 text-xs font-bold border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-all w-full"
+           {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
+           {isCompareMode && (
+             <div 
+               className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-500 py-1 cursor-pointer"
                onClick={(e) => {
                  e.stopPropagation();
-                 navigate(`/company/${company.id}`);
+                 onToggleCompare?.(!isSelected);
                }}
              >
-               {t('catalog.card.view_profile')}
-             </Button>
-             {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
-             {isCompareMode && (
-               <div 
-                 className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-500 py-1 cursor-pointer"
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   onToggleCompare?.(!isSelected);
-                 }}
-               >
-                 <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
-                 <span>{t('catalog.results.compare')}</span>
-               </div>
-             )}
-           </div>
+               <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+               <span>{t('catalog.results.compare')}</span>
+             </div>
+           )}
         </div>
       </article>
     </motion.div>

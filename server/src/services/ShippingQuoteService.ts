@@ -283,6 +283,176 @@ export class ShippingQuoteService {
   }
 
   /**
+   * Get distance from an auction branch address to Poti, Georgia.
+   *
+   * This is used by the catalog page to calculate shipping costs
+   * when a user selects an auction branch. Results are cached in
+   * the auction_branch_distances table to avoid repeated geocoding.
+   *
+   * @param address - Full address string (e.g. "6089 HIGHWAY 20, 30052")
+   * @param source - Auction source (copart or iaai)
+   */
+  async getDistanceForAddress(address: string, source: string): Promise<number> {
+    const trimmedAddress = (address || '').trim();
+    if (!trimmedAddress) {
+      throw new ValidationError('Address is required');
+    }
+
+    const cacheKey = `${source}:${trimmedAddress}`.toLowerCase();
+    const POTI_LAT = 42.1537;
+    const POTI_LON = 41.6714;
+
+    // 1) Check in-memory cache
+    const cached = this.yardGeoCache.get(cacheKey);
+    if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon)) {
+      const distance = this.haversineMiles(cached.lat, cached.lon, POTI_LAT, POTI_LON);
+      if (Number.isFinite(distance) && distance > 0) {
+        return Math.round(distance);
+      }
+    }
+
+    // 2) Check database cache
+    const anyFastifyDb: any = this.fastify as any;
+    const db = anyFastifyDb.mysql;
+    if (db && typeof db.execute === 'function') {
+      try {
+        const [rows] = await db.execute(
+          'SELECT lat, lon, distance_to_poti_miles FROM auction_branch_distances WHERE address = ? AND source = ? LIMIT 1',
+          [trimmedAddress, source],
+        );
+
+        if (Array.isArray(rows) && rows.length > 0) {
+          const row: any = rows[0];
+          const precomputed = Number(row.distance_to_poti_miles);
+
+          if (Number.isFinite(precomputed) && precomputed > 0) {
+            // Update in-memory cache
+            if (row.lat != null && row.lon != null) {
+              this.yardGeoCache.set(cacheKey, { lat: row.lat, lon: row.lon });
+            }
+            return precomputed;
+          }
+        }
+      } catch (error) {
+        this.fastify.log.error({ error, address }, 'Failed to read auction_branch_distances table');
+      }
+    }
+
+    // 3) Geocode the address
+    const results = await this.geoLocatorService.searchLocation(trimmedAddress, 1);
+    const origin = results[0];
+
+    if (!origin || origin.lat == null || origin.lon == null) {
+      this.fastify.log.warn({ address }, 'GeoLocatorService returned no coordinates for auction branch');
+      // Return a default distance for US locations
+      return 8000;
+    }
+
+    const originCoords = { lat: origin.lat, lon: origin.lon };
+    const distance = this.haversineMiles(originCoords.lat, originCoords.lon, POTI_LAT, POTI_LON);
+    const roundedDistance = Number.isFinite(distance) && distance > 0 ? Math.round(distance) : 8000;
+
+    // Update in-memory cache
+    this.yardGeoCache.set(cacheKey, originCoords);
+
+    // 4) Persist to database
+    if (db && typeof db.execute === 'function') {
+      try {
+        await db.execute(
+          `INSERT INTO auction_branch_distances (address, source, lat, lon, distance_to_poti_miles)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             lat = VALUES(lat),
+             lon = VALUES(lon),
+             distance_to_poti_miles = VALUES(distance_to_poti_miles)`,
+          [trimmedAddress, source, originCoords.lat, originCoords.lon, roundedDistance],
+        );
+      } catch (error) {
+        this.fastify.log.error({ error, address }, 'Failed to upsert auction_branch_distances');
+      }
+    }
+
+    return roundedDistance;
+  }
+
+  /**
+   * Compute shipping quotes for all companies based on a given distance.
+   *
+   * This is a simplified version of computeQuotesForVehicle that doesn't
+   * require a vehicle - just the distance. Used for the catalog page
+   * where we want to show shipping costs per company for a selected
+   * auction branch.
+   */
+  async computeShippingQuotesForDistance(
+    distanceMiles: number,
+    companies: Company[],
+  ): Promise<Array<{ companyId: number; companyName: string; shippingPrice: number }>> {
+    if (distanceMiles <= 0) {
+      throw new ValidationError('Distance must be positive');
+    }
+
+    if (!companies.length) {
+      return [];
+    }
+
+    const quotes: Array<{ companyId: number; companyName: string; shippingPrice: number }> = [];
+
+    for (const company of companies) {
+      const formulaOverrides =
+        company.final_formula && typeof company.final_formula === 'object'
+          ? (company.final_formula as any)
+          : null;
+
+      const rawBasePrice = formulaOverrides?.base_price ?? company.base_price;
+      const rawPricePerMile = formulaOverrides?.price_per_mile ?? company.price_per_mile;
+      const rawCustomsFee = formulaOverrides?.customs_fee ?? company.customs_fee;
+      const rawServiceFee = formulaOverrides?.service_fee ?? company.service_fee;
+      const rawBrokerFee = formulaOverrides?.broker_fee ?? company.broker_fee;
+
+      const numericBasePrice = typeof rawBasePrice === 'number' ? rawBasePrice : Number(rawBasePrice ?? 0);
+      const numericPricePerMile = typeof rawPricePerMile === 'number' ? rawPricePerMile : Number(rawPricePerMile ?? 0);
+      const numericCustomsFee = typeof rawCustomsFee === 'number' ? rawCustomsFee : Number(rawCustomsFee ?? 0);
+      const numericServiceFee = typeof rawServiceFee === 'number' ? rawServiceFee : Number(rawServiceFee ?? 0);
+      const numericBrokerFee = typeof rawBrokerFee === 'number' ? rawBrokerFee : Number(rawBrokerFee ?? 0);
+
+      const allFeesZero =
+        numericBasePrice === 0 &&
+        numericPricePerMile === 0 &&
+        numericCustomsFee === 0 &&
+        numericServiceFee === 0 &&
+        numericBrokerFee === 0;
+
+      // For catalog page, include all companies but mark those with no pricing
+      // with shippingPrice = -1 so the UI can show "Contact for price"
+      if (allFeesZero) {
+        quotes.push({
+          companyId: company.id,
+          companyName: company.name,
+          shippingPrice: -1, // Signals "no pricing configured"
+        });
+        continue;
+      }
+
+      const basePrice = this.toNumber(rawBasePrice, 'base_price');
+      const pricePerMile = this.toNumber(rawPricePerMile, 'price_per_mile');
+      const customsFee = this.toNumber(rawCustomsFee, 'customs_fee');
+      const serviceFee = this.toNumber(rawServiceFee, 'service_fee');
+      const brokerFee = this.toNumber(rawBrokerFee, 'broker_fee');
+
+      const mileageCost = pricePerMile * distanceMiles;
+      const shippingPrice = basePrice + mileageCost + customsFee + serviceFee + brokerFee;
+
+      quotes.push({
+        companyId: company.id,
+        companyName: company.name,
+        shippingPrice: Math.round(shippingPrice),
+      });
+    }
+
+    return quotes;
+  }
+
+  /**
    * Compute quotes for a vehicle across all companies.
    *
    * This method is pure with respect to persistence: it does not touch

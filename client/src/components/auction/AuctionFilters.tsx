@@ -251,7 +251,7 @@ export function AuctionFilters({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                        <Select 
-                          value={String(filters.yearRange[0])} 
+                          value={filters.yearRange[0] > 0 ? String(filters.yearRange[0]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [Number(v), filters.yearRange[1]])}
                        >
                           <SelectTrigger className="h-9 text-xs">
@@ -265,7 +265,7 @@ export function AuctionFilters({
                        </Select>
 
                        <Select 
-                          value={String(filters.yearRange[1])} 
+                          value={filters.yearRange[1] > 0 ? String(filters.yearRange[1]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [filters.yearRange[0], Number(v)])}
                        >
                           <SelectTrigger className="h-9 text-xs">

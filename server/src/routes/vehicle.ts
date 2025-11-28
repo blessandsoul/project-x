@@ -58,44 +58,61 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       drive?: string;
       source?: string;
       buyNow?: boolean;
+      vin?: string;
+      sourceLotId?: string;
     } = {};
 
-    // Optional combined search param: search="make model year".
-    // This is parsed into make/model/year only when those are not
-    // already provided explicitly.
+    // Optional combined search param: search="make model year" or VIN / lot id.
+    // Parsed into make/model/year or vin/sourceLotId when those are not
+    // already provided explicitly. For VIN/lot searches we *only* set
+    // vin/sourceLotId and skip make/model/year derivation.
     if (query.search && query.search.trim().length > 0) {
       const raw = query.search.trim();
 
-      // Try to extract a reasonable model year (1950–2100) from the search
-      // string and treat the remaining words as make/model.
-      const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
+      // First, try to interpret the search as VIN or lot id.
+      const compact = raw.replace(/\s+/g, '');
+      const looksLikeVin = /[A-Za-z]/.test(compact) && /[0-9]/.test(compact) && compact.length >= 11;
+      const looksLikeLotId = !looksLikeVin && /^\d+$/.test(compact);
 
-      let derivedYear: number | undefined;
-      let derivedMake: string | undefined;
-      let derivedModel: string | undefined;
+      if (looksLikeVin && !filters.vin) {
+        filters.vin = compact.toUpperCase();
+      } else if (looksLikeLotId && !filters.sourceLotId) {
+        filters.sourceLotId = compact;
+      }
+      // Only attempt make/model/year derivation when the string does NOT
+      // look like a VIN or numeric lot id.
+      if (!looksLikeVin && !looksLikeLotId) {
+        // Try to extract a reasonable model year (1950–2100) from the search
+        // string and treat the remaining words as make/model.
+        const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
 
-      let withoutYear = raw;
-      if (yearMatch && yearMatch[0]) {
-        derivedYear = Number.parseInt(yearMatch[0], 10);
-        withoutYear = raw.replace(yearMatch[0], '').trim();
-      }
+        let derivedYear: number | undefined;
+        let derivedMake: string | undefined;
+        let derivedModel: string | undefined;
 
-      const parts = withoutYear.split(/\s+/).filter(Boolean);
-      if (parts.length > 0) {
-        derivedMake = parts[0];
-      }
-      if (parts.length > 1) {
-        derivedModel = parts.slice(1).join(' ');
-      }
+        let withoutYear = raw;
+        if (yearMatch && yearMatch[0]) {
+          derivedYear = Number.parseInt(yearMatch[0], 10);
+          withoutYear = raw.replace(yearMatch[0], '').trim();
+        }
 
-      if (!filters.make && derivedMake) {
-        filters.make = derivedMake;
-      }
-      if (!filters.model && derivedModel) {
-        filters.model = derivedModel;
-      }
-      if (!filters.year && typeof derivedYear === 'number' && Number.isFinite(derivedYear)) {
-        filters.year = derivedYear;
+        const parts = withoutYear.split(/\s+/).filter(Boolean);
+        if (parts.length > 0) {
+          derivedMake = parts[0];
+        }
+        if (parts.length > 1) {
+          derivedModel = parts.slice(1).join(' ');
+        }
+
+        if (!filters.make && derivedMake) {
+          filters.make = derivedMake;
+        }
+        if (!filters.model && derivedModel) {
+          filters.model = derivedModel;
+        }
+        if (!filters.year && typeof derivedYear === 'number' && Number.isFinite(derivedYear)) {
+          filters.year = derivedYear;
+        }
       }
     }
 

@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CatalogFilters } from '@/components/catalog/CatalogFilters';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
 import { CompanyComparisonModal } from '@/components/comparison/CompanyComparisonModal';
+import type { AuctionLocation } from '@/api/auction';
+import { fetchCopartLocations, fetchIaaiLocations, calculateShipping } from '@/api/auction';
 
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
@@ -36,6 +38,12 @@ const CompanyCatalogPage = () => {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<number[]>([]);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+
+  const [auctionSource, setAuctionSource] = useState<'all' | 'copart' | 'iaai'>('all');
+  const [auctionBranches, setAuctionBranches] = useState<AuctionLocation[]>([]);
+  const [selectedAuctionBranch, setSelectedAuctionBranch] = useState<string>('');
+  const [shippingQuotes, setShippingQuotes] = useState<Map<number, number>>(new Map());
+  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -67,6 +75,78 @@ const CompanyCatalogPage = () => {
   const countryDraftRef = useRef<string>('');
   const cityDraftRef = useRef<string>('');
   const priceDraftRef = useRef<[number, number]>([0, 0]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadBranches = async () => {
+      try {
+        if (auctionSource === 'copart') {
+          const items = await fetchCopartLocations();
+          if (!isCancelled) setAuctionBranches(items);
+        } else if (auctionSource === 'iaai') {
+          const items = await fetchIaaiLocations();
+          if (!isCancelled) setAuctionBranches(items);
+        } else {
+          setAuctionBranches([]);
+        }
+      } catch {
+        if (!isCancelled) setAuctionBranches([]);
+      }
+    };
+
+    void loadBranches();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [auctionSource]);
+
+  // Calculate shipping quotes when auction branch is selected
+  useEffect(() => {
+    if (!selectedAuctionBranch || auctionSource === 'all') {
+      setShippingQuotes(new Map());
+      return;
+    }
+
+    // selectedAuctionBranch contains the address (used as SelectItem value)
+    const branchAddress = selectedAuctionBranch;
+    if (!branchAddress) {
+      setShippingQuotes(new Map());
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingShipping(true);
+
+    const loadShippingQuotes = async () => {
+      try {
+        const response = await calculateShipping(branchAddress, auctionSource as 'copart' | 'iaai');
+        if (!isCancelled) {
+          const quotesMap = new Map<number, number>();
+          for (const quote of response.quotes) {
+            quotesMap.set(quote.companyId, quote.shippingPrice);
+          }
+          setShippingQuotes(quotesMap);
+        }
+      } catch (error) {
+        console.error('Failed to calculate shipping:', error);
+        if (!isCancelled) {
+          setShippingQuotes(new Map());
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingShipping(false);
+        }
+      }
+    };
+
+    void loadShippingQuotes();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedAuctionBranch, auctionSource]);
 
   const toggleComparison = (id: number) => {
     setSelectedCompanies(prev => 
@@ -300,6 +380,9 @@ const CompanyCatalogPage = () => {
                 isCompareMode={isCompareMode}
                 isSelected={selectedCompanies.includes(company.id)}
                 onToggleCompare={() => toggleComparison(company.id)}
+                hasAuctionBranch={!!selectedAuctionBranch && auctionSource !== 'all'}
+                isLoadingShipping={isLoadingShipping}
+                calculatedShippingPrice={shippingQuotes.get(company.id)}
               />
             ))}
           </div>
@@ -385,6 +468,10 @@ const CompanyCatalogPage = () => {
       filters,
       loadCompanies,
       updateUrlFromFilters,
+      selectedAuctionBranch,
+      auctionSource,
+      shippingQuotes,
+      isLoadingShipping,
     ],
   );
 
@@ -523,6 +610,16 @@ const CompanyCatalogPage = () => {
                 setPage(1);
                 void loadCompanies(1, nextFilters);
                 updateUrlFromFilters(nextFilters, 1);
+              }}
+              auctionSource={auctionSource}
+              onAuctionSourceChange={(value) => {
+                setAuctionSource(value);
+                setSelectedAuctionBranch('');
+              }}
+              auctionBranches={auctionBranches}
+              auctionBranchValue={selectedAuctionBranch}
+              onAuctionBranchChange={(value) => {
+                setSelectedAuctionBranch(value);
               }}
             />
           </aside>

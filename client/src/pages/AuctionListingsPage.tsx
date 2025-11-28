@@ -131,8 +131,9 @@ const AuctionListingsPage = () => {
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>('all');
   const [, setStatusFilter] = useState<LotStatus>('all');
   const [, setDamageFilter] = useState<DamageType>('all');
-  const [priceRange, setPriceRange] = useState<number[]>([500, 30000]);
-  const [yearRange, setYearRange] = useState<number[]>([2010, 2024]);
+  // Start with no price/year filters applied; the user or URL must opt-in.
+  const [priceRange, setPriceRange] = useState<number[]>([0, 0]);
+  const [yearRange, setYearRange] = useState<number[]>([0, 0]);
   const [maxMileage, setMaxMileage] = useState<number[]>([200000]);
   const [exactYear, setExactYear] = useState<number | ''>('');
   const [minMileage, setMinMileage] = useState<number | ''>('');
@@ -521,14 +522,14 @@ const AuctionListingsPage = () => {
     const driveParam = params.get('drive');
     const nextDrive = (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) ? driveParam : 'all';
 
-    // Year range – default matches initial state [2010, 2024]
+    // Year range – default is "no filter" [0, 0]
     const yearFromParam = params.get('yearFrom');
     const yearToParam = params.get('yearTo');
     const nextYearRange = (yearFromParam && yearToParam) ? (() => {
       const from = Number(yearFromParam);
       const to = Number(yearToParam);
-      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [2010, 2024];
-    })() : [2010, 2024];
+      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [0, 0];
+    })() : [0, 0];
 
     // Exact year
     const yearExactParam = params.get('yearExact');
@@ -550,14 +551,14 @@ const AuctionListingsPage = () => {
       return Number.isNaN(parsed) ? '' : parsed;
     })() : '';
 
-    // Price range – default matches initial state [500, 30000]
+    // Price range – default is "no filter" [0, 0]
     const priceMinParam = params.get('priceMin');
     const priceMaxParam = params.get('priceMax');
     const nextPriceRange = (priceMinParam && priceMaxParam) ? (() => {
       const min = Number(priceMinParam);
       const max = Number(priceMaxParam);
-      return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [500, 30000];
-    })() : [500, 30000];
+      return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [0, 0];
+    })() : [0, 0];
 
     // Buy Now Only flag
     const buyNowParam = params.get('buy_now');

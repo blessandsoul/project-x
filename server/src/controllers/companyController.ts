@@ -28,6 +28,8 @@ interface CalculatedQuoteResponse {
   total_price: number;
   delivery_time_days: number | null;
   breakdown: any;
+  company_rating?: number;
+  company_review_count?: number;
 }
 
 interface VehicleQuotesResponse {
@@ -503,16 +505,14 @@ export class CompanyController {
       const breakdown = q.breakdown ? { ...q.breakdown } : q.breakdown;
 
       if (breakdown && typeof breakdown === 'object') {
-        if (typeof breakdown.total_price === 'number') {
-          breakdown.total_price = breakdown.total_price * rate;
+        if (typeof (breakdown as any).total_price === 'number') {
+          (breakdown as any).total_price = (breakdown as any).total_price * rate;
         }
       }
 
       return {
-        company_id: q.company_id,
-        company_name: q.company_name,
+        ...q,
         total_price: convertedTotal,
-        delivery_time_days: q.delivery_time_days,
         breakdown,
       };
     });
@@ -650,27 +650,39 @@ export class CompanyController {
         distanceMiles = firstBreakdown.distance_miles;
       }
 
-      // Resolve company names for the quotes so the response shape
+      // Resolve company metadata for the quotes so the response shape
       // matches freshly calculated quotes. Use a batched lookup to
       // avoid N separate DB queries.
       const uniqueCompanyIds = Array.from(
         new Set(existingQuotes.map((q) => q.company_id)),
       );
       const companies = await this.companyModel.findByIds(uniqueCompanyIds);
-      const companyNameById = new Map<number, string>();
+      const reviewCounts = await this.companyReviewModel.countByCompanyIds(uniqueCompanyIds);
+
+      const companyMetaById = new Map<number, { name: string; rating: number; reviewCount: number }>();
       for (const company of companies) {
-        if (company && typeof company.name === 'string') {
-          companyNameById.set(company.id, company.name);
-        }
+        if (!company || typeof company.name !== 'string') continue;
+        const rating = typeof (company as any).rating === 'number' ? (company as any).rating : 0;
+        const reviewCount = reviewCounts[company.id] ?? 0;
+        companyMetaById.set(company.id, {
+          name: company.name,
+          rating,
+          reviewCount,
+        });
       }
 
-      let quotes: CalculatedQuoteResponse[] = existingQuotes.map((q) => ({
-        company_id: q.company_id,
-        company_name: companyNameById.get(q.company_id) ?? '',
-        total_price: q.total_price,
-        delivery_time_days: q.delivery_time_days,
-        breakdown: q.breakdown,
-      }));
+      let quotes: CalculatedQuoteResponse[] = existingQuotes.map((q) => {
+        const meta = companyMetaById.get(q.company_id);
+        return {
+          company_id: q.company_id,
+          company_name: meta?.name ?? '',
+          total_price: q.total_price,
+          delivery_time_days: q.delivery_time_days,
+          breakdown: q.breakdown,
+          company_rating: meta?.rating ?? 0,
+          company_review_count: meta?.reviewCount ?? 0,
+        };
+      });
 
       const normalizedCurrency = this.normalizeCurrencyCode(currency);
       quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
@@ -752,6 +764,15 @@ export class CompanyController {
     const { distanceMiles, quotes: computedQuotes } =
       await this.shippingQuoteService.computeQuotesForVehicle(vehicle, companies);
 
+    const companyIds = companies.map((c) => c.id);
+    const reviewCounts = await this.companyReviewModel.countByCompanyIds(companyIds);
+    const companyMetaById = new Map<number, { rating: number; reviewCount: number }>();
+    for (const company of companies) {
+      const rating = typeof (company as any).rating === 'number' ? (company as any).rating : 0;
+      const reviewCount = reviewCounts[company.id] ?? 0;
+      companyMetaById.set(company.id, { rating, reviewCount });
+    }
+
     const quotes: CalculatedQuoteResponse[] = [];
 
     for (const cq of computedQuotes) {
@@ -764,6 +785,7 @@ export class CompanyController {
       };
 
       const created = await this.companyModel.createQuote(quoteCreate);
+      const meta = companyMetaById.get(cq.companyId);
 
       quotes.push({
         company_id: cq.companyId,
@@ -771,6 +793,8 @@ export class CompanyController {
         total_price: created.total_price,
         delivery_time_days: created.delivery_time_days,
         breakdown: created.breakdown,
+        company_rating: meta?.rating ?? 0,
+        company_review_count: meta?.reviewCount ?? 0,
       });
     }
 

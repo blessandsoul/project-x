@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { VipBadge } from '@/components/company/VipBadge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Table,
@@ -429,24 +428,6 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
           {activeIndex + 1} / {photos.length}
         </div>
 
-        {/* Social Proof - Integrated into Image */}
-        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pr-3 pl-1 py-1 z-10">
-            <div className="flex -space-x-2">
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="" />
-                </div>
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="" />
-                </div>
-                <div className="h-5 w-5 rounded-full bg-white text-black border-2 border-white/10 flex items-center justify-center text-[7px] font-bold">
-                    +1
-                </div>
-            </div>
-            <span className="text-[10px] text-white font-medium">
-                <span className="font-bold">3</span> {t('vehicle.social_proof.viewing_now')}
-            </span>
-        </div>
-        
         {/* Navigation Arrows (Desktop) */}
         <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button 
@@ -536,66 +517,10 @@ const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
   )
 }
 
-const CarfaxWidget = () => {
-    const { t } = useTranslation()
-    return (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Icon icon="mdi:file-document-check" className="h-32 w-32 text-blue-900" />
-            </div>
-
-            {/* Fox Image Area */}
-            <div className="flex-shrink-0 relative z-10">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full shadow-md border-4 border-white flex items-center justify-center overflow-hidden">
-                    <img 
-                        src="/images/carfax-fox.png" 
-                        alt="Carfax Fox" 
-                        className="w-full h-full object-contain p-2"
-                        onError={(e) => {
-                            // Fallback if image not found
-                            e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Carfax_logo.svg/320px-Carfax_logo.svg.png"
-                        }}
-                    />
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
-                    RECOMMENDED
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 text-center sm:text-left z-10 space-y-2">
-                <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-2">
-                        <Icon icon="mdi:shield-check" className="text-blue-600" />
-                        {t('vehicle.carfax.title')}
-                    </h3>
-                    <p className="text-sm text-slate-600 mt-1 max-w-md">
-                        {t('vehicle.carfax.description')}
-                    </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-                    <Button className="bg-[#1877F2] hover:bg-[#1465D0] text-white font-semibold h-10 shadow-sm group">
-                        <Icon icon="mdi:file-document" className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                        {t('vehicle.carfax.get_report')}
-                    </Button>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span className="line-through decoration-red-400">$39.99</span>
-                        <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{t('vehicle.carfax.free_with_order')}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 const QuoteRow = ({ 
     quote, 
     isSelected, 
     onToggle, 
-    vipLabel,
-    vipVariant,
     priceColor,
     onViewBreakdown,
     isMultiSelectMode
@@ -603,16 +528,14 @@ const QuoteRow = ({
     quote: VehicleQuote; 
     isSelected: boolean; 
     onToggle: () => void; 
-    vipLabel?: string;
-    vipVariant?: 'diamond' | 'gold' | 'silver' | 'default';
     priceColor?: string;
     onViewBreakdown: (e: React.MouseEvent) => void;
     isMultiSelectMode: boolean;
 }) => {
   const { t } = useTranslation()
   const totalPrice = Number(quote.total_price) || 0
-  const rating = 4.8 // Mock rating
-  const reviews = 120 // Mock reviews
+  const rating = quote.company_rating ?? null
+  const reviews = quote.company_review_count ?? null
 
   return (
     <TableRow 
@@ -620,7 +543,7 @@ const QuoteRow = ({
             "group cursor-pointer transition-colors", 
             isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
         )}
-        onClick={onToggle}
+        onClick={onViewBreakdown}
     >
       {isMultiSelectMode && (
         <TableCell className="w-[50px] pr-0">
@@ -631,24 +554,20 @@ const QuoteRow = ({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-bold text-base">{quote.company_name}</span>
-            {vipLabel && <VipBadge label={vipLabel} variant={vipVariant} />}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <div className="flex items-center text-amber-500">
+            {rating != null && (
+              <div className="flex items-center text-amber-500">
                 <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
                 <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-            </div>
-            <span className="text-muted-foreground/60">•</span>
-            <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <span className="ml-1 inline-flex items-center gap-0.5 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help">
-                        <Icon icon="mdi:check-decagram" className="h-3 w-3" />
-                        {t('vehicle.quotes.verified')}
-                    </span>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.quotes.verified_importer')}</TooltipContent>
-            </Tooltip>
+              </div>
+            )}
+            {rating != null && reviews != null && (
+              <span className="text-muted-foreground/60">•</span>
+            )}
+            {reviews != null && (
+              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
+            )}
           </div>
         </div>
       </TableCell>
@@ -668,21 +587,6 @@ const QuoteRow = ({
       </TableCell>
       <TableCell className="text-right">
          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-8 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1"
-                        onClick={onViewBreakdown}
-                    >
-                        <Icon icon="mdi:calculator" className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t('vehicle.quotes.breakdown')}</span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.price_breakdown')}</TooltipContent>
-            </Tooltip>
-            
             {!isMultiSelectMode && (
                 <Button 
                     size="sm" 
@@ -1015,7 +919,14 @@ const VehicleDetailsPage = () => {
   const shippingPrice = bestQuote ? (Number(bestQuote.breakdown?.shipping_total) || 1200) : 0
   const customsPrice = bestQuote ? (Number(bestQuote.breakdown?.customs_fee) || 500) : 0
   const brokerFee = bestQuote ? (Number(bestQuote.breakdown?.broker_fee) || 300) : 300
-  const totalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
+  const baseTotalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
+
+  // Allow user to adjust auction price locally for approximate calculations
+  const [manualAuctionPrice, setManualAuctionPrice] = useState<number | null>(null)
+  const effectiveAuctionPrice = Number.isFinite(manualAuctionPrice as number) && (manualAuctionPrice as number) >= 0
+    ? (manualAuctionPrice as number)
+    : auctionPrice
+  const totalPrice = Math.max(0, baseTotalPrice + (effectiveAuctionPrice - auctionPrice))
 
   if (isLoading) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><main className="container p-8"><Skeleton className="h-96" /></main></div>
   if (!vehicle) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><div className="container p-8">{t('vehicle.not_found')}</div></div>
@@ -1063,6 +974,8 @@ const VehicleDetailsPage = () => {
             </div>
 
             <VehicleGallery photos={photos} />
+
+            <VehicleSpecs vehicle={vehicle} />
 
             {/* Transparency Table with Filters */}
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
@@ -1163,15 +1076,6 @@ const VehicleDetailsPage = () => {
                     </TableHeader>
                     <TableBody>
                     {filteredQuotes.map((quote) => {
-                        // Mock VIP Status logic
-                        const originalIndex = quotes.findIndex(q => q.company_id === quote.company_id)
-                        let vipLabel: string | undefined
-                        let vipVariant: 'diamond' | 'gold' | 'silver' | 'default' = 'default'
-                        
-                        if (originalIndex === 0) { vipLabel = 'Diamond'; vipVariant = 'diamond' }
-                        else if (originalIndex === 1) { vipLabel = 'Gold'; vipVariant = 'gold' }
-                        else if (originalIndex === 2) { vipLabel = 'Silver'; vipVariant = 'silver' }
-
                         const priceColor = getPriceColor(Number(quote.total_price))
 
                         return (
@@ -1180,8 +1084,6 @@ const VehicleDetailsPage = () => {
                                 quote={quote} 
                                 isSelected={selectedCompanyIds.includes(quote.company_id)}
                                 onToggle={() => handleRowClick(quote)}
-                                vipLabel={vipLabel}
-                                vipVariant={vipVariant}
                                 priceColor={priceColor}
                                 onViewBreakdown={(e) => {
                                     e.stopPropagation()
@@ -1198,14 +1100,10 @@ const VehicleDetailsPage = () => {
               {/* Mobile Card List View */}
               <div className="md:hidden space-y-0 divide-y">
                   {filteredQuotes.map((quote) => {
-                      const originalIndex = quotes.findIndex(q => q.company_id === quote.company_id)
-                      let vipLabel: string | undefined
-                      let vipVariant: 'diamond' | 'gold' | 'silver' | 'default' = 'default'
-                      if (originalIndex === 0) { vipLabel = 'Diamond'; vipVariant = 'diamond' }
-                      else if (originalIndex === 1) { vipLabel = 'Gold'; vipVariant = 'gold' }
-
                       const priceColor = getPriceColor(Number(quote.total_price))
                       const isSelected = selectedCompanyIds.includes(quote.company_id)
+                      const rating = quote.company_rating ?? null
+                      const reviews = quote.company_review_count ?? null
 
                       return (
                         <div 
@@ -1214,7 +1112,7 @@ const VehicleDetailsPage = () => {
                                 "p-4 active:bg-muted/50 transition-colors",
                                 isSelected ? "bg-primary/5" : ""
                             )}
-                            onClick={() => handleRowClick(quote)}
+                            onClick={() => setActiveBreakdownQuote(quote)}
                         >
                             <div className="flex justify-between items-start gap-3">
                                 <div className="flex items-start gap-3">
@@ -1228,15 +1126,23 @@ const VehicleDetailsPage = () => {
                                     <div>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-bold text-sm">{quote.company_name}</span>
-                                            {vipLabel && <VipBadge label={vipLabel} variant={vipVariant} className="scale-90 origin-left" />}
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                            <div className="flex items-center text-amber-500">
+                                            {rating != null && (
+                                              <div className="flex items-center text-amber-500">
                                                 <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                                                <span className="ml-0.5 font-medium text-foreground">4.8</span>
-                                            </div>
-                                            <span>•</span>
-                                            <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
+                                                <span className="ml-0.5 font-medium text-foreground">{rating}</span>
+                                              </div>
+                                            )}
+                                            {rating != null && reviews != null && (
+                                              <span>•</span>
+                                            )}
+                                            {reviews != null && (
+                                              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
+                                            )}
+                                            {rating == null && reviews == null && (
+                                              <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1244,17 +1150,6 @@ const VehicleDetailsPage = () => {
                                     <div className={cn("font-bold text-base", priceColor)}>
                                         ${Number(quote.total_price).toLocaleString()}
                                     </div>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-6 text-[10px] px-2 -mr-2 text-muted-foreground"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setActiveBreakdownQuote(quote)
-                                        }}
-                                    >
-                                        {t('vehicle.quotes.breakdown')}
-                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -1270,11 +1165,7 @@ const VehicleDetailsPage = () => {
               )}
             </div>
 
-            {/* <CarfaxWidget /> */}
-            
-            {/* <DamageViewer vehicle={vehicle} /> */}
-
-            <VehicleSpecs vehicle={vehicle} />
+            <DamageViewer vehicle={vehicle} />
 
             <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
@@ -1285,27 +1176,38 @@ const VehicleDetailsPage = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
               <CardHeader className="pb-4 border-b">
                 <div className="flex justify-between items-start">
-                    <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
+                  <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
                     {t('vehicle.price_card.estimated_total')}
-                    </CardDescription>
-                    <Badge variant="outline" className="bg-background text-[10px] font-normal">
-                        USD / GEL
-                    </Badge>
+                  </CardDescription>
+                  <Badge variant="outline" className="bg-background text-[10px] font-normal">
+                    USD / GEL
+                  </Badge>
                 </div>
                 <CardTitle className="text-4xl font-bold text-foreground flex items-baseline gap-2">
                   ${totalPrice.toLocaleString()}
                   <span className="text-lg font-normal text-muted-foreground hidden sm:inline-block">USD</span>
                 </CardTitle>
-                <p className="text-sm text-muted-foreground font-medium">
-                  ≈ {(totalPrice * 2.7).toLocaleString()} GEL
-                </p>
               </CardHeader>
+
               <CardContent className="p-6 space-y-6">
                 {/* Breakdown */}
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between py-1 border-b border-dashed">
                     <span className="text-muted-foreground">{t('vehicle.price_card.auction_price')}</span>
-                    <span>${auctionPrice.toLocaleString()}</span>
+                    <Input
+                      type="number"
+                      className="h-8 w-32 text-right text-sm"
+                      value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9.]/g, '')
+                        if (!raw) {
+                          setManualAuctionPrice(0)
+                          return
+                        }
+                        const next = Number(raw)
+                        setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
+                      }}
+                    />
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed">
                     <span className="text-muted-foreground">{t('vehicle.price_card.shipping')}</span>
@@ -1323,21 +1225,20 @@ const VehicleDetailsPage = () => {
 
                 {/* CTA */}
                 <div className="space-y-3">
-                  <Button 
-                    className="w-full h-12 text-base font-bold shadow-lg transition-all" 
+                  <Button
+                    className="w-full h-12 text-base font-bold shadow-lg transition-all"
                     onClick={() => {
-                        if (selectedCompanyIds.length > 0) {
-                            setIsLeadModalOpen(true)
-                        } else {
-                            document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
-                        }
+                      if (selectedCompanyIds.length > 0) {
+                        setIsLeadModalOpen(true)
+                      } else {
+                        document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
+                      }
                     }}
                     disabled={selectedCompanyIds.length === 0}
                   >
-                    {selectedCompanyIds.length > 0 
-                        ? t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })
-                        : t('vehicle.price_card.select_to_order')
-                    }
+                    {selectedCompanyIds.length > 0
+                      ? t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })
+                      : t('vehicle.price_card.select_to_order')}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
                     {t('vehicle.price_card.select_hint')}
