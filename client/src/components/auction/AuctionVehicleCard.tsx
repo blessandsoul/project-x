@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,6 +47,14 @@ export function AuctionVehicleCard({
   priority = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -108,6 +117,103 @@ export function AuctionVehicleCard({
   };
 
 
+  // Mobile compact card - horizontal layout to fit 5+ per screen
+  if (isMobile) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+        className="h-full"
+      >
+        <Card className="group relative overflow-hidden rounded-xl border-border/40 bg-card shadow-sm flex flex-row p-0 gap-0">
+          {/* Image - Left side, smaller */}
+          <div className="relative w-28 flex-shrink-0 overflow-hidden bg-muted/20">
+            <button
+              type="button"
+              className="w-full h-full focus:outline-none cursor-zoom-in"
+              onClick={onOpenGallery}
+              aria-label={t('common.view_photos')}
+            >
+              <img
+                src={mainPhotoUrl}
+                alt={`${item.year} ${item.make} ${item.model}`}
+                className="h-full w-full object-cover"
+                loading={priority ? 'eager' : 'lazy'}
+              />
+            </button>
+            {/* Source badge on image */}
+            {item.source && (
+              <Badge
+                className={cn(
+                  "absolute top-1 left-1 text-[8px] px-1.5 py-0 h-4 backdrop-blur-md border-none shadow-sm font-bold",
+                  item.source.toLowerCase() === 'copart' ? "bg-[#0047AB] text-white" :
+                  item.source.toLowerCase() === 'iaai' ? "bg-[#D40000] text-white" :
+                  "bg-black/70 text-white"
+                )}
+              >
+                {item.source.toUpperCase()}
+              </Badge>
+            )}
+            {/* Compare checkbox */}
+            {showCompareCheckbox && (
+              <div className="absolute bottom-1 left-1">
+                <Checkbox
+                  id={`compare-${item.id}`}
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
+                  className="w-4 h-4 bg-white/90 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Content - Right side, compact */}
+          <CardContent className="flex flex-row flex-1 p-2 gap-2 min-w-0">
+            {/* Left: Info */}
+            <div className="flex flex-col flex-1 min-w-0 gap-0.5 justify-between h-full">
+              <div>
+                <h3 className="font-semibold text-[15px] leading-tight truncate" title={`${item.year} ${item.make} ${item.model}`}>
+                  {item.year} {item.make} {item.model}
+                </h3>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-0.5">
+                    <Icon icon="mdi:speedometer" className="w-3.5 h-3.5" />
+                    {formatMileage(item.mileage)}
+                  </span>
+                  <span className="flex items-center gap-0.5">
+                    <Icon icon="mdi:gas-station" className="w-3.5 h-3.5" />
+                    {translateFuel(item.fuel_type)}
+                  </span>
+                </div>
+              </div>
+              <span className="text-[15px] font-bold text-primary leading-tight">
+                {formatMoney(displayPrice)}
+              </span>
+            </div>
+            {/* Right: Actions stacked vertically */}
+            <div className="flex flex-col justify-between items-end h-full">
+              {hasBuyNow && buyNowPriceLabel ? (
+                <span className="text-[10px] text-emerald-600 font-semibold text-right leading-tight">
+                  <span className="block">{buyNowPriceLabel}</span>
+                  <span className="text-[9px] font-medium">ახლავე ყიდვა</span>
+                </span>
+              ) : <span />}
+              <button
+                className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors text-[11px] font-semibold min-w-[44px]"
+                onClick={onViewDetails}
+                title={t('common.details')}
+              >
+                {t('common.details')}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  // Desktop card - original layout
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

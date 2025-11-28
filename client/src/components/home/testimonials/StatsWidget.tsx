@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next'
-import { Icon } from '@iconify/react/dist/iconify.js'
+// import { useTranslation } from 'react-i18next'
+// import { Icon } from '@iconify/react/dist/iconify.js'
 
 export function StatsWidget() {
-  const { t } = useTranslation()
+  // const { t } = useTranslation()
 
   return (
     <></>

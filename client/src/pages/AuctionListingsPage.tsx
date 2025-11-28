@@ -788,11 +788,6 @@ const AuctionListingsPage = () => {
   ) => {
     const vehicleKey = item.vehicle_id ?? item.id;
 
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      navigate(`/vehicle/${vehicleKey}`);
-      return;
-    }
-
     setBackendGallery({
       id: vehicleKey,
       title: `${item.year} ${item.make} ${item.model}`,
@@ -1182,16 +1177,16 @@ const AuctionListingsPage = () => {
           {/* Content Grid */}
           <div className="min-h-[400px]">
             {isBackendLoading && displayedItems.length === 0 ? (
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
                   {Array.from({ length: 8 }).map((_, i) => (
-                     <Card key={i} className="overflow-hidden rounded-xl border-border/50">
-                        <Skeleton className="aspect-[4/3] w-full" />
-                        <CardContent className="p-4 space-y-3">
-                           <Skeleton className="h-5 w-3/4" />
-                           <Skeleton className="h-4 w-1/2" />
-                           <div className="flex justify-between pt-2">
-                              <Skeleton className="h-8 w-20" />
-                              <Skeleton className="h-8 w-8 rounded-full" />
+                     <Card key={i} className="overflow-hidden rounded-xl border-border/50 flex flex-row sm:flex-col">
+                        <Skeleton className="w-28 h-20 sm:w-full sm:aspect-[4/3] sm:h-auto flex-shrink-0" />
+                        <CardContent className="p-2 sm:p-4 space-y-1 sm:space-y-3 flex-1">
+                           <Skeleton className="h-4 sm:h-5 w-3/4" />
+                           <Skeleton className="h-3 sm:h-4 w-1/2" />
+                           <div className="flex justify-between pt-1 sm:pt-2">
+                              <Skeleton className="h-6 sm:h-8 w-16 sm:w-20" />
+                              <Skeleton className="h-6 sm:h-8 w-14 sm:w-8 rounded-full" />
                            </div>
                         </CardContent>
                      </Card>
@@ -1221,7 +1216,7 @@ const AuctionListingsPage = () => {
                </div>
             ) : (
                <div className="space-y-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
                      {displayedItems.map((item, idx) => (
                         <AuctionVehicleCard
                            key={`${item.id}-${item.vehicle_id}`}

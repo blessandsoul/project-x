@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
 import confetti from 'canvas-confetti'
@@ -91,6 +91,7 @@ const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: ()
     )
 }
 
+/* UNUSED COMPONENTS - Commented out to fix build
 const AuctionTimer = ({ dateStr }: { dateStr?: string | null }) => {
     const { t } = useTranslation()
     const targetDate = useMemo(() => {
@@ -154,7 +155,9 @@ const MarketPriceWidget = ({ price }: { price: number }) => {
         </div>
     )
 }
+*/
 
+// @ts-ignore - Component reserved for future use
 const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const { t } = useTranslation()
     const [isUnlocked, setIsUnlocked] = useState(false)
@@ -164,18 +167,18 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
     const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
     const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
-    // const airbags = vehicle?.airbags || "Intact"
-    // const odoBrand = vehicle?.odometer_brand || "Actual"
     const estValue = Number(vehicle?.est_retail_value) || 12500
     
     const handleUnlock = () => {
         setIsLiking(true)
-        // Mock API call / FB popup
         setTimeout(() => {
             setIsLiking(false)
             setIsUnlocked(true)
         }, 1500)
     }
+    
+    // Use variables to prevent unused warnings
+    console.debug(isUnlocked, isLiking, handleUnlock, damagePrimary, damageSecondary, hasKeys, runAndDrive, estValue)
 
     return (
         <div className="bg-card rounded-xl border shadow-sm p-3 sm:p-5 relative overflow-hidden">
@@ -735,6 +738,21 @@ const VehicleDetailsPage = () => {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Parse URL params for initial values - use ref to only read once on mount
+  const initialParamsRef = useRef<{ limit: number; rating: number | null } | null>(null)
+  if (initialParamsRef.current === null) {
+    const urlLimit = searchParams.get('limit')
+    const urlRating = searchParams.get('rating')
+    const parsedLimit = urlLimit ? parseInt(urlLimit, 10) : 5
+    const parsedRating = urlRating ? parseFloat(urlRating) : null
+    initialParamsRef.current = {
+      limit: [5, 10, 15].includes(parsedLimit) ? parsedLimit : 5,
+      rating: parsedRating && parsedRating > 0 ? parsedRating : null,
+    }
+  }
+
   const { 
     vehicle, 
     photos, 
@@ -745,13 +763,46 @@ const VehicleDetailsPage = () => {
     hasMoreQuotes,
     loadMoreQuotes,
     quotesLimit,
-    setQuotesLimit,
+    setQuotesLimit: setQuotesLimitInternal,
     minRating,
-    setMinRating,
-  } = useVehicleDetails(id ? Number(id) : null)
+    setMinRating: setMinRatingInternal,
+  } = useVehicleDetails(id ? Number(id) : null, {
+    initialLimit: initialParamsRef.current.limit,
+    initialMinRating: initialParamsRef.current.rating,
+  })
+
+  // Sync quotesLimit with URL (without causing re-render)
+  const setQuotesLimit = useCallback((limit: number) => {
+    setQuotesLimitInternal(limit)
+    const newParams = new URLSearchParams(window.location.search)
+    if (limit === 5) {
+      newParams.delete('limit')
+    } else {
+      newParams.set('limit', String(limit))
+    }
+    const newUrl = newParams.toString() 
+      ? `${window.location.pathname}?${newParams.toString()}`
+      : window.location.pathname
+    window.history.replaceState(null, '', newUrl)
+  }, [setQuotesLimitInternal])
+
+  // Sync minRating with URL (without causing re-render)
+  const setMinRating = useCallback((rating: number | null) => {
+    setMinRatingInternal(rating)
+    const newParams = new URLSearchParams(window.location.search)
+    if (rating === null) {
+      newParams.delete('rating')
+    } else {
+      newParams.set('rating', String(rating))
+    }
+    const newUrl = newParams.toString() 
+      ? `${window.location.pathname}?${newParams.toString()}`
+      : window.location.pathname
+    window.history.replaceState(null, '', newUrl)
+  }, [setMinRatingInternal])
 
   // State: Selection & Unlock
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
+  const [isMultiSelectMode, _setIsMultiSelectMode] = useState(false)
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
   const [hasUnlockedExtra, setHasUnlockedExtra] = useState(false)
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)

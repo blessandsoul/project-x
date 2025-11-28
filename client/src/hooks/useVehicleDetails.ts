@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { calculateVehicleQuotes, fetchVehicleFull } from '@/api/vehicles'
 import type { VehicleFullResponse, VehicleQuote } from '@/types/vehicles'
 
+interface UseVehicleDetailsOptions {
+  initialLimit?: number
+  initialMinRating?: number | null
+}
+
 interface UseVehicleDetailsResult {
   vehicle: VehicleFullResponse['vehicle'] | null
   photos: VehicleFullResponse['photos']
@@ -24,7 +29,10 @@ interface UseVehicleDetailsResult {
   setMinRating: (rating: number | null) => void
 }
 
-export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsResult {
+export function useVehicleDetails(
+  vehicleId: number | null,
+  options?: UseVehicleDetailsOptions
+): UseVehicleDetailsResult {
   const [vehicle, setVehicle] = useState<VehicleFullResponse['vehicle'] | null>(null)
   const [photos, setPhotos] = useState<VehicleFullResponse['photos']>([])
   const [quotes, setQuotes] = useState<VehicleQuote[]>([])
@@ -34,13 +42,13 @@ export function useVehicleDetails(vehicleId: number | null): UseVehicleDetailsRe
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   
-  // Pagination state
+  // Pagination state - use initial values from options
   const [quotesTotal, setQuotesTotal] = useState(0)
-  const [quotesLimit, setQuotesLimit] = useState(5)
+  const [quotesLimit, setQuotesLimit] = useState(options?.initialLimit ?? 5)
   const [currentOffset, setCurrentOffset] = useState(0)
   
-  // Rating filter
-  const [minRating, setMinRating] = useState<number | null>(null)
+  // Rating filter - use initial value from options
+  const [minRating, setMinRating] = useState<number | null>(options?.initialMinRating ?? null)
 
   // Load vehicle details (only when vehicleId or reloadKey changes)
   useEffect(() => {

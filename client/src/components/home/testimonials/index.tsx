@@ -16,7 +16,7 @@ export function TestimonialsSection() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeFilter, setActiveFilter] = useState('all')
+  const [_activeFilter, _setActiveFilter] = useState('all')
 
   const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
 

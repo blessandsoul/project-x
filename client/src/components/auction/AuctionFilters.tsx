@@ -8,7 +8,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
   SheetTrigger,
   SheetClose,
 } from '@/components/ui/sheet';
@@ -175,7 +174,7 @@ export function AuctionFilters({
                          }}
                          disabled={isLoadingMakes}
                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_make')} /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue placeholder={t('common.select_make')} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t('common.all')}</SelectItem>
                             {(catalogMakes ?? []).map(make => (
@@ -191,7 +190,7 @@ export function AuctionFilters({
                          onValueChange={(val) => updateFilter('selectedModelId', val)}
                          disabled={filters.selectedMakeId === 'all' || isLoadingModels}
                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_model')} /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue placeholder={t('common.select_model')} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t('common.all')}</SelectItem>
                             {(catalogModels ?? []).map(model => (
@@ -262,7 +261,7 @@ export function AuctionFilters({
                           value={filters.yearRange[0] > 0 ? String(filters.yearRange[0]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [Number(v), filters.yearRange[1]])}
                        >
-                          <SelectTrigger className="h-9 text-xs">
+                          <SelectTrigger className="h-9 w-full text-xs">
                              <SelectValue placeholder={t('common.from')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[200px]">
@@ -276,7 +275,7 @@ export function AuctionFilters({
                           value={filters.yearRange[1] > 0 ? String(filters.yearRange[1]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [filters.yearRange[0], Number(v)])}
                        >
-                          <SelectTrigger className="h-9 text-xs">
+                          <SelectTrigger className="h-9 w-full text-xs">
                              <SelectValue placeholder={t('common.to')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[200px]">
@@ -287,11 +286,11 @@ export function AuctionFilters({
                        </Select>
                     </div>
                     
-                    <div className="flex items-center gap-2 pt-1">
-                       <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('auction.exact_year')}</span>
+                    <div className="space-y-0.5 pt-1">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('auction.exact_year')}</label>
                        <Input 
                           type="number" 
-                          className="h-7 w-24 text-[10px] px-2 py-0 border-muted-foreground/30"
+                          className="h-9 w-full text-xs"
                           placeholder="მაგ: 2020" 
                           value={filters.exactYear}
                           onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
@@ -304,7 +303,7 @@ export function AuctionFilters({
                     <div className="space-y-0.5">
                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.fuel')}</label>
                        <Select value={filters.fuelType} onValueChange={(val) => updateFilter('fuelType', val)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                              <SelectItem value="all">{t('common.all')}</SelectItem>
                              <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
@@ -318,7 +317,7 @@ export function AuctionFilters({
                     <div className="space-y-0.5">
                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.drive')}</label>
                        <Select value={filters.drive} onValueChange={(val) => updateFilter('drive', val)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                              <SelectItem value="all">{t('common.all')}</SelectItem>
                              <SelectItem value="front">Front</SelectItem>
@@ -359,7 +358,7 @@ export function AuctionFilters({
 
                </div>
 
-               <SheetFooter className="px-4 py-3 border-t bg-background sticky bottom-0 z-10">
+               <div className="px-4 py-3 border-t bg-background mt-auto">
                   <div className="flex flex-col w-full gap-2">
                      <Button 
                         variant="outline" 
@@ -369,11 +368,11 @@ export function AuctionFilters({
                         <Icon icon="mdi:filter-remove" className="w-4 h-4 mr-2" />
                         {t('common.clear_filters')}
                      </Button>
-                     <Button className="w-full h-11 text-sm" onClick={() => { onApply(); }}>
+                     <Button className="w-full h-11 text-sm" onClick={() => { onApply(); onOpenChange(false); }}>
                         {t('common.show_results')}
                      </Button>
                   </div>
-               </SheetFooter>
+               </div>
             </SheetContent>
           </Sheet>
           <Button onClick={onApply} className="h-11 px-6">
