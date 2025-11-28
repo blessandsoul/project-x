@@ -137,6 +137,14 @@ export class CompanyModel extends BaseModel {
     return rows as Company[];
   }
 
+  async countAll(): Promise<number> {
+    const rows = await this.executeQuery(
+      'SELECT COUNT(*) AS cnt FROM companies',
+      [],
+    );
+    return rows.length ? (rows[0] as { cnt: number }).cnt : 0;
+  }
+
   async findByIds(ids: number[]): Promise<Company[]> {
     if (!Array.isArray(ids) || ids.length === 0) {
       return [];

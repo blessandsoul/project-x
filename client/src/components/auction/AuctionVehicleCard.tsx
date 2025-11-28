@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +13,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
-import { useFavorites } from '@/hooks/useFavorites';
 
 interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
@@ -48,10 +46,6 @@ export function AuctionVehicleCard({
   priority = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
-  const { favorites, toggleFavorite } = useFavorites();
-  
-  const vehicleId = String(item.vehicle_id ?? item.id);
-  const isFavorite = favorites.includes(vehicleId);
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -84,11 +78,6 @@ export function AuctionVehicleCard({
   const hasBuyNow = buyNowRaw != null;
   const buyNowPriceLabel = hasBuyNow ? formatMoney(buyNowRaw) : null;
 
-  // Social Proof & Badges
-  const watcherCount = useMemo(() => {
-    const seed = typeof item.id === 'number' ? item.id : item.vehicle_id || 0;
-    return 3 + (seed % 25); // Random number between 3 and 27
-  }, [item.id, item.vehicle_id]);
 
   // Helpers for translation
   const formatMileage = (mileage: number | null | undefined) => {
@@ -118,8 +107,6 @@ export function AuctionVehicleCard({
     return drive;
   };
 
-  const isHot = watcherCount > 15;
-  const isNew = item.year >= new Date().getFullYear() - 1;
 
   return (
     <motion.div
@@ -148,7 +135,7 @@ export function AuctionVehicleCard({
           </button>
 
           {/* Top Actions Overlay */}
-          <div className="absolute top-3 inset-x-3 flex justify-between items-start pointer-events-none">
+          <div className="absolute top-3 inset-x-3 flex justify-start items-start pointer-events-none">
             {/* Left: Compare Checkbox */}
             <div className="pointer-events-auto flex gap-2">
               {showCompareCheckbox && (
@@ -171,37 +158,6 @@ export function AuctionVehicleCard({
                   </label>
                 </motion.div>
               )}
-              
-              {/* New Badge */}
-              {isNew && !isHot && (
-                <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1">
-                  <Icon icon="mdi:star-four-points" className="w-3 h-3" />
-                  {t('common.badges.new')}
-                </Badge>
-              )}
-
-              {/* Hot Badge */}
-              {isHot && (
-                <Badge className="bg-orange-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1 animate-pulse">
-                  <Icon icon="mdi:fire" className="w-3 h-3" />
-                  {t('common.badges.hot')}
-                </Badge>
-              )}
-            </div>
-
-            {/* Right: Favorite Button */}
-            <div className="pointer-events-auto flex flex-col gap-2 items-end">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 hover:scale-110 transition-all shadow-sm"
-                onClick={() => toggleFavorite(vehicleId)}
-              >
-                <Icon 
-                  icon={isFavorite ? "mdi:heart" : "mdi:heart-outline"} 
-                  className={cn("w-5 h-5", isFavorite && "text-red-500")} 
-                />
-              </Button>
             </div>
           </div>
 
@@ -239,13 +195,6 @@ export function AuctionVehicleCard({
             )}
           </div>
 
-          {/* Watcher Count (Bottom Right) */}
-          <div className="absolute bottom-3 right-3 pointer-events-none">
-             <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[10px] text-white/90 font-medium shadow-sm">
-               <Icon icon="mdi:eye" className="w-3 h-3" />
-               {watcherCount}
-             </div>
-          </div>
         </div>
 
         {/* Content Body */}

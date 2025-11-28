@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { navigationItems } from '@/config/navigation';
 import { fetchVehiclePhotos, searchVehicles, compareVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
@@ -18,6 +19,7 @@ import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehi
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
 import { useTranslation } from 'react-i18next';
 import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
+import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
 
 import { ComparisonModal } from '@/components/auction/ComparisonModal';
@@ -25,7 +27,7 @@ import { ComparisonModal } from '@/components/auction/ComparisonModal';
 type AuctionHouse = 'all' | 'Copart' | 'IAAI';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
 type DamageType = 'all' | 'front' | 'rear' | 'side';
-type SortOption = 'relevance' | 'price-low' | 'price-high' | 'year-new' | 'year-old';
+type SortOption = 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via /vehicles/search.
@@ -144,7 +146,7 @@ const AuctionListingsPage = () => {
   const [, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [sortBy, setSortBy] = useState<SortOption>('price-low');
   const [selectedMakeId, setSelectedMakeId] = useState<string>('all');
   const [selectedModelId, setSelectedModelId] = useState<string>('all');
   const [catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
@@ -331,7 +333,7 @@ const AuctionListingsPage = () => {
       searchParams.delete('buy_now');
     }
 
-    if (sortBy && sortBy !== 'relevance') {
+    if (sortBy) {
       searchParams.set('sort', sortBy);
     } else {
       searchParams.delete('sort');
@@ -566,7 +568,7 @@ const AuctionListingsPage = () => {
 
     // Sort
     const sortParam = params.get('sort') as SortOption | null;
-    const nextSortBy = (sortParam && ['relevance', 'price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) ? sortParam : 'relevance';
+    const nextSortBy = (sortParam && ['price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) ? sortParam : 'price-low';
 
     // Limit
     const limitParam = params.get('limit');
@@ -926,7 +928,7 @@ const AuctionListingsPage = () => {
     setPage(1);
     setBuyNowOnly(false);
     setSearchQuery('');
-    setSortBy('relevance');
+    setSortBy('price-low');
     setBackendData(null);
     setBackendError(null);
 
@@ -1034,38 +1036,89 @@ const AuctionListingsPage = () => {
         role="main"
         aria-label={t('auction.active_auctions')}
       >
-        <div className="container mx-auto px-4 py-6 space-y-8 max-w-7xl">
-          {/* Hero Section */}
-          <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{t('auction.active_auctions')}</h1>
-            <p className="text-muted-foreground max-w-2xl">
-              {t('auction.description')}
-            </p>
+        {/* Hero Section */}
+        <div className="bg-gradient-to-b from-slate-50 to-white border-b">
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-4xl">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                {t('auction.active_auctions')}
+              </h1>
+              <p className="text-lg text-slate-600 max-w-2xl">
+                {t('auction.description')}
+              </p>
+            </div>
           </div>
+        </div>
 
-          {/* Filters & Search */}
-          <AuctionFilters 
-             filters={{
-                searchQuery, searchKind, auctionFilter, fuelType, category, drive, 
-                yearRange, priceRange, maxMileage, exactYear, minMileage, 
-                selectedMakeId, selectedModelId, buyNowOnly, limit
-             }}
-             setFilters={handleFilterChange}
-             catalogMakes={catalogMakes}
-             catalogModels={catalogModels}
-             isLoadingMakes={isLoadingMakes}
-             isLoadingModels={isLoadingModels}
-             onApply={applyFilters}
-             onReset={resetFilters}
-             onDrawerReset={resetDrawerFilters}
-             activeFilterLabels={activeFilterLabels}
-             onRemoveFilter={handleRemoveFilter}
-             isOpen={isAdvancedFiltersOpen}
-             onOpenChange={setIsAdvancedFiltersOpen}
-          />
+        <div className="flex-1 container mx-auto px-4 py-8">
+          <div className="grid lg:grid-cols-5 gap-6 items-start">
+            {/* Sidebar Filters - Desktop */}
+            <aside className="hidden lg:block lg:col-span-1 lg:sticky lg:top-24 z-30">
+              <AuctionSidebarFilters
+                filters={{
+                  searchQuery, searchKind, auctionFilter, fuelType, category, drive,
+                  yearRange, priceRange, maxMileage, exactYear, minMileage,
+                  selectedMakeId, selectedModelId, buyNowOnly, limit
+                }}
+                setFilters={handleFilterChange}
+                catalogMakes={catalogMakes}
+                catalogModels={catalogModels}
+                isLoadingMakes={isLoadingMakes}
+                isLoadingModels={isLoadingModels}
+                onApply={applyFilters}
+                onReset={resetDrawerFilters}
+              />
+            </aside>
 
-          {/* Results Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t">
+            {/* Main Content */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Desktop Search Bar */}
+              <div className="hidden lg:flex gap-3">
+                <div className="relative flex-1">
+                  <Icon
+                    icon="mdi:magnify"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
+                  />
+                  <Input
+                    placeholder={t('auction.search_placeholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') applyFilters();
+                    }}
+                    className="pl-11 h-11 text-base bg-white border-slate-200 shadow-sm rounded-lg"
+                  />
+                </div>
+                <Button onClick={applyFilters} className="h-11 px-6">
+                  {t('common.search')}
+                </Button>
+              </div>
+
+              {/* Mobile Filters */}
+              <div className="lg:hidden">
+                <AuctionFilters 
+                  filters={{
+                    searchQuery, searchKind, auctionFilter, fuelType, category, drive, 
+                    yearRange, priceRange, maxMileage, exactYear, minMileage, 
+                    selectedMakeId, selectedModelId, buyNowOnly, limit
+                  }}
+                  setFilters={handleFilterChange}
+                  catalogMakes={catalogMakes}
+                  catalogModels={catalogModels}
+                  isLoadingMakes={isLoadingMakes}
+                  isLoadingModels={isLoadingModels}
+                  onApply={applyFilters}
+                  onReset={resetFilters}
+                  onDrawerReset={resetDrawerFilters}
+                  activeFilterLabels={activeFilterLabels}
+                  onRemoveFilter={handleRemoveFilter}
+                  isOpen={isAdvancedFiltersOpen}
+                  onOpenChange={setIsAdvancedFiltersOpen}
+                />
+              </div>
+
+              {/* Results Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b">
              <div className="flex flex-col gap-1">
                  <h2 className="text-lg font-semibold flex items-center gap-2">
                     {t('auction.real_results')}
@@ -1080,11 +1133,10 @@ const AuctionListingsPage = () => {
              <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground hidden sm:inline">{t('common.sort_by')}</span>
                 <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
-                    <SelectTrigger className="h-9 w-[160px] text-sm">
+                    <SelectTrigger className="h-9 text-sm w-auto min-w-[160px] px-3">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="relevance">{t('sort.relevance')}</SelectItem>
                         <SelectItem value="price-low">{t('sort.price_low')}</SelectItem>
                         <SelectItem value="price-high">{t('sort.price_high')}</SelectItem>
                         <SelectItem value="year-new">{t('sort.year_new')}</SelectItem>
@@ -1130,7 +1182,7 @@ const AuctionListingsPage = () => {
           {/* Content Grid */}
           <div className="min-h-[400px]">
             {isBackendLoading && displayedItems.length === 0 ? (
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                   {Array.from({ length: 8 }).map((_, i) => (
                      <Card key={i} className="overflow-hidden rounded-xl border-border/50">
                         <Skeleton className="aspect-[4/3] w-full" />
@@ -1169,7 +1221,7 @@ const AuctionListingsPage = () => {
                </div>
             ) : (
                <div className="space-y-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                      {displayedItems.map((item, idx) => (
                         <AuctionVehicleCard
                            key={`${item.id}-${item.vehicle_id}`}
@@ -1260,6 +1312,8 @@ const AuctionListingsPage = () => {
                   </div>
                </div>
             )}
+          </div>
+            </div>
           </div>
         </div>
       </main>

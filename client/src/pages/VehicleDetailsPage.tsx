@@ -374,7 +374,6 @@ const QuoteBreakdownModal = ({
 const VehicleGallery = ({ photos }: { photos: any[] }) => {
   const { t } = useTranslation()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
 
   if (!photos.length) {
     return <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center text-muted-foreground">{t('vehicle.no_photos')}</div>
@@ -408,20 +407,6 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>{t('vehicle.share_link')}</TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className={cn("h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors", isSaved ? "text-red-500" : "text-foreground")}
-                        onClick={() => setIsSaved(!isSaved)}
-                    >
-                        <Icon icon={isSaved ? "mdi:heart" : "mdi:heart-outline"} className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{isSaved ? t('vehicle.remove_favorites') : t('vehicle.save_vehicle')}</TooltipContent>
             </Tooltip>
         </div>
 
@@ -589,19 +574,17 @@ const QuoteRow = ({
       </TableCell>
       <TableCell className="text-right">
          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            {!isMultiSelectMode && (
-                <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-8 text-xs"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onToggle() // This triggers the lead modal in single select mode
-                    }}
-                >
-                    {t('vehicle.quotes.order')}
-                </Button>
-            )}
+            <Button 
+                size="sm" 
+                variant={isSelected ? "default" : "outline"}
+                className="h-8 text-xs"
+                onClick={(e) => {
+                    e.stopPropagation()
+                    onToggle()
+                }}
+            >
+                {isSelected ? t('vehicle.quotes.selected_btn') : t('vehicle.quotes.select')}
+            </Button>
          </div>
       </TableCell>
     </TableRow>
@@ -752,7 +735,20 @@ const VehicleDetailsPage = () => {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { vehicle, photos, quotes, isLoading } = useVehicleDetails(id ? Number(id) : null)
+  const { 
+    vehicle, 
+    photos, 
+    quotes, 
+    isLoading,
+    isLoadingMore,
+    isRefreshingQuotes,
+    hasMoreQuotes,
+    loadMoreQuotes,
+    quotesLimit,
+    setQuotesLimit,
+    minRating,
+    setMinRating,
+  } = useVehicleDetails(id ? Number(id) : null)
 
   // State: Selection & Unlock
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
@@ -761,9 +757,8 @@ const VehicleDetailsPage = () => {
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
   
-  // State: Filters
+  // State: Filters (local UI filters - VIP and Fast are client-side only)
   const [filterVip, setFilterVip] = useState(false)
-  const [filterRating, setFilterRating] = useState(false)
   const [filterFast, setFilterFast] = useState(false)
 
   // State: Lead Modal
@@ -805,16 +800,12 @@ const VehicleDetailsPage = () => {
   const FREE_LIMIT = 3
   const PREMIUM_LIMIT = 5
 
-  // Derived: Filtered Quotes
+  // Derived: Filtered Quotes (client-side filters only - rating is now server-side)
   const filteredQuotes = useMemo(() => {
     let result = [...quotes]
     
     if (filterVip) {
         result = result.filter((_, idx) => idx < 3)
-    }
-    
-    if (filterRating) {
-        result = result // No real rating data yet
     }
 
     if (filterFast) {
@@ -822,7 +813,10 @@ const VehicleDetailsPage = () => {
     }
 
     return result
-  }, [quotes, filterVip, filterRating, filterFast])
+  }, [quotes, filterVip, filterFast])
+  
+  // Derived: Is rating filter active
+  const filterRating = minRating !== null
 
   const bestQuote = useMemo(() => {
     if (!quotes.length) return null
@@ -872,13 +866,8 @@ const VehicleDetailsPage = () => {
   }
 
   const handleRowClick = (quote: VehicleQuote) => {
-    if (isMultiSelectMode) {
-        handleToggleSelection(quote.company_id)
-    } else {
-        // Single select mode logic - open lead modal directly
-        setSelectedCompanyIds([quote.company_id])
-        setIsLeadModalOpen(true)
-    }
+    // Always toggle selection - row click opens breakdown modal separately
+    handleToggleSelection(quote.company_id)
   }
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
@@ -950,28 +939,29 @@ const VehicleDetailsPage = () => {
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8 min-w-0">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 mb-1">
-                <Badge variant="outline" className="uppercase tracking-wider text-[10px]">{t('vehicle.lot')}: {vehicle.source_lot_id}</Badge>
-                {vehicle.is_new && (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700 animate-pulse shadow-sm border-none">
-                        {t('vehicle.new_arrival')}
-                    </Badge>
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
-                {vehicle.year} {vehicle.make} {vehicle.model}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Icon icon="mdi:map-marker" className="h-4 w-4 text-primary" />
-                  {vehicle.city || vehicle.state || 'USA Auction'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Icon icon="mdi:calendar-clock" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('vehicle.sale_date')}:</span> {vehicle.sold_at_date || t('vehicle.upcoming')}
-                </span>
-                <AuctionTimer dateStr={vehicle.sold_at_date} />
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </h1>
+
+                <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 text-xs sm:text-sm">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary font-medium">
+                    <Icon icon="mdi:map-marker" className="h-3.5 w-3.5" />
+                    <span className="truncate max-w-[220px] sm:max-w-xs">
+                      {vehicle.city || vehicle.state || 'USA Auction'}
+                    </span>
+                  </div>
+
+                  {vehicle.source_lot_id && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 text-white font-semibold tracking-wide">
+                      <Icon icon="mdi:ticket-confirmation" className="h-3.5 w-3.5" />
+                      <span className="uppercase text-[10px] sm:text-xs">
+                        {t('vehicle.lot')}: {vehicle.source_lot_id}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -983,182 +973,191 @@ const VehicleDetailsPage = () => {
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
               <div className="p-4 border-b bg-muted/10 space-y-4">
 
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
-                        {isMultiSelectMode ? t('vehicle.quotes.select_companies') : t('vehicle.quotes.title')}
-                        </h2>
-                        {!isMultiSelectMode && (
-                            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                                {t('vehicle.quotes.click_to_order')}
-                            </p>
-                        )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
+                      {t('vehicle.quotes.title')}
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
+                      {t('vehicle.quotes.click_to_order')}
+                    </p>
+                  </div>
+
+                  {/* Inline filter buttons and page size selector */}
+                  <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+                    <Button 
+                      variant={filterRating ? "default" : "outline"} 
+                      size="sm" 
+                      onClick={() => setMinRating(filterRating ? null : 4.5)}
+                      className="h-8 text-xs px-3"
+                    >
+                      {filterRating ? (
+                        <Icon icon="mdi:check" className="mr-1 h-3 w-3" />
+                      ) : (
+                        <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />
+                      )}
+                      {t('vehicle.quotes.rating_filter')}
+                    </Button>
+
+                    {/* Page size selector */}
+                    <div className="flex items-center gap-1 border rounded-md px-2 h-8">
+                      <span className="text-xs text-muted-foreground hidden sm:inline">{t('vehicle.quotes.show')}:</span>
+                      {[5, 10, 15].map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setQuotesLimit(size)}
+                          className={cn(
+                            "px-2 py-1 text-xs rounded transition-colors",
+                            quotesLimit === size 
+                              ? "bg-primary text-primary-foreground font-medium" 
+                              : "hover:bg-muted"
+                          )}
+                        >
+                          {size}
+                        </button>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                        {!isMultiSelectMode ? (
-                            <Button 
-                                size="sm" 
-                                onClick={() => setIsMultiSelectMode(true)}
-                                className="text-xs w-full sm:w-auto"
-                            >
-                                {t('vehicle.quotes.select_multiple')}
-                            </Button>
-                        ) : (
-                            <div className="flex items-center gap-2 w-full justify-between sm:justify-end">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground font-medium">{t('vehicle.quotes.selected')}:</span>
-                                    <Badge variant={selectedCompanyIds.length > 0 ? "default" : "secondary"}>
-                                        {selectedCompanyIds.length} / {hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT}
-                                    </Badge>
-                                </div>
-                                <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setIsMultiSelectMode(false)
-                                        setSelectedCompanyIds([])
-                                    }}
-                                    className="text-xs h-8 px-2"
-                                >
-                                    {t('vehicle.quotes.cancel')}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                {/* Filters */}
-                <div className="flex flex-wrap gap-2">
-                    <Button 
-                        variant={filterVip ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterVip(!filterVip)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterVip ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : null}
-                        {t('vehicle.quotes.vip_only')}
-                    </Button>
-                    <Button 
-                        variant={filterRating ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterRating(!filterRating)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterRating ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle.quotes.rating_filter')}
-                    </Button>
-                    <Button 
-                        variant={filterFast ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterFast(!filterFast)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterFast ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:lightning-bolt" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle.quotes.fast_delivery')}
-                    </Button>
+                  </div>
                 </div>
               </div>
 
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
-                        <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
-                        <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
-                        <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
-                        <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
+              {/* Quotes content wrapper with smooth height transitions */}
+              <div className="relative transition-all duration-300 ease-in-out">
+                {/* Loading overlay */}
+                {isRefreshingQuotes && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">{t('vehicle.quotes.loading')}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                      <TableHeader>
+                      <TableRow>
+                          {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
+                          <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
+                          <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
+                          <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
+                          <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
+                      </TableRow>
+                      </TableHeader>
+                      <TableBody className="transition-all duration-300">
+                      {filteredQuotes.map((quote) => {
+                          const priceColor = getPriceColor(Number(quote.total_price))
+
+                          return (
+                              <QuoteRow 
+                                  key={quote.company_id} 
+                                  quote={quote} 
+                                  isSelected={selectedCompanyIds.includes(quote.company_id)}
+                                  onToggle={() => handleRowClick(quote)}
+                                  priceColor={priceColor}
+                                  onViewBreakdown={(e) => {
+                                      e.stopPropagation()
+                                      setActiveBreakdownQuote(quote)
+                                  }}
+                                  isMultiSelectMode={isMultiSelectMode}
+                              />
+                          )
+                      })}
+                      </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden space-y-0 divide-y">
                     {filteredQuotes.map((quote) => {
                         const priceColor = getPriceColor(Number(quote.total_price))
+                        const isSelected = selectedCompanyIds.includes(quote.company_id)
+                        const rating = quote.company_rating ?? null
+                        const reviews = quote.company_review_count ?? null
 
                         return (
-                            <QuoteRow 
-                                key={quote.company_id} 
-                                quote={quote} 
-                                isSelected={selectedCompanyIds.includes(quote.company_id)}
-                                onToggle={() => handleRowClick(quote)}
-                                priceColor={priceColor}
-                                onViewBreakdown={(e) => {
-                                    e.stopPropagation()
-                                    setActiveBreakdownQuote(quote)
-                                }}
-                                isMultiSelectMode={isMultiSelectMode}
-                            />
+                          <div 
+                              key={quote.company_id}
+                              className={cn(
+                                  "p-4 active:bg-muted/50 transition-all duration-300",
+                                  isSelected ? "bg-primary/5" : ""
+                              )}
+                              onClick={() => setActiveBreakdownQuote(quote)}
+                          >
+                              <div className="flex justify-between items-start gap-3">
+                                  <div className="flex items-start gap-3">
+                                      {isMultiSelectMode && (
+                                          <Checkbox 
+                                              checked={isSelected} 
+                                              onCheckedChange={() => handleRowClick(quote)} 
+                                              className="mt-1"
+                                          />
+                                      )}
+                                      <div>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="font-bold text-sm">{quote.company_name}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                              {rating != null && (
+                                                <div className="flex items-center text-amber-500">
+                                                  <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
+                                                  <span className="ml-0.5 font-medium text-foreground">{rating}</span>
+                                                </div>
+                                              )}
+                                              {rating != null && reviews != null && (
+                                                <span>•</span>
+                                              )}
+                                              {reviews != null && (
+                                                <span>{reviews} {t('vehicle.quotes.reviews')}</span>
+                                              )}
+                                              {rating == null && reviews == null && (
+                                                <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
+                                              )}
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className={cn("font-bold text-base", priceColor)}>
+                                          ${Number(quote.total_price).toLocaleString()}
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
                         )
                     })}
-                    </TableBody>
-                </Table>
+                </div>
+
+                {filteredQuotes.length === 0 && !isRefreshingQuotes && (
+                  <div className="p-8 text-center text-muted-foreground animate-fadeIn">
+                      <p>{t('vehicle.quotes.no_match')}</p>
+                      <Button variant="link" onClick={() => { setFilterVip(false); setMinRating(null); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
+                  </div>
+                )}
               </div>
 
-              {/* Mobile Card List View */}
-              <div className="md:hidden space-y-0 divide-y">
-                  {filteredQuotes.map((quote) => {
-                      const priceColor = getPriceColor(Number(quote.total_price))
-                      const isSelected = selectedCompanyIds.includes(quote.company_id)
-                      const rating = quote.company_rating ?? null
-                      const reviews = quote.company_review_count ?? null
-
-                      return (
-                        <div 
-                            key={quote.company_id}
-                            className={cn(
-                                "p-4 active:bg-muted/50 transition-colors",
-                                isSelected ? "bg-primary/5" : ""
-                            )}
-                            onClick={() => setActiveBreakdownQuote(quote)}
-                        >
-                            <div className="flex justify-between items-start gap-3">
-                                <div className="flex items-start gap-3">
-                                    {isMultiSelectMode && (
-                                        <Checkbox 
-                                            checked={isSelected} 
-                                            onCheckedChange={() => handleRowClick(quote)} 
-                                            className="mt-1"
-                                        />
-                                    )}
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-sm">{quote.company_name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                            {rating != null && (
-                                              <div className="flex items-center text-amber-500">
-                                                <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                                                <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-                                              </div>
-                                            )}
-                                            {rating != null && reviews != null && (
-                                              <span>•</span>
-                                            )}
-                                            {reviews != null && (
-                                              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-                                            )}
-                                            {rating == null && reviews == null && (
-                                              <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className={cn("font-bold text-base", priceColor)}>
-                                        ${Number(quote.total_price).toLocaleString()}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                      )
-                  })}
-              </div>
-
-              {filteredQuotes.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                    <p>{t('vehicle.quotes.no_match')}</p>
-                    <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
+              {/* See More Button */}
+              {hasMoreQuotes && filteredQuotes.length > 0 && (
+                <div className="p-4 border-t transition-all duration-300">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={loadMoreQuotes}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
+                        {t('vehicle.quotes.loading')}
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="mdi:chevron-down" className="mr-2 h-4 w-4" />
+                        {t('vehicle.quotes.see_more')}
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
@@ -1225,29 +1224,20 @@ const VehicleDetailsPage = () => {
                   </div>
                 </div>
 
-                {/* CTA */}
-                <div className="space-y-3">
-                  <Button
-                    className="w-full h-12 text-base font-bold shadow-lg transition-all"
-                    onClick={() => {
-                      if (selectedCompanyIds.length > 0) {
-                        setIsLeadModalOpen(true)
-                      } else {
-                        document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
-                      }
-                    }}
-                    disabled={selectedCompanyIds.length === 0}
-                  >
-                    {selectedCompanyIds.length > 0
-                      ? t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })
-                      : t('vehicle.price_card.select_to_order')}
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    {t('vehicle.price_card.select_hint')}
-                  </p>
-                </div>
+                {/* CTA - shows when companies are selected */}
+                {selectedCompanyIds.length > 0 && (
+                  <div className="space-y-3 animate-fadeIn">
+                    <Button
+                      className="w-full h-12 text-base font-bold shadow-lg transition-all"
+                      onClick={() => setIsLeadModalOpen(true)}
+                    >
+                      {t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })}
+                    </Button>
+                  </div>
+                )}
 
-                <MarketPriceWidget price={totalPrice || 0} />
+                {/** MarketPriceWidget ("below market" / "save" text) intentionally hidden per requirements */}
+                {/* <MarketPriceWidget price={totalPrice || 0} /> */}
               </CardContent>
             </Card>
           </div>

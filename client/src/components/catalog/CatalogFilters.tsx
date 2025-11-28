@@ -65,9 +65,11 @@ export const CatalogFilters = ({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const countryInputRef = useRef<HTMLInputElement | null>(null);
   const cityInputRef = useRef<HTMLInputElement | null>(null);
+  const branchSelectRef = useRef<HTMLButtonElement>(null);
 
   const [priceRange, setPriceRange] = useState<[number, number]>(initialPriceRange ?? [0, 5000]);
   const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
+  const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
 
   useEffect(() => {
     if (initialPriceRange) {
@@ -102,13 +104,19 @@ export const CatalogFilters = ({
               value={auctionSource}
               onValueChange={(value: 'all' | 'copart' | 'iaai') => {
                 onAuctionSourceChange?.(value);
+                if (value !== 'all') {
+                  setBranchNeedsAttention(true);
+                  setTimeout(() => branchSelectRef.current?.click(), 100);
+                } else {
+                  setBranchNeedsAttention(false);
+                }
               }}
             >
               <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Select auction</SelectItem>
+                <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
                 <SelectItem value="copart">Copart</SelectItem>
                 <SelectItem value="iaai">IAAI</SelectItem>
               </SelectContent>
@@ -123,10 +131,14 @@ export const CatalogFilters = ({
               value={auctionBranchValue ?? ''}
               onValueChange={(value) => {
                 onAuctionBranchChange?.(value);
+                setBranchNeedsAttention(false);
               }}
               disabled={auctionSource === 'all' || auctionBranches.length === 0}
             >
-              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+              <SelectTrigger 
+                ref={branchSelectRef}
+                className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+              >
                 <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
               </SelectTrigger>
               <SelectContent

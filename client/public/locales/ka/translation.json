@@ -10,8 +10,8 @@
     "close": "დახურვა",
     "search": "ძებნა",
     "filter": "ფილტრი",
-    "sort": "დალაგება",
-    "stars": "ვარსკვლავი",
+    "sort": "განლაგება",
+    "stars": "",
     "days": "დღე",
     "official": "ოფიციალური",
     "all": "ყველა",
@@ -21,9 +21,10 @@
     "clear_all": "ფილტრების გასუფთავება",
     "retry": "ხელახლა ცდა",
     "reset_filters": "ფილტრების გასუფთავება",
+    "clear_filters": "ფილტრების გასუფთავება",
     "compare": "შედარება",
     "details": "დეტალები",
-    "sort_by": "დალაგება:",
+    "sort_by": "განლაგება:",
     "make": "მარკა",
     "model": "მოდელი",
     "select_make": "აირჩიეთ მარკა",
@@ -294,29 +295,35 @@
       "connector": "-დან",
       "of": "კომპანია",
       "compare": "შედარება",
-      "sort_label": "დალაგება:",
+      "sort_label": "განლაგება:",
       "empty_title": "კომპანიები არ მოიძებნა",
       "empty_description": "სცადეთ სხვა ფილტრები ან გაასუფთავეთ ძებნა"
     },
     "sort": {
       "rating": "რეიტინგით",
-      "cheapest": "იაფით",
+      "cheapest": "ფასით",
       "newest": "უახლესით"
     },
     "filters": {
       "title": "ფილტრები",
-      "search_placeholder": "მოძებნეთ კომპანიები...",
+      "search_placeholder": "კომპანიის სახელი",
       "country": "ქვეყანა",
       "country_placeholder": "საქართველო, აშშ...",
       "city_placeholder": "ქალაქი",
       "rating": "რეიტინგი",
-      "rating_all": "ყველა რეიტინგი",
-      "price": "ფასის დიაპაზონი",
+      "rating_all": "ყველა",
+      "price": "ფასი",
       "vip_only": "მხოლოდ VIP",
       "vip_desc": "პრემიუმ კომპანიები დამატებითი გარანტიებით",
       "reset": "გასუფთავება",
       "apply": "გამოყენება",
-      "show_results": "შედეგების ჩვენება"
+      "show_results": "შედეგების ჩვენება",
+      "auction": "აირჩიე აუქციონი",
+      "auction_branch": "აუქციონის ფილიალი",
+      "select_auction": "აუქციონი",
+      "select_auction_branch": "ფილიალი",
+      "search_auction_branch": "ძებნა...",
+      "port": "პორტი"
     },
     "badges": {
       "luxury_expert": "ლუქსის ექსპერტი",
@@ -328,7 +335,14 @@
       "online_now": "ონლაინ არის",
       "service_fee": "მომსახურების საკომისიო",
       "up_to": "მდე",
-      "view_profile": "პროფილის ნახვა"
+      "view_profile": "პროფილის ნახვა",
+      "shipping_cost": "ტრანსპორტირების ფასი",
+      "shipping_tooltip": "სავარაუდო ტრანსპორტირება არჩეული აუქციონის ფილიალიდან ფოთში, საქართველო.",
+      "select_branch": "აირჩიეთ აუქციონი",
+      "to_see_price": "ფასის სანახავად",
+      "location_based": "მდებარეობის მიხედვით",
+      "contact": "დაგვიკავშირდით",
+      "for_pricing": "ფასისთვის"
     },
     "comparison": {
       "cancel": "გაუქმება",
@@ -336,9 +350,9 @@
     }
   },
   "auction": {
-    "active_auctions": "აქტიური აუქციონები",
+    "active_auctions": "აუქციონი",
     "description": "მოძებნეთ ავტომობილები Copart და IAAI აუქციონებზე რეალურ დროში",
-    "search_placeholder": "მოძებნეთ მარკა, მოდელი ან VIN...",
+    "search_placeholder": "მარკა, მოდელი, ვინ კოდი",
     "real_results": "შედეგები",
     "loading_data": "მონაცემების ჩატვირთვა...",
     "showing_results": "ნაჩვენებია {{count}} მანქანა {{total}}-დან",
@@ -361,7 +375,7 @@
       "title": "ფილტრები",
       "auction": "აუქციონი",
       "fuel": "საწვავი",
-      "buy_now_only": "მხოლოდ ახლავე ყიდვა",
+      "buy_now_only": "ახლა ყიდვა",
       "make": "მარკა",
       "model": "მოდელი",
       "category": "კატეგორია",
@@ -388,11 +402,10 @@
     }
   },
   "sort": {
-    "relevance": "რელევანტურობით",
-    "price_low": "ფასი: დაბალიდან",
-    "price_high": "ფასი: მაღლიდან",
-    "year_new": "წელი: ახლიდან",
-    "year_old": "წელი: ძველიდან"
+    "price_low": "ფასი: ზრდადი",
+    "price_high": "ფასი: კლებადი",
+    "year_new": "წელი: ზრდადი",
+    "year_old": "წელი: კლებადი"
   },
   "error": {
     "failed_to_load_data": "მონაცემების ჩატვირთვა ვერ მოხერხდა",
@@ -525,8 +538,8 @@
       "fast_delivery": "სწრაფი ტრანსპორტირება",
       "company": "კომპანია",
       "delivery": "ტრანსპორტირება",
-      "total_price": "ჯამური ფასი",
-      "action": "მოქმედება",
+      "total_price": "ჯამი",
+      "action": "ქმედება",
       "days": "დღე",
       "sea_land": "სავარაუდო",
       "all_inclusive": "სრული ფასი ფოთამდე",
@@ -535,17 +548,22 @@
       "verified_importer": "ვერიფიცირებული იმპორტერი",
       "breakdown": "დეტალები",
       "order": "შეკვეთა",
+      "select": "არჩევა",
+      "selected_btn": "არჩეულია",
       "no_match": "ფილტრებს არცერთი კომპანია არ შეესაბამება.",
       "clear_filters": "ფილტრების გასუფთავება",
-      "promo_text": "შეუკვეთეთ 26.11-მდე და მიიღეთ <strong>უფასო Carfax ანგარიში</strong> ($40 ღირებულების)!"
+      "promo_text": "შეუკვეთეთ 26.11-მდე და მიიღეთ <strong>უფასო Carfax ანგარიში</strong> ($40 ღირებულების)!",
+      "see_more": "მეტის ნახვა",
+      "loading": "იტვირთება...",
+      "show": "ჩვენება"
     },
     "similar": {
       "title": "მსგავსი ავტომობილები"
     },
     "price_card": {
-      "estimated_total": "სავარაუდო ჯამური ღირებულება",
+      "estimated_total": "ჯამური ფასი",
       "auction_price": "სასურველი ბიდით გამოთვლა",
-      "shipping": "გადაზიდვა (აშშ-საქ.)",
+      "shipping": "ტრანსპორტირება",
       "customs": "განბაჟება და აქციზი",
       "service_fees": "სერვისის საკომისიო",
       "send_request": "მოთხოვნის გაგზავნა {{count}} კომპანიას",

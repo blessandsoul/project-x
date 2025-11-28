@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,14 +34,6 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
   };
 
   // --- Mock Logic for Visuals (Since API is read-only for now) ---
-  
-  // 1. Determine "Best For" Badge
-  const bestForBadge = useMemo(() => {
-    if (company.vipStatus) return { label: t('catalog.badges.luxury_expert', 'Luxury Expert'), icon: 'mdi:diamond-stone', color: 'bg-purple-50 text-purple-700 border-purple-100' };
-    if ((company.priceRange?.min ?? 0) < 500) return { label: t('catalog.badges.best_economy', 'Best Economy'), icon: 'mdi:piggy-bank', color: 'bg-green-50 text-green-700 border-green-100' };
-    if (company.rating >= 4.9) return { label: t('catalog.badges.top_rated', 'Top Rated'), icon: 'mdi:trophy', color: 'bg-amber-50 text-amber-700 border-amber-100' };
-    return null;
-  }, [company, t]);
 
 
 
@@ -163,12 +154,6 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                    </TooltipProvider>
                 )}
 
-                {bestForBadge && (
-                   <Badge variant="outline" className={cn("h-5 gap-1 px-1.5 border bg-opacity-50", bestForBadge.color)}>
-                      <Icon icon={bestForBadge.icon} className="h-3 w-3" />
-                      <span className="text-[9px] font-bold uppercase tracking-wide">{bestForBadge.label}</span>
-                   </Badge>
-                )}
              </div>
 
              {/* Compact Metadata */}

@@ -537,7 +537,10 @@
       "order": "Order",
       "no_match": "No companies match your filters.",
       "clear_filters": "Clear Filters",
-      "promo_text": "Order before 26.11 to get <strong>Free Carfax Report</strong> ($40 value) included!"
+      "promo_text": "Order before 26.11 to get <strong>Free Carfax Report</strong> ($40 value) included!",
+      "see_more": "See More Companies",
+      "loading": "Loading...",
+      "show": "Show"
     },
     "similar": {
       "title": "Similar Vehicles You Might Like"

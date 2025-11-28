@@ -65,7 +65,7 @@ export interface VehicleSimilarResponse {
 export async function calculateVehicleQuotes(
   vehicleId: number,
   currency: 'usd' | 'gel' = 'usd',
-  options?: { limit?: number; offset?: number },
+  options?: { limit?: number; offset?: number; minRating?: number },
 ): Promise<VehicleQuotesResponse> {
   const params = new URLSearchParams()
 
@@ -77,6 +77,9 @@ export async function calculateVehicleQuotes(
   }
   if (typeof options?.offset === 'number') {
     params.set('offset', String(options.offset))
+  }
+  if (typeof options?.minRating === 'number') {
+    params.set('minRating', String(options.minRating))
   }
 
   const query = params.toString()

@@ -47,6 +47,8 @@ const CompanyCatalogPage = () => {
   const [isLoadingShipping, setIsLoadingShipping] = useState(false);
   const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
   const [selectedPort, setSelectedPort] = useState('poti_georgia');
+  const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
+  const branchSelectRef = useRef<HTMLButtonElement>(null);
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -520,13 +522,19 @@ const CompanyCatalogPage = () => {
                       onValueChange={(value: 'all' | 'copart' | 'iaai') => {
                         setAuctionSource(value);
                         setSelectedAuctionBranch('');
+                        if (value !== 'all') {
+                          setBranchNeedsAttention(true);
+                          setTimeout(() => branchSelectRef.current?.click(), 100);
+                        } else {
+                          setBranchNeedsAttention(false);
+                        }
                       }}
                     >
                       <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Select auction</SelectItem>
+                        <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
                         <SelectItem value="copart">Copart</SelectItem>
                         <SelectItem value="iaai">IAAI</SelectItem>
                       </SelectContent>
@@ -538,10 +546,14 @@ const CompanyCatalogPage = () => {
                       value={selectedAuctionBranch ?? ''}
                       onValueChange={(value) => {
                         setSelectedAuctionBranch(value);
+                        setBranchNeedsAttention(false);
                       }}
                       disabled={auctionSource === 'all' || auctionBranches.length === 0}
                     >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                      <SelectTrigger 
+                        ref={branchSelectRef}
+                        className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                      >
                         <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                       </SelectTrigger>
                       <SelectContent
