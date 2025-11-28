@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'HomepageHeroFont';
-  src: url('/font/font.ttf') format('truetype');
+  font-family: "HomepageHeroFont";
+  src: url("/font/font.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -14,35 +14,35 @@
   /* Modern Color Palette 2025 */
   --color-background: #ffffff;
   --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
-  
+
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
-  
+
   --color-popover: #ffffff;
   --color-popover-foreground: #0f172a;
-  
+
   --color-primary: #004700; /* Main Color - Dark Green */
   --color-primary-foreground: #ffffff; /* White text on dark green for contrast */
-  
+
   --color-secondary: #f1f5f9; /* Slate 100 - kept for UI backgrounds */
   --color-secondary-foreground: #0f172a;
-  
+
   --color-sub: #e9967a; /* Sub Color - Dark Salmon */
   --color-sub-foreground: #0f172a;
 
   --color-muted: #f8fafc; /* Slate 50 */
   --color-muted-foreground: #64748b; /* Slate 500 */
-  
+
   --color-accent: #e9967a; /* Using Sub Color as Accent */
   --color-accent-foreground: #0f172a;
-  
+
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  
+
   --color-border: #e2e8f0; /* Slate 200 */
   --color-input: #e2e8f0;
   --color-ring: #004700;
-  
+
   --color-warning: #f59e0b;
   --color-warning-foreground: #ffffff;
 
@@ -56,58 +56,59 @@
   --container-padding: 1rem;
 
   /* Typography */
-  --font-sans: 'Inter', 'Noto Sans Georgian', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-heading: 'Inter', 'Noto Sans Georgian', system-ui, sans-serif;
-  --font-georgian: 'Noto Sans Georgian', sans-serif;
-  
+  --font-sans: "Inter", "Noto Sans Georgian", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Inter", "Noto Sans Georgian", system-ui, sans-serif;
+  --font-georgian: "Noto Sans Georgian", sans-serif;
+
   /* Custom Shadows */
-  --shadow-soft: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+  --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(0, 71, 0, 0.15);
 }
 
 /* Language Specific Font Overrides */
 :root[lang="ar"] {
-  --font-sans: 'Cairo', sans-serif;
-  --font-heading: 'Cairo', sans-serif;
+  --font-sans: "Cairo", sans-serif;
+  --font-heading: "Cairo", sans-serif;
 }
 
 :root[lang="ka"] {
-  --font-sans: 'Noto Sans Georgian', sans-serif;
-  --font-heading: 'Noto Sans Georgian', sans-serif;
+  --font-sans: "Noto Sans Georgian", sans-serif;
+  --font-heading: "Noto Sans Georgian", sans-serif;
 }
 
 .dark {
   --color-background: #020617; /* Slate 950 */
   --color-foreground: #f8fafc;
-  
+
   --color-card: #0f172a; /* Slate 900 */
   --color-card-foreground: #f8fafc;
-  
+
   --color-popover: #0f172a;
   --color-popover-foreground: #f8fafc;
-  
+
   --color-primary: #004700;
   --color-primary-foreground: #ffffff;
-  
+
   --color-secondary: #1e293b; /* Slate 800 */
   --color-secondary-foreground: #f8fafc;
 
   --color-sub: #e9967a;
   --color-sub-foreground: #0f172a;
-  
+
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
-  
+
   --color-accent: #e9967a;
   --color-accent-foreground: #0f172a;
-  
+
   --color-destructive: #ef4444;
   --color-destructive-foreground: #f8fafc;
-  
+
   --color-border: #1e293b;
   --color-input: #1e293b;
   --color-ring: #004700;
-  
+
   --color-warning: #fbbf24;
   --color-warning-foreground: #020617;
 
@@ -151,21 +152,26 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
     @apply tracking-tight;
   }
   .font-homepage-hero {
-    font-family: 'HomepageHeroFont', var(--font-georgian);
+    font-family: "HomepageHeroFont", var(--font-georgian);
   }
   /* Legacy font support */
   .font-logo-bebas {
-    font-family: 'Inter', 'Noto Sans Georgian', sans-serif; 
+    font-family: "Inter", "Noto Sans Georgian", sans-serif;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: -0.02em;
   }
-  
+
   /* Custom Scrollbar */
   * {
     scrollbar-width: thin;
@@ -193,91 +199,156 @@
 
 @layer utilities {
   /* Removed Glassmorphism - Strict Business Style */
-  
+
   .text-balance {
     text-wrap: balance;
   }
 
   /* Dialog Animations */
-  .dialog-overlay[data-state='open'] {
+  .dialog-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.35s ease-out forwards;
   }
-  .dialog-overlay[data-state='closed'] {
+  .dialog-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.35s ease-in forwards;
   }
-  .dialog-content[data-state='open'] {
+  .dialog-content[data-state="open"] {
     animation: dialogContentIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .dialog-content[data-state='closed'] {
+  .dialog-content[data-state="closed"] {
     animation: dialogContentOut 0.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
   }
 
   /* Sheet Animations */
-  .sheet-overlay[data-state='open'] {
+  .sheet-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.5s ease-out forwards;
   }
-  .sheet-overlay[data-state='closed'] {
+  .sheet-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.5s ease-in forwards;
   }
 
-  .sheet-content[data-state='open'] {
+  .sheet-content[data-state="open"] {
     animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .sheet-content[data-state='closed'] {
+  .sheet-content[data-state="closed"] {
     animation: slideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .sheet-content[data-side='right'][data-state='open'] {
+  .sheet-content[data-side="right"][data-state="open"] {
     animation: slideInFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .sheet-content[data-side='right'][data-state='closed'] {
+  .sheet-content[data-side="right"][data-state="closed"] {
     animation: slideOutToRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .sheet-content[data-side='left'][data-state='open'] {
+  .sheet-content[data-side="left"][data-state="open"] {
     animation: slideInFromLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .sheet-content[data-side='left'][data-state='closed'] {
+  .sheet-content[data-side="left"][data-state="closed"] {
     animation: slideOutToLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
 
 @keyframes dialogOverlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes dialogOverlayFadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes dialogContentIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes dialogContentOut {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.95); }
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
 }
 
 @keyframes slideInFromRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideOutToRight {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes slideInFromLeft {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideOutToLeft {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Quotes list animations */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeSlideIn {
+  animation: fadeSlideIn 0.3s ease-out forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
 }

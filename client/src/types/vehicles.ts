@@ -92,6 +92,8 @@ export interface VehicleQuote {
   total_price: number
   delivery_time_days?: number | null
   breakdown: QuoteBreakdown
+  company_rating?: number
+  company_review_count?: number
 }
 
 export interface VehicleWithQuotes {

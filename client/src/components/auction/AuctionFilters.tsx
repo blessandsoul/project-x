@@ -8,8 +8,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
   SheetTrigger,
+  SheetClose,
 } from '@/components/ui/sheet';
 import {
   Select,
@@ -103,7 +103,11 @@ export function AuctionFilters({
         <div className="flex items-center gap-2">
           <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="lg" className="h-10 px-4 gap-2 border-muted-foreground/20 hover:bg-muted/50">
+              <Button
+                variant="default"
+                size="lg"
+                className="h-10 px-4 gap-2 bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 shadow-sm"
+              >
                 <Icon icon="mdi:tune" className="w-5 h-5" />
                 <span>{t('common.filters')}</span>
                 {activeFilterLabels.length > 0 && (
@@ -113,12 +117,19 @@ export function AuctionFilters({
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col p-0">
+            <SheetContent className="w-[85%] max-w-md sm:max-w-lg overflow-y-auto flex flex-col p-0">
                <SheetHeader className="px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
-                 <SheetTitle className="text-lg font-bold flex items-center gap-2">
-                    <Icon icon="mdi:tune" className="w-5 h-5 text-primary" />
-                    {t('pages.auction.more_filters')}
-                 </SheetTitle>
+                 <div className="flex items-center justify-between">
+                   <SheetTitle className="text-lg font-bold flex items-center gap-2">
+                      <Icon icon="mdi:tune" className="w-5 h-5 text-primary" />
+                      {t('pages.auction.more_filters')}
+                   </SheetTitle>
+                   <SheetClose asChild>
+                     <button className="rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+                       <Icon icon="mdi:close" className="w-5 h-5 text-slate-500" />
+                     </button>
+                   </SheetClose>
+                 </div>
                </SheetHeader>
 
                <div className="flex-1 px-3 py-3 space-y-2 overflow-y-auto">
@@ -163,7 +174,7 @@ export function AuctionFilters({
                          }}
                          disabled={isLoadingMakes}
                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_make')} /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue placeholder={t('common.select_make')} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t('common.all')}</SelectItem>
                             {(catalogMakes ?? []).map(make => (
@@ -179,7 +190,7 @@ export function AuctionFilters({
                          onValueChange={(val) => updateFilter('selectedModelId', val)}
                          disabled={filters.selectedMakeId === 'all' || isLoadingModels}
                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('common.select_model')} /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue placeholder={t('common.select_model')} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t('common.all')}</SelectItem>
                             {(catalogModels ?? []).map(model => (
@@ -247,10 +258,10 @@ export function AuctionFilters({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                        <Select 
-                          value={String(filters.yearRange[0])} 
+                          value={filters.yearRange[0] > 0 ? String(filters.yearRange[0]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [Number(v), filters.yearRange[1]])}
                        >
-                          <SelectTrigger className="h-9 text-xs">
+                          <SelectTrigger className="h-9 w-full text-xs">
                              <SelectValue placeholder={t('common.from')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[200px]">
@@ -261,10 +272,10 @@ export function AuctionFilters({
                        </Select>
 
                        <Select 
-                          value={String(filters.yearRange[1])} 
+                          value={filters.yearRange[1] > 0 ? String(filters.yearRange[1]) : ''} 
                           onValueChange={(v) => updateFilter('yearRange', [filters.yearRange[0], Number(v)])}
                        >
-                          <SelectTrigger className="h-9 text-xs">
+                          <SelectTrigger className="h-9 w-full text-xs">
                              <SelectValue placeholder={t('common.to')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[200px]">
@@ -275,12 +286,12 @@ export function AuctionFilters({
                        </Select>
                     </div>
                     
-                    <div className="flex items-center gap-2 pt-1">
-                       <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('auction.exact_year')}</span>
+                    <div className="space-y-0.5 pt-1">
+                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('auction.exact_year')}</label>
                        <Input 
                           type="number" 
-                          className="h-7 w-20 text-[10px] px-2 py-0 border-muted-foreground/30"
-                          placeholder="e.g. 2020" 
+                          className="h-9 w-full text-xs"
+                          placeholder="მაგ: 2020" 
                           value={filters.exactYear}
                           onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
                         />
@@ -292,7 +303,7 @@ export function AuctionFilters({
                     <div className="space-y-0.5">
                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.fuel')}</label>
                        <Select value={filters.fuelType} onValueChange={(val) => updateFilter('fuelType', val)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                              <SelectItem value="all">{t('common.all')}</SelectItem>
                              <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
@@ -306,7 +317,7 @@ export function AuctionFilters({
                     <div className="space-y-0.5">
                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{t('common.drive')}</label>
                        <Select value={filters.drive} onValueChange={(val) => updateFilter('drive', val)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-9 w-full text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                              <SelectItem value="all">{t('common.all')}</SelectItem>
                              <SelectItem value="front">Front</SelectItem>
@@ -347,16 +358,21 @@ export function AuctionFilters({
 
                </div>
 
-               <SheetFooter className="px-4 py-3 border-t bg-background sticky bottom-0 z-10">
-                  <div className="flex w-full gap-3">
-                     <Button variant="outline" className="flex-1 h-10 text-sm" onClick={onDrawerReset}>
-                        {t('common.reset')}
+               <div className="px-4 py-3 border-t bg-background mt-auto">
+                  <div className="flex flex-col w-full gap-2">
+                     <Button 
+                        variant="outline" 
+                        className="w-full h-10 text-sm border-amber-300 text-amber-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-400" 
+                        onClick={onDrawerReset}
+                     >
+                        <Icon icon="mdi:filter-remove" className="w-4 h-4 mr-2" />
+                        {t('common.clear_filters')}
                      </Button>
-                     <Button className="flex-1 h-10 text-sm" onClick={() => { onApply(); }}>
+                     <Button className="w-full h-11 text-sm" onClick={() => { onApply(); onOpenChange(false); }}>
                         {t('common.show_results')}
                      </Button>
                   </div>
-               </SheetFooter>
+               </div>
             </SheetContent>
           </Sheet>
           <Button onClick={onApply} className="h-11 px-6">

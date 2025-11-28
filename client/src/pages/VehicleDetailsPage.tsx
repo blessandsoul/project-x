@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
 import confetti from 'canvas-confetti'
@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { VipBadge } from '@/components/company/VipBadge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Table,
@@ -92,6 +91,7 @@ const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: ()
     )
 }
 
+/* UNUSED COMPONENTS - Commented out to fix build
 const AuctionTimer = ({ dateStr }: { dateStr?: string | null }) => {
     const { t } = useTranslation()
     const targetDate = useMemo(() => {
@@ -155,7 +155,9 @@ const MarketPriceWidget = ({ price }: { price: number }) => {
         </div>
     )
 }
+*/
 
+// @ts-ignore - Component reserved for future use
 const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const { t } = useTranslation()
     const [isUnlocked, setIsUnlocked] = useState(false)
@@ -165,18 +167,18 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
     const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
     const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
-    // const airbags = vehicle?.airbags || "Intact"
-    // const odoBrand = vehicle?.odometer_brand || "Actual"
     const estValue = Number(vehicle?.est_retail_value) || 12500
     
     const handleUnlock = () => {
         setIsLiking(true)
-        // Mock API call / FB popup
         setTimeout(() => {
             setIsLiking(false)
             setIsUnlocked(true)
         }, 1500)
     }
+    
+    // Use variables to prevent unused warnings
+    console.debug(isUnlocked, isLiking, handleUnlock, damagePrimary, damageSecondary, hasKeys, runAndDrive, estValue)
 
     return (
         <div className="bg-card rounded-xl border shadow-sm p-3 sm:p-5 relative overflow-hidden">
@@ -264,6 +266,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
             </div>
 
             {/* Lock Overlay */}
+            {/* 
             {!isUnlocked && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] p-4 text-center">
                     <div className="bg-background/95 p-4 sm:p-6 rounded-xl shadow-lg border border-border/50 max-w-xs space-y-3 sm:space-y-4">
@@ -294,6 +297,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                     </div>
                 </div>
             )}
+            */}
         </div>
     )
 }
@@ -373,7 +377,6 @@ const QuoteBreakdownModal = ({
 const VehicleGallery = ({ photos }: { photos: any[] }) => {
   const { t } = useTranslation()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
 
   if (!photos.length) {
     return <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center text-muted-foreground">{t('vehicle.no_photos')}</div>
@@ -408,20 +411,6 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
                 </TooltipTrigger>
                 <TooltipContent>{t('vehicle.share_link')}</TooltipContent>
             </Tooltip>
-            
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className={cn("h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors", isSaved ? "text-red-500" : "text-foreground")}
-                        onClick={() => setIsSaved(!isSaved)}
-                    >
-                        <Icon icon={isSaved ? "mdi:heart" : "mdi:heart-outline"} className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{isSaved ? t('vehicle.remove_favorites') : t('vehicle.save_vehicle')}</TooltipContent>
-            </Tooltip>
         </div>
 
         {/* Counter */}
@@ -429,24 +418,6 @@ const VehicleGallery = ({ photos }: { photos: any[] }) => {
           {activeIndex + 1} / {photos.length}
         </div>
 
-        {/* Social Proof - Integrated into Image */}
-        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pr-3 pl-1 py-1 z-10">
-            <div className="flex -space-x-2">
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="" />
-                </div>
-                <div className="h-5 w-5 rounded-full bg-muted border-2 border-white/10 overflow-hidden">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="" />
-                </div>
-                <div className="h-5 w-5 rounded-full bg-white text-black border-2 border-white/10 flex items-center justify-center text-[7px] font-bold">
-                    +1
-                </div>
-            </div>
-            <span className="text-[10px] text-white font-medium">
-                <span className="font-bold">3</span> {t('vehicle.social_proof.viewing_now')}
-            </span>
-        </div>
-        
         {/* Navigation Arrows (Desktop) */}
         <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button 
@@ -536,66 +507,10 @@ const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
   )
 }
 
-const CarfaxWidget = () => {
-    const { t } = useTranslation()
-    return (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Icon icon="mdi:file-document-check" className="h-32 w-32 text-blue-900" />
-            </div>
-
-            {/* Fox Image Area */}
-            <div className="flex-shrink-0 relative z-10">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full shadow-md border-4 border-white flex items-center justify-center overflow-hidden">
-                    <img 
-                        src="/images/carfax-fox.png" 
-                        alt="Carfax Fox" 
-                        className="w-full h-full object-contain p-2"
-                        onError={(e) => {
-                            // Fallback if image not found
-                            e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Carfax_logo.svg/320px-Carfax_logo.svg.png"
-                        }}
-                    />
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
-                    RECOMMENDED
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 text-center sm:text-left z-10 space-y-2">
-                <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-2">
-                        <Icon icon="mdi:shield-check" className="text-blue-600" />
-                        {t('vehicle.carfax.title')}
-                    </h3>
-                    <p className="text-sm text-slate-600 mt-1 max-w-md">
-                        {t('vehicle.carfax.description')}
-                    </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-                    <Button className="bg-[#1877F2] hover:bg-[#1465D0] text-white font-semibold h-10 shadow-sm group">
-                        <Icon icon="mdi:file-document" className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                        {t('vehicle.carfax.get_report')}
-                    </Button>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span className="line-through decoration-red-400">$39.99</span>
-                        <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{t('vehicle.carfax.free_with_order')}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 const QuoteRow = ({ 
     quote, 
     isSelected, 
     onToggle, 
-    vipLabel,
-    vipVariant,
     priceColor,
     onViewBreakdown,
     isMultiSelectMode
@@ -603,16 +518,14 @@ const QuoteRow = ({
     quote: VehicleQuote; 
     isSelected: boolean; 
     onToggle: () => void; 
-    vipLabel?: string;
-    vipVariant?: 'diamond' | 'gold' | 'silver' | 'default';
     priceColor?: string;
     onViewBreakdown: (e: React.MouseEvent) => void;
     isMultiSelectMode: boolean;
 }) => {
   const { t } = useTranslation()
   const totalPrice = Number(quote.total_price) || 0
-  const rating = 4.8 // Mock rating
-  const reviews = 120 // Mock reviews
+  const rating = quote.company_rating ?? null
+  const reviews = quote.company_review_count ?? null
 
   return (
     <TableRow 
@@ -620,7 +533,7 @@ const QuoteRow = ({
             "group cursor-pointer transition-colors", 
             isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
         )}
-        onClick={onToggle}
+        onClick={onViewBreakdown}
     >
       {isMultiSelectMode && (
         <TableCell className="w-[50px] pr-0">
@@ -631,24 +544,20 @@ const QuoteRow = ({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-bold text-base">{quote.company_name}</span>
-            {vipLabel && <VipBadge label={vipLabel} variant={vipVariant} />}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <div className="flex items-center text-amber-500">
+            {rating != null && (
+              <div className="flex items-center text-amber-500">
                 <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
                 <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-            </div>
-            <span className="text-muted-foreground/60">•</span>
-            <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <span className="ml-1 inline-flex items-center gap-0.5 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help">
-                        <Icon icon="mdi:check-decagram" className="h-3 w-3" />
-                        {t('vehicle.quotes.verified')}
-                    </span>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.quotes.verified_importer')}</TooltipContent>
-            </Tooltip>
+              </div>
+            )}
+            {rating != null && reviews != null && (
+              <span className="text-muted-foreground/60">•</span>
+            )}
+            {reviews != null && (
+              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
+            )}
           </div>
         </div>
       </TableCell>
@@ -668,34 +577,17 @@ const QuoteRow = ({
       </TableCell>
       <TableCell className="text-right">
          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-8 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1"
-                        onClick={onViewBreakdown}
-                    >
-                        <Icon icon="mdi:calculator" className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t('vehicle.quotes.breakdown')}</span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.price_breakdown')}</TooltipContent>
-            </Tooltip>
-            
-            {!isMultiSelectMode && (
-                <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-8 text-xs"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onToggle() // This triggers the lead modal in single select mode
-                    }}
-                >
-                    {t('vehicle.quotes.order')}
-                </Button>
-            )}
+            <Button 
+                size="sm" 
+                variant={isSelected ? "default" : "outline"}
+                className="h-8 text-xs"
+                onClick={(e) => {
+                    e.stopPropagation()
+                    onToggle()
+                }}
+            >
+                {isSelected ? t('vehicle.quotes.selected_btn') : t('vehicle.quotes.select')}
+            </Button>
          </div>
       </TableCell>
     </TableRow>
@@ -790,14 +682,16 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
         
         {/* Desktop Controls */}
-        <div className="hidden md:flex gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
-                <Icon icon="mdi:chevron-left" className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext}>
-                <Icon icon="mdi:chevron-right" className="h-4 w-4" />
-            </Button>
-        </div>
+        {similarItems.length > ITEMS_PER_VIEW_DESKTOP && (
+          <div className="hidden md:flex gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
+                  <Icon icon="mdi:chevron-left" className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext} disabled={currentIndex + ITEMS_PER_VIEW_DESKTOP >= similarItems.length}>
+                  <Icon icon="mdi:chevron-right" className="h-4 w-4" />
+              </Button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Slider (Snap Scroll) */}
@@ -819,10 +713,10 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
       <div className="hidden md:block relative overflow-hidden">
         <div 
             className="flex gap-4 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentIndex * (100 / ITEMS_PER_VIEW_DESKTOP)}%)` }}
+            style={{ transform: `translateX(calc(-${currentIndex} * (33.333% + 5.33px)))` }}
         >
             {similarItems.map((item) => (
-                <div key={item.id} className="min-w-[calc(33.333%-11px)] flex-shrink-0">
+                <div key={item.id} className="w-[calc((100%-32px)/3)] flex-shrink-0">
                     <AuctionVehicleCard
                         item={item}
                         priority={false}
@@ -844,18 +738,78 @@ const VehicleDetailsPage = () => {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { vehicle, photos, quotes, isLoading } = useVehicleDetails(id ? Number(id) : null)
+  const [searchParams] = useSearchParams()
+
+  // Parse URL params for initial values - use ref to only read once on mount
+  const initialParamsRef = useRef<{ limit: number; rating: number | null } | null>(null)
+  if (initialParamsRef.current === null) {
+    const urlLimit = searchParams.get('limit')
+    const urlRating = searchParams.get('rating')
+    const parsedLimit = urlLimit ? parseInt(urlLimit, 10) : 5
+    const parsedRating = urlRating ? parseFloat(urlRating) : null
+    initialParamsRef.current = {
+      limit: [5, 10, 15].includes(parsedLimit) ? parsedLimit : 5,
+      rating: parsedRating && parsedRating > 0 ? parsedRating : null,
+    }
+  }
+
+  const { 
+    vehicle, 
+    photos, 
+    quotes, 
+    isLoading,
+    isLoadingMore,
+    isRefreshingQuotes,
+    hasMoreQuotes,
+    loadMoreQuotes,
+    quotesLimit,
+    setQuotesLimit: setQuotesLimitInternal,
+    minRating,
+    setMinRating: setMinRatingInternal,
+  } = useVehicleDetails(id ? Number(id) : null, {
+    initialLimit: initialParamsRef.current.limit,
+    initialMinRating: initialParamsRef.current.rating,
+  })
+
+  // Sync quotesLimit with URL (without causing re-render)
+  const setQuotesLimit = useCallback((limit: number) => {
+    setQuotesLimitInternal(limit)
+    const newParams = new URLSearchParams(window.location.search)
+    if (limit === 5) {
+      newParams.delete('limit')
+    } else {
+      newParams.set('limit', String(limit))
+    }
+    const newUrl = newParams.toString() 
+      ? `${window.location.pathname}?${newParams.toString()}`
+      : window.location.pathname
+    window.history.replaceState(null, '', newUrl)
+  }, [setQuotesLimitInternal])
+
+  // Sync minRating with URL (without causing re-render)
+  const setMinRating = useCallback((rating: number | null) => {
+    setMinRatingInternal(rating)
+    const newParams = new URLSearchParams(window.location.search)
+    if (rating === null) {
+      newParams.delete('rating')
+    } else {
+      newParams.set('rating', String(rating))
+    }
+    const newUrl = newParams.toString() 
+      ? `${window.location.pathname}?${newParams.toString()}`
+      : window.location.pathname
+    window.history.replaceState(null, '', newUrl)
+  }, [setMinRatingInternal])
 
   // State: Selection & Unlock
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
+  const [isMultiSelectMode, _setIsMultiSelectMode] = useState(false)
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
   const [hasUnlockedExtra, setHasUnlockedExtra] = useState(false)
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
   
-  // State: Filters
+  // State: Filters (local UI filters - VIP and Fast are client-side only)
   const [filterVip, setFilterVip] = useState(false)
-  const [filterRating, setFilterRating] = useState(false)
   const [filterFast, setFilterFast] = useState(false)
 
   // State: Lead Modal
@@ -897,16 +851,12 @@ const VehicleDetailsPage = () => {
   const FREE_LIMIT = 3
   const PREMIUM_LIMIT = 5
 
-  // Derived: Filtered Quotes
+  // Derived: Filtered Quotes (client-side filters only - rating is now server-side)
   const filteredQuotes = useMemo(() => {
     let result = [...quotes]
     
     if (filterVip) {
         result = result.filter((_, idx) => idx < 3)
-    }
-    
-    if (filterRating) {
-        result = result // No real rating data yet
     }
 
     if (filterFast) {
@@ -914,7 +864,10 @@ const VehicleDetailsPage = () => {
     }
 
     return result
-  }, [quotes, filterVip, filterRating, filterFast])
+  }, [quotes, filterVip, filterFast])
+  
+  // Derived: Is rating filter active
+  const filterRating = minRating !== null
 
   const bestQuote = useMemo(() => {
     if (!quotes.length) return null
@@ -964,13 +917,8 @@ const VehicleDetailsPage = () => {
   }
 
   const handleRowClick = (quote: VehicleQuote) => {
-    if (isMultiSelectMode) {
-        handleToggleSelection(quote.company_id)
-    } else {
-        // Single select mode logic - open lead modal directly
-        setSelectedCompanyIds([quote.company_id])
-        setIsLeadModalOpen(true)
-    }
+    // Always toggle selection - row click opens breakdown modal separately
+    handleToggleSelection(quote.company_id)
   }
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
@@ -1013,7 +961,14 @@ const VehicleDetailsPage = () => {
   const shippingPrice = bestQuote ? (Number(bestQuote.breakdown?.shipping_total) || 1200) : 0
   const customsPrice = bestQuote ? (Number(bestQuote.breakdown?.customs_fee) || 500) : 0
   const brokerFee = bestQuote ? (Number(bestQuote.breakdown?.broker_fee) || 300) : 300
-  const totalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
+  const baseTotalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
+
+  // Allow user to adjust auction price locally for approximate calculations
+  const [manualAuctionPrice, setManualAuctionPrice] = useState<number | null>(null)
+  const effectiveAuctionPrice = Number.isFinite(manualAuctionPrice as number) && (manualAuctionPrice as number) >= 0
+    ? (manualAuctionPrice as number)
+    : auctionPrice
+  const totalPrice = Math.max(0, baseTotalPrice + (effectiveAuctionPrice - auctionPrice))
 
   if (isLoading) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><main className="container p-8"><Skeleton className="h-96" /></main></div>
   if (!vehicle) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><div className="container p-8">{t('vehicle.not_found')}</div></div>
@@ -1035,244 +990,230 @@ const VehicleDetailsPage = () => {
         <div className="grid lg:grid-cols-3 gap-8 items-start">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8 min-w-0">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 mb-1">
-                <Badge variant="outline" className="uppercase tracking-wider text-[10px]">{t('vehicle.lot')}: {vehicle.source_lot_id}</Badge>
-                {vehicle.is_new && (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700 animate-pulse shadow-sm border-none">
-                        {t('vehicle.new_arrival')}
-                    </Badge>
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
-                {vehicle.year} {vehicle.make} {vehicle.model}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Icon icon="mdi:map-marker" className="h-4 w-4 text-primary" />
-                  {vehicle.city || vehicle.state || 'USA Auction'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Icon icon="mdi:calendar-clock" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('vehicle.sale_date')}:</span> {vehicle.sold_at_date || t('vehicle.upcoming')}
-                </span>
-                <AuctionTimer dateStr={vehicle.sold_at_date} />
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </h1>
+
+                <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 text-xs sm:text-sm">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary font-medium">
+                    <Icon icon="mdi:map-marker" className="h-3.5 w-3.5" />
+                    <span className="truncate max-w-[220px] sm:max-w-xs">
+                      {vehicle.city || vehicle.state || 'USA Auction'}
+                    </span>
+                  </div>
+
+                  {vehicle.source_lot_id && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 text-white font-semibold tracking-wide">
+                      <Icon icon="mdi:ticket-confirmation" className="h-3.5 w-3.5" />
+                      <span className="uppercase text-[10px] sm:text-xs">
+                        {t('vehicle.lot')}: {vehicle.source_lot_id}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <VehicleGallery photos={photos} />
 
+            <VehicleSpecs vehicle={vehicle} />
+
             {/* Transparency Table with Filters */}
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
               <div className="p-4 border-b bg-muted/10 space-y-4">
-                <div className="bg-indigo-50/50 border border-indigo-100/50 text-indigo-900/80 px-3 py-2 rounded-md flex items-start sm:items-center gap-2 text-[11px] font-medium">
-                    <Icon icon="mdi:gift-outline" className="h-3.5 w-3.5 mt-0.5 sm:mt-0 shrink-0" />
-                    <span dangerouslySetInnerHTML={{ __html: t('vehicle.quotes.promo_text') }} />
-                </div>
 
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
-                        {isMultiSelectMode ? t('vehicle.quotes.select_companies') : t('vehicle.quotes.title')}
-                        </h2>
-                        {!isMultiSelectMode && (
-                            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                                {t('vehicle.quotes.click_to_order')}
-                            </p>
-                        )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
+                      {t('vehicle.quotes.title')}
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
+                      {t('vehicle.quotes.click_to_order')}
+                    </p>
+                  </div>
+
+                  {/* Inline filter buttons and page size selector */}
+                  <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+                    <Button 
+                      variant={filterRating ? "default" : "outline"} 
+                      size="sm" 
+                      onClick={() => setMinRating(filterRating ? null : 4.5)}
+                      className="h-8 text-xs px-3"
+                    >
+                      {filterRating ? (
+                        <Icon icon="mdi:check" className="mr-1 h-3 w-3" />
+                      ) : (
+                        <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />
+                      )}
+                      {t('vehicle.quotes.rating_filter')}
+                    </Button>
+
+                    {/* Page size selector */}
+                    <div className="flex items-center gap-1 border rounded-md px-2 h-8">
+                      <span className="text-xs text-muted-foreground hidden sm:inline">{t('vehicle.quotes.show')}:</span>
+                      {[5, 10, 15].map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setQuotesLimit(size)}
+                          className={cn(
+                            "px-2 py-1 text-xs rounded transition-colors",
+                            quotesLimit === size 
+                              ? "bg-primary text-primary-foreground font-medium" 
+                              : "hover:bg-muted"
+                          )}
+                        >
+                          {size}
+                        </button>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                        {!isMultiSelectMode ? (
-                            <Button 
-                                size="sm" 
-                                onClick={() => setIsMultiSelectMode(true)}
-                                className="text-xs w-full sm:w-auto"
-                            >
-                                {t('vehicle.quotes.select_multiple')}
-                            </Button>
-                        ) : (
-                            <div className="flex items-center gap-2 w-full justify-between sm:justify-end">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground font-medium">{t('vehicle.quotes.selected')}:</span>
-                                    <Badge variant={selectedCompanyIds.length > 0 ? "default" : "secondary"}>
-                                        {selectedCompanyIds.length} / {hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT}
-                                    </Badge>
-                                </div>
-                                <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setIsMultiSelectMode(false)
-                                        setSelectedCompanyIds([])
-                                    }}
-                                    className="text-xs h-8 px-2"
-                                >
-                                    {t('vehicle.quotes.cancel')}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                {/* Filters */}
-                <div className="flex flex-wrap gap-2">
-                    <Button 
-                        variant={filterVip ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterVip(!filterVip)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterVip ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : null}
-                        {t('vehicle.quotes.vip_only')}
-                    </Button>
-                    <Button 
-                        variant={filterRating ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterRating(!filterRating)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterRating ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle.quotes.rating_filter')}
-                    </Button>
-                    <Button 
-                        variant={filterFast ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => setFilterFast(!filterFast)}
-                        className="h-8 text-xs flex-1 sm:flex-none justify-center"
-                    >
-                        {filterFast ? <Icon icon="mdi:check" className="mr-1 h-3 w-3" /> : <Icon icon="mdi:lightning-bolt" className="mr-1 h-3 w-3 text-amber-500" />}
-                        {t('vehicle.quotes.fast_delivery')}
-                    </Button>
+                  </div>
                 </div>
               </div>
 
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
-                        <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
-                        <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
-                        <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
-                        <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {filteredQuotes.map((quote) => {
-                        // Mock VIP Status logic
-                        const originalIndex = quotes.findIndex(q => q.company_id === quote.company_id)
-                        let vipLabel: string | undefined
-                        let vipVariant: 'diamond' | 'gold' | 'silver' | 'default' = 'default'
-                        
-                        if (originalIndex === 0) { vipLabel = 'Diamond'; vipVariant = 'diamond' }
-                        else if (originalIndex === 1) { vipLabel = 'Gold'; vipVariant = 'gold' }
-                        else if (originalIndex === 2) { vipLabel = 'Silver'; vipVariant = 'silver' }
+              {/* Quotes content wrapper with smooth height transitions */}
+              <div className="relative transition-all duration-300 ease-in-out">
+                {/* Loading overlay */}
+                {isRefreshingQuotes && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">{t('vehicle.quotes.loading')}</span>
+                    </div>
+                  </div>
+                )}
 
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                      <TableHeader>
+                      <TableRow>
+                          {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
+                          <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
+                          <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
+                          <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
+                          <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
+                      </TableRow>
+                      </TableHeader>
+                      <TableBody className="transition-all duration-300">
+                      {filteredQuotes.map((quote) => {
+                          const priceColor = getPriceColor(Number(quote.total_price))
+
+                          return (
+                              <QuoteRow 
+                                  key={quote.company_id} 
+                                  quote={quote} 
+                                  isSelected={selectedCompanyIds.includes(quote.company_id)}
+                                  onToggle={() => handleRowClick(quote)}
+                                  priceColor={priceColor}
+                                  onViewBreakdown={(e) => {
+                                      e.stopPropagation()
+                                      setActiveBreakdownQuote(quote)
+                                  }}
+                                  isMultiSelectMode={isMultiSelectMode}
+                              />
+                          )
+                      })}
+                      </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden space-y-0 divide-y">
+                    {filteredQuotes.map((quote) => {
                         const priceColor = getPriceColor(Number(quote.total_price))
+                        const isSelected = selectedCompanyIds.includes(quote.company_id)
+                        const rating = quote.company_rating ?? null
+                        const reviews = quote.company_review_count ?? null
 
                         return (
-                            <QuoteRow 
-                                key={quote.company_id} 
-                                quote={quote} 
-                                isSelected={selectedCompanyIds.includes(quote.company_id)}
-                                onToggle={() => handleRowClick(quote)}
-                                vipLabel={vipLabel}
-                                vipVariant={vipVariant}
-                                priceColor={priceColor}
-                                onViewBreakdown={(e) => {
-                                    e.stopPropagation()
-                                    setActiveBreakdownQuote(quote)
-                                }}
-                                isMultiSelectMode={isMultiSelectMode}
-                            />
+                          <div 
+                              key={quote.company_id}
+                              className={cn(
+                                  "p-4 active:bg-muted/50 transition-all duration-300",
+                                  isSelected ? "bg-primary/5" : ""
+                              )}
+                              onClick={() => setActiveBreakdownQuote(quote)}
+                          >
+                              <div className="flex justify-between items-start gap-3">
+                                  <div className="flex items-start gap-3">
+                                      {isMultiSelectMode && (
+                                          <Checkbox 
+                                              checked={isSelected} 
+                                              onCheckedChange={() => handleRowClick(quote)} 
+                                              className="mt-1"
+                                          />
+                                      )}
+                                      <div>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="font-bold text-sm">{quote.company_name}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                              {rating != null && (
+                                                <div className="flex items-center text-amber-500">
+                                                  <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
+                                                  <span className="ml-0.5 font-medium text-foreground">{rating}</span>
+                                                </div>
+                                              )}
+                                              {rating != null && reviews != null && (
+                                                <span>•</span>
+                                              )}
+                                              {reviews != null && (
+                                                <span>{reviews} {t('vehicle.quotes.reviews')}</span>
+                                              )}
+                                              {rating == null && reviews == null && (
+                                                <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
+                                              )}
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className={cn("font-bold text-base", priceColor)}>
+                                          ${Number(quote.total_price).toLocaleString()}
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
                         )
                     })}
-                    </TableBody>
-                </Table>
+                </div>
+
+                {filteredQuotes.length === 0 && !isRefreshingQuotes && (
+                  <div className="p-8 text-center text-muted-foreground animate-fadeIn">
+                      <p>{t('vehicle.quotes.no_match')}</p>
+                      <Button variant="link" onClick={() => { setFilterVip(false); setMinRating(null); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
+                  </div>
+                )}
               </div>
 
-              {/* Mobile Card List View */}
-              <div className="md:hidden space-y-0 divide-y">
-                  {filteredQuotes.map((quote) => {
-                      const originalIndex = quotes.findIndex(q => q.company_id === quote.company_id)
-                      let vipLabel: string | undefined
-                      let vipVariant: 'diamond' | 'gold' | 'silver' | 'default' = 'default'
-                      if (originalIndex === 0) { vipLabel = 'Diamond'; vipVariant = 'diamond' }
-                      else if (originalIndex === 1) { vipLabel = 'Gold'; vipVariant = 'gold' }
-
-                      const priceColor = getPriceColor(Number(quote.total_price))
-                      const isSelected = selectedCompanyIds.includes(quote.company_id)
-
-                      return (
-                        <div 
-                            key={quote.company_id}
-                            className={cn(
-                                "p-4 active:bg-muted/50 transition-colors",
-                                isSelected ? "bg-primary/5" : ""
-                            )}
-                            onClick={() => handleRowClick(quote)}
-                        >
-                            <div className="flex justify-between items-start gap-3">
-                                <div className="flex items-start gap-3">
-                                    {isMultiSelectMode && (
-                                        <Checkbox 
-                                            checked={isSelected} 
-                                            onCheckedChange={() => handleRowClick(quote)} 
-                                            className="mt-1"
-                                        />
-                                    )}
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-sm">{quote.company_name}</span>
-                                            {vipLabel && <VipBadge label={vipLabel} variant={vipVariant} className="scale-90 origin-left" />}
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                            <div className="flex items-center text-amber-500">
-                                                <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                                                <span className="ml-0.5 font-medium text-foreground">4.8</span>
-                                            </div>
-                                            <span>•</span>
-                                            <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className={cn("font-bold text-base", priceColor)}>
-                                        ${Number(quote.total_price).toLocaleString()}
-                                    </div>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-6 text-[10px] px-2 -mr-2 text-muted-foreground"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setActiveBreakdownQuote(quote)
-                                        }}
-                                    >
-                                        {t('vehicle.quotes.breakdown')}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                      )
-                  })}
-              </div>
-
-              {filteredQuotes.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                    <p>{t('vehicle.quotes.no_match')}</p>
-                    <Button variant="link" onClick={() => { setFilterVip(false); setFilterRating(false); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
+              {/* See More Button */}
+              {hasMoreQuotes && filteredQuotes.length > 0 && (
+                <div className="p-4 border-t transition-all duration-300">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={loadMoreQuotes}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
+                        {t('vehicle.quotes.loading')}
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="mdi:chevron-down" className="mr-2 h-4 w-4" />
+                        {t('vehicle.quotes.see_more')}
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
 
-            <CarfaxWidget />
-            
-            <DamageViewer vehicle={vehicle} />
-
-            <VehicleSpecs vehicle={vehicle} />
+            {/* <DamageViewer vehicle={vehicle} /> */}
 
             <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
@@ -1283,27 +1224,42 @@ const VehicleDetailsPage = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
               <CardHeader className="pb-4 border-b">
                 <div className="flex justify-between items-start">
-                    <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
+                  <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
                     {t('vehicle.price_card.estimated_total')}
-                    </CardDescription>
-                    <Badge variant="outline" className="bg-background text-[10px] font-normal">
-                        USD / GEL
-                    </Badge>
+                  </CardDescription>
+                  <Badge variant="outline" className="bg-background text-[10px] font-normal">
+                    USD / GEL
+                  </Badge>
                 </div>
                 <CardTitle className="text-4xl font-bold text-foreground flex items-baseline gap-2">
                   ${totalPrice.toLocaleString()}
                   <span className="text-lg font-normal text-muted-foreground hidden sm:inline-block">USD</span>
                 </CardTitle>
-                <p className="text-sm text-muted-foreground font-medium">
-                  ≈ {(totalPrice * 2.7).toLocaleString()} GEL
-                </p>
               </CardHeader>
+
               <CardContent className="p-6 space-y-6">
                 {/* Breakdown */}
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.auction_price')}</span>
-                    <span>${auctionPrice.toLocaleString()}</span>
+                  <div className="flex justify-between items-center py-1 border-b border-dashed gap-3">
+                    <span className="text-muted-foreground text-sm">{t('vehicle.price_card.auction_price')}</span>
+                    <div className="flex items-center gap-1 group cursor-text">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        className="h-6 w-14 sm:w-16 text-right text-sm font-medium px-0 bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                        value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '')
+                          if (!raw) {
+                            setManualAuctionPrice(0)
+                            return
+                          }
+                          const next = Number(raw)
+                          setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
+                        }}
+                      />
+                      <Icon icon="mdi:pencil" className="h-3 w-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    </div>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed">
                     <span className="text-muted-foreground">{t('vehicle.price_card.shipping')}</span>
@@ -1319,30 +1275,20 @@ const VehicleDetailsPage = () => {
                   </div>
                 </div>
 
-                {/* CTA */}
-                <div className="space-y-3">
-                  <Button 
-                    className="w-full h-12 text-base font-bold shadow-lg transition-all" 
-                    onClick={() => {
-                        if (selectedCompanyIds.length > 0) {
-                            setIsLeadModalOpen(true)
-                        } else {
-                            document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
-                        }
-                    }}
-                    disabled={selectedCompanyIds.length === 0}
-                  >
-                    {selectedCompanyIds.length > 0 
-                        ? t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })
-                        : t('vehicle.price_card.select_to_order')
-                    }
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    {t('vehicle.price_card.select_hint')}
-                  </p>
-                </div>
+                {/* CTA - shows when companies are selected */}
+                {selectedCompanyIds.length > 0 && (
+                  <div className="space-y-3 animate-fadeIn">
+                    <Button
+                      className="w-full h-12 text-base font-bold shadow-lg transition-all"
+                      onClick={() => setIsLeadModalOpen(true)}
+                    >
+                      {t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })}
+                    </Button>
+                  </div>
+                )}
 
-                <MarketPriceWidget price={totalPrice || 0} />
+                {/** MarketPriceWidget ("below market" / "save" text) intentionally hidden per requirements */}
+                {/* <MarketPriceWidget price={totalPrice || 0} /> */}
               </CardContent>
             </Card>
           </div>

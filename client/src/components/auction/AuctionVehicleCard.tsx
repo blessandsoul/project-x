@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +14,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
-import { useFavorites } from '@/hooks/useFavorites';
 
 interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
@@ -48,10 +47,14 @@ export function AuctionVehicleCard({
   priority = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
-  const { favorites, toggleFavorite } = useFavorites();
-  
-  const vehicleId = String(item.vehicle_id ?? item.id);
-  const isFavorite = favorites.includes(vehicleId);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -84,11 +87,6 @@ export function AuctionVehicleCard({
   const hasBuyNow = buyNowRaw != null;
   const buyNowPriceLabel = hasBuyNow ? formatMoney(buyNowRaw) : null;
 
-  // Social Proof & Badges
-  const watcherCount = useMemo(() => {
-    const seed = typeof item.id === 'number' ? item.id : item.vehicle_id || 0;
-    return 3 + (seed % 25); // Random number between 3 and 27
-  }, [item.id, item.vehicle_id]);
 
   // Helpers for translation
   const formatMileage = (mileage: number | null | undefined) => {
@@ -118,9 +116,104 @@ export function AuctionVehicleCard({
     return drive;
   };
 
-  const isHot = watcherCount > 15;
-  const isNew = item.year >= new Date().getFullYear() - 1;
 
+  // Mobile compact card - horizontal layout to fit 5+ per screen
+  if (isMobile) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+        className="h-full"
+      >
+        <Card className="group relative overflow-hidden rounded-xl border-border/40 bg-card shadow-sm flex flex-row p-0 gap-0">
+          {/* Image - Left side, smaller */}
+          <div className="relative w-28 flex-shrink-0 overflow-hidden bg-muted/20">
+            <button
+              type="button"
+              className="w-full h-full focus:outline-none cursor-zoom-in"
+              onClick={onOpenGallery}
+              aria-label={t('common.view_photos')}
+            >
+              <img
+                src={mainPhotoUrl}
+                alt={`${item.year} ${item.make} ${item.model}`}
+                className="h-full w-full object-cover"
+                loading={priority ? 'eager' : 'lazy'}
+              />
+            </button>
+            {/* Source badge on image */}
+            {item.source && (
+              <Badge
+                className={cn(
+                  "absolute top-1 left-1 text-[8px] px-1.5 py-0 h-4 backdrop-blur-md border-none shadow-sm font-bold",
+                  item.source.toLowerCase() === 'copart' ? "bg-[#0047AB] text-white" :
+                  item.source.toLowerCase() === 'iaai' ? "bg-[#D40000] text-white" :
+                  "bg-black/70 text-white"
+                )}
+              >
+                {item.source.toUpperCase()}
+              </Badge>
+            )}
+            {/* Compare checkbox */}
+            {showCompareCheckbox && (
+              <div className="absolute bottom-1 left-1">
+                <Checkbox
+                  id={`compare-${item.id}`}
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
+                  className="w-4 h-4 bg-white/90 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Content - Right side, compact */}
+          <CardContent className="flex flex-row flex-1 p-2 gap-2 min-w-0">
+            {/* Left: Info */}
+            <div className="flex flex-col flex-1 min-w-0 gap-0.5 justify-between h-full">
+              <div>
+                <h3 className="font-semibold text-[15px] leading-tight truncate" title={`${item.year} ${item.make} ${item.model}`}>
+                  {item.year} {item.make} {item.model}
+                </h3>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-0.5">
+                    <Icon icon="mdi:speedometer" className="w-3.5 h-3.5" />
+                    {formatMileage(item.mileage)}
+                  </span>
+                  <span className="flex items-center gap-0.5">
+                    <Icon icon="mdi:gas-station" className="w-3.5 h-3.5" />
+                    {translateFuel(item.fuel_type)}
+                  </span>
+                </div>
+              </div>
+              <span className="text-[15px] font-bold text-primary leading-tight">
+                {formatMoney(displayPrice)}
+              </span>
+            </div>
+            {/* Right: Actions stacked vertically */}
+            <div className="flex flex-col justify-between items-end h-full">
+              {hasBuyNow && buyNowPriceLabel ? (
+                <span className="text-[10px] text-emerald-600 font-semibold text-right leading-tight">
+                  <span className="block">{buyNowPriceLabel}</span>
+                  <span className="text-[9px] font-medium">ახლავე ყიდვა</span>
+                </span>
+              ) : <span />}
+              <button
+                className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors text-[11px] font-semibold min-w-[44px]"
+                onClick={onViewDetails}
+                title={t('common.details')}
+              >
+                {t('common.details')}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  // Desktop card - original layout
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -148,7 +241,7 @@ export function AuctionVehicleCard({
           </button>
 
           {/* Top Actions Overlay */}
-          <div className="absolute top-3 inset-x-3 flex justify-between items-start pointer-events-none">
+          <div className="absolute top-3 inset-x-3 flex justify-start items-start pointer-events-none">
             {/* Left: Compare Checkbox */}
             <div className="pointer-events-auto flex gap-2">
               {showCompareCheckbox && (
@@ -171,37 +264,6 @@ export function AuctionVehicleCard({
                   </label>
                 </motion.div>
               )}
-              
-              {/* New Badge */}
-              {isNew && !isHot && (
-                <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1">
-                  <Icon icon="mdi:star-four-points" className="w-3 h-3" />
-                  {t('common.badges.new')}
-                </Badge>
-              )}
-
-              {/* Hot Badge */}
-              {isHot && (
-                <Badge className="bg-orange-500/90 backdrop-blur-md text-white border-none shadow-sm px-2 py-0.5 h-7 text-[10px] font-bold tracking-wide flex items-center gap-1 animate-pulse">
-                  <Icon icon="mdi:fire" className="w-3 h-3" />
-                  {t('common.badges.hot')}
-                </Badge>
-              )}
-            </div>
-
-            {/* Right: Favorite Button */}
-            <div className="pointer-events-auto flex flex-col gap-2 items-end">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 hover:scale-110 transition-all shadow-sm"
-                onClick={() => toggleFavorite(vehicleId)}
-              >
-                <Icon 
-                  icon={isFavorite ? "mdi:heart" : "mdi:heart-outline"} 
-                  className={cn("w-5 h-5", isFavorite && "text-red-500")} 
-                />
-              </Button>
             </div>
           </div>
 
@@ -239,13 +301,6 @@ export function AuctionVehicleCard({
             )}
           </div>
 
-          {/* Watcher Count (Bottom Right) */}
-          <div className="absolute bottom-3 right-3 pointer-events-none">
-             <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[10px] text-white/90 font-medium shadow-sm">
-               <Icon icon="mdi:eye" className="w-3 h-3" />
-               {watcherCount}
-             </div>
-          </div>
         </div>
 
         {/* Content Body */}
@@ -253,7 +308,7 @@ export function AuctionVehicleCard({
           {/* Header */}
           <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-lg leading-tight line-clamp-1 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
+              <h3 className="font-bold text-lg leading-tight truncate min-w-0 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
                 {item.year} {item.make} {item.model}
               </h3>
             </div>
@@ -284,8 +339,10 @@ export function AuctionVehicleCard({
             </div>
           </div>
 
-          {/* Specs Grid */}
-          <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
+          {/* Bottom Section - Specs + Footer (always aligned) */}
+          <div className="mt-auto flex flex-col gap-3">
+            {/* Specs Grid */}
+            <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
             <div className="flex flex-col items-center justify-center text-center gap-0.5">
               <Icon icon="mdi:speedometer" className="w-4 h-4 text-muted-foreground/70" />
               <span className="text-xs font-medium truncate w-full">{formatMileage(item.mileage)}</span>
@@ -298,10 +355,10 @@ export function AuctionVehicleCard({
               <Icon icon="mdi:car-traction-control" className="w-4 h-4 text-muted-foreground/70" />
               <span className="text-xs font-medium capitalize truncate w-full">{translateDrive(item.drive)}</span>
             </div>
-          </div>
+            </div>
 
-          {/* Footer: Price & Actions */}
-          <div className="mt-auto pt-1 flex items-end justify-between gap-2">
+            {/* Footer: Price & Actions */}
+            <div className="pt-1 flex items-end justify-between gap-2">
             <div className="flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                 {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
@@ -329,6 +386,7 @@ export function AuctionVehicleCard({
                 {t('common.details')}
               </Button>
             </div>
+          </div>
           </div>
         </CardContent>
       </Card>

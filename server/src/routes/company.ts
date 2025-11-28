@@ -690,12 +690,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           limit: { type: 'integer', minimum: 1, maximum: 50 },
           offset: { type: 'integer', minimum: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
+          minRating: { type: 'number', minimum: 0, maximum: 5 },
         },
       },
     },
   }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
-    const { limit, offset, currency } = request.query as { limit?: number; offset?: number; currency?: string };
+    const { limit, offset, currency, minRating } = request.query as { limit?: number; offset?: number; currency?: string; minRating?: number };
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
@@ -715,8 +716,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       { limit: 5, maxLimit: 50 },
     );
 
-    // Cache quote calculations - same vehicle + currency + pagination = same result
-    const cacheKey = buildCacheKey('quotes:calculate', id, currency || 'USD', safeLimit, safeOffset);
+    // Cache quote calculations - same vehicle + currency + pagination + filters = same result
+    const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 5 ? minRating : undefined;
+    const cacheKey = buildCacheKey('quotes:calculate', id, currency || 'USD', safeLimit, safeOffset, safeMinRating ?? 'none');
     const fullResult = await withCache(
       fastify,
       cacheKey,
@@ -724,6 +726,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       () => controller.calculateQuotesForVehicle(id, currency, {
         limit: safeLimit,
         offset: safeOffset,
+        ...(safeMinRating !== undefined && { minRating: safeMinRating }),
       }),
     );
 
@@ -733,7 +736,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         ? fullResult.quotes.length
         : 0;
 
-    const page = total > 0 ? Math.floor(safeOffset / safeLimit) + 1 : 1;
     const totalPages = total > 0 ? Math.max(1, Math.ceil(total / safeLimit)) : 1;
 
     // Do not slice quotes here; controller already paginates companies/quotes
@@ -744,7 +746,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       total,
       limit: safeLimit,
       offset: safeOffset,
-      page,
       totalPages,
     });
   });

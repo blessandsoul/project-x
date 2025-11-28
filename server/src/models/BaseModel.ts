@@ -27,6 +27,7 @@ const ALLOWED_TABLES = new Set([
   'idempotency_keys',
   'user_company_activity',
   'yards',
+  'auction_branch_distances',
 ]);
 
 /**

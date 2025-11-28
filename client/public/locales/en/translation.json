@@ -65,7 +65,8 @@
       "full": "Full Drive"
     },
     "offer": "Offer",
-    "reviews": "reviews"
+    "reviews": "reviews",
+    "great_thanks": "Great, thanks!"
   },
   "navigation": {
     "home": "Home",
@@ -74,8 +75,78 @@
     "carfax": "VIN Check",
     "dashboard": "Dashboard"
   },
+  "auth": {
+    "header": {
+      "account": "Your account",
+      "subtitle": "Sign in or create an account to manage your imports."
+    },
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Sign in to access your dashboard.",
+      "new_here": "New here?",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "loading": "Signing in...",
+      "no_account": "Don’t have an account?",
+      "register_link": "Create account",
+      "error": {
+        "required": "Please fill in all fields.",
+        "generic": "Failed to sign in. Please try again."
+      }
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Create an account to start using Trusted Importers.",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "loading": "Creating account...",
+      "submit": "Create account",
+      "has_account": "Already have an account?",
+      "login_link": "Sign in",
+      "dealer_info": "Dealer accounts can list vehicles and manage inventory. Verification required.",
+      "error": {
+        "required": "Please fill in all required fields.",
+        "generic": "Failed to register. Please try again."
+      }
+    },
+    "account_type": "Account type",
+    "roles": {
+      "user": {
+        "title": "Buyer account",
+        "desc": "Search companies and request import offers."
+      },
+      "dealer": {
+        "title": "Dealer account",
+        "desc": "List vehicles and manage inventory."
+      },
+      "company": {
+        "title": "Importer company",
+        "desc": "Receive leads and manage your team."
+      }
+    },
+    "company_legal_name": "Company legal name",
+    "contact_phone": "Contact phone",
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "••••••••",
+      "name": "Your name",
+      "phone": "+995 5XX XXX XXX",
+      "company_name": "Company name (as in registration)"
+    },
+    "social": {
+      "continue_with": "Or continue with",
+      "google": "Google",
+      "facebook": "Facebook"
+    },
+    "error": {
+      "profile_load": "Failed to load profile. Please sign in again."
+    }
+  },
   "header": {
     "sign_in": "Sign In",
+    "register": "Register",
     "menu": "Menu",
     "profile": "Profile",
     "sign_out": "Sign Out",
@@ -90,7 +161,7 @@
       "description": "Enter VIN or auction budget to see full estimated cost and move to trusted companies in one step.",
       "search_placeholder": "Search live auctions by make, model or year",
       "calculate_btn": "Calculate",
-      "verified_companies": "37 Verified Companies",
+      "verified_companies": "{{count}} Verified Companies",
       "fixed_prices": "Fixed Prices",
       "official_contracts": "Official Contracts"
     },
@@ -363,7 +434,27 @@
     "order_inspection": "Order Inspection",
     "error_vin_required": "VIN code is required",
     "error_vin_length": "VIN must be exactly 17 characters",
-    "error_decode_failed": "Failed to decode VIN"
+    "error_decode_failed": "Failed to decode VIN",
+    "fields": {
+      "trim": "Trim",
+      "series": "Series",
+      "body_class": "Body Class",
+      "vehicle_type": "Vehicle Type",
+      "engine_cylinders": "Engine Cylinders",
+      "engine_displacement": "Engine Displacement",
+      "engine_model": "Engine Model",
+      "engine_power": "Engine Power",
+      "fuel_type": "Fuel Type",
+      "transmission_style": "Transmission Style",
+      "transmission_speeds": "Transmission Speeds",
+      "drive_type": "Drive Type",
+      "doors": "Doors",
+      "gvwr": "GVWR",
+      "manufacturer": "Manufacturer",
+      "plant_country": "Plant Country",
+      "plant_city": "Plant City",
+      "plant_state": "Plant State"
+    }
   },
   "vehicle": {
     "breadcrumb_home": "Home",
@@ -446,7 +537,10 @@
       "order": "Order",
       "no_match": "No companies match your filters.",
       "clear_filters": "Clear Filters",
-      "promo_text": "Order before 26.11 to get <strong>Free Carfax Report</strong> ($40 value) included!"
+      "promo_text": "Order before 26.11 to get <strong>Free Carfax Report</strong> ($40 value) included!",
+      "see_more": "See More Companies",
+      "loading": "Loading...",
+      "show": "Show"
     },
     "similar": {
       "title": "Similar Vehicles You Might Like"
@@ -481,8 +575,14 @@
       "review_placeholder": "Tell us what you think...",
       "unlock_btn": "Unlock 5 Requests"
     },
+    "success_modal": {
+      "title": "Request sent successfully",
+      "description": "Your request has been sent to {{count}} companies. A manager will contact you soon.",
+      "manager_contact": "Our manager will contact you shortly to confirm all details."
+    },
     "social_proof": {
-      "people_viewing": "viewing"
+      "people_viewing": "viewing",
+      "viewing_now": "viewing now"
     },
     "mobile_cta": {
       "total_est": "Total Est.",

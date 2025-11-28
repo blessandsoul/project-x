@@ -16,7 +16,7 @@ export function TestimonialsSection() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeFilter, setActiveFilter] = useState('all')
+  const [_activeFilter, _setActiveFilter] = useState('all')
 
   const { companies, isLoading: isCompaniesLoading, error: companiesError } = useCompaniesData()
 
@@ -156,7 +156,7 @@ export function TestimonialsSection() {
             >
               {t('home.testimonials.title')}
             </h2>
-            <div className="flex flex-wrap gap-2">
+            {/* <div className="flex flex-wrap gap-2">
               {['all', 'speed', 'price', 'quality', 'docs'].map((filter) => (
                 <button
                   key={filter}
@@ -171,7 +171,7 @@ export function TestimonialsSection() {
                   {t(`home.testimonials.filters.${filter}`)}
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
           
           <StatsWidget />

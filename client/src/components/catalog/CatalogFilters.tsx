@@ -26,6 +26,13 @@ interface CatalogFiltersProps {
   onVipChange?: (value: boolean) => void;
   onApplyFilters?: () => void;
   onResetFilters?: () => void;
+  auctionSource?: 'all' | 'copart' | 'iaai';
+  onAuctionSourceChange?: (value: 'all' | 'copart' | 'iaai') => void;
+  auctionBranches?: Array<{ name: string; address: string }>;
+  auctionBranchValue?: string;
+  onAuctionBranchChange?: (value: string) => void;
+  portValue?: string;
+  onPortChange?: (value: string) => void;
 }
 
 export const CatalogFilters = ({
@@ -45,14 +52,24 @@ export const CatalogFilters = ({
   onVipChange,
   onApplyFilters,
   onResetFilters,
+  auctionSource = 'all',
+  onAuctionSourceChange,
+  auctionBranches = [],
+  auctionBranchValue,
+  onAuctionBranchChange,
+   portValue,
+   onPortChange,
 }: CatalogFiltersProps) => {
   const { t } = useTranslation();
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const countryInputRef = useRef<HTMLInputElement | null>(null);
   const cityInputRef = useRef<HTMLInputElement | null>(null);
+  const branchSelectRef = useRef<HTMLButtonElement>(null);
 
   const [priceRange, setPriceRange] = useState<[number, number]>(initialPriceRange ?? [0, 5000]);
+  const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
+  const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
 
   useEffect(() => {
     if (initialPriceRange) {
@@ -60,8 +77,117 @@ export const CatalogFilters = ({
     }
   }, [initialPriceRange]);
 
+  useEffect(() => {
+    // Reset branch search when auction source or available branches change
+    setAuctionBranchSearch('');
+  }, [auctionSource, auctionBranches]);
+
+  const filteredAuctionBranches = auctionBranches.filter((branch) => {
+    if (!auctionBranchSearch.trim()) return true;
+    const term = auctionBranchSearch.toLowerCase();
+    return (
+      branch.name.toLowerCase().includes(term) ||
+      branch.address.toLowerCase().includes(term)
+    );
+  });
+
   const filterContent = (
     <div className="space-y-3 sm:space-y-6">
+      {/* Auction Filters (mobile only) */}
+      <div className="space-y-2 block lg:hidden">
+        <div className="grid grid-cols-1 gap-2">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.auction', 'Auction')}
+            </label>
+            <Select
+              value={auctionSource}
+              onValueChange={(value: 'all' | 'copart' | 'iaai') => {
+                onAuctionSourceChange?.(value);
+                if (value !== 'all') {
+                  setBranchNeedsAttention(true);
+                  setTimeout(() => branchSelectRef.current?.click(), 100);
+                } else {
+                  setBranchNeedsAttention(false);
+                }
+              }}
+            >
+              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
+                <SelectItem value="copart">Copart</SelectItem>
+                <SelectItem value="iaai">IAAI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.auction_branch', 'Auction branch')}
+            </label>
+            <Select
+              value={auctionBranchValue ?? ''}
+              onValueChange={(value) => {
+                onAuctionBranchChange?.(value);
+                setBranchNeedsAttention(false);
+              }}
+              disabled={auctionSource === 'all' || auctionBranches.length === 0}
+            >
+              <SelectTrigger 
+                ref={branchSelectRef}
+                className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+              >
+                <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
+              >
+                <div className="p-2 border-b bg-white sticky top-0 z-10">
+                  <Input
+                    placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
+                    value={auctionBranchSearch}
+                    onChange={(e) => setAuctionBranchSearch(e.target.value)}
+                    className="h-8 text-xs bg-white"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto">
+                  {filteredAuctionBranches.map((branch) => (
+                    <SelectItem key={branch.address} value={branch.address}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </div>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.port', 'Port')}
+            </label>
+            <Select
+              value={portValue ?? 'poti_georgia'}
+              onValueChange={(value) => {
+                onPortChange?.(value);
+              }}
+            >
+              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
+                <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
+                <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
+                <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="space-y-1 sm:space-y-2">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.search')}</label>
@@ -117,7 +243,7 @@ export const CatalogFilters = ({
         <div className="relative">
           <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
-            placeholder="Tbilisi, Batumi..." 
+            placeholder="თბილისი, ბათუმი..." 
             className="pl-9 bg-white h-9 sm:h-10"
             ref={cityInputRef}
             defaultValue={initialCity}

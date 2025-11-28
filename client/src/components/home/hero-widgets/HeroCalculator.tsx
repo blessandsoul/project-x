@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { fetchCompaniesFromApi } from '@/services/companiesApi';
 
 export function HeroCalculator() {
   const [auctionPrice, setAuctionPrice] = useState<string>('5000');
@@ -10,6 +11,7 @@ export function HeroCalculator() {
   const [result, setResult] = useState<number>(0);
   const [gelResult, setGelResult] = useState<number>(0);
   const [breakdown, setBreakdown] = useState({ shipping: 1500, customs: 0, fees: 500 });
+  const [companyCount, setCompanyCount] = useState<number | null>(null);
   
   const navigate = useNavigate();
 
@@ -27,6 +29,30 @@ export function HeroCalculator() {
     setResult(Math.round(total));
     setGelResult(Math.round(total * 2.7));
   }, [auctionPrice]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadCompanyCount = async () => {
+      try {
+        const companies = await fetchCompaniesFromApi();
+        if (!isCancelled) {
+          setCompanyCount(Array.isArray(companies) ? companies.length : 0);
+        }
+      } catch (error) {
+        console.error('[HeroCalculator] Failed to load company count', error);
+        if (!isCancelled) {
+          setCompanyCount(null);
+        }
+      }
+    };
+
+    void loadCompanyCount();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
@@ -97,7 +123,9 @@ export function HeroCalculator() {
             
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
                 <Icon icon="mdi:check-decagram" className="text-green-600" />
-                37 verified companies · Prices calculated instantly
+                {companyCount !== null
+                  ? `${companyCount} verified companies · Prices calculated instantly`
+                  : 'Verified companies · Prices calculated instantly'}
             </div>
         </div>
 

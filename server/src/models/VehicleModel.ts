@@ -92,6 +92,8 @@ export class VehicleModel extends BaseModel {
       drive?: string;
       source?: string;
       buyNow?: boolean;
+      vin?: string;
+      sourceLotId?: string;
     },
     limit: number = 50,
     offset: number = 0,
@@ -158,12 +160,22 @@ export class VehicleModel extends BaseModel {
     if (filters.buyNow) {
       conditions.push('buy_it_now = 1');
     }
+    if (filters.vin) {
+      conditions.push('vin LIKE ?');
+      params.push(`%${filters.vin}%`);
+    }
+    if (filters.sourceLotId) {
+      conditions.push('source_lot_id = ?');
+      params.push(filters.sourceLotId);
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
       SELECT
         id,
+        vin,
+        source_lot_id,
         brand_name,
         model_name,
         brand_name AS make,
@@ -224,6 +236,8 @@ export class VehicleModel extends BaseModel {
     drive?: string;
     source?: string;
     buyNow?: boolean;
+    vin?: string;
+    sourceLotId?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -280,6 +294,14 @@ export class VehicleModel extends BaseModel {
     if (filters.source) {
       conditions.push('source = ?');
       params.push(filters.source);
+    }
+    if (filters.vin) {
+      conditions.push('vin LIKE ?');
+      params.push(`%${filters.vin}%`);
+    }
+    if (filters.sourceLotId) {
+      conditions.push('source_lot_id = ?');
+      params.push(filters.sourceLotId);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
