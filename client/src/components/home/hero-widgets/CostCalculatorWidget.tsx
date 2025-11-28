@@ -11,15 +11,15 @@ export function CostCalculatorWidget() {
   if (!breakdown) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
-      <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
+    <div className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden w-full md:max-w-md md:mx-auto lg:max-w-none lg:mx-0">
+      <div className="bg-slate-50 px-4 py-3 md:px-5 md:py-3 lg:px-6 lg:py-4 border-b border-slate-100">
         <h3 className="font-bold text-slate-800 flex items-center gap-2">
           <Icon icon="mdi:calculator" className="text-primary" />
           {t('home.price_calculator.widget_title')}
         </h3>
       </div>
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-5 lg:p-6 space-y-5 md:space-y-6">
         {/* Inputs */}
         <div className="space-y-4">
           <div>

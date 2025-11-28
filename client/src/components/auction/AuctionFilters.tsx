@@ -103,7 +103,11 @@ export function AuctionFilters({
         <div className="flex items-center gap-2">
           <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="lg" className="h-10 px-4 gap-2 border-muted-foreground/20 hover:bg-muted/50">
+              <Button
+                variant="default"
+                size="lg"
+                className="h-10 px-4 gap-2 bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 shadow-sm"
+              >
                 <Icon icon="mdi:tune" className="w-5 h-5" />
                 <span>{t('common.filters')}</span>
                 {activeFilterLabels.length > 0 && (
@@ -279,8 +283,8 @@ export function AuctionFilters({
                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('auction.exact_year')}</span>
                        <Input 
                           type="number" 
-                          className="h-7 w-20 text-[10px] px-2 py-0 border-muted-foreground/30"
-                          placeholder="e.g. 2020" 
+                          className="h-7 w-24 text-[10px] px-2 py-0 border-muted-foreground/30"
+                          placeholder="მაგ: 2020" 
                           value={filters.exactYear}
                           onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
                         />

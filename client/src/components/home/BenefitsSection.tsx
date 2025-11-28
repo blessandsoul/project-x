@@ -42,22 +42,29 @@ export function BenefitsSection() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map((benefit) => (
-            <Card key={benefit.id} className="h-full border-muted/60">
-              <CardHeader className="space-y-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Card
+              key={benefit.id}
+              className="relative h-full border-muted/60"
+            >
+              <div className="flex h-full flex-col items-start">
+                <CardHeader className="w-full space-y-2 pr-16 pb-3">
+                  <CardTitle className="text-base font-semibold text-left">
+                    {t(`home.benefits.items.${benefit.id}.title`)}
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent className="pt-0 pr-6">
+                  <p className="max-w-xs text-sm text-left text-muted-foreground">
+                    {t(`home.benefits.items.${benefit.id}.description`)}
+                  </p>
+                </CardContent>
+
+                <div className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Icon icon={benefit.icon} className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <CardTitle className="text-base font-semibold">
-                  {t(`home.benefits.items.${benefit.id}.title`)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {t(`home.benefits.items.${benefit.id}.description`)}
-                </p>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>

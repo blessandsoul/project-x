@@ -1270,9 +1270,9 @@ const VehicleDetailsPage = () => {
               )}
             </div>
 
-            <CarfaxWidget />
+            {/* <CarfaxWidget /> */}
             
-            <DamageViewer vehicle={vehicle} />
+            {/* <DamageViewer vehicle={vehicle} /> */}
 
             <VehicleSpecs vehicle={vehicle} />
 

@@ -91,36 +91,37 @@ export function MiniBlogSection() {
           </Button>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3" role="list">
-          {POSTS.length === 0 ? (
-            <Card className="md:col-span-3 p-12 border-dashed">
-              <EmptyState
-                icon="mdi:file-document-outline"
-                title={t('home.blog.empty.title')}
-                description={t('home.blog.empty.description')}
-                action={(
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="inline-flex items-center gap-2"
-                  >
-                    <Link to="/catalog">
-                      <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
-                      <span>{t('home.blog.view_catalog_btn')}</span>
-                    </Link>
-                  </Button>
-                )}
-              />
-            </Card>
-          ) : (
-            POSTS.map((post, index) => (
-              <motion.article
-                key={post.id}
-                {...getCardMotionProps(index)}
-                role="listitem"
-                className="group relative cursor-pointer"
-              >
+        <div className="relative">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 pointer-events-none blur-[2px] md:blur-[3px] opacity-60" role="list">
+            {POSTS.length === 0 ? (
+              <Card className="md:col-span-3 p-12 border-dashed">
+                <EmptyState
+                  icon="mdi:file-document-outline"
+                  title={t('home.blog.empty.title')}
+                  description={t('home.blog.empty.description')}
+                  action={(
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="inline-flex items-center gap-2"
+                    >
+                      <Link to="/catalog">
+                        <Icon icon="mdi:view-grid" className="h-4 w-4" aria-hidden="true" />
+                        <span>{t('home.blog.view_catalog_btn')}</span>
+                      </Link>
+                    </Button>
+                  )}
+                />
+              </Card>
+            ) : (
+              POSTS.map((post, index) => (
+                <motion.article
+                  key={post.id}
+                  {...getCardMotionProps(index)}
+                  role="listitem"
+                  className="group relative cursor-pointer"
+                >
                 <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 group-hover:shadow-lg">
                   {post.image && (
                     <img
@@ -190,6 +191,7 @@ export function MiniBlogSection() {
               </motion.article>
             ))
           )}
+          </div>
         </div>
       </div>
     </section>

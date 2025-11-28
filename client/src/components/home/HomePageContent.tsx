@@ -8,11 +8,11 @@ const TestimonialsSectionLazy = lazy(() =>
   })),
 )
 
-const MiniBlogSectionLazy = lazy(() =>
-  import('@/components/home/MiniBlogSection').then((mod) => ({
-    default: mod.MiniBlogSection,
-  })),
-)
+// const MiniBlogSectionLazy = lazy(() =>
+//   import('@/components/home/MiniBlogSection').then((mod) => ({
+//     default: mod.MiniBlogSection,
+//   })),
+// )
 
 export const HomePageContent = () => {
   return (
@@ -29,10 +29,12 @@ export const HomePageContent = () => {
           <TestimonialsSectionLazy />
         </Suspense>
 
-        {/* Blog */}
+        {/* Blog (temporarily disabled) */}
+        {/**
         <Suspense fallback={null}>
           <MiniBlogSectionLazy />
         </Suspense>
+        */}
       </div>
     </main>
   )

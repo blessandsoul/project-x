@@ -117,7 +117,7 @@ export const CatalogFilters = ({
         <div className="relative">
           <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input 
-            placeholder="Tbilisi, Batumi..." 
+            placeholder="თბილისი, ბათუმი..." 
             className="pl-9 bg-white h-9 sm:h-10"
             ref={cityInputRef}
             defaultValue={initialCity}
