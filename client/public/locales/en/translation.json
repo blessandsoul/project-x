@@ -161,7 +161,7 @@
       "description": "Enter VIN or auction budget to see full estimated cost and move to trusted companies in one step.",
       "search_placeholder": "Search live auctions by make, model or year",
       "calculate_btn": "Calculate",
-      "verified_companies": "37 Verified Companies",
+      "verified_companies": "{{count}} Verified Companies",
       "fixed_prices": "Fixed Prices",
       "official_contracts": "Official Contracts"
     },

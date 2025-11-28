@@ -35,20 +35,6 @@ export function CostCalculatorWidget() {
               step={100}
             />
           </div>
-
-          <div>
-            <div className="flex justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase">{t('home.price_calculator.engine_volume')}</label>
-              <span className="font-mono font-bold text-slate-900">{values.engineVolume.toFixed(1)} L</span>
-            </div>
-            <Slider
-              value={[values.engineVolume]}
-              onValueChange={([v]) => updateValue('engineVolume', v)}
-              min={0.8}
-              max={6.0}
-              step={0.1}
-            />
-          </div>
         </div>
 
         <Separator />

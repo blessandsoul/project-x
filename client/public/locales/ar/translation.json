@@ -95,7 +95,7 @@
       "description": "أدخل رقم VIN أو ميزانية المزاد لمعرفة التكلفة التقديرية الكاملة والانتقال إلى الشركات الموثوقة بخطوة واحدة.",
       "search_placeholder": "ابحث في المزادات حسب الماركة أو الموديل أو السنة",
       "calculate_btn": "احسب",
-      "verified_companies": "37 شركة موثقة",
+      "verified_companies": "{{count}} شركة موثقة",
       "fixed_prices": "أسعار ثابتة",
       "official_contracts": "عقود رسمية"
     },

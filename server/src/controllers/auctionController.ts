@@ -12,6 +12,7 @@ const iaaData: any[] = require('../data/iaa.json');
 interface CalculateShippingRequest {
   address: string;
   source: 'copart' | 'iaai';
+  port?: string;
 }
 
 interface ShippingQuoteResult {
@@ -107,8 +108,9 @@ export class AuctionController {
       throw new ValidationError('Source must be "copart" or "iaai"');
     }
 
-    // Get distance from auction branch to Poti
-    const distanceMiles = await this.shippingQuoteService.getDistanceForAddress(address, source);
+    // Get distance from auction branch to selected port
+    const port = body.port || 'poti_georgia';
+    const distanceMiles = await this.shippingQuoteService.getDistanceForAddress(address, source, port);
 
     // Fetch all companies
     const anyFastify: any = this.fastify as any;

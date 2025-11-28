@@ -55,13 +55,13 @@ export function TestimonialCard({ item, index }: TestimonialCardProps) {
                 aria-label={t('common.verified')} 
               />
             </div>
-            {item.clientStats ? (
+            {/* {item.clientStats ? (
               <span className="text-[10px] text-muted-foreground">
                 {t('home.testimonials.card.client_since', { year: item.clientStats.since })}
               </span>
             ) : (
               <span className="text-[10px] text-muted-foreground">{item.companyName}</span>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export function TestimonialCard({ item, index }: TestimonialCardProps) {
       </blockquote>
 
       {/* Footer: Purchased Car (Compact) */}
-      {item.purchasedCar && (
+      {/* {item.purchasedCar && (
         <div className="mt-auto flex items-center gap-2 rounded-lg bg-muted/30 p-2 text-xs transition-colors group-hover:bg-muted/50">
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
             <Icon icon="mdi:car-hatchback" className="h-3 w-3 text-primary" />
@@ -88,7 +88,7 @@ export function TestimonialCard({ item, index }: TestimonialCardProps) {
             {t('home.testimonials.card.bought')}: <span className="text-foreground">{item.purchasedCar.year} {item.purchasedCar.model}</span>
           </span>
         </div>
-      )}
+      )} */}
     </motion.article>
   )
 }

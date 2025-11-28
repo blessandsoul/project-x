@@ -283,7 +283,21 @@ export class ShippingQuoteService {
   }
 
   /**
-   * Get distance from an auction branch address to Poti, Georgia.
+   * Port coordinates lookup
+   */
+  private getPortCoordinates(port: string): { lat: number; lon: number } {
+    const ports: { [key: string]: { lat: number; lon: number } } = {
+      poti_georgia: { lat: 42.1537, lon: 41.6714 },
+      klaipeda_lithuania: { lat: 55.7033, lon: 21.1443 },
+      odessa_ukraine: { lat: 46.4825, lon: 30.7233 },
+      jebel_ali_uae: { lat: 25.0657, lon: 55.1713 },
+    };
+    const defaultPort = { lat: 42.1537, lon: 41.6714 }; // Poti, Georgia
+    return ports[port] || defaultPort;
+  }
+
+  /**
+   * Get distance from an auction branch address to selected port.
    *
    * This is used by the catalog page to calculate shipping costs
    * when a user selects an auction branch. Results are cached in
@@ -291,46 +305,50 @@ export class ShippingQuoteService {
    *
    * @param address - Full address string (e.g. "6089 HIGHWAY 20, 30052")
    * @param source - Auction source (copart or iaai)
+   * @param port - Destination port identifier (e.g. "poti_georgia")
    */
-  async getDistanceForAddress(address: string, source: string): Promise<number> {
+  async getDistanceForAddress(address: string, source: string, port: string = 'poti_georgia'): Promise<number> {
     const trimmedAddress = (address || '').trim();
     if (!trimmedAddress) {
       throw new ValidationError('Address is required');
     }
 
-    const cacheKey = `${source}:${trimmedAddress}`.toLowerCase();
-    const POTI_LAT = 42.1537;
-    const POTI_LON = 41.6714;
+    const portCoords = this.getPortCoordinates(port);
+    const cacheKey = `${source}:${port}:${trimmedAddress}`.toLowerCase();
 
     // 1) Check in-memory cache
     const cached = this.yardGeoCache.get(cacheKey);
     if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon)) {
-      const distance = this.haversineMiles(cached.lat, cached.lon, POTI_LAT, POTI_LON);
+      const distance = this.haversineMiles(cached.lat, cached.lon, portCoords.lat, portCoords.lon);
       if (Number.isFinite(distance) && distance > 0) {
         return Math.round(distance);
       }
     }
 
-    // 2) Check database cache
+    // 2) Check database cache - but we need to recalculate distance for different ports
+    // So we only use cached coordinates, not cached distance
     const anyFastifyDb: any = this.fastify as any;
     const db = anyFastifyDb.mysql;
     if (db && typeof db.execute === 'function') {
       try {
         const [rows] = await db.execute(
-          'SELECT lat, lon, distance_to_poti_miles FROM auction_branch_distances WHERE address = ? AND source = ? LIMIT 1',
+          'SELECT lat, lon FROM auction_branch_distances WHERE address = ? AND source = ? LIMIT 1',
           [trimmedAddress, source],
         );
 
         if (Array.isArray(rows) && rows.length > 0) {
           const row: any = rows[0];
-          const precomputed = Number(row.distance_to_poti_miles);
+          const lat = Number(row.lat);
+          const lon = Number(row.lon);
 
-          if (Number.isFinite(precomputed) && precomputed > 0) {
+          if (Number.isFinite(lat) && Number.isFinite(lon)) {
             // Update in-memory cache
-            if (row.lat != null && row.lon != null) {
-              this.yardGeoCache.set(cacheKey, { lat: row.lat, lon: row.lon });
+            this.yardGeoCache.set(cacheKey, { lat, lon });
+            // Calculate distance to selected port
+            const distance = this.haversineMiles(lat, lon, portCoords.lat, portCoords.lon);
+            if (Number.isFinite(distance) && distance > 0) {
+              return Math.round(distance);
             }
-            return precomputed;
           }
         }
       } catch (error) {
@@ -349,7 +367,7 @@ export class ShippingQuoteService {
     }
 
     const originCoords = { lat: origin.lat, lon: origin.lon };
-    const distance = this.haversineMiles(originCoords.lat, originCoords.lon, POTI_LAT, POTI_LON);
+    const distance = this.haversineMiles(originCoords.lat, originCoords.lon, portCoords.lat, portCoords.lon);
     const roundedDistance = Number.isFinite(distance) && distance > 0 ? Math.round(distance) : 8000;
 
     // Update in-memory cache

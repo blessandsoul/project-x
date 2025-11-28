@@ -31,6 +31,8 @@ interface CatalogFiltersProps {
   auctionBranches?: Array<{ name: string; address: string }>;
   auctionBranchValue?: string;
   onAuctionBranchChange?: (value: string) => void;
+  portValue?: string;
+  onPortChange?: (value: string) => void;
 }
 
 export const CatalogFilters = ({
@@ -55,6 +57,8 @@ export const CatalogFilters = ({
   auctionBranches = [],
   auctionBranchValue,
   onAuctionBranchChange,
+   portValue,
+   onPortChange,
 }: CatalogFiltersProps) => {
   const { t } = useTranslation();
 
@@ -87,8 +91,8 @@ export const CatalogFilters = ({
 
   const filterContent = (
     <div className="space-y-3 sm:space-y-6">
-      {/* Auction Filters */}
-      <div className="space-y-2">
+      {/* Auction Filters (mobile only) */}
+      <div className="space-y-2 block lg:hidden">
         <div className="grid grid-cols-1 gap-2">
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -144,6 +148,28 @@ export const CatalogFilters = ({
                     </SelectItem>
                   ))}
                 </div>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t('catalog.filters.port', 'Port')}
+            </label>
+            <Select
+              value={portValue ?? 'poti_georgia'}
+              onValueChange={(value) => {
+                onPortChange?.(value);
+              }}
+            >
+              <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
+                <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
+                <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
+                <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
               </SelectContent>
             </Select>
           </div>

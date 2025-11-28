@@ -44,12 +44,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
     return null;
   }, [company, t]);
 
-  // 2. Mock Review Snippet (Simulating backend data)
-  const reviewSnippet = useMemo(() => {
-    if (company.rating >= 4.8) return "Привезли BMW X5 за 45 дней, состояние идеальное. Рекомендую!"; // Keep as is or use a generic translated string
-    if (company.rating >= 4.5) return "Хорошая коммуникация, менеджер всегда на связи.";
-    return "Прозрачные условия и честный расчет стоимости.";
-  }, [company.rating]);
+
 
   // 3. Mock Online Status (Randomized for demo, heavily weighted to 'online' for high rated)
   const isOnline = useMemo(() => company.rating > 4.5, [company.rating]);
@@ -195,13 +190,6 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                 </div>
              </div>
 
-             {/* Social Proof: Review Snippet */}
-             <div className="hidden sm:flex items-start gap-2 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50 max-w-xl">
-                <Icon icon="mdi:format-quote-open" className="h-4 w-4 text-slate-300 shrink-0 mt-0.5" />
-                <p className="text-xs text-slate-600 italic line-clamp-1">
-                   "{reviewSnippet}"
-                </p>
-             </div>
           </div>
         </div>
 

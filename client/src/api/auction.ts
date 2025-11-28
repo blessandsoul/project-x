@@ -27,9 +27,11 @@ export async function fetchIaaiLocations(): Promise<AuctionLocation[]> {
 export async function calculateShipping(
   address: string,
   source: 'copart' | 'iaai',
+  port?: string,
 ): Promise<CalculateShippingResponse> {
   return apiPost<CalculateShippingResponse>('/auction/calculate-shipping', {
     address,
     source,
+    port: port || 'poti_georgia',
   })
 }

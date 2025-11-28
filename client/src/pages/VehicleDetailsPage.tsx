@@ -263,6 +263,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
             </div>
 
             {/* Lock Overlay */}
+            {/* 
             {!isUnlocked && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] p-4 text-center">
                     <div className="bg-background/95 p-4 sm:p-6 rounded-xl shadow-lg border border-border/50 max-w-xs space-y-3 sm:space-y-4">
@@ -293,6 +294,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                     </div>
                 </div>
             )}
+            */}
         </div>
     )
 }
@@ -980,10 +982,6 @@ const VehicleDetailsPage = () => {
             {/* Transparency Table with Filters */}
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
               <div className="p-4 border-b bg-muted/10 space-y-4">
-                <div className="bg-indigo-50/50 border border-indigo-100/50 text-indigo-900/80 px-3 py-2 rounded-md flex items-start sm:items-center gap-2 text-[11px] font-medium">
-                    <Icon icon="mdi:gift-outline" className="h-3.5 w-3.5 mt-0.5 sm:mt-0 shrink-0" />
-                    <span dangerouslySetInnerHTML={{ __html: t('vehicle.quotes.promo_text') }} />
-                </div>
 
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
@@ -1165,7 +1163,7 @@ const VehicleDetailsPage = () => {
               )}
             </div>
 
-            <DamageViewer vehicle={vehicle} />
+            {/* <DamageViewer vehicle={vehicle} /> */}
 
             <SimilarVehicles baseVehicleId={vehicle.id} />
           </div>
@@ -1192,22 +1190,26 @@ const VehicleDetailsPage = () => {
               <CardContent className="p-6 space-y-6">
                 {/* Breakdown */}
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.auction_price')}</span>
-                    <Input
-                      type="number"
-                      className="h-8 w-32 text-right text-sm"
-                      value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^0-9.]/g, '')
-                        if (!raw) {
-                          setManualAuctionPrice(0)
-                          return
-                        }
-                        const next = Number(raw)
-                        setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
-                      }}
-                    />
+                  <div className="flex justify-between items-center py-1 border-b border-dashed gap-3">
+                    <span className="text-muted-foreground text-sm">{t('vehicle.price_card.auction_price')}</span>
+                    <div className="flex items-center gap-1 group cursor-text">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        className="h-6 w-14 sm:w-16 text-right text-sm font-medium px-0 bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                        value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '')
+                          if (!raw) {
+                            setManualAuctionPrice(0)
+                            return
+                          }
+                          const next = Number(raw)
+                          setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
+                        }}
+                      />
+                      <Icon icon="mdi:pencil" className="h-3 w-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    </div>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed">
                     <span className="text-muted-foreground">{t('vehicle.price_card.shipping')}</span>

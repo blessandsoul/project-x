@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { fetchCompaniesFromApi } from '@/services/companiesApi';
 
 export function HeroWizard() {
   const { t } = useTranslation();
@@ -19,6 +20,32 @@ export function HeroWizard() {
     // Always search in live auctions by query
     navigate(`/auction-listings?q=${encodeURIComponent(cleanInput)}`);
   };
+
+  const [companyCount, setCompanyCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadCompanyCount = async () => {
+      try {
+        const companies = await fetchCompaniesFromApi();
+        if (!isCancelled) {
+          setCompanyCount(Array.isArray(companies) ? companies.length : 0);
+        }
+      } catch (error) {
+        console.error('[HeroWizard] Failed to load company count', error);
+        if (!isCancelled) {
+          setCompanyCount(null);
+        }
+      }
+    };
+
+    void loadCompanyCount();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   return (
     <div className="w-full max-w-3xl mx-auto text-center space-y-6">
@@ -63,7 +90,9 @@ export function HeroWizard() {
           <div className="bg-green-100 text-green-700 p-1 rounded-full">
             <Icon icon="mdi:check" className="h-3 w-3" />
           </div>
-          {t('home.hero.verified_companies')}
+          {companyCount !== null
+            ? t('home.hero.verified_companies', { count: companyCount })
+            : t('home.hero.verified_companies', { count: 0 })}
         </div>
         <div className="flex items-center gap-2">
           <div className="bg-green-100 text-green-700 p-1 rounded-full">
