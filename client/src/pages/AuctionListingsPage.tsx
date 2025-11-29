@@ -184,6 +184,7 @@ const AuctionListingsPage = () => {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareResult, setCompareResult] = useState<VehiclesCompareResponse | null>(null);
   const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
+  const [watchedVehicleIds, setWatchedVehicleIds] = useState<number[]>([]);
   const { data: calcData, isLoading: isCalcLoading, error: calcError, calculateQuotes } =
     useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
@@ -1104,11 +1105,8 @@ const AuctionListingsPage = () => {
                   isLoadingModels={isLoadingModels}
                   onApply={applyFilters}
                   onReset={resetFilters}
-                  onDrawerReset={resetDrawerFilters}
                   activeFilterLabels={activeFilterLabels}
                   onRemoveFilter={handleRemoveFilter}
-                  isOpen={isAdvancedFiltersOpen}
-                  onOpenChange={setIsAdvancedFiltersOpen}
                 />
               </div>
 
@@ -1224,6 +1222,7 @@ const AuctionListingsPage = () => {
                            priority={idx < 4}
                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
                            showCompareCheckbox={showCompareCheckboxes}
+                           isWatched={watchedVehicleIds.includes(item.vehicle_id ?? item.id)}
                            onToggleSelect={(checked: boolean) => {
                               const id = item.vehicle_id ?? item.id;
                               const isMobile = window.innerWidth < 640;
@@ -1233,7 +1232,12 @@ const AuctionListingsPage = () => {
                                  checked ? (prev.length < limit ? [...prev, id] : prev) : prev.filter(pid => pid !== id)
                               );
                            }}
-                           onOpenGallery={() => handleOpenBackendGallery(item, item.primary_photo_url || item.primary_thumb_url || '')}
+                           onToggleWatch={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              setWatchedVehicleIds(prev => 
+                                 prev.includes(id) ? prev.filter(wid => wid !== id) : [...prev, id]
+                              );
+                           }}
                            onCalculate={() => {
                               const id = item.vehicle_id ?? item.id;
                               setIsCalcModalOpen(true);

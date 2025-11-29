@@ -394,7 +394,13 @@
       "distance": "დისტანცია",
       "other_offers": "სხვა შეთავაზებები",
       "no_other_offers": "სხვა შეთავაზებები არ არის"
-    }
+    },
+    "watch": "Watch List",
+    "add_to_watchlist": "დაკვირვების სიაში დამატება",
+    "remove_from_watchlist": "დაკვირვების სიიდან წაშლა",
+    "join_live_auction": "Join Live Auction",
+    "view_vehicle_details": "მანქანის დეტალების ნახვა",
+    "more_filters": "დამატებითი ფილტრები"
   },
   "pages": {
     "auction": {

@@ -19,11 +19,12 @@ interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
   isSelected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
-  onOpenGallery: () => void;
   onCalculate: () => void;
   onViewDetails: () => void;
   showCompareCheckbox?: boolean;
   priority?: boolean;
+  onToggleWatch?: () => void;
+  isWatched?: boolean;
 }
 
 const formatMoney = (
@@ -40,11 +41,12 @@ export function AuctionVehicleCard({
   item,
   isSelected = false,
   onToggleSelect,
-  onOpenGallery,
   onCalculate,
   onViewDetails,
   showCompareCheckbox = false,
   priority = false,
+  onToggleWatch,
+  isWatched = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
   const [isMobile, setIsMobile] = useState(false);
@@ -131,9 +133,9 @@ export function AuctionVehicleCard({
           <div className="relative w-28 flex-shrink-0 overflow-hidden bg-muted/20">
             <button
               type="button"
-              className="w-full h-full focus:outline-none cursor-zoom-in"
-              onClick={onOpenGallery}
-              aria-label={t('common.view_photos')}
+              className="w-full h-full focus:outline-none cursor-pointer"
+              onClick={onViewDetails}
+              aria-label={t('auction.view_vehicle_details')}
             >
               <img
                 src={mainPhotoUrl}
@@ -172,7 +174,7 @@ export function AuctionVehicleCard({
           <CardContent className="flex flex-row flex-1 p-2 gap-2 min-w-0">
             {/* Left: Info */}
             <div className="flex flex-col flex-1 min-w-0 gap-0.5 justify-between h-full">
-              <div>
+              <div className="space-y-1">
                 <h3 className="font-semibold text-[15px] leading-tight truncate" title={`${item.year} ${item.make} ${item.model}`}>
                   {item.year} {item.make} {item.model}
                 </h3>
@@ -186,10 +188,29 @@ export function AuctionVehicleCard({
                     {translateFuel(item.fuel_type)}
                   </span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-primary leading-tight">
+                    {formatMoney(displayPrice)}
+                  </span>
+                  {onToggleWatch && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleWatch();
+                      }}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                        isWatched 
+                          ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                          : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
+                      }`}
+                      title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
+                    >
+                      <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-3.5 h-3.5" />
+                      <span>{t('auction.watch')}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-[15px] font-bold text-primary leading-tight">
-                {formatMoney(displayPrice)}
-              </span>
             </div>
             {/* Right: Actions stacked vertically */}
             <div className="flex flex-col justify-between items-end h-full">
@@ -202,9 +223,9 @@ export function AuctionVehicleCard({
               <button
                 className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors text-[11px] font-semibold min-w-[44px]"
                 onClick={onViewDetails}
-                title={t('common.details')}
+                title={t('auction.join_live_auction')}
               >
-                {t('common.details')}
+                {t('auction.join_live_auction')}
               </button>
             </div>
           </CardContent>
@@ -227,9 +248,9 @@ export function AuctionVehicleCard({
         <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
           <button
             type="button"
-            className="w-full h-full focus:outline-none cursor-zoom-in"
-            onClick={onOpenGallery}
-            aria-label={t('common.view_photos')}
+            className="w-full h-full focus:outline-none cursor-pointer"
+            onClick={onViewDetails}
+            aria-label={t('auction.view_vehicle_details')}
           >
             <img
               src={mainPhotoUrl}
@@ -358,35 +379,53 @@ export function AuctionVehicleCard({
             </div>
 
             {/* Footer: Price & Actions */}
-            <div className="pt-1 flex items-end justify-between gap-2">
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
-              </span>
-              <span className="text-xl font-extrabold text-primary tracking-tight">
-                {formatMoney(displayPrice)}
-              </span>
+            <div className="pt-1 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
+                  </span>
+                  <span className="text-xl font-extrabold text-primary tracking-tight">
+                    {formatMoney(displayPrice)}
+                  </span>
+                </div>
+                {onToggleWatch && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleWatch();
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isWatched 
+                        ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm' 
+                        : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
+                    }`}
+                    title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
+                  >
+                    <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
+                    <span>{t('auction.watch')}</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
+                  onClick={onCalculate}
+                  title={t('auction.calculate_cost')}
+                >
+                  <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 h-9 rounded-full px-4 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  onClick={onViewDetails}
+                >
+                  {t('auction.join_live_auction')}
+                </Button>
+              </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
-                onClick={onCalculate}
-                title={t('auction.calculate_cost')}
-              >
-                <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 rounded-full px-5 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                onClick={onViewDetails}
-              >
-                {t('common.details')}
-              </Button>
-            </div>
-          </div>
           </div>
         </CardContent>
       </Card>

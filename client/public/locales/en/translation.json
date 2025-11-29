@@ -380,7 +380,13 @@
       "distance": "Distance",
       "other_offers": "Other Offers",
       "no_other_offers": "No other offers"
-    }
+    },
+    "watch": "Watch List",
+    "add_to_watchlist": "Add to watchlist",
+    "remove_from_watchlist": "Remove from watchlist",
+    "join_live_auction": "Live Auction",
+    "view_vehicle_details": "View vehicle details",
+    "more_filters": "More Filters"
   },
   "pages": {
     "auction": {
