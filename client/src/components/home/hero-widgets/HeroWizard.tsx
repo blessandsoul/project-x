@@ -5,8 +5,13 @@ import { Icon } from '@iconify/react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { fetchCompaniesFromApi } from '@/services/companiesApi';
+import { cn } from '@/lib/utils';
 
-export function HeroWizard() {
+type HeroWizardProps = {
+  className?: string;
+};
+
+export function HeroWizard({ className }: HeroWizardProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
   const navigate = useNavigate();
@@ -48,21 +53,8 @@ export function HeroWizard() {
   }, []);
 
   return (
-    <div className="w-full max-w-3xl mx-auto text-center space-y-6">
-      <div className="space-y-3 md:space-y-4">
-        <h1
-          id="home-hero-heading"
-          className="text-3xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]"
-        >
-          <span className="block text-primary mb-2">{t('home.hero.title')}</span>
-          {t('home.hero.subtitle')}
-        </h1>
-        <p className="text-base md:text-lg text-slate-600 max-w-xl mx-auto">
-          {t('home.hero.description')}
-        </p>
-      </div>
-
-      <div className="bg-white p-2 rounded-2xl shadow-2xl shadow-primary/10 border border-slate-100 relative z-10 transform transition-all hover:scale-[1.01]">
+    <div className={cn('w-full space-y-5', className)}>
+      <div className="bg-white/5 backdrop-blur-md p-2 rounded-2xl shadow-2xl shadow-primary/20 border border-white/10 relative z-10 transform transition-all hover:scale-[1.01]">
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2">
           <div className="relative flex-1">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
@@ -85,24 +77,24 @@ export function HeroWizard() {
         </form>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3 md:gap-6 text-xs md:text-sm font-medium text-slate-500">
+      <div className="flex flex-wrap justify-center gap-3 md:gap-6 text-xs md:text-sm font-medium text-white/80">
         <div className="flex items-center gap-2">
-          <div className="bg-green-100 text-green-700 p-1 rounded-full">
-            <Icon icon="mdi:check" className="h-3 w-3" />
+          <div className="bg-white/15 text-white p-1 rounded-full">
+            <Icon icon="mdi:check" className="h-3 w-3" aria-hidden="true" />
           </div>
           {companyCount !== null
             ? t('home.hero.verified_companies', { count: companyCount })
             : t('home.hero.verified_companies', { count: 0 })}
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-green-100 text-green-700 p-1 rounded-full">
-            <Icon icon="mdi:check" className="h-3 w-3" />
+          <div className="bg-white/15 text-white p-1 rounded-full">
+            <Icon icon="mdi:check" className="h-3 w-3" aria-hidden="true" />
           </div>
           {t('home.hero.fixed_prices')}
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-green-100 text-green-700 p-1 rounded-full">
-            <Icon icon="mdi:check" className="h-3 w-3" />
+          <div className="bg-white/15 text-white p-1 rounded-full">
+            <Icon icon="mdi:check" className="h-3 w-3" aria-hidden="true" />
           </div>
           {t('home.hero.official_contracts')}
         </div>

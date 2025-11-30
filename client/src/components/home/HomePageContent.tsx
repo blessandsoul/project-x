@@ -1,41 +1,15 @@
-import { Suspense, lazy } from 'react'
 import { HeroSection } from '@/components/home/HeroSection'
-import { BenefitsSection } from '@/components/home/BenefitsSection'
 
-const TestimonialsSectionLazy = lazy(() =>
-  import('@/components/home/testimonials').then((mod) => ({
-    default: mod.TestimonialsSection,
-  })),
-)
+export type HomeSectionId = 'hero' | 'testimonials'
 
-// const MiniBlogSectionLazy = lazy(() =>
-//   import('@/components/home/MiniBlogSection').then((mod) => ({
-//     default: mod.MiniBlogSection,
-//   })),
-// )
+interface HomePageContentProps {
+  onSectionChange?: (id: HomeSectionId) => void
+}
 
-export const HomePageContent = () => {
+export const HomePageContent = ({ onSectionChange }: HomePageContentProps) => {
   return (
-    <main className="flex-1" role="main" aria-labelledby="home-hero-heading">
-      {/* Hero & Best Offers (inside HeroSection) */}
-      <HeroSection />
-
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6">
-        {/* Why Our Platform */}
-        <BenefitsSection />
-
-        {/* What clients say */}
-        <Suspense fallback={null}>
-          <TestimonialsSectionLazy />
-        </Suspense>
-
-        {/* Blog (temporarily disabled) */}
-        {/**
-        <Suspense fallback={null}>
-          <MiniBlogSectionLazy />
-        </Suspense>
-        */}
-      </div>
+    <main className="flex-1 overflow-hidden" role="main" aria-labelledby="home-hero-heading">
+      <HeroSection onSectionChange={onSectionChange} />
     </main>
   )
 }

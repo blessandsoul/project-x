@@ -115,20 +115,20 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
   return (
     <header
       className={cn(
-        'z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transform transition-transform duration-200 ease-out will-change-transform',
-        isSticky && 'sticky top-0',
+        'fixed top-0 z-40 w-full border-b border-white/10 bg-slate-900/20 backdrop-blur-md transition-all transform duration-200 ease-out will-change-transform',
+        isSticky && '',
         isHidden ? '-translate-y-full' : 'translate-y-0'
       )}
       role="banner"
     >
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-5">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
             <Icon icon="mdi:shield-check" className="h-6 w-6" />
           </div>
-          <span className="hidden sm:inline-block font-sans text-xl font-bold tracking-tight text-slate-900">
-            Trusted<span className="font-medium text-slate-600">Importers</span>
+          <span className="inline-block font-sans text-xl font-bold tracking-tight text-white">
+            Trusted<span className="font-medium text-white/80">Importers</span>
           </span>
         </Link>
 
@@ -141,7 +141,9 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
               className={({ isActive }) =>
                 cn(
                   'transition-colors hover:text-foreground',
-                  isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
+                  isActive 
+                    ? 'text-white font-medium' 
+                    : 'text-white/70 hover:text-white transition-colors'
                 )
               }
             >
@@ -165,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                 asChild
                 variant="outline"
                 size="sm"
-                className="hidden sm:flex"
+                className="hidden sm:flex bg-transparent text-white border-white/20 hover:bg-white/10 hover:text-white"
               >
                 <Link to="/login">{t('header.sign_in')}</Link>
               </Button>
@@ -336,9 +338,6 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
             </Sheet>
         </div>
       </div>
-      
-      {/* Mobile-only bottom border for separation */}
-      <div className="h-px bg-slate-100 lg:hidden" />
     </header>
   );
 };

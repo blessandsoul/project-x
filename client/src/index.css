@@ -8,11 +8,35 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: mainRegular;
+  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainMedium;
+  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainSemiBold;
+  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainBold;
+  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   /* Modern Color Palette 2025 */
-  --color-background: #ffffff;
+  --color-background: transparent;
   --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
 
   --color-card: #ffffff;
@@ -73,8 +97,9 @@
 }
 
 :root[lang="ka"] {
-  --font-sans: "Noto Sans Georgian", sans-serif;
-  --font-heading: "Noto Sans Georgian", sans-serif;
+  /* Use custom main* fonts for Georgian locale across all pages */
+  --font-sans: mainMedium;
+  --font-heading: mainBold;
 }
 
 .dark {
@@ -149,8 +174,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: var(--font-sans);
+    background: transparent;
   }
   h1,
   h2,
@@ -204,6 +230,41 @@
     text-wrap: balance;
   }
 
+  /* Hero gradient mesh background with floating blurred spheres */
+  .hero-gradient-mesh {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 0% 0%, #00cc99 0%, #00a87e 40%),
+      radial-gradient(circle at 100% 0%, #00b88a 0%, #008f6a 35%),
+      radial-gradient(circle at 50% 100%, #00cc99 0%, #006b4a 45%);
+    background-color: #00a87e;
+    isolation: isolate;
+  }
+
+  .hero-gradient-mesh::before,
+  .hero-gradient-mesh::after {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.24), transparent 55%),
+      radial-gradient(circle at 80% 20%, rgba(0, 255, 200, 0.35), transparent 55%),
+      radial-gradient(circle at 50% 80%, rgba(0, 120, 80, 0.45), transparent 60%);
+    filter: blur(40px);
+    opacity: 0.8;
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  .hero-gradient-mesh::before {
+    animation: heroMeshFloatSlow 48s ease-in-out infinite alternate;
+  }
+
+  .hero-gradient-mesh::after {
+    animation: heroMeshFloatSlow 60s ease-in-out infinite alternate-reverse;
+  }
+
   /* Dialog Animations */
   .dialog-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.35s ease-out forwards;
@@ -248,6 +309,74 @@
   }
 }
 
+@keyframes heroMeshFloatSlow {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-4%, 2%, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(3%, -3%, 0) scale(1.02);
+  }
+  75% {
+    transform: translate3d(-2%, -4%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(4%, 3%, 0) scale(1.03);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+@keyframes float-slower {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-40px, 40px) scale(1.15);
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(25px, 25px) scale(1.05);
+  }
+  75% {
+    transform: translate(-30px, -20px) scale(0.95);
+  }
+}
+
+@keyframes scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-33.333%);
+  }
+}
+
+.animate-scroll-vertical {
+  animation: scroll-vertical 20s linear infinite;
+}
+
+.animate-scroll-vertical:hover {
+  animation-play-state: paused;
+}
+
 @keyframes dialogOverlayFadeIn {
   from {
     opacity: 0;
@@ -264,6 +393,26 @@
   to {
     opacity: 0;
   }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #004700; /* Primary Dark */
+  border-radius: 5px;
+  border: 2px solid #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #006b4a;
 }
 
 @keyframes dialogContentIn {
@@ -351,4 +500,14 @@
 
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { MobileStickyCta } from '@/components/home/MobileStickyCta'
 import { PageLoader } from '@/components/ui/page-loader'
 import HomePage from './pages/HomePage.tsx'
 import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
@@ -175,7 +174,6 @@ function AppRoutes() {
           />
         </Routes>
       </AnimatePresence>
-      <MobileStickyCta />
     </>
   )
 }

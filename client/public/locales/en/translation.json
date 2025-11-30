@@ -257,6 +257,43 @@
           "3": "SUV segment is popular"
         }
       }
+    },
+    "how_it_works": {
+      "badge": "How It Works",
+      "title": "Import Your Car in 4 Simple Steps",
+      "subtitle": "We've made the process as simple as possible. Just follow these steps and get your car delivered.",
+      "steps": {
+        "search": {
+          "title": "Search & Find",
+          "description": "Browse our catalog of verified import companies and compare their services and prices."
+        },
+        "compare": {
+          "title": "Compare Offers",
+          "description": "Review detailed quotes, ratings, and reviews to find the best deal for your needs."
+        },
+        "choose": {
+          "title": "Choose Company",
+          "description": "Select your preferred company and submit your request. They'll handle everything."
+        },
+        "import": {
+          "title": "Get Your Car",
+          "description": "Track your shipment and receive your car at your doorstep with all documents ready."
+        }
+      },
+      "second_slide": {
+        "title": "Get Your Car Delivered",
+        "description": "We'll handle all the paperwork and logistics, so you can focus on what matters most - getting your car delivered safely and efficiently.",
+        "steps": {
+          "step1": {
+            "title": "Track Your Shipment",
+            "description": "Stay up-to-date on the status of your shipment and receive notifications when your car is on its way."
+          },
+          "step2": {
+            "title": "Receive Your Car",
+            "description": "Get your car delivered right to your doorstep, with all necessary documents and paperwork taken care of."
+          }
+        }
+      }
     }
   },
   "footer": {
