@@ -36,6 +36,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "BPG Nateli";
+  src: url("/font/bpg_nateli.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -101,9 +109,12 @@
 }
 
 :root[lang="ka"] {
-  /* Use custom main* fonts for Georgian locale across all pages */
-  --font-sans: mainMedium;
-  --font-heading: mainBold;
+  /* Use local BPG Nateli font for Georgian locale across all pages */
+  --font-sans: "BPG Nateli", var(--font-georgian), system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-heading: "BPG Nateli", var(--font-georgian), system-ui, sans-serif;
+  --font-georgian: "BPG Nateli", "Noto Sans Georgian", sans-serif;
 }
 
 .dark {
