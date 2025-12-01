@@ -7,6 +7,21 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        salmon: {
+          50: '#fff5f3',
+          100: '#ffe8e3',
+          200: '#ffd5cc',
+          300: '#ffb8a8',
+          400: '#ff8f74',
+          500: '#fa7052',
+          600: '#e8542f',
+          700: '#c44325',
+          800: '#a23b22',
+          900: '#863624',
+          950: '#49190e',
+        },
+      },
       animation: {
         'float-slow': 'float-slow 20s ease-in-out infinite',
         'float-slower': 'float-slower 25s ease-in-out infinite',

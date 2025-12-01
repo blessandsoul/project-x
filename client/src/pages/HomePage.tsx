@@ -9,7 +9,7 @@ const HomePage = () => {
   const { loading } = useHomePageState();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#1F1F1F]">
       <Header navigationItems={navigationItems} />
 
       {loading ? (

@@ -6,7 +6,8 @@ import { BENEFITS } from '@/components/home/BenefitsSection';
 import { PhoneCompanyPreview } from './hero-widgets/PhoneCompanyPreview';
 import { TabletAuctionPreview } from './hero-widgets/TabletAuctionPreview';
 import { HeroCalculator } from './hero-widgets/HeroCalculator';
-import { HowItWorksSlide } from './HowItWorksSlide';
+import { TestimonialsSection } from './testimonials';
+import { HeroFloatingOrbs } from './hero-widgets/HeroFloatingOrbs';
 
 interface HeroSectionProps {
   onSectionChange?: (id: 'hero' | 'testimonials') => void;
@@ -23,6 +24,9 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
   }, [activeSlide, onSectionChange]);
 
   const handleWheel = (event: WheelEvent<HTMLElement>) => {
+    // Disable wheel scrolling on mobile (only enable on desktop lg+)
+    if (window.innerWidth < 1024) return;
+    
     if (isTransitioning) return;
 
     const direction = event.deltaY;
@@ -59,17 +63,24 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
       id="home-hero-section"
       ref={sectionRef}
       onWheel={handleWheel}
-      className="relative border-b hero-gradient-mesh min-h-screen flex items-center overflow-hidden bg-[#1F1F1F]"
+      className="relative hero-gradient-mesh min-h-screen flex items-center overflow-hidden bg-[#1F1F1F] lg:block"
     >
-      {/* Simple animated background - only soft green blobs + slight dark overlay */}
+      {/* Enhanced animated background - deeper greens + warm orange accents */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {/* Base green blurred blobs (static) */}
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-emerald-500/25 rounded-full blur-[100px]" />
-        <div className="absolute top-1/4 -right-48 w-[600px] h-[600px] bg-green-500/20 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-48 left-1/4 w-[550px] h-[550px] bg-teal-500/20 rounded-full blur-[100px]" />
+        {/* Base green blurred blobs (static, more vivid) */}
+        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-emerald-400/45 rounded-full blur-[110px]" />
+        <div className="absolute top-1/4 -right-52 w-[640px] h-[640px] bg-emerald-500/35 rounded-full blur-[130px]" />
+        <div className="absolute -bottom-52 left-1/4 w-[580px] h-[580px] bg-teal-400/35 rounded-full blur-[110px]" />
+
+        {/* Warm orange glow behind tablet/phone (stronger and larger) */}
+        <div className="absolute top-[28%] right-[6%] w-[520px] h-[520px] bg-orange-400/40 rounded-full blur-[120px]" />
+        <div className="absolute top-[55%] right-[0%] w-[460px] h-[460px] bg-amber-300/32 rounded-full blur-[110px]" />
+
+        {/* Floating Orbs & Ring Waves - Red/Salmon accent elements */}
+        <HeroFloatingOrbs />
 
         {/* Subtle dark overlay to slightly mute the background */}
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/35" />
       </div>
       
       {/* Content container */}
@@ -134,13 +145,19 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
           </div>
 
           {/* Right: Phone */}
-          {/* Wrapper without hover state; interactions are driven by iPad peer-hover */}
+          {/* Wrapper - uses both group and peer logic for robust hover detection */}
+          {/* pointer-events-none on wrapper ensures we only trigger hover when touching the actual devices (children) */}
           <div
-            className="flex items-start justify-end relative will-change-transform transition-all duration-500 ease-out"
+            className="group flex items-start justify-end relative will-change-transform transition-all duration-500 ease-out pointer-events-none"
             style={rightColumnStyle}
           >
-            {/* iPad - Auction Catalog (Behind, rotated) - Hidden on mobile/tablet */}
-            <div className="hidden xl:block absolute right-[200px] top-1/2 -translate-y-1/2 w-[380px] h-[510px] rotate-[-8deg] z-10 transition-transform duration-500 ease-out hover:-translate-x-6 hover:scale-105 peer">
+            {/* iPad - Auction Catalog (Behind) */}
+            {/* Logic:
+                1. peer: allows iPhone to react when iPad is hovered
+                2. hover: moves itself when directly hovered
+                3. group-hover: moves itself when iPhone (part of group) is hovered
+            */}
+            <div className="peer hidden xl:block absolute right-[200px] top-1/2 -translate-y-1/2 w-[380px] h-[510px] rotate-[-8deg] z-10 transition-transform duration-500 ease-out hover:-translate-x-16 hover:scale-105 group-hover:-translate-x-16 group-hover:scale-105 cursor-pointer pointer-events-auto">
               {/* Ambient glow */}
               <div className="absolute inset-0 rounded-[45px] bg-gradient-to-br from-blue-500/20 via-purple-500/15 to-pink-500/20 blur-3xl opacity-50" aria-hidden="true" />
               
@@ -167,7 +184,11 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
             </div>
 
             {/* iPhone 15 Pro - Company Catalog */}
-            <div className="relative w-[280px] h-[570px] scale-[0.35] origin-top-right lg:scale-100 rotate-[5deg] z-20 transition-transform duration-500 ease-out peer-hover:translate-x-4 lg:peer-hover:translate-x-6">
+            {/* Logic:
+                1. peer-hover: moves right when iPad is hovered
+                2. group-hover: moves right when group (wrapper) is hovered
+            */}
+            <div className="relative w-[280px] h-[570px] scale-[0.35] origin-top-right lg:scale-100 rotate-[5deg] z-20 transition-transform duration-500 ease-out peer-hover:translate-x-12 peer-hover:rotate-[2deg] group-hover:translate-x-12 group-hover:rotate-[2deg] cursor-pointer pointer-events-auto">
               {/* Ambient glow */}
               <div className="absolute inset-0 rounded-[55px] bg-gradient-to-br from-primary/30 via-emerald-500/20 to-teal-500/30 blur-3xl opacity-60" aria-hidden="true" />
               
@@ -296,14 +317,14 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
         </div>
       </div>
 
-      {/* Slide 2: How It Works overlay, appears on top when activeSlide === 'testimonials' */}
-      <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
+      {/* Slide 2: How It Works overlay, appears on top when activeSlide === 'testimonials' - Desktop only */}
+      <div className="hidden lg:block absolute inset-0 z-20 flex items-center justify-center px-4 pointer-events-none">
         <div
           className={`w-full h-full transition-all duration-500 ease-out ${
             isHero ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-auto'
           }`}
         >
-          <HowItWorksSlide />
+          <TestimonialsSection />
         </div>
       </div>
     </section>

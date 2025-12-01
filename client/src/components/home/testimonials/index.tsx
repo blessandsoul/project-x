@@ -160,26 +160,9 @@ export function TestimonialsSection() {
           >
             {t('home.testimonials.title')}
           </h2>
-            {/* <div className="flex flex-wrap gap-2">
-              {['all', 'speed', 'price', 'quality', 'docs'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                    activeFilter === filter
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground ring-1 ring-border hover:bg-muted hover:text-foreground'
-                  }`}
-                  aria-pressed={activeFilter === filter}
-                >
-                  {t(`home.testimonials.filters.${filter}`)}
-                </button>
-              ))}
-            </div> */}
-          </div>
-          
-          <StatsWidget />
         </div>
+
+        <StatsWidget />
 
         {/* Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">

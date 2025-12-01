@@ -176,7 +176,7 @@
   body {
     @apply text-foreground antialiased;
     font-family: var(--font-sans);
-    background: transparent;
+    background: #020617;
   }
   h1,
   h2,
