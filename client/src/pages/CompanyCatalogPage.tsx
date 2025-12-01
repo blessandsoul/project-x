@@ -49,6 +49,8 @@ const CompanyCatalogPage = () => {
   const [selectedPort, setSelectedPort] = useState('poti_georgia');
   const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
   const branchSelectRef = useRef<HTMLButtonElement>(null);
+  const [desktopBranchOpen, setDesktopBranchOpen] = useState(false);
+  const [mobileBranchOpen, setMobileBranchOpen] = useState(false);
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -511,8 +513,8 @@ const CompanyCatalogPage = () => {
             </div>
 
             <div className="w-full lg:w-auto hidden lg:block">
-              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
-                <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+              <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border border-primary/60 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
+                <span className="text-[11px] font-semibold tracking-wider text-primary-foreground/80 uppercase">
                   {t('catalog.filters.auction', 'Auction shipping')}
                 </span>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -524,13 +526,16 @@ const CompanyCatalogPage = () => {
                         setSelectedAuctionBranch('');
                         if (value !== 'all') {
                           setBranchNeedsAttention(true);
-                          setTimeout(() => branchSelectRef.current?.click(), 100);
+                          setDesktopBranchOpen(true);
+                          setMobileBranchOpen(false);
                         } else {
                           setBranchNeedsAttention(false);
+                          setDesktopBranchOpen(false);
+                          setMobileBranchOpen(false);
                         }
                       }}
                     >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -543,6 +548,8 @@ const CompanyCatalogPage = () => {
 
                   <div className="flex-1 min-w-[180px]">
                     <Select
+                      open={desktopBranchOpen}
+                      onOpenChange={setDesktopBranchOpen}
                       value={selectedAuctionBranch ?? ''}
                       onValueChange={(value) => {
                         setSelectedAuctionBranch(value);
@@ -552,7 +559,7 @@ const CompanyCatalogPage = () => {
                     >
                       <SelectTrigger 
                         ref={branchSelectRef}
-                        className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                        className={`bg-white h-9 sm:h-10 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                       >
                         <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                       </SelectTrigger>
@@ -586,7 +593,7 @@ const CompanyCatalogPage = () => {
                         setSelectedPort(value);
                       }}
                     >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
                         <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -607,8 +614,8 @@ const CompanyCatalogPage = () => {
       {/* Mobile Auction / Shipping Selector */}
       <div className="lg:hidden bg-slate-50/80 border-b border-slate-200/80">
         <div className="container mx-auto px-4 pt-3 pb-4">
-          <div className="bg-white border border-slate-200 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
-            <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+          <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border border-primary/60 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
+            <span className="text-[11px] font-semibold tracking-wider text-primary-foreground/80 uppercase">
               {t('catalog.filters.auction', 'Auction shipping')}
             </span>
             <div className="flex flex-col gap-2">
@@ -621,13 +628,23 @@ const CompanyCatalogPage = () => {
                       setSelectedAuctionBranch('');
                       if (value !== 'all') {
                         setBranchNeedsAttention(true);
-                        setTimeout(() => branchSelectRef.current?.click(), 100);
+                        if (typeof window !== 'undefined') {
+                          if (window.innerWidth >= 1024) {
+                            setDesktopBranchOpen(true);
+                            setMobileBranchOpen(false);
+                          } else {
+                            setMobileBranchOpen(true);
+                            setDesktopBranchOpen(false);
+                          }
+                        }
                       } else {
                         setBranchNeedsAttention(false);
+                        setDesktopBranchOpen(false);
+                        setMobileBranchOpen(false);
                       }
                     }}
                   >
-                    <SelectTrigger className="bg-white h-9 w-full">
+                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -640,6 +657,8 @@ const CompanyCatalogPage = () => {
 
                 <div className="flex-1 min-w-[180px]">
                   <Select
+                    open={mobileBranchOpen}
+                    onOpenChange={setMobileBranchOpen}
                     value={selectedAuctionBranch ?? ''}
                     onValueChange={(value) => {
                       setSelectedAuctionBranch(value);
@@ -649,7 +668,7 @@ const CompanyCatalogPage = () => {
                   >
                     <SelectTrigger
                       ref={branchSelectRef}
-                      className={`bg-white h-9 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                      className={`bg-white h-9 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                     >
                       <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                     </SelectTrigger>
@@ -683,7 +702,7 @@ const CompanyCatalogPage = () => {
                       setSelectedPort(value);
                     }}
                   >
-                    <SelectTrigger className="bg-white h-9 w-full">
+                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
                       <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                     </SelectTrigger>
                     <SelectContent>

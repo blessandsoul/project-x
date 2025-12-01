@@ -251,7 +251,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
                                 {t('navigation.dashboard')}
                               </Link>
                             </SheetClose>
-                             <SheetClose asChild>
+                            <SheetClose asChild>
                               <Link 
                                 to="/catalog" 
                                 className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"
@@ -260,7 +260,16 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
                                 {t('navigation.catalog')}
                               </Link>
                             </SheetClose>
-                             <SheetClose asChild>
+                            <SheetClose asChild>
+                              <Link 
+                                to="/favorite-vehicles" 
+                                className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"
+                              >
+                                <Icon icon="mdi:star-outline" className="h-5 w-5 text-slate-500" />
+                                {t('navigation.favorite_vehicles')}
+                              </Link>
+                            </SheetClose>
+                            <SheetClose asChild>
                               <Link 
                                 to="/profile" 
                                 className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-100 text-slate-700 transition-colors"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,37 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
+
+// Shared mobile detection to avoid multiple resize listeners
+let mobileState = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
+const listeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  let resizeTimeout: ReturnType<typeof setTimeout>;
+  window.addEventListener('resize', () => {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const newState = window.innerWidth < 640;
+      if (newState !== mobileState) {
+        mobileState = newState;
+        listeners.forEach(listener => listener());
+      }
+    }, 100);
+  });
+}
+
+function useMobileDetect(): boolean {
+  const subscribe = useCallback((callback: () => void) => {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  }, []);
+  
+  const getSnapshot = useCallback(() => mobileState, []);
+  const getServerSnapshot = useCallback(() => false, []);
+  
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
 
 interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
@@ -49,14 +80,7 @@ export function AuctionVehicleCard({
   isWatched = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isMobile = useMobileDetect();
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 

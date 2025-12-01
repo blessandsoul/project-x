@@ -16,6 +16,7 @@ const CarfaxPage = lazy(() => import('./pages/CarfaxPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const VehicleDetailsPage = lazy(() => import('./pages/VehicleDetailsPage'))
+const FavoriteVehiclesPage = lazy(() => import('./pages/FavoriteVehiclesPage'))
 
 function ScrollToTop() {
   const location = useLocation()
@@ -163,6 +164,14 @@ function AppRoutes() {
           <Route
             path="/auction-listings"
             element={<LazyRoute><AuctionListingsPage /></LazyRoute>}
+          />
+          <Route
+            path="/favorite-vehicles"
+            element={
+              <RequireAuth>
+                <LazyRoute><FavoriteVehiclesPage /></LazyRoute>
+              </RequireAuth>
+            }
           />
           <Route
             path="/vin"

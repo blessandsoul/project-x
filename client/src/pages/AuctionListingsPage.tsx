@@ -15,8 +15,9 @@ import { fetchVehiclePhotos, searchVehicles, compareVehicles } from '@/api/vehic
 import type { VehiclesCompareResponse } from '@/api/vehicles';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalog';
-import type { SearchVehiclesResponse, VehiclesSearchFilters } from '@/types/vehicles';
+import type { SearchVehiclesResponse, VehiclesSearchFilters, VehicleSortOption } from '@/types/vehicles';
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
+import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist';
 import { useTranslation } from 'react-i18next';
 import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
 import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
@@ -27,7 +28,7 @@ import { ComparisonModal } from '@/components/auction/ComparisonModal';
 type AuctionHouse = 'all' | 'Copart' | 'IAAI';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
 type DamageType = 'all' | 'front' | 'rear' | 'side';
-type SortOption = 'price-low' | 'price-high' | 'year-new' | 'year-old';
+type SortOption = 'none' | VehicleSortOption;
 
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via /vehicles/search.
@@ -35,8 +36,7 @@ type SortOption = 'price-low' | 'price-high' | 'year-new' | 'year-old';
 type DraftFiltersInput = {
   searchQuery: string;
   exactYear: number | '';
-  minMileage: number | '';
-  maxMileage: number[];
+  mileageRange: number[];
   priceRange: number[];
   yearRange: number[];
   fuelType: string;
@@ -49,6 +49,7 @@ type DraftFiltersInput = {
   buyNowOnly: boolean;
   selectedMakeName?: string;
   selectedModelName?: string;
+  sort?: SortOption;
 };
 
 const buildFiltersFromDraftState = (
@@ -57,18 +58,22 @@ const buildFiltersFromDraftState = (
   const trimmedSearch = input.searchQuery.trim();
 
   const hasExactYear = typeof input.exactYear === 'number' && !Number.isNaN(input.exactYear);
-  const hasMinMileage = typeof input.minMileage === 'number' && !Number.isNaN(input.minMileage);
 
   // Only include price filters if they have meaningful values (not 0)
   const priceFrom = input.priceRange[0];
   const priceTo = input.priceRange[1];
   const hasPriceFilter = priceFrom > 0 || priceTo > 0;
 
+  // Mileage range
+  const mileageFrom = input.mileageRange[0];
+  const mileageTo = input.mileageRange[1];
+
   const baseFilters: VehiclesSearchFilters & { page: number; limit: number } = {
     search: trimmedSearch.length > 0 ? trimmedSearch : undefined,
     make: input.selectedMakeName,
     model: input.selectedModelName,
-    mileage_to: input.maxMileage[0] !== 200000 ? input.maxMileage[0] : undefined,
+    mileage_from: mileageFrom > 0 ? mileageFrom : undefined,
+    mileage_to: mileageTo > 0 ? mileageTo : undefined,
     price_from: hasPriceFilter && priceFrom > 0 ? priceFrom : undefined,
     price_to: hasPriceFilter && priceTo > 0 ? priceTo : undefined,
     fuel_type: input.fuelType === 'all' ? undefined : input.fuelType,
@@ -88,23 +93,26 @@ const buildFiltersFromDraftState = (
     baseFilters.year = input.exactYear as number;
   } else {
     // Only include year filters if they have meaningful values (not 0)
-    const fromYear = Math.min(input.yearRange[0], input.yearRange[1]);
-    const toYear = Math.max(input.yearRange[0], input.yearRange[1]);
-    const hasYearFilter = fromYear > 0 || toYear > 0;
+    const yearFrom = input.yearRange[0];
+    const yearTo = input.yearRange[1];
     
-    if (hasYearFilter) {
-      if (fromYear > 0) baseFilters.year_from = fromYear;
-      if (toYear > 0) baseFilters.year_to = toYear;
+    // Only swap if both values are set (non-zero) and from > to
+    if (yearFrom > 0 && yearTo > 0 && yearFrom > yearTo) {
+      baseFilters.year_from = yearTo;
+      baseFilters.year_to = yearFrom;
+    } else {
+      if (yearFrom > 0) baseFilters.year_from = yearFrom;
+      if (yearTo > 0) baseFilters.year_to = yearTo;
     }
-  }
-
-  if (hasMinMileage) {
-    const fromMileage = Math.min(input.minMileage as number, input.maxMileage[0]);
-    baseFilters.mileage_from = fromMileage;
   }
 
   if (input.buyNowOnly) {
     baseFilters.buy_now = true;
+  }
+
+  // Only include sort if it's not 'none'
+  if (input.sort && input.sort !== 'none') {
+    baseFilters.sort = input.sort;
   }
 
   return baseFilters;
@@ -133,12 +141,11 @@ const AuctionListingsPage = () => {
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>('all');
   const [, setStatusFilter] = useState<LotStatus>('all');
   const [, setDamageFilter] = useState<DamageType>('all');
-  // Start with no price/year filters applied; the user or URL must opt-in.
+  // Start with no price/year/mileage filters applied; the user or URL must opt-in.
   const [priceRange, setPriceRange] = useState<number[]>([0, 0]);
   const [yearRange, setYearRange] = useState<number[]>([0, 0]);
-  const [maxMileage, setMaxMileage] = useState<number[]>([200000]);
+  const [mileageRange, setMileageRange] = useState<number[]>([0, 0]);
   const [exactYear, setExactYear] = useState<number | ''>('');
-  const [minMileage, setMinMileage] = useState<number | ''>('');
   const [fuelType, setFuelType] = useState('all');
   const [category, setCategory] = useState('all');
   const [drive, setDrive] = useState('all');
@@ -146,7 +153,7 @@ const AuctionListingsPage = () => {
   const [, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('price-low');
+  const [sortBy, setSortBy] = useState<SortOption>('none');
   const [selectedMakeId, setSelectedMakeId] = useState<string>('all');
   const [selectedModelId, setSelectedModelId] = useState<string>('all');
   const [catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
@@ -184,7 +191,7 @@ const AuctionListingsPage = () => {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareResult, setCompareResult] = useState<VehiclesCompareResponse | null>(null);
   const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
-  const [watchedVehicleIds, setWatchedVehicleIds] = useState<number[]>([]);
+  const { isWatched, toggleWatch } = useVehicleWatchlist();
   const { data: calcData, isLoading: isCalcLoading, error: calcError, calculateQuotes } =
     useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
@@ -218,140 +225,84 @@ const AuctionListingsPage = () => {
     return matchedModel?.name;
   }, [selectedModelId, catalogModels]);
 
-  const updateUrlFromState = (options?: {
-    page?: number;
-    limit?: number;
-    replace?: boolean;
-    searchQueryOverride?: string;
-  }) => {
-    const searchParams = new URLSearchParams(location.search);
+  const updateUrlFromFilters = (
+    filters: VehiclesSearchFilters & { page?: number; limit?: number },
+    options?: { replace?: boolean }
+  ) => {
+    const searchParams = new URLSearchParams();
 
-    const rawQuery = options?.searchQueryOverride ?? searchQuery;
-    const trimmedQuery = rawQuery.trim();
-    if (trimmedQuery.length > 0) {
-      searchParams.set('q', trimmedQuery);
-    } else {
-      searchParams.delete('q');
+    if (filters.search && filters.search.trim().length > 0) {
+      searchParams.set('q', filters.search.trim());
     }
 
-    // Sync make & model (from catalog names) into URL for deep-linking.
-    if (selectedMakeName) {
-      searchParams.set('make', selectedMakeName);
-    } else {
-      searchParams.delete('make');
+    if (filters.make) {
+      searchParams.set('make', filters.make);
     }
 
-    if (selectedModelName) {
-      searchParams.set('model', selectedModelName);
-    } else {
-      searchParams.delete('model');
+    if (filters.model) {
+      searchParams.set('model', filters.model);
     }
 
-    if (searchKind && searchKind !== 'all') {
-      searchParams.set('kind', searchKind);
-    } else {
-      searchParams.delete('kind');
+    if (filters.source) {
+      searchParams.set('source', filters.source);
     }
 
-    // Normalize auction/source: clear legacy `auction` and use `source`
-    searchParams.delete('auction');
-    if (auctionFilter && auctionFilter !== 'all') {
-      searchParams.set('source', auctionFilter.toLowerCase());
-    } else {
-      searchParams.delete('source');
+    if (filters.fuel_type) {
+      searchParams.set('fuel_type', filters.fuel_type);
     }
 
-    // Clear legacy 'fuel' param to avoid duplicates
-    searchParams.delete('fuel');
-
-    if (fuelType && fuelType !== 'all') {
-      searchParams.set('fuel_type', fuelType);
-    } else {
-      searchParams.delete('fuel_type');
+    if (filters.category) {
+      searchParams.set('category', filters.category);
     }
 
-    if (category && category !== 'all') {
-      searchParams.set('category', category);
-    } else {
-      searchParams.delete('category');
+    if (filters.drive) {
+      searchParams.set('drive', filters.drive);
     }
 
-    if (drive && drive !== 'all') {
-      searchParams.set('drive', drive);
-    } else {
-      searchParams.delete('drive');
+    if (typeof filters.year === 'number' && filters.year > 0) {
+      searchParams.set('year', String(filters.year));
     }
 
-    // Year range - only add to URL if values are meaningful (not 0)
-    const [yearFrom, yearTo] = yearRange;
-    if (yearFrom > 0) {
-      searchParams.set('yearFrom', String(yearFrom));
-    } else {
-      searchParams.delete('yearFrom');
-    }
-    if (yearTo > 0) {
-      searchParams.set('yearTo', String(yearTo));
-    } else {
-      searchParams.delete('yearTo');
+    if (typeof filters.year_from === 'number' && filters.year_from > 0) {
+      searchParams.set('year_from', String(filters.year_from));
     }
 
-    if (typeof exactYear === 'number' && !Number.isNaN(exactYear) && exactYear > 0) {
-      searchParams.set('yearExact', String(exactYear));
-    } else {
-      searchParams.delete('yearExact');
+    if (typeof filters.year_to === 'number' && filters.year_to > 0) {
+      searchParams.set('year_to', String(filters.year_to));
     }
 
-    if (maxMileage[0] !== 200000 && maxMileage[0] > 0) {
-      searchParams.set('maxMileage', String(maxMileage[0]));
-    } else {
-      searchParams.delete('maxMileage');
+    if (typeof filters.mileage_from === 'number' && filters.mileage_from > 0) {
+      searchParams.set('mileage_from', String(filters.mileage_from));
     }
 
-    if (typeof minMileage === 'number' && !Number.isNaN(minMileage) && minMileage > 0) {
-      searchParams.set('minMileage', String(minMileage));
-    } else {
-      searchParams.delete('minMileage');
+    if (typeof filters.mileage_to === 'number' && filters.mileage_to > 0) {
+      searchParams.set('mileage_to', String(filters.mileage_to));
     }
 
-    // Price range - only add to URL if values are meaningful (not 0)
-    if (priceRange[0] > 0) {
-      searchParams.set('priceMin', String(priceRange[0]));
-    } else {
-      searchParams.delete('priceMin');
+    if (typeof filters.price_from === 'number' && filters.price_from > 0) {
+      searchParams.set('price_from', String(filters.price_from));
     }
 
-    if (priceRange[1] > 0) {
-      searchParams.set('priceMax', String(priceRange[1]));
-    } else {
-      searchParams.delete('priceMax');
+    if (typeof filters.price_to === 'number' && filters.price_to > 0) {
+      searchParams.set('price_to', String(filters.price_to));
     }
 
-    // Persist Buy Now Only filter in URL using backend-friendly key
-    // so that /vehicles/search can consume `buy_now=true` directly.
-    if (buyNowOnly) {
+    if (filters.buy_now) {
       searchParams.set('buy_now', 'true');
-    } else {
-      searchParams.delete('buy_now');
     }
 
-    if (sortBy) {
-      searchParams.set('sort', sortBy);
-    } else {
-      searchParams.delete('sort');
+    if (filters.sort) {
+      searchParams.set('sort', filters.sort);
     }
 
-    const effectiveLimit = options?.limit ?? limit;
+    const effectiveLimit = filters.limit ?? 36;
     if (effectiveLimit !== 36) {
       searchParams.set('limit', String(effectiveLimit));
-    } else {
-      searchParams.delete('limit');
     }
 
-    const effectivePage = options?.page ?? appliedPage ?? 1;
+    const effectivePage = filters.page ?? 1;
     if (effectivePage > 1) {
       searchParams.set('page', String(effectivePage));
-    } else {
-      searchParams.delete('page');
     }
 
     const searchString = searchParams.toString();
@@ -365,6 +316,35 @@ const AuctionListingsPage = () => {
         window.history.pushState(null, '', newUrl);
       }
     }
+  };
+
+  // Legacy wrapper that reads from state - used by applyFilters and pagination
+  const updateUrlFromState = (options?: {
+    page?: number;
+    limit?: number;
+    replace?: boolean;
+    searchQueryOverride?: string;
+  }) => {
+    const filters = buildFiltersFromDraftState({
+      searchQuery: options?.searchQueryOverride ?? searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit: options?.limit ?? limit,
+      page: options?.page ?? appliedPage ?? 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName,
+      selectedModelName,
+      sort: sortBy,
+    });
+
+    updateUrlFromFilters(filters, { replace: options?.replace ?? true });
   };
 
   const activeFilterLabels = useMemo(
@@ -486,6 +466,18 @@ const AuctionListingsPage = () => {
         }
       }
 
+      if (
+        typeof appliedFilters.mileage_from === 'number' ||
+        typeof appliedFilters.mileage_to === 'number'
+      ) {
+        const from = appliedFilters.mileage_from ?? 0;
+        const to = appliedFilters.mileage_to ?? 0;
+        // Only show chip if at least one value is meaningful (not 0)
+        if (from > 0 || to > 0) {
+          labels.push({ id: 'mileage', label: `${t('auction.filters.mileage')}: ${from.toLocaleString() || '?'}-${to.toLocaleString() || '?'}` });
+        }
+      }
+
       return labels;
     },
     [appliedFilters, t],
@@ -520,48 +512,44 @@ const AuctionListingsPage = () => {
     const nextFuelType = (fuelParam && ['all', 'petrol', 'diesel', 'hybrid', 'electric', 'flexible'].includes(fuelParam)) ? fuelParam : 'all';
 
     const categoryParam = params.get('category');
-    const nextCategory = (categoryParam && ['all', 'suv', 'sedan', 'coupe', 'hatchback', 'pickup'].includes(categoryParam)) ? categoryParam : 'all';
+    const nextCategory = (categoryParam && ['all', 'v', 'c', 'a'].includes(categoryParam)) ? categoryParam : 'all';
 
     const driveParam = params.get('drive');
-    const nextDrive = (driveParam && ['all', 'fwd', 'rwd', '4wd'].includes(driveParam)) ? driveParam : 'all';
+    const nextDrive = (driveParam && ['all', 'front', 'rear', 'full'].includes(driveParam)) ? driveParam : 'all';
 
     // Year range – default is "no filter" [0, 0]
-    const yearFromParam = params.get('yearFrom');
-    const yearToParam = params.get('yearTo');
-    const nextYearRange = (yearFromParam && yearToParam) ? (() => {
-      const from = Number(yearFromParam);
-      const to = Number(yearToParam);
+    const yearFromParam = params.get('year_from');
+    const yearToParam = params.get('year_to');
+    const nextYearRange = (() => {
+      const from = yearFromParam ? Number(yearFromParam) : 0;
+      const to = yearToParam ? Number(yearToParam) : 0;
       return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [0, 0];
-    })() : [0, 0];
+    })();
 
     // Exact year
-    const yearExactParam = params.get('yearExact');
+    const yearExactParam = params.get('year');
     const nextExactYear = (yearExactParam !== null && yearExactParam !== '') ? (() => {
       const parsed = Number(yearExactParam);
       return Number.isNaN(parsed) ? '' : parsed;
     })() : '';
 
-    // Mileage
-    const maxMileageParam = params.get('maxMileage');
-    const nextMaxMileage = maxMileageParam ? (() => {
-      const parsed = Number(maxMileageParam);
-      return (Number.isFinite(parsed) && parsed > 0) ? [parsed] : [200000];
-    })() : [200000];
-
-    const minMileageParam = params.get('minMileage');
-    const nextMinMileage = (minMileageParam !== null && minMileageParam !== '') ? (() => {
-      const parsed = Number(minMileageParam);
-      return Number.isNaN(parsed) ? '' : parsed;
-    })() : '';
+    // Mileage range – default is "no filter" [0, 0]
+    const mileageFromParam = params.get('mileage_from');
+    const mileageToParam = params.get('mileage_to');
+    const nextMileageRange = (() => {
+      const from = mileageFromParam ? Number(mileageFromParam) : 0;
+      const to = mileageToParam ? Number(mileageToParam) : 0;
+      return (Number.isFinite(from) && Number.isFinite(to)) ? [from, to] : [0, 0];
+    })();
 
     // Price range – default is "no filter" [0, 0]
-    const priceMinParam = params.get('priceMin');
-    const priceMaxParam = params.get('priceMax');
-    const nextPriceRange = (priceMinParam && priceMaxParam) ? (() => {
-      const min = Number(priceMinParam);
-      const max = Number(priceMaxParam);
+    const priceMinParam = params.get('price_from');
+    const priceMaxParam = params.get('price_to');
+    const nextPriceRange = (() => {
+      const min = priceMinParam ? Number(priceMinParam) : 0;
+      const max = priceMaxParam ? Number(priceMaxParam) : 0;
       return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [0, 0];
-    })() : [0, 0];
+    })();
 
     // Buy Now Only flag
     const buyNowParam = params.get('buy_now');
@@ -569,7 +557,8 @@ const AuctionListingsPage = () => {
 
     // Sort
     const sortParam = params.get('sort') as SortOption | null;
-    const nextSortBy = (sortParam && ['price-low', 'price-high', 'year-new', 'year-old'].includes(sortParam)) ? sortParam : 'price-low';
+    const validSorts: SortOption[] = ['none', 'price_asc', 'price_desc', 'year_desc', 'year_asc', 'mileage_asc'];
+    const nextSortBy = (sortParam && validSorts.includes(sortParam)) ? sortParam : 'none';
 
     // Limit
     const limitParam = params.get('limit');
@@ -593,8 +582,7 @@ const AuctionListingsPage = () => {
     const filters = buildFiltersFromDraftState({
       searchQuery: nextSearchQuery,
       exactYear: nextExactYear,
-      minMileage: nextMinMileage,
-      maxMileage: nextMaxMileage,
+      mileageRange: nextMileageRange,
       priceRange: nextPriceRange,
       yearRange: nextYearRange,
       fuelType: nextFuelType,
@@ -607,6 +595,7 @@ const AuctionListingsPage = () => {
       buyNowOnly: nextBuyNowOnly,
       selectedMakeName: urlMake ?? selectedMakeName,
       selectedModelName: urlModel ?? selectedModelName,
+      sort: nextSortBy,
     });
 
     // Set all state values
@@ -618,8 +607,7 @@ const AuctionListingsPage = () => {
     setDrive(nextDrive);
     setYearRange(nextYearRange);
     setExactYear(nextExactYear);
-    setMaxMileage(nextMaxMileage);
-    setMinMileage(nextMinMileage);
+    setMileageRange(nextMileageRange);
     setPriceRange(nextPriceRange);
     setSortBy(nextSortBy);
     setBuyNowOnly(nextBuyNowOnly);
@@ -698,11 +686,7 @@ const AuctionListingsPage = () => {
     setIsBackendLoading(true);
     setBackendError(null);
 
-    const filtersForBackend = buyNowOnly
-      ? { ...appliedFilters, buy_now: true }
-      : appliedFilters;
-
-    searchVehicles(filtersForBackend)
+    searchVehicles(appliedFilters)
       .then((result) => {
         if (!isMounted) return;
         setBackendData(result);
@@ -763,11 +747,7 @@ const AuctionListingsPage = () => {
     if (nextPage > maxPage) return;
 
     try {
-      const filtersForBackend = buyNowOnly
-        ? { ...appliedFilters, buy_now: true, page: nextPage }
-        : { ...appliedFilters, page: nextPage };
-
-      const result = await searchVehicles(filtersForBackend);
+      const result = await searchVehicles({ ...appliedFilters, page: nextPage });
       const nextItems = (result.items ?? []) as BackendItem[];
 
       if (!extraLoaded) {
@@ -832,9 +812,8 @@ const AuctionListingsPage = () => {
      if (updates.drive !== undefined) setDrive(updates.drive);
      if (updates.yearRange !== undefined) setYearRange(updates.yearRange);
      if (updates.priceRange !== undefined) setPriceRange(updates.priceRange);
-     if (updates.maxMileage !== undefined) setMaxMileage(updates.maxMileage);
+     if (updates.mileageRange !== undefined) setMileageRange(updates.mileageRange);
      if (updates.exactYear !== undefined) setExactYear(updates.exactYear);
-     if (updates.minMileage !== undefined) setMinMileage(updates.minMileage);
      if (updates.selectedMakeId !== undefined) setSelectedMakeId(updates.selectedMakeId);
      if (updates.selectedModelId !== undefined) setSelectedModelId(updates.selectedModelId);
      if (updates.buyNowOnly !== undefined) setBuyNowOnly(updates.buyNowOnly);
@@ -851,8 +830,7 @@ const AuctionListingsPage = () => {
     const draft: DraftFiltersInput = {
       searchQuery,
       exactYear,
-      minMileage,
-      maxMileage,
+      mileageRange,
       priceRange,
       yearRange,
       fuelType,
@@ -865,6 +843,7 @@ const AuctionListingsPage = () => {
       buyNowOnly,
       selectedMakeName,
       selectedModelName,
+      sort: sortBy,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -874,9 +853,8 @@ const AuctionListingsPage = () => {
     setExtraLoaded(null);
     setIsAdvancedFiltersOpen(false);
 
-    // Keep URL in sync with current search/make/model and other filters, but
-    // do not re-initialize state from URL (guarded by hasInitializedFromUrl).
-    updateUrlFromState({ page: 1, replace: false, searchQueryOverride: searchQuery });
+    // Update URL directly from computed filters
+    updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   // Reset only the draft filter controls inside the drawer, without
@@ -885,7 +863,7 @@ const AuctionListingsPage = () => {
   const resetDrawerFilters = () => {
     const defaultYearRange: [number, number] = [0, 0];
     const defaultPriceRange: [number, number] = [0, 0];
-    const defaultMaxMileage: [number] = [200000];
+    const defaultMileageRange: [number, number] = [0, 0];
 
     setAuctionFilter('all');
     setSearchKind('all');
@@ -894,8 +872,7 @@ const AuctionListingsPage = () => {
     setDrive('all');
     setYearRange(defaultYearRange);
     setExactYear('');
-    setMaxMileage(defaultMaxMileage);
-    setMinMileage('');
+    setMileageRange(defaultMileageRange);
     setPriceRange(defaultPriceRange);
     setSelectedMakeId('all');
     setSelectedModelId('all');
@@ -907,16 +884,15 @@ const AuctionListingsPage = () => {
   const resetFilters = () => {
     const defaultYearRange: [number, number] = [0, 0];
     const defaultPriceRange: [number, number] = [0, 0];
-    const defaultMaxMileage: [number] = [200000];
+    const defaultMileageRange: [number, number] = [0, 0];
 
     setAuctionFilter('all');
     setStatusFilter('all');
     setDamageFilter('all');
     setPriceRange(defaultPriceRange);
     setYearRange(defaultYearRange);
-    setMaxMileage(defaultMaxMileage);
+    setMileageRange(defaultMileageRange);
     setExactYear('');
-    setMinMileage('');
     setFuelType('all');
     setCategory('all');
     setDrive('all');
@@ -924,15 +900,14 @@ const AuctionListingsPage = () => {
     setPage(1);
     setBuyNowOnly(false);
     setSearchQuery('');
-    setSortBy('price-low');
+    setSortBy('none');
     setBackendData(null);
     setBackendError(null);
 
     const draft: DraftFiltersInput = {
       searchQuery: '',
       exactYear: '',
-      minMileage: '',
-      maxMileage: defaultMaxMileage,
+      mileageRange: defaultMileageRange,
       priceRange: defaultPriceRange,
       yearRange: defaultYearRange,
       fuelType: 'all',
@@ -945,6 +920,7 @@ const AuctionListingsPage = () => {
       buyNowOnly: false,
       selectedMakeName: undefined,
       selectedModelName: undefined,
+      sort: 'none',
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -952,7 +928,8 @@ const AuctionListingsPage = () => {
     setAppliedPage(1);
     setExtraLoaded(null);
 
-    updateUrlFromState({ page: 1, limit: 36, replace: false, searchQueryOverride: '' });
+    // Update URL directly from computed filters (not from state which hasn't updated yet)
+    updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   const handleRemoveFilter = (id: string) => {
@@ -990,6 +967,12 @@ const AuctionListingsPage = () => {
         case 'price':
           setPriceRange([0, 0]);
           break;
+        case 'mileage':
+          setMileageRange([0, 0]);
+          break;
+        case 'drive':
+          setDrive('all');
+          break;
         default:
           break;
       }
@@ -998,12 +981,11 @@ const AuctionListingsPage = () => {
       const draft: DraftFiltersInput = {
         searchQuery: id === 'search' ? '' : searchQuery,
         exactYear: id === 'yearExact' ? '' : exactYear,
-        minMileage,
-        maxMileage,
+        mileageRange: id === 'mileage' ? [0, 0] : mileageRange,
         priceRange: id === 'price' ? [0, 0] : priceRange,
         yearRange: id === 'yearRange' ? [0, 0] : yearRange,
         fuelType: id === 'fuel' ? 'all' : fuelType,
-        category,
+        category: id === 'category' ? 'all' : category,
         drive: id === 'drive' ? 'all' : drive,
         limit,
         page: 1,
@@ -1012,6 +994,7 @@ const AuctionListingsPage = () => {
         buyNowOnly: id === 'buyNow' ? false : buyNowOnly,
         selectedMakeName: id === 'make' ? undefined : selectedMakeName,
         selectedModelName: id === 'make' || id === 'model' ? undefined : selectedModelName,
+        sort: sortBy,
       };
 
       const nextFilters = buildFiltersFromDraftState(draft);
@@ -1019,6 +1002,9 @@ const AuctionListingsPage = () => {
       setAppliedPage(1);
       setAppliedFilters(nextFilters);
       setExtraLoaded(null);
+
+      // Update URL directly from computed filters (not from state which hasn't updated yet)
+      updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   return (
@@ -1053,7 +1039,7 @@ const AuctionListingsPage = () => {
               <AuctionSidebarFilters
                 filters={{
                   searchQuery, searchKind, auctionFilter, fuelType, category, drive,
-                  yearRange, priceRange, maxMileage, exactYear, minMileage,
+                  yearRange, priceRange, mileageRange, exactYear,
                   selectedMakeId, selectedModelId, buyNowOnly, limit
                 }}
                 setFilters={handleFilterChange}
@@ -1090,12 +1076,49 @@ const AuctionListingsPage = () => {
                 </Button>
               </div>
 
+              {/* Desktop Active Filter Chips */}
+              <AnimatePresence>
+                {activeFilterLabels.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="hidden lg:flex flex-wrap gap-2"
+                  >
+                    {activeFilterLabels.map(tag => (
+                      <Badge 
+                        key={tag.id} 
+                        variant="secondary" 
+                        className="px-2 py-1 h-7 gap-1 text-xs font-normal bg-secondary/50 hover:bg-secondary border-transparent transition-colors"
+                      >
+                        {tag.label}
+                        <button 
+                          onClick={() => handleRemoveFilter(tag.id)}
+                          className="ml-1 hover:text-destructive focus:outline-none"
+                          aria-label="Remove filter"
+                        >
+                          <Icon icon="mdi:close" className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      onClick={resetFilters} 
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground px-0 ml-1"
+                    >
+                      {t('common.clear_all')}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Mobile Filters */}
               <div className="lg:hidden">
                 <AuctionFilters 
                   filters={{
                     searchQuery, searchKind, auctionFilter, fuelType, category, drive, 
-                    yearRange, priceRange, maxMileage, exactYear, minMileage, 
+                    yearRange, priceRange, mileageRange, exactYear, 
                     selectedMakeId, selectedModelId, buyNowOnly, limit
                   }}
                   setFilters={handleFilterChange}
@@ -1125,15 +1148,45 @@ const AuctionListingsPage = () => {
 
              <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground hidden sm:inline">{t('common.sort_by')}</span>
-                <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
+                <Select value={sortBy} onValueChange={(val) => {
+                    const newSort = val as SortOption;
+                    setSortBy(newSort);
+                    // Immediately apply the sort change
+                    const draft: DraftFiltersInput = {
+                      searchQuery,
+                      exactYear,
+                      mileageRange,
+                      priceRange,
+                      yearRange,
+                      fuelType,
+                      category,
+                      drive,
+                      limit,
+                      page: 1,
+                      searchKind,
+                      auctionFilter,
+                      buyNowOnly,
+                      selectedMakeName,
+                      selectedModelName,
+                      sort: newSort,
+                    };
+                    const nextFilters = buildFiltersFromDraftState(draft);
+                    setPage(1);
+                    setAppliedPage(1);
+                    setAppliedFilters(nextFilters);
+                    setExtraLoaded(null);
+                    updateUrlFromFilters(nextFilters, { replace: false });
+                }}>
                     <SelectTrigger className="h-9 text-sm w-auto min-w-[160px] px-3">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="price-low">{t('sort.price_low')}</SelectItem>
-                        <SelectItem value="price-high">{t('sort.price_high')}</SelectItem>
-                        <SelectItem value="year-new">{t('sort.year_new')}</SelectItem>
-                        <SelectItem value="year-old">{t('sort.year_old')}</SelectItem>
+                        <SelectItem value="none">{t('sort.none')}</SelectItem>
+                        <SelectItem value="price_asc">{t('sort.price_low')}</SelectItem>
+                        <SelectItem value="price_desc">{t('sort.price_high')}</SelectItem>
+                        <SelectItem value="year_asc">{t('sort.year_old')}</SelectItem>
+                        <SelectItem value="year_desc">{t('sort.year_new')}</SelectItem>
+                        <SelectItem value="mileage_asc">{t('sort.mileage_low')}</SelectItem>
                     </SelectContent>
                 </Select>
                 
@@ -1222,7 +1275,7 @@ const AuctionListingsPage = () => {
                            priority={idx < 4}
                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
                            showCompareCheckbox={showCompareCheckboxes}
-                           isWatched={watchedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                           isWatched={isWatched(item.vehicle_id ?? item.id)}
                            onToggleSelect={(checked: boolean) => {
                               const id = item.vehicle_id ?? item.id;
                               const isMobile = window.innerWidth < 640;
@@ -1234,9 +1287,7 @@ const AuctionListingsPage = () => {
                            }}
                            onToggleWatch={() => {
                               const id = item.vehicle_id ?? item.id;
-                              setWatchedVehicleIds(prev => 
-                                 prev.includes(id) ? prev.filter(wid => wid !== id) : [...prev, id]
-                              );
+                              toggleWatch(id);
                            }}
                            onCalculate={() => {
                               const id = item.vehicle_id ?? item.id;

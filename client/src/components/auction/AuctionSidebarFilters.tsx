@@ -248,6 +248,38 @@ export function AuctionSidebarFilters({
         </div>
       </div>
 
+      {/* Mileage Range */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            {t('auction.filters.mileage')}
+          </label>
+          <button
+            onClick={() => updateFilter('mileageRange', [0, 0])}
+            className="text-slate-400 hover:text-primary transition-colors"
+            title={t('common.reset')}
+          >
+            <Icon icon="mdi:refresh" className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            className="h-8 w-full text-xs bg-white"
+            placeholder={t('common.from')}
+            value={filters.mileageRange[0] || ''}
+            onChange={(e) => updateFilter('mileageRange', [Number(e.target.value), filters.mileageRange[1]])}
+          />
+          <Input
+            type="number"
+            className="h-8 w-full text-xs bg-white"
+            placeholder={t('common.to')}
+            value={filters.mileageRange[1] || ''}
+            onChange={(e) => updateFilter('mileageRange', [filters.mileageRange[0], Number(e.target.value)])}
+          />
+        </div>
+      </div>
+
       {/* Fuel & Drive */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">

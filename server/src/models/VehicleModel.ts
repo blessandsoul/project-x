@@ -11,6 +11,35 @@ export class VehicleModel extends BaseModel {
   }
 
   /**
+   * Build ORDER BY clause based on sort parameter.
+   * Supported values:
+   * - price_asc: calc_price ASC (low to high)
+   * - price_desc: calc_price DESC (high to low)
+   * - year_desc: year DESC (newest first)
+   * - year_asc: year ASC (oldest first)
+   * - mileage_asc: mileage ASC (low to high)
+   * Default: id DESC (most recently added)
+   */
+  private getSortClause(
+    sort?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc',
+  ): string {
+    switch (sort) {
+      case 'price_asc':
+        return 'calc_price ASC, id DESC';
+      case 'price_desc':
+        return 'calc_price DESC, id DESC';
+      case 'year_desc':
+        return 'year DESC, id DESC';
+      case 'year_asc':
+        return 'year ASC, id DESC';
+      case 'mileage_asc':
+        return 'mileage ASC, id DESC';
+      default:
+        return 'id DESC';
+    }
+  }
+
+  /**
    * Check if a vehicle exists by ID
    */
   async existsById(id: number): Promise<boolean> {
@@ -56,7 +85,7 @@ export class VehicleModel extends BaseModel {
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
     const rows = await this.executeQuery(
-      'SELECT id, brand_name, model_name, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ? OFFSET ?',
+      'SELECT id, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ? OFFSET ?',
       [safeLimit, safeOffset],
     );
 
@@ -97,6 +126,7 @@ export class VehicleModel extends BaseModel {
     },
     limit: number = 50,
     offset: number = 0,
+    sort?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc',
   ): Promise<Vehicle[]> {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 250 ? limit : 50;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
@@ -176,8 +206,6 @@ export class VehicleModel extends BaseModel {
         id,
         vin,
         source_lot_id,
-        brand_name,
-        model_name,
         brand_name AS make,
         model_name AS model,
         year,
@@ -207,7 +235,7 @@ export class VehicleModel extends BaseModel {
         ) AS primary_thumb_url
       FROM vehicles
       ${where}
-      ORDER BY id DESC
+      ORDER BY ${this.getSortClause(sort)}
       LIMIT ? OFFSET ?
     `;
 
@@ -387,8 +415,6 @@ export class VehicleModel extends BaseModel {
     const query = `
       SELECT
         id,
-        brand_name,
-        model_name,
         brand_name AS make,
         model_name AS model,
         year,

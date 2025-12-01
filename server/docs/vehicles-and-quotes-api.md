@@ -117,6 +117,13 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
 
 - `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `source`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
 - `buy_now` (optional, boolean-like: `true` / `false`) – when set to `true`, only return vehicles where `buy_it_now` is active (e.g. lot has Buy It Now option). Any other value (or omission) means no filter on this field.
+- `sort` (optional, string) – sorting order for results. Supported values:
+  - `price_asc` – price low to high (by `calc_price`)
+  - `price_desc` – price high to low (by `calc_price`)
+  - `year_desc` – year newest first
+  - `year_asc` – year oldest first
+  - `mileage_asc` – mileage low to high
+  - Default (when omitted): most recently added vehicles first (`id DESC`)
 - `search` (optional, string) – combined free-text search over make/model/year.
 
   When provided, the backend will try to parse the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:

@@ -23,9 +23,8 @@ export interface FilterState {
   drive: string;
   yearRange: number[];
   priceRange: number[];
-  maxMileage: number[];
+  mileageRange: number[];
   exactYear: number | '';
-  minMileage: number | '';
   selectedMakeId: string;
   selectedModelId: string;
   buyNowOnly: boolean;
@@ -233,6 +232,37 @@ export function AuctionFilters({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Mileage Range */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1">
+                {t('auction.filters.mileage')}
+              </label>
+              <button
+                onClick={() => updateFilter('mileageRange', [0, 0])}
+                className="text-muted-foreground hover:text-primary transition-colors mr-1"
+              >
+                <Icon icon="mdi:refresh" className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                className="h-10 w-full text-sm"
+                placeholder={t('common.from')}
+                value={filters.mileageRange[0] || ''}
+                onChange={(e) => updateFilter('mileageRange', [Number(e.target.value), filters.mileageRange[1]])}
+              />
+              <Input
+                type="number"
+                className="h-10 w-full text-sm"
+                placeholder={t('common.to')}
+                value={filters.mileageRange[1] || ''}
+                onChange={(e) => updateFilter('mileageRange', [filters.mileageRange[0], Number(e.target.value)])}
+              />
             </div>
           </div>
 

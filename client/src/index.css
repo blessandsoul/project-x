@@ -10,25 +10,29 @@
 
 @font-face {
   font-family: mainRegular;
-  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2") format("woff2");
+  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2")
+    format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainMedium;
-  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2") format("woff2");
+  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2")
+    format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainSemiBold;
-  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2") format("woff2");
+  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2")
+    format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainBold;
-  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2") format("woff2");
+  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2")
+    format("woff2");
   font-display: swap;
 }
 
@@ -173,6 +177,15 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Prevent layout shift when Radix dialogs/selects hide scrollbar */
+    scrollbar-gutter: stable;
+  }
+    /* Override Radix scroll lock - prevent body width change when scrollbar is hidden */
+  body[data-scroll-locked] {
+    overflow: auto !important;
+    margin-right: 0 !important;
+  }
   body {
     @apply text-foreground antialiased;
     font-family: var(--font-sans);
@@ -235,8 +248,7 @@
   .hero-gradient-mesh {
     position: relative;
     overflow: hidden;
-    background:
-      radial-gradient(circle at 0% 0%, #00cc99 0%, #00a87e 40%),
+    background: radial-gradient(circle at 0% 0%, #00cc99 0%, #00a87e 40%),
       radial-gradient(circle at 100% 0%, #00b88a 0%, #008f6a 35%),
       radial-gradient(circle at 50% 100%, #00cc99 0%, #006b4a 45%);
     background-color: #00a87e;
@@ -248,10 +260,21 @@
     content: "";
     position: absolute;
     inset: -20%;
-    background:
-      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.24), transparent 55%),
-      radial-gradient(circle at 80% 20%, rgba(0, 255, 200, 0.35), transparent 55%),
-      radial-gradient(circle at 50% 80%, rgba(0, 120, 80, 0.45), transparent 60%);
+    background: radial-gradient(
+        circle at 20% 30%,
+        rgba(255, 255, 255, 0.24),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(0, 255, 200, 0.35),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle at 50% 80%,
+        rgba(0, 120, 80, 0.45),
+        transparent 60%
+      );
     filter: blur(40px);
     opacity: 0.8;
     mix-blend-mode: screen;
@@ -329,7 +352,8 @@
 }
 
 @keyframes float-slow {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -341,7 +365,8 @@
 }
 
 @keyframes float-slower {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   50% {
@@ -350,7 +375,8 @@
 }
 
 @keyframes float-medium {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   25% {

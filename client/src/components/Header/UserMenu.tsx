@@ -29,6 +29,7 @@ interface UserMenuProps {
 const userMenuNavigationItems = [
   { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
   { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'navigation.catalog', href: '/catalog' },
+  { id: 'favorite-vehicles', icon: 'mdi:star-outline', labelKey: 'navigation.favorite_vehicles', href: '/favorite-vehicles' },
 ];
 
 const getInitials = (name: string): string => {

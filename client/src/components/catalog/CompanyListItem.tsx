@@ -178,12 +178,11 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           </div>
         </div>
 
-        {/* Right: Price & CTA */}
-        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50/30 sm:border-l border-t sm:border-t-0 border-slate-100">
-           <div className="flex flex-col sm:items-end">
-              {hasAuctionBranch ? (
-                // Show calculated shipping price when auction branch is selected
-                isLoadingShipping ? (
+        {/* Right: Price & CTA (only shown when an auction branch is selected) */}
+        {hasAuctionBranch && (
+          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50/30 sm:border-l border-t sm:border-t-0 border-slate-100">
+             <div className="flex flex-col sm:items-end">
+                {isLoadingShipping ? (
                   // Loading state
                   <>
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
@@ -231,39 +230,24 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                       </span>
                     )}
                   </>
-                )
-              ) : (
-                // Show placeholder when no auction branch selected
-                <>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                    {t('catalog.card.shipping_cost', 'Shipping Cost')}
-                  </span>
-                  <div className="flex flex-col items-center sm:items-end gap-1">
-                    <span className="text-sm text-slate-400 font-medium">
-                      {t('catalog.card.select_branch', 'Select auction branch')}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      {t('catalog.card.to_see_price', 'to see price')}
-                    </span>
-                  </div>
-                </>
-              )}
-           </div>
-
-           {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
-           {isCompareMode && (
-             <div 
-               className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-500 py-1 cursor-pointer"
-               onClick={(e) => {
-                 e.stopPropagation();
-                 onToggleCompare?.(!isSelected);
-               }}
-             >
-               <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
-               <span>{t('catalog.results.compare')}</span>
+                )}
              </div>
-           )}
-        </div>
+
+             {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
+             {isCompareMode && (
+               <div 
+                 className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-500 py-1 cursor-pointer"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   onToggleCompare?.(!isSelected);
+                 }}
+               >
+                 <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                 <span>{t('catalog.results.compare')}</span>
+               </div>
+             )}
+          </div>
+        )}
       </article>
     </motion.div>
   );

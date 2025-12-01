@@ -60,9 +60,9 @@
     "drive_types": {
       "fwd": "Front Wheel Drive",
       "rwd": "Rear Wheel Drive",
-      "awd": "All Wheel Drive",
-      "4wd": "4WD",
-      "full": "Full Drive"
+      "awd": "4x4",
+      "4wd": "4x4",
+      "full": "4x4"
     },
     "offer": "Offer",
     "reviews": "reviews",
@@ -404,7 +404,8 @@
       "model": "Model",
       "category": "Category",
       "year": "Year",
-      "price": "Price"
+      "price": "Price",
+      "mileage": "Mileage"
     },
     "compare": {
       "title": "Compare Total Cost",
@@ -431,11 +432,13 @@
     }
   },
   "sort": {
+    "none": "Default",
     "relevance": "Relevance",
     "price_low": "Price: Low to High",
     "price_high": "Price: High to Low",
-    "year_new": "Year: Newest",
-    "year_old": "Year: Oldest"
+    "year_old": "Year: Oldest to Newest",
+    "year_new": "Year: Newest to Oldest",
+    "mileage_low": "Mileage: Low to High"
   },
   "error": {
     "failed_to_load_data": "Failed to load data",

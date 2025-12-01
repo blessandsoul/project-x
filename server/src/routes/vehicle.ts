@@ -41,6 +41,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       page?: string;
       limit?: string;
       buy_now?: string;
+      sort?: string;
     };
 
     const filters: {
@@ -168,6 +169,14 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       filters.buyNow = true;
     }
 
+    // Parse sort parameter
+    const validSorts = ['price_asc', 'price_desc', 'year_desc', 'year_asc', 'mileage_asc'] as const;
+    type SortOption = (typeof validSorts)[number];
+    let sort: SortOption | undefined;
+    if (query.sort && validSorts.includes(query.sort as SortOption)) {
+      sort = query.sort as SortOption;
+    }
+
     const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
 
@@ -195,7 +204,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Cache key based on filters (excluding user-specific data like favorites)
-    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset });
+    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset, sort });
 
     // Try to get cached results (only the base search, not user-specific favorites)
     const cachedResult = await withCache(
@@ -207,7 +216,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
         if (total === 0) {
           return { items: [], total: 0 };
         }
-        const items = await vehicleModel.searchByFilters(filters, limit, offset);
+        const items = await vehicleModel.searchByFilters(filters, limit, offset, sort);
         return { items, total };
       },
     );
