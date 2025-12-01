@@ -134,8 +134,21 @@ const ProfilePage = () => {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md" role="form" aria-label={t('profile.edit')}>
         <CardHeader className="space-y-2 text-center">
-          <Icon icon="mdi:account-circle" className="mx-auto h-10 w-10 text-primary" />
-          <CardTitle className="text-2xl font-bold">{t('profile.title')}</CardTitle>
+          <div className="relative flex items-center justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute left-0 h-8 w-8"
+              onClick={() => navigate(-1)}
+            >
+              <Icon icon="mdi:arrow-left" className="h-4 w-4" />
+            </Button>
+            <div className="flex flex-col items-center gap-1">
+              <Icon icon="mdi:account-circle" className="h-10 w-10 text-primary" />
+              <CardTitle className="text-2xl font-bold">{t('profile.title')}</CardTitle>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>

@@ -88,6 +88,15 @@
     "open_profile_menu": "فتح قائمة الملف الشخصي",
     "avatar_alt": "صورة المستخدم"
   },
+  "profile": {
+    "title": "الملف الشخصي",
+    "save": "حفظ التغييرات",
+    "delete_account": "حذف الحساب",
+    "avatar_label": "رفع الصورة الشخصية",
+    "username": "اسم المستخدم",
+    "email": "البريد الإلكتروني",
+    "new_password": "كلمة مرور جديدة"
+  },
   "home": {
     "hero": {
       "title": "TrustedImporters.Ge",

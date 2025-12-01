@@ -20,6 +20,7 @@ import { fetchCopartLocations, fetchIaaiLocations, calculateShipping } from '@/a
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
 import { navigationItems, footerLinks } from '@/config/navigation';
+import { cn } from '@/lib/utils';
 
 // NOTE: Sorting is currently visual-only; backend ordering will be wired later.
 
@@ -160,9 +161,18 @@ const CompanyCatalogPage = () => {
   }, [selectedAuctionBranch, auctionSource, selectedPort]);
 
   const toggleComparison = (id: number) => {
-    setSelectedCompanies(prev => 
-      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
-    );
+    setSelectedCompanies(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(cId => cId !== id);
+      }
+
+      // Limit comparison to maximum 3 companies
+      if (prev.length >= 3) {
+        return prev;
+      }
+
+      return [...prev, id];
+    });
   };
 
   const filteredAuctionBranches = auctionBranches.filter((branch: AuctionLocation) => {
@@ -418,10 +428,14 @@ const CompanyCatalogPage = () => {
         {/* Pagination */}
         {!isLoading && totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-12">
+            {/* Prev */}
             <Button 
+              id="catalog-prev-page"
+              type="button"
               variant="outline" 
               size="icon"
               onClick={() => {
+                if (page <= 1) return;
                 const nextPage = page - 1;
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
@@ -429,36 +443,54 @@ const CompanyCatalogPage = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page <= 1}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
+              aria-disabled={page <= 1}
+              className={cn(
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                page <= 1
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+              )}
             >
               <Icon icon="mdi:chevron-left" className="h-5 w-5" />
             </Button>
             
+            {/* Page numbers */}
             <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPage(p);
-                    void loadCompanies(p, filters);
-                    updateUrlFromFilters(filters, p);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`h-10 w-10 rounded-full text-sm font-medium transition-all ${
-                    p === currentPage 
-                      ? 'bg-slate-900 text-white shadow-md scale-110' 
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                const isActive = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) return;
+                      setPage(p);
+                      void loadCompanies(p, filters);
+                      updateUrlFromFilters(filters, p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                      isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-110 pointer-events-none'
+                        : 'bg-slate-100 border-transparent text-slate-800 hover:bg-slate-200 hover:text-slate-900'
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
             </div>
             
+            {/* Next */}
             <Button 
+              id="catalog-next-page"
+              type="button"
               variant="outline" 
               size="icon"
               onClick={() => {
+                if (page >= totalPages) return;
                 const nextPage = page + 1;
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
@@ -466,7 +498,13 @@ const CompanyCatalogPage = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page >= totalPages}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
+              aria-disabled={page >= totalPages}
+              className={cn(
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                page >= totalPages
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+              )}
             >
               <Icon icon="mdi:chevron-right" className="h-5 w-5" />
             </Button>

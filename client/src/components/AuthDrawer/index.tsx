@@ -112,18 +112,33 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
               transition={{ duration: 0.25, ease: 'easeOut' as const }}
             >
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Icon icon="mdi:account" className="h-5 w-5" />
-                  <span>{t('auth.header.account')}</span>
-                </DialogTitle>
-                <DialogDescription>
-                  {t('auth.header.subtitle')}{' '}
-                  <span className="font-logo-bebas inline-flex items-baseline gap-1">
-                    <span className="font-bold">Trusted</span>{' '}
-                    <span className="font-normal">Importers.Ge</span>
-                  </span>{' '}
-                </DialogDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Icon icon="mdi:account" className="h-5 w-5" />
+                      <span>{t('auth.header.account')}</span>
+                    </DialogTitle>
+                    <DialogDescription>
+                      {t('auth.header.subtitle')}{' '}
+                      <span className="font-logo-bebas inline-flex items-baseline gap-1">
+                        <span className="font-bold">Trusted</span>{' '}
+                        <span className="font-normal">Importers.Ge</span>
+                      </span>{' '}
+                    </DialogDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mt-1 h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={handleClose}
+                    aria-label={t('common.back')}
+                  >
+                    <Icon icon="mdi:arrow-left" className="h-4 w-4" />
+                  </Button>
+                </div>
               </DialogHeader>
+
               <div className="pt-2">
                 <Tabs
                   value={activeTab}

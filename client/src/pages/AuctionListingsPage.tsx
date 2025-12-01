@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { navigationItems } from '@/config/navigation';
 import { fetchVehiclePhotos, searchVehicles, compareVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
@@ -18,6 +19,7 @@ import type { CatalogMake, CatalogModel, VehicleCatalogType } from '@/api/catalo
 import type { SearchVehiclesResponse, VehiclesSearchFilters, VehicleSortOption } from '@/types/vehicles';
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
 import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist';
+import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
 import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
@@ -192,9 +194,11 @@ const AuctionListingsPage = () => {
   const [compareResult, setCompareResult] = useState<VehiclesCompareResponse | null>(null);
   const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
   const { isWatched, toggleWatch } = useVehicleWatchlist();
+  const { isAuthenticated } = useAuth();
   const { data: calcData, isLoading: isCalcLoading, error: calcError, calculateQuotes } =
     useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   // Only initialize state from URL once on initial mount.
   const hasInitializedFromUrl = useRef(false);
@@ -1287,6 +1291,10 @@ const AuctionListingsPage = () => {
                            }}
                            onToggleWatch={() => {
                               const id = item.vehicle_id ?? item.id;
+                              if (!isAuthenticated) {
+                                setIsAuthDialogOpen(true);
+                                return;
+                              }
                               toggleWatch(id);
                            }}
                            onCalculate={() => {
@@ -1407,6 +1415,55 @@ const AuctionListingsPage = () => {
         data={compareResult}
         backendItems={backendData?.items || []}
       />
+
+      {/* Auth required for Watchlist */}
+      <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white text-slate-900 shadow-xl border border-slate-200">
+          <DialogHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <DialogTitle className="text-lg font-semibold">
+                  {t('auction.watch_auth_title')}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-600">
+                  {t('auction.watch_auth_description')}
+                </DialogDescription>
+              </div>
+              <DialogClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                  aria-label={t('common.close')}
+                >
+                  <Icon icon="mdi:close" className="w-4 h-4" />
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setIsAuthDialogOpen(false);
+                navigate('/login');
+              }}
+            >
+              {t('auth.login.title')}
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setIsAuthDialogOpen(false);
+                navigate('/register');
+              }}
+            >
+              {t('auth.register.title')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Gallery Modal */}
       <AnimatePresence>

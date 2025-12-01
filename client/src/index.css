@@ -92,9 +92,11 @@
   --container-padding: 1rem;
 
   /* Typography */
-  --font-sans: "Inter", "Noto Sans Georgian", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "Inter", "Noto Sans Georgian", system-ui, sans-serif;
+  /* Base: English / Latin UI uses Inter */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Inter", system-ui, sans-serif;
+  /* Shared Georgian font variable */
   --font-georgian: "Noto Sans Georgian", sans-serif;
 
   /* Custom Shadows */
@@ -104,17 +106,26 @@
 
 /* Language Specific Font Overrides */
 :root[lang="ar"] {
-  --font-sans: "Cairo", sans-serif;
-  --font-heading: "Cairo", sans-serif;
+  /* Arabic → Cairo */
+  --font-sans: "Cairo", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Cairo", system-ui, sans-serif;
 }
 
 :root[lang="ka"] {
-  /* Use local BPG Nateli font for Georgian locale across all pages */
-  --font-sans: "BPG Nateli", var(--font-georgian), system-ui, -apple-system,
+  /* Georgian → ONLY Noto Sans Georgian */
+  --font-sans: "Noto Sans Georgian", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     sans-serif;
-  --font-heading: "BPG Nateli", var(--font-georgian), system-ui, sans-serif;
-  --font-georgian: "BPG Nateli", "Noto Sans Georgian", sans-serif;
+  --font-heading: "Noto Sans Georgian", system-ui, sans-serif;
+  --font-georgian: "Noto Sans Georgian", sans-serif;
+}
+
+:root[lang="ru"] {
+  /* Russian → PT Sans (Google Font) */
+  --font-sans: "PT Sans", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "PT Sans", system-ui, sans-serif;
 }
 
 .dark {

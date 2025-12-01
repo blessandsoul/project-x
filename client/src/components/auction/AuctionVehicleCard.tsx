@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from 'react';
+import { useSyncExternalStore, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,6 +81,8 @@ export function AuctionVehicleCard({
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
   const isMobile = useMobileDetect();
+
+  const [showWatchBurst, setShowWatchBurst] = useState(false);
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -217,21 +219,36 @@ export function AuctionVehicleCard({
                     {formatMoney(displayPrice)}
                   </span>
                   {onToggleWatch && (
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (!isWatched) {
+                          setShowWatchBurst(true);
+                        }
                         onToggleWatch();
                       }}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      className={`relative flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                         isWatched 
                           ? 'bg-orange-500 text-white hover:bg-orange-600' 
                           : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
                       }`}
                       title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
                     >
+                      {showWatchBurst && !isWatched && (
+                        <motion.span
+                          initial={{ scale: 0, opacity: 0, y: 0 }}
+                          animate={{ scale: 1.6, opacity: 0, y: -10 }}
+                          transition={{ duration: 0.4, ease: 'easeOut' }}
+                          onAnimationComplete={() => setShowWatchBurst(false)}
+                          className="absolute -top-1 -right-1 text-orange-400 pointer-events-none"
+                        >
+                          <Icon icon="mdi:star" className="w-3 h-3" />
+                        </motion.span>
+                      )}
                       <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-3.5 h-3.5" />
                       <span>{t('auction.watch')}</span>
-                    </button>
+                    </motion.button>
                   )}
                 </div>
               </div>
@@ -414,21 +431,36 @@ export function AuctionVehicleCard({
                   </span>
                 </div>
                 {onToggleWatch && (
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!isWatched) {
+                        setShowWatchBurst(true);
+                      }
                       onToggleWatch();
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       isWatched 
                         ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm' 
                         : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
                     }`}
                     title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
                   >
+                    {showWatchBurst && !isWatched && (
+                      <motion.span
+                        initial={{ scale: 0, opacity: 0, y: 0 }}
+                        animate={{ scale: 1.8, opacity: 0, y: -12 }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                        onAnimationComplete={() => setShowWatchBurst(false)}
+                        className="absolute -top-1 -right-1 text-orange-400 pointer-events-none"
+                      >
+                        <Icon icon="mdi:star" className="w-3.5 h-3.5" />
+                      </motion.span>
+                    )}
                     <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
                     <span>{t('auction.watch')}</span>
-                  </button>
+                  </motion.button>
                 )}
               </div>
               <div className="flex items-center gap-2">

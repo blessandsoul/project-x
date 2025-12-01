@@ -154,6 +154,15 @@
     "open_profile_menu": "Open profile menu",
     "avatar_alt": "User avatar"
   },
+  "profile": {
+    "title": "My Profile",
+    "save": "Save changes",
+    "delete_account": "Delete account",
+    "avatar_label": "Upload avatar",
+    "username": "Username",
+    "email": "Email",
+    "new_password": "New password"
+  },
   "home": {
     "hero": {
       "title": "TrustedImporters.Ge",
@@ -395,6 +404,8 @@
     "total_estimate": "Total Estimate",
     "retail_value": "Retail Value",
     "load_more": "Load More",
+    "watch_auth_title": "Save vehicle to watchlist",
+    "watch_auth_description": "To save vehicles to your watch list, please sign in or create an account.",
     "filters": {
       "title": "Filters",
       "auction": "Auction",
