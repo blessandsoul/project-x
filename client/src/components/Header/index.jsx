@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -49,13 +49,13 @@ const Header = ({ user, navigationItems, onNavigate }) => {
     >
       <div className="container mx-auto flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
-          <a className="mr-6 flex items-center space-x-2" href="/">
+          <Link className="mr-6 flex items-center space-x-2" to="/">
             <Icon icon="mdi:home" className="h-6 w-6" />
             <span className="hidden sm:inline-block font-logo-bebas text-xl tracking-wide">
               <span className="font-bold">Trusted</span>{" "}
               <span className="font-normal">Importers.Ge</span>
             </span>
-          </a>
+          </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             {navigationItems.map((item) => (
               <button

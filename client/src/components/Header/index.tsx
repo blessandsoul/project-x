@@ -29,14 +29,16 @@ interface HeaderProps {
   user?: User | null;
   navigationItems: NavigationItem[];
   isSticky?: boolean;
+  variant?: 'hero' | 'glass';
 }
 
 const STORAGE_KEY_USER = 'projectx_auth_user';
 
-const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true }) => {
+const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true, variant = 'glass' }) => {
   const { t, i18n } = useTranslation();
   const { user: authUser, isAuthenticated, logout } = useAuth();
   const [isHidden, setIsHidden] = useState(false);
+  const isHeroVariant = variant === 'hero';
 
   let storedUser: User | null = null;
   if (typeof window !== 'undefined') {
@@ -115,7 +117,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
   return (
     <header
       className={cn(
-        'fixed top-0 z-40 w-full border-b border-white/10 bg-slate-900/20 backdrop-blur-md transition-all transform duration-200 ease-out will-change-transform',
+        'fixed top-0 z-40 w-full backdrop-blur-2xl transition-all transform duration-200 ease-out will-change-transform',
+        isHeroVariant
+          ? 'border-white/10 bg-slate-900/30 text-white shadow-[0_25px_60px_rgba(15,23,42,0.45)]'
+          : 'border-white/30 bg-white/35 text-slate-900 shadow-[0_30px_80px_rgba(15,23,42,0.12)]',
         isSticky && '',
         isHidden ? '-translate-y-full' : 'translate-y-0'
       )}
@@ -127,23 +132,38 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
             <Icon icon="mdi:shield-check" className="h-6 w-6" />
           </div>
-          <span className="inline-block font-sans text-xl font-bold tracking-tight text-white">
-            Trusted<span className="font-medium text-white/80">Importers</span>
+          <span
+            className={cn('inline-block font-sans text-xl font-bold tracking-tight', isHeroVariant ? 'text-white' : 'text-slate-900')}
+          >
+            Trusted
+            <span className={cn('font-medium', isHeroVariant ? 'text-white/80' : 'text-slate-600')}>
+              Importers
+            </span>
           </span>
         </Link>
 
         {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+        <nav
+          className={cn(
+            'hidden md:flex items-center gap-6 text-sm font-medium',
+            isHeroVariant ? 'text-white/80' : 'text-slate-600'
+          )}
+        >
           {navigationItems.map((item) => (
             <NavLink
               key={item.id}
               to={item.href}
               className={({ isActive }) =>
                 cn(
-                  'transition-colors hover:text-foreground',
-                  isActive 
-                    ? 'text-white font-medium' 
-                    : 'text-white/70 hover:text-white transition-colors'
+                  'transition-colors',
+                  isHeroVariant ? 'hover:text-white' : 'hover:text-slate-900',
+                  isActive
+                    ? isHeroVariant
+                      ? 'text-white font-semibold drop-shadow'
+                      : 'text-slate-900 font-semibold'
+                    : isHeroVariant
+                      ? 'text-white/70'
+                      : 'text-slate-500'
                 )
               }
             >
@@ -167,7 +187,12 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
                 asChild
                 variant="outline"
                 size="sm"
-                className="hidden sm:flex bg-transparent text-white border-white/20 hover:bg-white/10 hover:text-white"
+                className={cn(
+                  'hidden sm:flex border rounded-full px-4 transition-colors',
+                  isHeroVariant
+                    ? 'bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white'
+                    : 'bg-white/80 text-slate-900 border-white/70 hover:bg-white'
+                )}
               >
                 <Link to="/login">{t('header.sign_in')}</Link>
               </Button>
@@ -176,11 +201,18 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true 
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'lg:hidden border border-transparent',
+                    isHeroVariant ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'
+                  )}
+                >
                   <Icon icon="mdi:menu" className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
+              <SheetContent side="right" className="w-[280px] p-0 flex flex-col bg-white">
                 {/* Header with Branding */}
                 <SheetHeader className="px-3 py-3 border-b">
                   <SheetTitle className="text-left flex items-center gap-1.5 text-sm">

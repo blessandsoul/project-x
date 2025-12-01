@@ -210,95 +210,181 @@ export function CompanyComparisonModal({
 
             {/* Content Area with Sticky Columns */}
             <div className="flex-1 overflow-auto relative bg-slate-50/50">
-              <div className="min-w-max grid" style={{ gridTemplateColumns: `140px repeat(${companies.length}, minmax(200px, 1fr))` }}>
-                
-                {/* --- Sticky Header Row (Logos) --- */}
-                
-                {/* Top-Left Corner (Sticky x & y) */}
-                <div className="sticky top-0 left-0 z-30 bg-slate-50 border-b border-r border-slate-200 p-4 flex items-end pb-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Criteria</span>
-                </div>
-
-                {/* Company Headers (Sticky top) */}
-                {companies.map((company) => {
-                  const isBestOverall = (company.trustScore ?? 0) >= 90 && company.rating >= 4.8;
-                  return (
-                    <div key={company.id} className="sticky top-0 z-20 bg-white border-b border-r border-slate-100 p-4 flex flex-col items-center gap-2.5 relative overflow-hidden">
-                      {isBestOverall && (
-                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
-                      )}
-                      
-                      <div className="relative h-12 w-12 group-hover:scale-105 transition-transform">
-                        <img src={company.logo ?? ''} alt={company.name} className="h-full w-full object-cover rounded-full shadow-sm" />
-                        {company.vipStatus && (
-                          <div className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-sm ring-1 ring-slate-50">
-                            <Icon icon="mdi:crown" className="h-5 w-5 text-amber-500" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-center w-full">
-                        <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-1 mb-0.5">{company.name}</h3>
-                        {isBestOverall ? (
-                           <Badge className="h-4 bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[9px] font-bold shadow-sm">
-                              <Icon icon="mdi:trophy" className="mr-1 h-3 w-3" /> Recommended
-                           </Badge>
-                         ) : (
-                           <div className="flex items-center justify-center gap-1 text-xs text-slate-500 h-5">
-                             <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                             {company.location?.city || 'Georgia'}
-                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Header CTA */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-3 text-[11px] font-semibold rounded-full border-slate-300 text-slate-700 bg-white hover:bg-slate-100 mt-1"
+              {/* Mobile / tablet stacked layout */}
+              <div className="block lg:hidden h-full">
+                <div className="space-y-4 px-3 py-4">
+                  {companies.map((company) => {
+                    const isBestOverall = (company.trustScore ?? 0) >= 90 && company.rating >= 4.8;
+                    return (
+                      <div
+                        key={company.id}
+                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 space-y-3"
                       >
-                        Select
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-10">
+                            <img
+                              src={company.logo ?? ''}
+                              alt={company.name}
+                              className="h-full w-full object-cover rounded-full shadow-sm"
+                            />
+                            {company.vipStatus && (
+                              <div className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-sm ring-1 ring-slate-50">
+                                <Icon icon="mdi:crown" className="h-4 w-4 text-amber-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">
+                                {company.name}
+                              </h3>
+                              {isBestOverall && (
+                                <Badge className="h-5 bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[10px] font-bold px-2 flex-shrink-0">
+                                  <Icon icon="mdi:trophy" className="mr-1 h-3 w-3" />
+                                  Recommended
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                                <Icon icon="mdi:star" className="h-3.5 w-3.5 text-amber-400" />
+                                <span className="font-semibold">{company.rating}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">
+                                {company.reviewCount} reviews
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 pt-1">
+                          {rows.map((row) => (
+                            <div
+                              key={row.label}
+                              className="flex items-center justify-between gap-3 py-1.5 border-t border-slate-100 first:border-t-0"
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Icon icon={row.icon} className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                                <span className="text-[11px] font-semibold text-slate-600 truncate">
+                                  {row.label}
+                                </span>
+                              </div>
+                              <div className="flex-1 flex justify-end ml-2">
+                                <div className="max-w-[55%] flex justify-end text-right">
+                                  {row.render(company)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-3 text-[11px] font-semibold rounded-full border-slate-300 text-slate-700 bg-white hover:bg-slate-100"
+                          >
+                            Select
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Desktop grid layout */}
+              <div className="hidden lg:block h-full">
+                <div className="min-w-max grid" style={{ gridTemplateColumns: `140px repeat(${companies.length}, minmax(200px, 1fr))` }}>
+                  
+                  {/* --- Sticky Header Row (Logos) --- */}
+                  
+                  {/* Top-Left Corner (Sticky x & y) */}
+                  <div className="sticky top-0 left-0 z-30 bg-slate-50 border-b border-r border-slate-200 p-4 flex items-end pb-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Criteria</span>
+                  </div>
+
+                  {/* Company Headers (Sticky top) */}
+                  {companies.map((company) => {
+                    const isBestOverall = (company.trustScore ?? 0) >= 90 && company.rating >= 4.8;
+                    return (
+                      <div key={company.id} className="sticky top-0 z-20 bg-white border-b border-r border-slate-100 p-4 flex flex-col items-center gap-2.5 relative overflow-hidden">
+                        {isBestOverall && (
+                           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
+                        )}
+                        
+                        <div className="relative h-12 w-12 group-hover:scale-105 transition-transform">
+                          <img src={company.logo ?? ''} alt={company.name} className="h-full w-full object-cover rounded-full shadow-sm" />
+                          {company.vipStatus && (
+                            <div className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-sm ring-1 ring-slate-50">
+                              <Icon icon="mdi:crown" className="h-5 w-5 text-amber-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center w-full">
+                          <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-1 mb-0.5">{company.name}</h3>
+                          {isBestOverall ? (
+                             <Badge className="h-4 bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[9px] font-bold shadow-sm">
+                                <Icon icon="mdi:trophy" className="mr-1 h-3 w-3" /> Recommended
+                             </Badge>
+                           ) : (
+                             <div className="flex items-center justify-center gap-1 text-xs text-slate-500 h-5">
+                               <Icon icon="mdi:map-marker" className="h-3 w-3" />
+                               {company.location?.city || 'Georgia'}
+                             </div>
+                          )}
+                        </div>
+                        
+                        {/* Header CTA */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-3 text-[11px] font-semibold rounded-full border-slate-300 text-slate-700 bg-white hover:bg-slate-100 mt-1"
+                        >
+                          Select
+                        </Button>
+                      </div>
+                    );
+                  })}
+
+                  {/* --- Comparison Rows --- */}
+                  
+                  {rows.map((row) => (
+                    <div key={row.label} className="contents group">
+                      {/* Row Label (Sticky left) */}
+                      <div className="sticky left-0 z-10 bg-white border-r border-slate-200 border-b border-slate-100 p-3 flex items-center gap-1.5 group-hover:bg-slate-50/80 transition-colors">
+                        <Icon icon={row.icon} className="h-5 w-5 text-slate-400 shrink-0" />
+                        {row.tooltip ? (
+                           <LabelWithTooltip label={row.label} tooltip={row.tooltip} />
+                        ) : (
+                           <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{row.label}</span>
+                        )}
+                      </div>
+
+                      {/* Company Data Cells */}
+                      {companies.map((company) => (
+                        <div key={`${company.id}-${row.label}`} className="bg-white border-r border-slate-100 border-b border-slate-100 p-3 flex items-center justify-center group-hover:bg-slate-50/50 transition-colors relative">
+                          {row.render(company)}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* --- CTA Footer Row --- */}
+                  <div className="sticky left-0 z-10 bg-slate-50 border-r border-slate-200 p-3" />
+                  {companies.map((company) => (
+                    <div key={`cta-${company.id}`} className="bg-slate-50 border-r border-slate-200 p-3 flex items-center justify-center">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <Icon icon="mdi:check-bold" className="h-4 w-4" />
                       </Button>
                     </div>
-                  );
-                })}
+                  ))}
 
-                {/* --- Comparison Rows --- */}
-                
-                {rows.map((row) => (
-                  <div key={row.label} className="contents group">
-                    {/* Row Label (Sticky left) */}
-                    <div className="sticky left-0 z-10 bg-white border-r border-slate-200 border-b border-slate-100 p-3 flex items-center gap-1.5 group-hover:bg-slate-50/80 transition-colors">
-                      <Icon icon={row.icon} className="h-5 w-5 text-slate-400 shrink-0" />
-                      {row.tooltip ? (
-                         <LabelWithTooltip label={row.label} tooltip={row.tooltip} />
-                      ) : (
-                         <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{row.label}</span>
-                      )}
-                    </div>
-
-                    {/* Company Data Cells */}
-                    {companies.map((company) => (
-                      <div key={`${company.id}-${row.label}`} className="bg-white border-r border-slate-100 border-b border-slate-100 p-3 flex items-center justify-center group-hover:bg-slate-50/50 transition-colors relative">
-                        {row.render(company)}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                {/* --- CTA Footer Row --- */}
-                <div className="sticky left-0 z-10 bg-slate-50 border-r border-slate-200 p-3" />
-                {companies.map((company) => (
-                  <div key={`cta-${company.id}`} className="bg-slate-50 border-r border-slate-200 p-3 flex items-center justify-center">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="rounded-full border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    >
-                      <Icon icon="mdi:check-bold" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-
+                </div>
               </div>
             </div>
           </motion.div>

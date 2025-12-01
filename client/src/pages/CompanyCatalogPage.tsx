@@ -494,7 +494,7 @@ const CompanyCatalogPage = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pt-16">
       <Header navigationItems={navigationItems} user={null} />
 
       {/* Breadcrumb-like Header Section */}
@@ -597,6 +597,102 @@ const CompanyCatalogPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Auction / Shipping Selector */}
+      <div className="lg:hidden bg-slate-50/80 border-b border-slate-200/80">
+        <div className="container mx-auto px-4 pt-3 pb-4">
+          <div className="bg-white border border-slate-200 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
+            <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+              {t('catalog.filters.auction', 'Auction shipping')}
+            </span>
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="sm:w-full">
+                  <Select
+                    value={auctionSource}
+                    onValueChange={(value: 'all' | 'copart' | 'iaai') => {
+                      setAuctionSource(value);
+                      setSelectedAuctionBranch('');
+                      if (value !== 'all') {
+                        setBranchNeedsAttention(true);
+                        setTimeout(() => branchSelectRef.current?.click(), 100);
+                      } else {
+                        setBranchNeedsAttention(false);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-white h-9 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
+                      <SelectItem value="copart">Copart</SelectItem>
+                      <SelectItem value="iaai">IAAI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1 min-w-[180px]">
+                  <Select
+                    value={selectedAuctionBranch ?? ''}
+                    onValueChange={(value) => {
+                      setSelectedAuctionBranch(value);
+                      setBranchNeedsAttention(false);
+                    }}
+                    disabled={auctionSource === 'all' || auctionBranches.length === 0}
+                  >
+                    <SelectTrigger
+                      ref={branchSelectRef}
+                      className={`bg-white h-9 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                    >
+                      <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
+                    </SelectTrigger>
+                    <SelectContent
+                      position="popper"
+                      className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
+                    >
+                      <div className="p-2 border-b bg-white sticky top-0 z-10">
+                        <Input
+                          placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
+                          value={auctionBranchSearch}
+                          onChange={(e) => setAuctionBranchSearch(e.target.value)}
+                          className="h-8 text-xs bg-white"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredAuctionBranches.map((branch) => (
+                          <SelectItem key={branch.address} value={branch.address}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="sm:w-full">
+                  <Select
+                    value={selectedPort}
+                    onValueChange={(value) => {
+                      setSelectedPort(value);
+                    }}
+                  >
+                    <SelectTrigger className="bg-white h-9 w-full">
+                      <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
+                      <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
+                      <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
+                      <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

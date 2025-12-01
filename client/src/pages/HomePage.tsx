@@ -10,7 +10,7 @@ const HomePage = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#1F1F1F]">
-      <Header navigationItems={navigationItems} />
+      <Header navigationItems={navigationItems} variant="hero" />
 
       {loading ? (
         <HomePageSkeleton />

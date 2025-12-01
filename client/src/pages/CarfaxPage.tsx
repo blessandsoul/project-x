@@ -118,7 +118,7 @@ const CarfaxPage = () => {
   const hasResult = !!result && !error;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-white pt-16">
       <Header
         user={null}
         navigationItems={navigationItems}
@@ -130,7 +130,7 @@ const CarfaxPage = () => {
         aria-label={t('vin.title')}
       >
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-muted/30 to-background py-12 lg:py-20">
+        <section className="bg-white border-b py-12 lg:py-20">
             <div className="container mx-auto px-4 max-w-3xl text-center space-y-8">
                 <div className="space-y-4 animate-in slide-in-from-bottom-4 fade-in duration-700">
                     <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
@@ -141,7 +141,7 @@ const CarfaxPage = () => {
                     </p>
                 </div>
 
-                <Card className="border-none shadow-xl bg-card relative overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-700 delay-100">
+                <Card className="border border-slate-100 shadow-xl bg-white relative overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-700 delay-100">
                     <CardContent className="p-2 sm:p-4">
                         <form
                             onSubmit={handleSubmit}

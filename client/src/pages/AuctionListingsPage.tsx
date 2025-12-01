@@ -1022,7 +1022,7 @@ const AuctionListingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-white pt-16">
       <Header
         user={null}
         navigationItems={navigationItems}
@@ -1033,7 +1033,7 @@ const AuctionListingsPage = () => {
         aria-label={t('auction.active_auctions')}
       >
         {/* Hero Section */}
-        <div className="bg-gradient-to-b from-slate-50 to-white border-b">
+        <div className="bg-white border-b">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl">
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">

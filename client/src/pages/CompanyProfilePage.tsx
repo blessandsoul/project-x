@@ -362,7 +362,7 @@ const CompanyProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative pt-16">
       {/* Ambient Background */}
       <div className="absolute top-0 left-0 right-0 h-[600px] overflow-hidden pointer-events-none z-0">
         {gradientColors.length >= 3 ? (

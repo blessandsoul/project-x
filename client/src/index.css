@@ -176,7 +176,8 @@
   body {
     @apply text-foreground antialiased;
     font-family: var(--font-sans);
-    background: #020617;
+    /* Light neutral background so loading and blank states are not black */
+    background: #f8fafc;
   }
   h1,
   h2,
