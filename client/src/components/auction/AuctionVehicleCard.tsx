@@ -266,7 +266,7 @@ export function AuctionVehicleCard({
 
   return (
     <div className="h-full">
-      <div className="group relative h-full overflow-hidden bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 flex flex-col">
+      <div className="group relative h-full overflow-hidden rounded-2xl bg-white/90 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <button
@@ -318,10 +318,10 @@ export function AuctionVehicleCard({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col flex-1 p-2.5">
+        <div className="flex flex-col flex-1 p-3">
           {/* Title */}
-          <button onClick={onViewDetails} className="text-left mb-1">
-            <h3 className="font-bold text-[12px] text-[#0047AB] hover:underline leading-tight uppercase line-clamp-2">
+          <button onClick={onViewDetails} className="text-left mb-1.5">
+            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-[#0047AB] leading-snug line-clamp-2">
               {item.year} {item.make} {item.model}
             </h3>
           </button>
@@ -363,7 +363,7 @@ export function AuctionVehicleCard({
           <div className="mt-auto space-y-2">
             <div>
               <div className="text-[9px] text-slate-400 uppercase">Current Bid</div>
-              <div className="text-[15px] font-bold text-slate-900">
+              <div className="text-[16px] font-semibold text-slate-900">
                 {formatMoney(displayPrice)} <span className="text-[9px] font-normal text-slate-400">USD</span>
               </div>
               {hasBuyNow && buyNowPriceLabel && (
@@ -373,10 +373,10 @@ export function AuctionVehicleCard({
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Button
                 size="sm"
-                className="w-full h-6 text-[10px] bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-bold rounded-sm"
+                className="w-full h-7 text-[11px] rounded-full bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-semibold"
                 onClick={onViewDetails}
               >
                 Bid Now
@@ -384,7 +384,7 @@ export function AuctionVehicleCard({
               {hasBuyNow ? (
                 <Button
                   size="sm"
-                  className="w-full h-6 text-[10px] bg-[#28a745] hover:bg-[#218838] text-white font-bold rounded-sm"
+                  className="w-full h-7 text-[11px] rounded-full bg-[#28a745] hover:bg-[#218838] text-white font-semibold"
                   onClick={onViewDetails}
                 >
                   Buy Now
@@ -393,7 +393,7 @@ export function AuctionVehicleCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full h-6 text-[10px] border-slate-300 text-slate-600 font-medium rounded-sm"
+                  className="w-full h-7 text-[11px] rounded-full border-slate-300 text-slate-600 font-medium hover:bg-slate-50"
                   onClick={onViewDetails}
                 >
                   Details

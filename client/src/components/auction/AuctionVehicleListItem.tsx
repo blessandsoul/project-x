@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -25,9 +26,10 @@ const formatMoney = (value: number | string | null | undefined): string => {
 
 export function AuctionVehicleListItem({
   item,
-  isSelected: _isSelected = false,
-  onToggleSelect: _onToggleSelect,
+  isSelected = false,
+  onToggleSelect,
   onViewDetails,
+  showCompareCheckbox = false,
   priority = false,
   onToggleWatch,
   isWatched = false,
@@ -64,12 +66,27 @@ export function AuctionVehicleListItem({
     : null;
 
   return (
-    <div className="flex items-stretch border-b border-slate-200 hover:bg-blue-50/50 transition-colors text-[11px]">
-      {/* Image Column (fixed) */}
-      <div className="w-[130px] flex-shrink-0 p-2">
+    <div className={cn(
+      "flex items-stretch w-full border-b border-border hover:bg-orange-50/30 transition-colors text-xs",
+      isSelected && "bg-blue-50/50"
+    )}>
+      {/* Checkbox + Image Column (fixed) */}
+      <div className="w-[140px] flex-shrink-0 p-2 flex gap-2">
+        {showCompareCheckbox && (
+          <div className="flex items-start pt-1">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onToggleSelect?.(checked === true)}
+              className="h-4 w-4"
+            />
+          </div>
+        )}
         <button
           type="button"
-          className="w-full aspect-[4/3] rounded overflow-hidden bg-slate-100 focus:outline-none cursor-pointer"
+          className={cn(
+            "flex-1 aspect-[4/3] rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer",
+            showCompareCheckbox ? "max-w-[100px]" : "w-full"
+          )}
           onClick={onViewDetails}
         >
           <img
@@ -81,119 +98,114 @@ export function AuctionVehicleListItem({
         </button>
       </div>
 
-      {/* Lot Info Column (flex-[1.2]) */}
-      <div className="flex-[1.2] min-w-[180px] p-2 border-l border-slate-100">
+      {/* Lot Info Column (fixed width) */}
+      <div className="w-[160px] flex-shrink-0 p-2.5 border-l border-border">
         {/* Title */}
         <button onClick={onViewDetails} className="text-left">
-          <h3 className="font-bold text-[12px] text-[#0047AB] hover:underline leading-tight uppercase">
+          <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase">
             {item.year} {item.make} {item.model}
           </h3>
         </button>
-        <div className="text-slate-500 mt-0.5">
-          {t('auction.lot')} <span className="text-[#0047AB]">{item.source_lot_id || item.id}</span>
+        <div className="text-muted-foreground mt-0.5 text-[11px]">
+          {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
         </div>
         
         {/* Action buttons */}
         <div className="flex items-center gap-1 mt-2">
           {onToggleWatch && (
-            <button
+            <Button
+              variant={isWatched ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-6 text-[10px] gap-1",
+                isWatched && "bg-green-600 hover:bg-green-700"
+              )}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleWatch();
               }}
-              className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-medium",
-                isWatched 
-                  ? "bg-green-50 border-green-300 text-green-700" 
-                  : "bg-white border-slate-300 text-slate-600 hover:bg-slate-50"
-              )}
             >
               <Icon icon="mdi:bookmark" className="w-3 h-3" />
               {t('auction.actions.watch')}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Vehicle Info Column (flex-[1.6]) */}
-      <div className="flex-[1.6] min-w-[200px] p-2 border-l border-slate-100">
-        <div className="text-slate-600">{t('auction.fields.odometer')}</div>
-        <div className="font-semibold text-slate-900">
+      {/* Vehicle Info Column (flex) */}
+      <div className="flex-[1] min-w-[140px] p-2.5 border-l border-border">
+        <div className="text-muted-foreground text-[11px]">{t('auction.fields.odometer')}</div>
+        <div className="font-semibold text-foreground">
           {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
         </div>
-        <div className="text-[#0047AB] font-medium">(ACTUAL)</div>
-        <div className="text-slate-500 mt-1">{t('auction.fields.estimated_retail_value')}</div>
-        <div className="font-semibold text-slate-900">
+        <div className="text-muted-foreground mt-1.5 text-[11px]">{t('auction.fields.estimated_retail_value')}</div>
+        <div className="font-semibold text-foreground">
           {retailValue ? formatMoney(retailValue) : 'N/A'}
         </div>
       </div>
 
-      {/* Condition Column (flex-[0.9]) */}
-      <div className="flex-[0.9] min-w-[140px] p-2 border-l border-slate-100">
-        <div className="text-slate-900 font-medium">
+      {/* Condition Column (flex) */}
+      <div className="flex-[1.2] min-w-[150px] p-2.5 border-l border-border">
+        <div className="text-foreground font-medium text-[11px]">
           {item.sale_title_type || t('auction.fields.clean_title')} ({item.state || 'N/A'})
         </div>
-        <div className="text-slate-600 mt-0.5">
+        <div className="text-muted-foreground mt-0.5 text-[11px]">
           {item.damage_main_damages || t('auction.fields.minor_damage')}
         </div>
-        <div className="text-slate-600 mt-0.5">
+        <div className="text-muted-foreground mt-0.5 text-[11px]">
           {item.has_keys_readable || t('auction.fields.keys_available')}
         </div>
       </div>
 
-      {/* Sale Info Column (flex-[0.9]) */}
-      <div className="flex-[0.9] min-w-[140px] p-2 border-l border-slate-100">
-        <div className="text-[#0047AB] font-medium flex items-center gap-1">
+      {/* Sale Info Column (flex) */}
+      <div className="flex-[1.2] min-w-[150px] p-2.5 border-l border-border">
+        <div className="text-primary font-medium flex items-center gap-1 text-[11px]">
           {item.yard_name || item.city || 'N/A'}
           <Icon icon="mdi:chevron-right" className="w-3 h-3" />
         </div>
-        <div className="text-slate-500 mt-0.5">-/-</div>
-        <div className="text-slate-500">{t('auction.fields.item')}: {item.salvage_id || '0'}</div>
-        <div className="text-[#0047AB] font-medium mt-0.5">
+        <div className="text-primary font-medium mt-0.5 text-[11px]">
           {t('auction.fields.auction_time_placeholder')}
         </div>
       </div>
 
-      {/* Bids Column (smallest, fixed) */}
-      <div className="w-[130px] flex-shrink-0 p-2 border-l border-slate-100 text-right">
-        <div className="text-slate-500">{t('auction.fields.current_bid')}:</div>
-        <div className="text-[15px] font-bold text-slate-900">
-          {formatMoney(currentBid)} <span className="text-[10px] font-normal text-slate-500">USD</span>
+      {/* Bids Column (fixed) */}
+      <div className="w-[200px] flex-shrink-0 p-2.5 border-l border-border">
+        <div className="text-muted-foreground text-[10px]">Current bid:</div>
+        <div className="text-base font-bold text-foreground mb-2">
+          {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
         </div>
         
-        {/* Buttons */}
-        <div className="flex flex-col gap-1 mt-2">
-          <Button
-            size="sm"
-            className="w-full h-6 text-[10px] bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-bold rounded-sm"
-            onClick={onViewDetails}
-          >
-            {t('auction.actions.bid_now')}
-          </Button>
-          {hasBuyNow ? (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                className="flex-1 h-6 text-[10px] bg-[#28a745] hover:bg-[#218838] text-white font-bold rounded-sm"
-                onClick={onViewDetails}
-              >
-                {t('auction.actions.buy_it_now')}
-              </Button>
-              <span className="text-[10px] text-slate-700 font-semibold">
-                {formatMoney(buyNowPrice)} <span className="text-slate-400">USD</span>
-              </span>
-            </div>
-          ) : (
+        <Button
+          size="sm"
+          className="w-full h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold mb-1.5"
+          onClick={onViewDetails}
+        >
+          {t('auction.actions.bid_now')}
+        </Button>
+        
+        {hasBuyNow ? (
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="outline"
-              className="w-full h-6 text-[10px] border-slate-300 text-slate-600 font-medium rounded-sm"
+              className="h-7 px-3 text-[11px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold"
               onClick={onViewDetails}
             >
-              {t('common.details')}
+              {t('auction.actions.buy_it_now')}
             </Button>
-          )}
-        </div>
+            <span className="text-sm text-foreground font-semibold">
+              {formatMoney(buyNowPrice)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+            </span>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full h-7 text-[11px] border-primary text-primary hover:bg-primary/5"
+            onClick={onViewDetails}
+          >
+            {t('common.details')}
+          </Button>
+        )}
       </div>
     </div>
   );

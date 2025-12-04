@@ -342,9 +342,9 @@ const CompanyCatalogPage = () => {
     () => (
       <div className="lg:col-span-3 space-y-6">
         {/* Results Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/20">
-          <p className="text-sm font-medium text-white/70">
-            {t('catalog.results.showing')} <span className="font-bold text-white">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-white">{totalResults}</span> {t('catalog.results.of')}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
+          <p className="text-sm font-medium text-slate-600">
+            {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
           </p>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -353,13 +353,13 @@ const CompanyCatalogPage = () => {
               onPressedChange={setIsCompareMode}
               variant="outline"
               aria-label="Toggle compare mode"
-              className="gap-2 border-white/20 text-white/80 hover:bg-white/10 hover:text-white data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/40 flex-1 sm:flex-none"
+              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200 flex-1 sm:flex-none"
             >
               <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
               <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
             </Toggle>
 
-            <span className="text-sm text-white/50 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
+            <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
             <Select
               value={filters.orderBy}
               onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
@@ -371,7 +371,7 @@ const CompanyCatalogPage = () => {
                 updateUrlFromFilters(nextFilters, 1);
               }}
             >
-              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white/10 border-white/20 text-white hover:bg-white/15">
+              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white border-slate-200 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -387,15 +387,15 @@ const CompanyCatalogPage = () => {
         {isLoading ? (
           <div className="space-y-4">
             {[1,2,3,4,5].map(i => (
-              <div key={i} className="h-32 rounded-xl border border-white/10 bg-white/5 p-4 flex gap-4 items-center">
-                <Skeleton className="h-16 w-16 rounded-xl shrink-0 bg-white/10" />
+              <div key={i} className="h-32 rounded-xl border border-slate-100 bg-white p-4 flex gap-4 items-center">
+                <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-6 w-1/3 bg-white/10" />
-                  <Skeleton className="h-4 w-1/4 bg-white/10" />
+                  <Skeleton className="h-6 w-1/3" />
+                  <Skeleton className="h-4 w-1/4" />
                 </div>
                 <div className="w-32 space-y-2 hidden md:block">
-                  <Skeleton className="h-8 w-full bg-white/10" />
-                  <Skeleton className="h-4 w-2/3 bg-white/10" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                 </div>
               </div>
             ))}
@@ -444,10 +444,10 @@ const CompanyCatalogPage = () => {
               disabled={page <= 1}
               aria-disabled={page <= 1}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
                 page <= 1
-                  ? 'border border-dashed border-white/20 text-white/30 bg-transparent cursor-not-allowed'
-                  : 'border border-white/20 text-white/80 bg-white/10 hover:bg-white/20 hover:text-white'
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
               )}
             >
               <Icon icon="mdi:chevron-left" className="h-5 w-5" />
@@ -470,10 +470,10 @@ const CompanyCatalogPage = () => {
                     }}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
+                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
                       isActive
-                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/30 scale-110 pointer-events-none'
-                        : 'bg-white/10 border-transparent text-white/80 hover:bg-white/20 hover:text-white'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-110 pointer-events-none'
+                        : 'bg-slate-100 border-transparent text-slate-800 hover:bg-slate-200 hover:text-slate-900'
                     )}
                   >
                     {p}
@@ -499,10 +499,10 @@ const CompanyCatalogPage = () => {
               disabled={page >= totalPages}
               aria-disabled={page >= totalPages}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
                 page >= totalPages
-                  ? 'border border-dashed border-white/20 text-white/30 bg-transparent cursor-not-allowed'
-                  : 'border border-white/20 text-white/80 bg-white/10 hover:bg-white/20 hover:text-white'
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
               )}
             >
               <Icon icon="mdi:chevron-right" className="h-5 w-5" />

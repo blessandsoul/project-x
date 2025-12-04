@@ -24,8 +24,26 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import type {
+  ColumnDef,
+  Row,
+} from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 // navigationItems now handled by MainLayout
-import { searchVehicles, compareVehicles } from '@/api/vehicles';
+import { searchVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type {
@@ -45,8 +63,8 @@ import { useTranslation } from 'react-i18next';
 import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
 import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
-import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListItem';
 import { ComparisonModal } from '@/components/auction/ComparisonModal';
+import { QuotesShowcase } from '@/components/auction/QuotesShowcase';
 
 type ViewMode = 'grid' | 'list';
 
@@ -54,6 +72,9 @@ type AuctionHouse = 'all' | 'Copart' | 'IAAI';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
 type DamageType = 'all' | 'front' | 'rear' | 'side';
 type SortOption = 'none' | VehicleSortOption;
+
+// Define BackendItem type
+type BackendItem = SearchVehiclesResponse["items"][number];
 
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via /vehicles/search.
@@ -160,6 +181,246 @@ const formatMoney = (
   return `$${numeric.toLocaleString()}`;
 };
 
+// Table columns definition
+const createColumns = (
+  showCompareCheckbox: boolean,
+  selectedVehicleIds: number[],
+  onToggleSelect: (item: BackendItem, checked: boolean) => void,
+  onToggleWatch: (item: BackendItem) => void,
+  onViewDetails: (item: BackendItem) => void,
+  isWatched: (id: number) => boolean,
+  t: any
+): ColumnDef<BackendItem>[] => [
+  // Checkbox column
+  ...(showCompareCheckbox ? [{
+    id: 'select',
+    header: () => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          aria-label="Select all"
+          className="h-4 w-4"
+        />
+      </div>
+    ),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      const isSelected = selectedVehicleIds.includes(item.vehicle_id ?? item.id);
+      return (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onToggleSelect(item, checked === true)}
+            className="h-4 w-4"
+            aria-label={`Select ${item.year} ${item.make} ${item.model}`}
+          />
+        </div>
+      );
+    },
+    enableSorting: false,
+    size: 40,
+  }] : []),
+  // Image column
+  {
+    id: 'image',
+    header: t('auction.columns.image'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
+      return (
+        <button
+          type="button"
+          className="aspect-[4/3] w-20 rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+          onClick={() => onViewDetails(item)}
+        >
+          <img
+            src={mainPhotoUrl}
+            alt={`${item.year} ${item.make} ${item.model}`}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </button>
+      );
+    },
+    enableSorting: false,
+    size: 100,
+  },
+  // Lot Info column
+  {
+    id: 'lot_info',
+    header: t('auction.columns.lot_info'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      return (
+        <div className="min-w-[140px]">
+          <button onClick={() => onViewDetails(item)} className="text-left">
+            <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase">
+              {item.year} {item.make} {item.model}
+            </h3>
+          </button>
+          <div className="text-muted-foreground mt-0.5 text-[11px]">
+            {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
+          </div>
+          <div className="flex items-center gap-1 mt-2">
+            <Button
+              variant={isWatched(item.vehicle_id ?? item.id) ? "default" : "outline"}
+              size="sm"
+              className={`h-6 text-[10px] gap-1 ${isWatched(item.vehicle_id ?? item.id) && "bg-green-600 hover:bg-green-700"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatch(item);
+              }}
+            >
+              <Icon icon="mdi:bookmark" className="w-3 h-3" />
+              {t('auction.actions.watch')}
+            </Button>
+          </div>
+        </div>
+      );
+    },
+    size: 160,
+  },
+  // Vehicle Info column
+  {
+    id: 'vehicle_info',
+    header: t('auction.columns.vehicle_info'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      const retailValue = item.retail_value
+        ? (typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value))
+        : null;
+
+      return (
+        <div className="min-w-[140px]">
+          <div className="text-muted-foreground text-[11px]">{t('auction.fields.odometer')}</div>
+          <div className="font-semibold text-foreground">
+            {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
+          </div>
+          <div className="text-muted-foreground mt-1.5 text-[11px]">{t('auction.fields.estimated_retail_value')}</div>
+          <div className="font-semibold text-foreground">
+            {retailValue ? formatMoney(retailValue) : 'N/A'}
+          </div>
+        </div>
+      );
+    },
+    size: 140,
+  },
+  // Condition column
+  {
+    id: 'condition',
+    header: t('auction.columns.condition'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      return (
+        <div className="min-w-[150px]">
+          <div className="text-foreground font-medium text-[11px]">
+            {item.sale_title_type || t('auction.fields.clean_title')} ({item.state || 'N/A'})
+          </div>
+          <div className="text-muted-foreground mt-0.5 text-[11px]">
+            {item.damage_main_damages || t('auction.fields.minor_damage')}
+          </div>
+          <div className="text-muted-foreground mt-0.5 text-[11px]">
+            {item.has_keys_readable || t('auction.fields.keys_available')}
+          </div>
+        </div>
+      );
+    },
+    size: 150,
+  },
+  // Sale Info column
+  {
+    id: 'sale_info',
+    header: t('auction.columns.sale_info'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+      return (
+        <div className="min-w-[150px]">
+          <div className="text-primary font-medium flex items-center gap-1 text-[11px]">
+            {item.yard_name || item.city || 'N/A'}
+            <Icon icon="mdi:chevron-right" className="w-3 h-3" />
+          </div>
+          <div className="text-primary font-medium mt-0.5 text-[11px]">
+            {t('auction.fields.auction_time_placeholder')}
+          </div>
+        </div>
+      );
+    },
+    size: 150,
+  },
+  // Bids column
+  {
+    id: 'bids',
+    header: t('auction.columns.bids'),
+    cell: ({ row }: { row: Row<BackendItem> }) => {
+      const item = row.original;
+
+      // Current bid price
+      let currentBid: number | null = null;
+      if (item.calc_price != null) {
+        const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
+        if (Number.isFinite(numericCalc)) currentBid = numericCalc;
+      }
+      if (currentBid == null && item.retail_value != null) {
+        const numericRetail = typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value);
+        if (Number.isFinite(numericRetail)) currentBid = numericRetail;
+      }
+
+      // Buy Now price
+      let buyNowPrice: number | null = null;
+      if (item.buy_it_now_price != null) {
+        const numeric = typeof item.buy_it_now_price === 'number' ? item.buy_it_now_price : Number(item.buy_it_now_price);
+        if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
+      } else if (item.buy_it_now != null) {
+        const numeric = typeof item.buy_it_now === 'number' ? item.buy_it_now : Number(item.buy_it_now);
+        if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
+      }
+
+      const hasBuyNow = buyNowPrice != null;
+
+      return (
+        <div className="min-w-[180px]">
+          <div className="text-muted-foreground text-[10px]">Current bid:</div>
+          <div className="text-base font-bold text-foreground mb-2">
+            {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+          </div>
+
+          <Button
+            size="sm"
+            className="w-full h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold mb-1.5"
+            onClick={() => onViewDetails(item)}
+          >
+            {t('auction.actions.bid_now')}
+          </Button>
+
+          {hasBuyNow ? (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="h-7 px-3 text-[11px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold"
+                onClick={() => onViewDetails(item)}
+              >
+                {t('auction.actions.buy_it_now')}
+              </Button>
+              <span className="text-sm text-foreground font-semibold">
+                {formatMoney(buyNowPrice)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+              </span>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full h-7 text-[11px] border-primary text-primary hover:bg-primary/5"
+              onClick={() => onViewDetails(item)}
+            >
+              {t('common.details')}
+            </Button>
+          )}
+        </div>
+      );
+    },
+    size: 200,
+  },
+];
+
 const AuctionListingsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -233,9 +494,51 @@ const AuctionListingsPage = () => {
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-
-  // Only initialize state from URL once on initial mount.
+  
   const hasInitializedFromUrl = useRef(false);
+
+  const displayedItems: BackendItem[] = useMemo(
+    () => (extraLoaded ? extraLoaded.items : backendData?.items ?? []),
+    [extraLoaded, backendData?.items]
+  );
+
+  // Create table columns and instance
+  const columns = useMemo(() => createColumns(
+    showCompareCheckboxes,
+    selectedVehicleIds,
+    (item: BackendItem, checked: boolean) => {
+      const id = item.vehicle_id ?? item.id;
+      const isMobile = window.innerWidth < 640;
+      const maxCompare = isMobile ? 2 : 5;
+      setSelectedVehicleIds((prev) =>
+        checked
+          ? prev.length < maxCompare
+            ? [...prev, id]
+            : prev
+          : prev.filter((pid) => pid !== id)
+      );
+    },
+    (item: BackendItem) => {
+      const id = item.vehicle_id ?? item.id;
+      if (!isAuthenticated) {
+        setIsAuthDialogOpen(true);
+        return;
+      }
+      toggleWatch(id);
+    },
+    (item: BackendItem) => {
+      const id = item.vehicle_id ?? item.id;
+      navigate({ pathname: `/vehicle/${id}` });
+    },
+    (id: number) => isWatched(id),
+    t
+  ), [showCompareCheckboxes, selectedVehicleIds, isAuthenticated, toggleWatch, navigate, isWatched, t]);
+
+  const table = useReactTable({
+    data: displayedItems,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   const vehicleCatalogType: VehicleCatalogType = useMemo(() => {
     if (searchKind === "moto") {
@@ -817,23 +1120,6 @@ const AuctionListingsPage = () => {
     };
   }, [appliedFilters]);
 
-  const randomCalcQuote = useMemo(() => {
-    if (!calcData || !calcData.quotes || calcData.quotes.length === 0) {
-      return null;
-    }
-
-    const index = Math.floor(Math.random() * calcData.quotes.length);
-    return calcData.quotes[index];
-  }, [calcData]);
-
-  type BackendData = NonNullable<typeof backendData>;
-  type BackendItem = BackendData["items"][number];
-
-  const displayedItems: BackendItem[] = useMemo(
-    () => (extraLoaded ? extraLoaded.items : backendData?.items ?? []),
-    [extraLoaded, backendData?.items]
-  );
-
   const maxAvailablePage = useMemo(() => {
     if (!backendData) return 1;
     return (
@@ -1096,63 +1382,6 @@ const AuctionListingsPage = () => {
         role="main"
         aria-label={t("auction.active_auctions")}
       >
-        {/* Filter Tabs Bar */}
-        <div className="bg-card/95 border-b border-border/60 backdrop-blur supports-[backdrop-filter]:bg-card/90">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-1 py-2 overflow-x-auto text-[11px]">
-              <button className="px-3 py-1.5 bg-[#f7b500] text-[#1a2b4c] font-bold rounded whitespace-nowrap">
-                {t('auction.tabs.saved_vehicles')}
-              </button>
-              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 whitespace-nowrap">
-                {t('auction.tabs.auctions')}
-              </button>
-              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 whitespace-nowrap">
-                {t('auction.tabs.buy_now')}
-              </button>
-              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 flex items-center gap-1 whitespace-nowrap">
-                <Icon icon="mdi:tune-variant" className="w-4 h-4" />
-                {t('auction.tabs.more_filters')}
-              </button>
-              <button className="ml-auto px-3 py-1.5 bg-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1 whitespace-nowrap">
-                <Icon icon="mdi:history" className="w-4 h-4" />
-                {t('auction.tabs.recent_searches')}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Search Results Count Bar */}
-        <div className="border-b border-border/60 bg-muted/40">
-          <div className="container mx-auto px-4 py-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                <h1 className="text-sm font-semibold text-foreground">
-                  {backendData
-                    ? t('auction.results.count', { count: backendData.total })
-                    : t('auction.results.count', { count: 0 })}
-                </h1>
-                <span className="text-[11px] text-muted-foreground">
-                  {backendData &&
-                    t('auction.results.showing', {
-                      shown: displayedItems.length,
-                      total: backendData.total,
-                    })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-[10px] rounded-full border-border bg-background hover:bg-muted/80"
-                >
-                  <Icon icon="mdi:content-save-outline" className="w-3.5 h-3.5 mr-1" />
-                  {t('auction.results.save_search')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="grid lg:grid-cols-5 gap-6 items-start">
             {/* Sidebar Filters - Desktop */}
@@ -1203,7 +1432,7 @@ const AuctionListingsPage = () => {
                     className="pl-11 h-11 text-base bg-white border-slate-200 shadow-sm rounded-lg"
                   />
                 </div>
-                <Button onClick={applyFilters} className="h-11 px-6">
+                <Button onClick={applyFilters} className="h-11 px-6 bg-[#0066CC] hover:bg-[#0052a3] text-white">
                   {t("common.search")}
                 </Button>
               </div>
@@ -1218,26 +1447,21 @@ const AuctionListingsPage = () => {
                     className="hidden lg:flex flex-wrap gap-2"
                   >
                     {activeFilterLabels.map((tag) => (
-                      <Badge
+                      <Button
                         key={tag.id}
-                        variant="secondary"
-                        className="px-2 py-1 h-7 gap-1 text-xs font-normal bg-secondary/50 hover:bg-secondary border-transparent transition-colors"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs px-3 rounded-full border-[#0066CC]/50 bg-[#E6F0FF] text-[#0047AB] font-medium gap-1 hover:bg-[#d0e2ff]"
+                        onClick={() => handleRemoveFilter(tag.id)}
                       >
                         {tag.label}
-                        <button
-                          onClick={() => handleRemoveFilter(tag.id)}
-                          className="ml-1 hover:text-destructive focus:outline-none"
-                          aria-label="Remove filter"
-                        >
-                          <Icon icon="mdi:close" className="w-3 h-3" />
-                        </button>
-                      </Badge>
+                        <Icon icon="mdi:close" className="w-3 h-3" />
+                      </Button>
                     ))}
                     <Button
-                      variant="link"
                       size="sm"
                       onClick={resetFilters}
-                      className="h-7 text-xs text-muted-foreground hover:text-foreground px-0 ml-1"
+                      className="h-7 text-xs px-3 rounded-full bg-amber-400 hover:bg-amber-500 text-amber-950 font-medium"
                     >
                       {t("common.clear_all")}
                     </Button>
@@ -1277,29 +1501,29 @@ const AuctionListingsPage = () => {
               </div>
 
 
-              {/* Results Header */}
+              {/* Results Header (counts only in subtitle) */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b">
                 <div className="flex flex-col gap-1">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     {t("auction.real_results")}
-                    {backendData && (
-                      <Badge
-                        variant="secondary"
-                        className="text-xs font-normal bg-muted text-muted-foreground"
-                      >
-                        {backendData.total}
-                      </Badge>
-                    )}
                   </h2>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
                     {isBackendLoading && t("auction.loading_data")}
                     {!isBackendLoading &&
                       !backendError &&
-                      backendData &&
-                      t("auction.showing_results", {
-                        count: displayedItems.length,
-                        total: backendData.total,
-                      })}
+                      backendData && (
+                        <>
+                          <span>{t("auction.showing_prefix")}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E6F0FF] text-[#0047AB] text-[10px] font-semibold">
+                            {displayedItems.length}
+                          </span>
+                          <span>{t("auction.showing_middle")}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E6F0FF] text-[#0047AB] text-[10px] font-semibold">
+                            {backendData.total}
+                          </span>
+                          <span>{t("auction.showing_suffix")}</span>
+                        </>
+                      )}
                   </p>
                 </div>
 
@@ -1362,53 +1586,7 @@ const AuctionListingsPage = () => {
                     </SelectContent>
                   </Select>
 
-                  <Button
-                    variant={showCompareCheckboxes ? "secondary" : "outline"}
-                    size="sm"
-                    className={`h-9 gap-2 ${
-                      showCompareCheckboxes
-                        ? "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (!showCompareCheckboxes)
-                        setShowCompareCheckboxes(true);
-                      else if (selectedVehicleIds.length === 0)
-                        setShowCompareCheckboxes(false);
-                    }}
-                  >
-                    <Icon icon="mdi:compare" className="w-4 h-4" />
-                    <span className="text-xs font-medium">
-                      {t("auction.price_comparison")}
-                    </span>
-                    {selectedVehicleIds.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="ml-1 h-5 px-1.5 bg-orange-500 text-white"
-                      >
-                        {selectedVehicleIds.length}
-                      </Badge>
-                    )}
-                  </Button>
-
-                  {showCompareCheckboxes && selectedVehicleIds.length > 0 && (
-                    <Button
-                      size="sm"
-                      className="hidden sm:inline-flex h-9 bg-orange-600 hover:bg-orange-700 text-white"
-                      onClick={() => {
-                        setIsCompareOpen(true);
-                        setIsCompareLoading(true);
-                        setCompareError(null);
-                        setCompareResult(null);
-                        compareVehicles({ vehicle_ids: selectedVehicleIds })
-                          .then(setCompareResult)
-                          .catch((err) => setCompareError(err.message))
-                          .finally(() => setIsCompareLoading(false));
-                      }}
-                    >
-                      {t("common.compare")}
-                    </Button>
-                  )}
+                  {/* Compare feature hidden for now */}
 
                   {/* View Mode Toggle */}
                   <div className="hidden sm:flex items-center border rounded-lg overflow-hidden">
@@ -1499,57 +1677,56 @@ const AuctionListingsPage = () => {
                         transition={{ duration: 0.18, ease: 'easeOut' }}
                       >
                         {viewMode === 'list' ? (
-                          /* List View - Copart Style */
-                          <div className="bg-white rounded border border-slate-200 overflow-hidden">
-                            {/* List Header - Blue like Copart */}
-                            <div className="hidden lg:flex items-stretch bg-[#0047AB] text-white text-[11px] font-semibold">
-                              <div className="w-[130px] flex-shrink-0 py-2 px-2">{t('auction.columns.image')}</div>
-                              <div className="flex-[1.2] min-w-[180px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.lot_info')}</div>
-                              <div className="flex-[1.6] min-w-[200px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.vehicle_info')}</div>
-                              <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.condition')}</div>
-                              <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.sale_info')}</div>
-                              <div className="w-[130px] flex-shrink-0 py-2 px-2 border-l border-blue-400/30 text-right">{t('auction.columns.bids')}</div>
-                            </div>
-                            {/* List Items */}
-                            {displayedItems.map((item, idx) => (
-                              <AuctionVehicleListItem
-                                key={`${item.id}-${item.vehicle_id}`}
-                                item={item}
-                                priority={idx < 4}
-                                isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                                showCompareCheckbox={showCompareCheckboxes}
-                                isWatched={isWatched(item.vehicle_id ?? item.id)}
-                                onToggleSelect={(checked: boolean) => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  const isMobile = window.innerWidth < 640;
-                                  const maxCompare = isMobile ? 2 : 5;
-                                  setSelectedVehicleIds((prev) =>
-                                    checked
-                                      ? prev.length < maxCompare
-                                        ? [...prev, id]
-                                        : prev
-                                      : prev.filter((pid) => pid !== id)
-                                  );
-                                }}
-                                onToggleWatch={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  if (!isAuthenticated) {
-                                    setIsAuthDialogOpen(true);
-                                    return;
-                                  }
-                                  toggleWatch(id);
-                                }}
-                                onCalculate={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  setIsCalcModalOpen(true);
-                                  calculateQuotes(id);
-                                }}
-                                onViewDetails={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  navigate({ pathname: `/vehicle/${id}` });
-                                }}
-                              />
-                            ))}
+                          /* Table View - shadcn Table */
+                          <div className="rounded-md border overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                {table.getHeaderGroups().map((headerGroup) => (
+                                  <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                      return (
+                                        <TableHead key={header.id} className="bg-muted/50 whitespace-nowrap">
+                                          {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                              )}
+                                        </TableHead>
+                                      )
+                                    })}
+                                  </TableRow>
+                                ))}
+                              </TableHeader>
+                              <TableBody>
+                                {table.getRowModel().rows?.length ? (
+                                  table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                      key={row.id}
+                                      data-state={row.getIsSelected() && "selected"}
+                                    >
+                                      {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id} className="whitespace-nowrap">
+                                          {flexRender(
+                                            cell.column.columnDef.cell,
+                                            cell.getContext()
+                                          )}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={columns.length}
+                                      className="h-24 text-center"
+                                    >
+                                      No results.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
                           </div>
                         ) : (
                           /* Grid View */
@@ -1560,7 +1737,7 @@ const AuctionListingsPage = () => {
                                 item={item}
                                 priority={idx < 4}
                                 isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                                showCompareCheckbox={showCompareCheckboxes}
+                                showCompareCheckbox={false}
                                 isWatched={isWatched(item.vehicle_id ?? item.id)}
                                 onToggleSelect={(checked: boolean) => {
                                   const id = item.vehicle_id ?? item.id;
@@ -1674,44 +1851,48 @@ const AuctionListingsPage = () => {
         </div>
       </main>
 
-      {/* Mobile Floating Compare Button */}
-      <AnimatePresence>
-        {showCompareCheckboxes && selectedVehicleIds.length > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-16 right-4 z-50"
-          >
-            <Button
-              size="lg"
-              className="rounded-full shadow-xl bg-orange-600 hover:bg-orange-700 text-white px-6"
-              onClick={() => {
-                setIsCompareOpen(true);
-                setIsCompareLoading(true);
-                setCompareError(null);
-                setCompareResult(null);
-                compareVehicles({ vehicle_ids: selectedVehicleIds })
-                  .then(setCompareResult)
-                  .catch((err) => setCompareError(err.message))
-                  .finally(() => setIsCompareLoading(false));
-              }}
-            >
-              <Icon icon="mdi:compare" className="w-5 h-5 mr-2" />
-              {t("common.compare")} ({selectedVehicleIds.length})
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {false && (
+        <>
+          {/* Mobile Floating Compare Button (temporarily hidden) */}
+          <AnimatePresence>
+            {showCompareCheckboxes && selectedVehicleIds.length > 0 && (
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="fixed bottom-16 right-4 z-50"
+              >
+                <Button
+                  size="lg"
+                  className="rounded-full shadow-xl bg-orange-600 hover:bg-orange-700 text-white px-6"
+                  onClick={() => {
+                    setIsCompareOpen(true);
+                    setIsCompareLoading(true);
+                    setCompareError(null);
+                    setCompareResult(null);
+                    compareVehicles({ vehicle_ids: selectedVehicleIds })
+                      .then(setCompareResult)
+                      .catch((err) => setCompareError(err.message))
+                      .finally(() => setIsCompareLoading(false));
+                  }}
+                >
+                  <Icon icon="mdi:compare" className="w-5 h-5 mr-2" />
+                  {t("common.compare")} ({selectedVehicleIds.length})
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      <ComparisonModal
-        isOpen={isCompareOpen}
-        onClose={() => setIsCompareOpen(false)}
-        isLoading={isCompareLoading}
-        error={compareError}
-        data={compareResult}
-        backendItems={backendData?.items || []}
-      />
+          <ComparisonModal
+            isOpen={isCompareOpen}
+            onClose={() => setIsCompareOpen(false)}
+            isLoading={isCompareLoading}
+            error={compareError}
+            data={compareResult}
+            backendItems={backendData?.items || []}
+          />
+        </>
+      )}
 
       {/* Auth required for Watchlist */}
       <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
@@ -1854,97 +2035,19 @@ const AuctionListingsPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Calculator Modal */}
+      {/* Quotes Showcase Modal */}
       <AnimatePresence>
         {isCalcModalOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsCalcModalOpen(false)}
-          >
-            <motion.div
-              className="bg-background rounded-xl shadow-xl w-full max-w-md overflow-hidden"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <h3 className="font-semibold text-lg">
-                  {t("auction.calculate_cost")}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsCalcModalOpen(false)}
-                >
-                  <Icon icon="mdi:close" className="w-5 h-5" />
-                </Button>
-              </div>
-
-              <div className="p-6">
-                {isCalcLoading ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-3">
-                    <Icon
-                      icon="mdi:calculator"
-                      className="w-8 h-8 animate-bounce text-primary"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      {t("common.loading")}
-                    </p>
-                  </div>
-                ) : calcError ? (
-                  <div className="text-center text-destructive py-4">
-                    {t("error.generic")}
-                  </div>
-                ) : randomCalcQuote ? (
-                  <div className="space-y-4">
-                    <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {t("auction.estimated_total")}
-                      </p>
-                      <p className="text-3xl font-bold text-emerald-600">
-                        {formatMoney(randomCalcQuote.total_price)}
-                      </p>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-muted-foreground">
-                          {t("auction.shipping")}
-                        </span>
-                        <span>
-                          {formatMoney(
-                            randomCalcQuote.breakdown.shipping_total
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-muted-foreground">
-                          {t("auction.fees")}
-                        </span>
-                        <span>
-                          {formatMoney(
-                            randomCalcQuote.breakdown.service_fee +
-                              randomCalcQuote.breakdown.broker_fee
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-muted-foreground">
-                          {t("auction.customs")}
-                        </span>
-                        <span>
-                          {formatMoney(randomCalcQuote.breakdown.customs_fee)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </motion.div>
-          </motion.div>
+          <QuotesShowcase
+            data={calcData}
+            isLoading={isCalcLoading}
+            error={calcError}
+            onClose={() => setIsCalcModalOpen(false)}
+            onSelectCompany={(companyName) => {
+              console.log('Selected company:', companyName);
+              // TODO: Navigate to company profile or initiate contact
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

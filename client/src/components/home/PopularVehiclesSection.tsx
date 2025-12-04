@@ -200,7 +200,7 @@ export function PopularVehiclesSection() {
               id="home-popular-vehicles-heading"
               className="text-xl md:text-2xl font-semibold tracking-tight text-foreground text-balance"
             >
-              {t('home.popular_vehicles.title')} <span className="text-[#f7b500]">{t('home.popular_vehicles.title_highlight')}</span>
+              {t('home.popular_vehicles.title')} <span className="text-[#f5a623]">{t('home.popular_vehicles.title_highlight')}</span>
             </h2>
             <p className="hidden text-sm text-muted-foreground md:block">
               {t('home.popular_vehicles.subtitle')}

@@ -535,7 +535,28 @@
     "remove_from_watchlist": "Remove from watchlist",
     "join_live_auction": "Live Auction",
     "view_vehicle_details": "View vehicle details",
-    "more_filters": "More Filters"
+    "more_filters": "More Filters",
+    "tabs": {
+      "saved_vehicles": "Saved Vehicles",
+      "auctions": "Auctions",
+      "buy_now": "Buy Now",
+      "more_filters": "More Filters",
+      "recent_searches": "Recent Searches"
+    },
+    "results": {
+      "count": "{{count}} vehicles found",
+      "showing": "Showing {{shown}} of {{total}}",
+      "save_search": "Save Search"
+    },
+    "search_history": {
+      "title": "Recent Searches",
+      "empty": "No recent searches",
+      "clear_all": "Clear All",
+      "apply_search": "Apply Search",
+      "delete_search": "Delete Search",
+      "searched_at": "Searched {{time}} ago",
+      "results_count": "{{count}} results"
+    }
   },
   "pages": {
     "auction": {
@@ -721,7 +742,8 @@
       "whatsapp": "WhatsApp",
       "phone_call": "Phone",
       "send_request": "Send Request to {{count}} Companies",
-      "sending": "Sending..."
+      "sending": "Sending...",
+      "secure_note": "Your data is secure and will only be shared with selected companies"
     },
     "unlock_modal": {
       "title": "Unlock Premium Features",
@@ -956,6 +978,32 @@
         "title": "Competitors"
       }
     }
+  },
+  "quotes": {
+    "title": "Import Quotes",
+    "companies_available": "companies available",
+    "best_offer": "Best Offer",
+    "rating_tooltip": "Based on {{count}} reviews",
+    "years": "years",
+    "guaranteed": "Guaranteed",
+    "days_delivery": "days delivery",
+    "select": "Select",
+    "show_breakdown": "Show breakdown",
+    "hide_breakdown": "Hide breakdown",
+    "shipping": "Shipping",
+    "customs": "Customs",
+    "service_fee": "Service",
+    "insurance": "Insurance",
+    "save_up_to": "Save up to",
+    "by_comparing": "by comparing offers",
+    "error_title": "Failed to load quotes",
+    "no_quotes": "No quotes available",
+    "no_quotes_desc": "We couldn't find any import quotes for this vehicle.",
+    "all_verified": "All companies are verified partners",
+    "need_help": "Need help?",
+    "orders_this_week": "orders this week",
+    "responds": "Responds",
+    "expert": "Expert"
   },
   "sidebar": {
     "company_name": "Acme Inc.",

@@ -59,7 +59,7 @@
   --oklch-border-subtle: oklch(0.9 0.02 240);
   --oklch-border-strong: oklch(0.8 0.04 240);
 
-  --color-background: transparent;
+  --color-background: #ffffff;
   --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
 
   --color-card: #ffffff;
@@ -68,27 +68,27 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #0f172a;
 
-  --color-primary: #004700; /* Main Color - Dark Green */
-  --color-primary-foreground: #ffffff; /* White text on dark green for contrast */
+  --color-primary: #1a2744; /* Main Color - Dark Navy Blue */
+  --color-primary-foreground: #ffffff; /* White text on dark blue for contrast */
 
   --color-secondary: #f1f5f9; /* Slate 100 - kept for UI backgrounds */
   --color-secondary-foreground: #0f172a;
 
-  --color-sub: #e9967a; /* Sub Color - Dark Salmon */
-  --color-sub-foreground: #0f172a;
+  --color-sub: #f5a623; /* Sub Color - Golden Orange */
+  --color-sub-foreground: #1a2744;
 
   --color-muted: #f8fafc; /* Slate 50 */
   --color-muted-foreground: #64748b; /* Slate 500 */
 
-  --color-accent: #e9967a; /* Using Sub Color as Accent */
-  --color-accent-foreground: #0f172a;
+  --color-accent: #f5a623; /* Using Sub Color as Accent - Golden Orange */
+  --color-accent-foreground: #1a2744;
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
   --color-border: #e2e8f0; /* Slate 200 */
   --color-input: #e2e8f0;
-  --color-ring: #004700;
+  --color-ring: #1a2744;
 
   --color-warning: #f59e0b;
   --color-warning-foreground: #ffffff;
@@ -112,7 +112,7 @@
 
   /* Custom Shadows */
   --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(0, 71, 0, 0.15);
+  --shadow-glow: 0 0 20px rgba(26, 39, 68, 0.15);
 }
 
 /* Language Specific Font Overrides */
@@ -149,27 +149,27 @@
   --color-popover: #0f172a;
   --color-popover-foreground: #f8fafc;
 
-  --color-primary: #004700;
+  --color-primary: #1a2744;
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #1e293b; /* Slate 800 */
   --color-secondary-foreground: #f8fafc;
 
-  --color-sub: #e9967a;
-  --color-sub-foreground: #0f172a;
+  --color-sub: #f5a623;
+  --color-sub-foreground: #1a2744;
 
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
 
-  --color-accent: #e9967a;
-  --color-accent-foreground: #0f172a;
+  --color-accent: #f5a623;
+  --color-accent-foreground: #1a2744;
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #f8fafc;
 
   --color-border: #1e293b;
   --color-input: #1e293b;
-  --color-ring: #004700;
+  --color-ring: #1a2744;
 
   --color-warning: #fbbf24;
   --color-warning-foreground: #020617;
@@ -248,7 +248,7 @@
   /* Custom Scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-primary) transparent;
+    scrollbar-color: #1a2744 transparent;
   }
 
   *::-webkit-scrollbar {
@@ -261,7 +261,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: var(--color-primary);
+    background-color: #1a2744;
     border-radius: 20px;
   }
 }
@@ -287,10 +287,10 @@
   .hero-gradient-mesh {
     position: relative;
     overflow: hidden;
-    background: radial-gradient(circle at 0% 0%, #00cc99 0%, #00a87e 40%),
-      radial-gradient(circle at 100% 0%, #00b88a 0%, #008f6a 35%),
-      radial-gradient(circle at 50% 100%, #00cc99 0%, #006b4a 45%);
-    background-color: #00a87e;
+    background: radial-gradient(circle at 0% 0%, #2a3f5f 0%, #1a2744 40%),
+      radial-gradient(circle at 100% 0%, #243754 0%, #1a2744 35%),
+      radial-gradient(circle at 50% 100%, #f5a623 0%, #1a2744 45%);
+    background-color: #1a2744;
     isolation: isolate;
   }
 
@@ -301,17 +301,17 @@
     inset: -20%;
     background: radial-gradient(
         circle at 20% 30%,
-        rgba(255, 255, 255, 0.24),
+        rgba(255, 255, 255, 0.15),
         transparent 55%
       ),
       radial-gradient(
         circle at 80% 20%,
-        rgba(0, 255, 200, 0.35),
+        rgba(245, 166, 35, 0.25),
         transparent 55%
       ),
       radial-gradient(
         circle at 50% 80%,
-        rgba(0, 120, 80, 0.45),
+        rgba(26, 39, 68, 0.35),
         transparent 60%
       );
     filter: blur(40px);
@@ -472,13 +472,13 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #004700; /* Primary Dark */
+  background: #1a2744; /* Primary Dark Navy */
   border-radius: 5px;
   border: 2px solid #0f172a;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #006b4a;
+  background: #2a3f5f;
 }
 
 @keyframes dialogContentIn {

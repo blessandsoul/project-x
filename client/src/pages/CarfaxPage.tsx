@@ -122,7 +122,7 @@ const CarfaxPage = () => {
       <section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-background/95">
         {/* Yellow diagonal background shape */}
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f7b500] z-0"
+          className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f5a623] z-0"
           style={{
             clipPath: 'polygon(0 0, 100% 0, 76% 100%, 0 100%)',
           }}

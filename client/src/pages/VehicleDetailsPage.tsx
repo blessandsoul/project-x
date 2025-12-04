@@ -45,7 +45,7 @@ const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: ()
 
             const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
 
-            const interval: any = setInterval(function() {
+            const interval: ReturnType<typeof setInterval> = setInterval(function() {
                 const timeLeft = animationEnd - Date.now()
 
                 if (timeLeft <= 0) {
@@ -63,23 +63,43 @@ const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: ()
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md text-center">
-                <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                    <Icon icon="mdi:check-bold" className="h-8 w-8" />
+            <DialogContent className="sm:max-w-[380px]">
+                {/* Success Animation Circle */}
+                <div className="flex justify-center -mt-2 mb-4">
+                    <div className="relative">
+                        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-bounce">
+                            <Icon icon="mdi:check-bold" className="h-10 w-10 text-white" />
+                        </div>
+                        {/* Decorative rings */}
+                        <div className="absolute inset-0 rounded-full border-4 border-emerald-200 animate-ping opacity-30" />
+                    </div>
                 </div>
+                
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-center">{t('vehicle.success_modal.title')}</DialogTitle>
-                    <DialogDescription className="text-center pt-2">
+                    <DialogTitle className="text-2xl">{t('vehicle.success_modal.title')}</DialogTitle>
+                    <DialogDescription>
                         {t('vehicle.success_modal.description', { count })}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <p className="text-sm text-muted-foreground">
-                        {t('vehicle.success_modal.manager_contact')}
-                    </p>
+                
+                {/* Info Card */}
+                <div className="bg-slate-50 rounded-xl p-4 my-2">
+                    <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                            <Icon icon="mdi:headset" className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                            {t('vehicle.success_modal.manager_contact')}
+                        </p>
+                    </div>
                 </div>
-                <DialogFooter className="sm:justify-center">
-                    <Button onClick={onClose} className="w-full sm:w-auto min-w-[150px] font-bold bg-emerald-600 hover:bg-emerald-700">
+                
+                <DialogFooter className="sm:justify-center pt-2">
+                    <Button 
+                        onClick={onClose} 
+                        className="w-full h-12 rounded-xl font-bold text-base bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25"
+                    >
+                        <Icon icon="mdi:check-circle" className="h-5 w-5 mr-2" />
                         {t('common.great_thanks')}
                     </Button>
                 </DialogFooter>
@@ -314,58 +334,110 @@ const QuoteBreakdownModal = ({
     // Helper to safely format numbers
     const fmt = (val: number | undefined | null) => val ? `$${Number(val).toLocaleString()}` : '$0'
 
+    const breakdownItems = [
+        { 
+            icon: 'mdi:gavel', 
+            label: t('vehicle.auction_price'), 
+            value: quote.breakdown?.base_price,
+            color: 'text-amber-600',
+            bgColor: 'bg-amber-50'
+        },
+        { 
+            icon: 'mdi:truck-delivery', 
+            label: t('vehicle.shipping_total'), 
+            value: quote.breakdown?.shipping_total,
+            color: 'text-blue-600',
+            bgColor: 'bg-blue-50'
+        },
+        { 
+            icon: 'mdi:file-document-check', 
+            label: t('vehicle.customs_clearance'), 
+            value: quote.breakdown?.customs_fee,
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-50'
+        },
+        { 
+            icon: 'mdi:handshake', 
+            label: t('vehicle.broker_fees'), 
+            value: quote.breakdown?.broker_fee,
+            color: 'text-emerald-600',
+            bgColor: 'bg-emerald-50'
+        },
+        { 
+            icon: 'mdi:shield-check', 
+            label: t('vehicle.insurance_optional'), 
+            value: quote.breakdown?.insurance_fee,
+            color: 'text-slate-500',
+            bgColor: 'bg-slate-50',
+            isOptional: true
+        },
+    ]
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[420px]">
+                {/* Header Icon */}
+                <div className="flex justify-center -mt-2 mb-2">
+                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/10 to-primary/10 flex items-center justify-center shadow-sm">
+                        <Icon icon="mdi:calculator-variant" className="h-7 w-7 text-primary" />
+                    </div>
+                </div>
+                
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Icon icon="mdi:calculator" className="text-primary h-5 w-5" />
-                        {t('vehicle.price_breakdown')}
-                    </DialogTitle>
+                    <DialogTitle>{t('vehicle.price_breakdown')}</DialogTitle>
                     <DialogDescription>
-                        {t('vehicle.detailed_quote')} <span className="font-semibold text-foreground">{quote.company_name}</span>
+                        {t('vehicle.detailed_quote')} <span className="font-semibold text-slate-700">{quote.company_name}</span>
                     </DialogDescription>
                 </DialogHeader>
                 
-                <div className="space-y-4 py-2">
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle.auction_price')}</span>
-                            <span className="font-medium">{fmt(quote.breakdown?.base_price)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Icon icon="mdi:truck-delivery" className="h-3 w-3" />
-                                {t('vehicle.shipping_total')}
+                {/* Breakdown Items */}
+                <div className="space-y-3 my-2">
+                    {breakdownItems.map((item, index) => (
+                        <div 
+                            key={index}
+                            className={cn(
+                                "flex items-center justify-between p-3 rounded-xl transition-all",
+                                item.isOptional ? "bg-slate-50/50" : "bg-slate-50 hover:bg-slate-100/80"
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", item.bgColor)}>
+                                    <Icon icon={item.icon} className={cn("h-4.5 w-4.5", item.color)} />
+                                </div>
+                                <span className={cn(
+                                    "text-sm font-medium",
+                                    item.isOptional ? "text-slate-400" : "text-slate-700"
+                                )}>
+                                    {item.label}
+                                    {item.isOptional && <span className="text-[10px] ml-1 text-slate-400">(opt)</span>}
+                                </span>
+                            </div>
+                            <span className={cn(
+                                "font-bold tabular-nums",
+                                item.isOptional ? "text-slate-400 text-sm" : "text-slate-900"
+                            )}>
+                                {fmt(item.value)}
                             </span>
-                            <span className="font-medium">{fmt(quote.breakdown?.shipping_total)}</span>
                         </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Icon icon="mdi:police-badge" className="h-3 w-3" />
-                                {t('vehicle.customs_clearance')}
-                            </span>
-                            <span className="font-medium">{fmt(quote.breakdown?.customs_fee)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle.broker_fees')}</span>
-                            <span className="font-medium">{fmt(quote.breakdown?.broker_fee)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed text-xs text-muted-foreground">
-                            <span>{t('vehicle.insurance_optional')}</span>
-                            <span>{fmt(quote.breakdown?.insurance_fee)}</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-primary/5 p-3 rounded-lg flex justify-between items-center">
-                        <span className="font-bold text-primary uppercase text-xs tracking-wider">{t('vehicle.total_estimated')}</span>
-                        <span className="font-bold text-xl text-foreground">{fmt(quote.total_price)}</span>
-                    </div>
-                    
-                    <p className="text-[10px] text-muted-foreground text-center">
-                        {t('vehicle.price_note')}
-                    </p>
+                    ))}
                 </div>
+
+                {/* Total */}
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-500/10 p-4 rounded-xl border border-primary/10">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <Icon icon="mdi:sigma" className="h-5 w-5 text-primary" />
+                            <span className="font-bold text-primary uppercase text-xs tracking-wider">{t('vehicle.total_estimated')}</span>
+                        </div>
+                        <span className="font-black text-2xl text-slate-900">{fmt(quote.total_price)}</span>
+                    </div>
+                </div>
+                
+                {/* Note */}
+                <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5 mt-2">
+                    <Icon icon="mdi:information-outline" className="h-3.5 w-3.5" />
+                    {t('vehicle.price_note')}
+                </p>
             </DialogContent>
         </Dialog>
     )
@@ -971,7 +1043,7 @@ const VehicleDetailsPage = () => {
   return (
     <div className="flex-1 flex flex-col bg-slate-50">
         {/* Copart-style Header Bar */}
-        <div className="bg-[#1a2b4c] text-white py-3 px-8">
+        <div className="bg-[#1a2744] text-white py-3 px-8">
           <div className="container mx-auto">
             <nav className="flex items-center text-xs text-white/70 gap-1">
               <Button
@@ -1229,43 +1301,134 @@ const VehicleDetailsPage = () => {
         </Button>
       </div>
 
-      {/* Lead Modal */}
+      {/* Lead Modal - Premium Design */}
       <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[420px]">
+          {/* Icon Badge */}
+          <div className="flex justify-center -mt-2 mb-2">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/10 to-emerald-500/10 flex items-center justify-center shadow-sm">
+              <Icon icon="mdi:car-connected" className="h-7 w-7 text-primary" />
+            </div>
+          </div>
+          
           <DialogHeader>
-            <DialogTitle>{t('vehicle.lead_modal.title')}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-center">{t('vehicle.lead_modal.title')}</DialogTitle>
+            <DialogDescription className="text-center">
               <span dangerouslySetInnerHTML={{ __html: t('vehicle.lead_modal.description', { count: selectedCompanyIds.length }) }} />
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitLead} className="space-y-4 py-2">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">{t('vehicle.lead_modal.your_name')}</Label>
-                    <Input id="name" placeholder="John Doe" value={formName} onChange={(e) => setFormName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone">{t('vehicle.lead_modal.phone')}</Label>
-                    <Input id="phone" placeholder="+995 555 00 00 00" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} required />
-                </div>
-                
-                <div className="space-y-2">
-                    <Label>{t('vehicle.lead_modal.contact_method')}</Label>
-                    <div className="flex gap-4">
-                        <div onClick={() => setContactMethod('whatsapp')} className={cn("flex items-center space-x-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-muted/50 transition-all", contactMethod === 'whatsapp' ? "border-primary bg-primary/5 ring-1 ring-primary" : "")}>
-                            <Icon icon="mdi:whatsapp" className="h-5 w-5 text-green-600" />
-                            <span className="text-sm font-medium">{t('vehicle.lead_modal.whatsapp')}</span>
+          
+          <form onSubmit={handleSubmitLead} className="space-y-5">
+             {/* Name Field */}
+             <div className="space-y-2">
+                <Label htmlFor="name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {t('vehicle.lead_modal.your_name')}
+                </Label>
+                <Input 
+                  id="name" 
+                  placeholder="John Doe" 
+                  value={formName} 
+                  onChange={(e) => setFormName(e.target.value)} 
+                  required 
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                />
+             </div>
+             
+             {/* Phone Field */}
+             <div className="space-y-2">
+                <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {t('vehicle.lead_modal.phone')}
+                </Label>
+                <Input 
+                  id="phone" 
+                  placeholder="+995 555 00 00 00" 
+                  value={formPhone} 
+                  onChange={(e) => setFormPhone(e.target.value)} 
+                  required 
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                />
+             </div>
+             
+             {/* Contact Method - Modern Toggle Cards */}
+             <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {t('vehicle.lead_modal.contact_method')}
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setContactMethod('whatsapp')} 
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                        contactMethod === 'whatsapp' 
+                          ? "border-green-500 bg-green-50 shadow-sm shadow-green-500/20" 
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      )}
+                    >
+                        <div className={cn(
+                          "h-10 w-10 rounded-full flex items-center justify-center transition-all",
+                          contactMethod === 'whatsapp' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                        )}>
+                          <Icon icon="mdi:whatsapp" className="h-5 w-5" />
                         </div>
-                        <div onClick={() => setContactMethod('phone')} className={cn("flex items-center space-x-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-muted/50 transition-all", contactMethod === 'phone' ? "border-primary bg-primary/5 ring-1 ring-primary" : "")}>
-                            <Icon icon="mdi:phone" className="h-5 w-5 text-blue-600" />
-                            <span className="text-sm font-medium">{t('vehicle.lead_modal.phone_call')}</span>
+                        <span className={cn(
+                          "text-sm font-semibold transition-colors",
+                          contactMethod === 'whatsapp' ? "text-green-700" : "text-slate-600"
+                        )}>
+                          {t('vehicle.lead_modal.whatsapp')}
+                        </span>
+                    </button>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setContactMethod('phone')} 
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                        contactMethod === 'phone' 
+                          ? "border-blue-500 bg-blue-50 shadow-sm shadow-blue-500/20" 
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      )}
+                    >
+                        <div className={cn(
+                          "h-10 w-10 rounded-full flex items-center justify-center transition-all",
+                          contactMethod === 'phone' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"
+                        )}>
+                          <Icon icon="mdi:phone" className="h-5 w-5" />
                         </div>
-                    </div>
+                        <span className={cn(
+                          "text-sm font-semibold transition-colors",
+                          contactMethod === 'phone' ? "text-blue-700" : "text-slate-600"
+                        )}>
+                          {t('vehicle.lead_modal.phone_call')}
+                        </span>
+                    </button>
                 </div>
              </div>
-             <Button type="submit" className="w-full h-11 font-bold mt-2" disabled={isSubmitting}>
-               {isSubmitting ? t('vehicle.lead_modal.sending') : t('vehicle.lead_modal.send_request', { count: selectedCompanyIds.length })}
+             
+             {/* Submit Button */}
+             <Button 
+               type="submit" 
+               className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all" 
+               disabled={isSubmitting}
+             >
+               {isSubmitting ? (
+                 <span className="flex items-center gap-2">
+                   <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                   {t('vehicle.lead_modal.sending')}
+                 </span>
+               ) : (
+                 <span className="flex items-center gap-2">
+                   <Icon icon="mdi:send" className="h-5 w-5" />
+                   {t('vehicle.lead_modal.send_request', { count: selectedCompanyIds.length })}
+                 </span>
+               )}
              </Button>
+             
+             {/* Trust Badge */}
+             <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+               <Icon icon="mdi:shield-check" className="h-3.5 w-3.5 text-emerald-500" />
+               {t('vehicle.lead_modal.secure_note', { defaultValue: 'Your data is secure and will only be shared with selected companies' })}
+             </p>
           </form>
         </DialogContent>
       </Dialog>

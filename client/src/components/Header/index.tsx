@@ -83,13 +83,13 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
   return (
     <header className="sticky top-0 z-50 w-full" role="banner">
       {/* Top Bar - Dark Blue Gradient */}
-      <div className="bg-gradient-to-r from-[#1a2b4c] via-[#1e3a5f] to-[#1a2b4c]">
+      <div className="bg-gradient-to-r from-[#1a2744] via-[#243754] to-[#1a2744]">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-14 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
               <span className="font-logo-bebas text-xl md:text-2xl tracking-wide">
-                <span className="text-[#f7b500] font-bold">Trusted</span>{' '}
+                <span className="text-[#f5a623] font-bold">Trusted</span>{' '}
                 <span className="text-white font-normal">Importers</span>
               </span>
             </Link>
@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                 />
                 <Button 
                   type="submit"
-                  className="h-10 px-6 rounded-l-none rounded-r-md bg-[#0066cc] hover:bg-[#0052a3]"
+                  className="h-10 px-6 rounded-l-none rounded-r-md bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744]"
                 >
                   <Icon icon="mdi:magnify" className="w-5 h-5 text-white" />
                 </Button>
@@ -137,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   <Button
                     size="sm"
                     onClick={() => navigate('/login')}
-                    className="h-8 px-4 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-md text-sm font-medium"
+                    className="h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-white rounded-md text-sm font-medium"
                   >
                     {t('navigation.sign_in')}
                   </Button>
@@ -155,10 +155,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                     <Icon icon="mdi:menu" className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] p-0 bg-[#1a2b4c]">
+                <SheetContent side="right" className="w-[300px] p-0 bg-[#1a2744]">
                   <SheetHeader className="px-4 py-4 border-b border-white/10">
                     <SheetTitle className="font-logo-bebas text-xl tracking-wide">
-                      <span className="text-[#f7b500] font-bold">Trusted</span>{' '}
+                      <span className="text-[#f5a623] font-bold">Trusted</span>{' '}
                       <span className="text-white font-normal">Importers</span>
                     </SheetTitle>
                   </SheetHeader>
@@ -194,7 +194,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                       <SheetClose asChild>
                         <Button
                           onClick={() => navigate('/auction-listings')}
-                          className="w-full bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-semibold"
+                          className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
                         >
                           {t('auction.header.active_listings_cta')}
                         </Button>
@@ -209,7 +209,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
       </div>
 
       {/* Bottom Nav Bar - Slightly Lighter Blue */}
-      <div className="bg-[#0d1b2a] border-b border-white/10">
+      <div className="bg-[#141f33] border-b border-white/10">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between h-10">
             {/* Navigation Links */}
@@ -239,7 +239,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
             {/* Active Auction Listings Button */}
             <Button
               onClick={() => navigate('/auction-listings')}
-              className="hidden lg:flex h-7 px-4 bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] text-sm font-semibold rounded-sm"
+              className="hidden lg:flex h-7 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-sm font-semibold rounded-sm"
             >
               {t('auction.header.active_listings_cta')}
             </Button>

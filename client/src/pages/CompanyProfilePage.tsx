@@ -398,7 +398,7 @@ const CompanyProfilePage = () => {
                       className="h-full w-full object-contain rounded-xl"
                     />
                   </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-[#f7b500] rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-[#f5a623] rounded-full flex items-center justify-center shadow-md border-2 border-white">
                     <Icon icon="mdi:check-bold" className="h-4 w-4 text-slate-900" />
                   </div>
                 </div>
@@ -486,60 +486,80 @@ const CompanyProfilePage = () => {
                       <Icon icon="mdi:phone" className="me-2 h-5 w-5" />
                       {t('company_profile.contact_btn')}
                     </Button>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-[420px]">
+                      {/* Header Icon */}
+                      <div className="flex justify-center -mt-2 mb-2">
+                        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-slate-800/10 to-slate-600/10 flex items-center justify-center shadow-sm">
+                          <Icon icon="mdi:message-text" className="h-7 w-7 text-slate-700" />
+                        </div>
+                      </div>
+                      
                       <DialogHeader>
                         <DialogTitle>{t('company_profile.contact.title')}</DialogTitle>
                         <DialogDescription>
                           {t('company_profile.contact.description', { name: company.name })}
                         </DialogDescription>
                       </DialogHeader>
+                      
                       <form
-                        className="flex flex-col gap-4"
+                        className="space-y-5"
                         onSubmit={handleSubmitContact}
                       >
-                        <div className="space-y-1">
-                          <Label htmlFor="contact-name">{t('company_profile.contact.name')}</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('company_profile.contact.name')}
+                          </Label>
                           <Input
                             id="contact-name"
                             type="text"
                             value={contactName}
                             onChange={(event) => setContactName(event.target.value)}
                             required
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="contact-email">{t('company_profile.contact.email')}</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-email" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('company_profile.contact.email')}
+                          </Label>
                           <Input
                             id="contact-email"
                             type="email"
                             value={contactEmail}
                             onChange={(event) => setContactEmail(event.target.value)}
                             required
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="contact-message">{t('company_profile.contact.message')}</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-message" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('company_profile.contact.message')}
+                          </Label>
                           <textarea
                             id="contact-message"
                             value={contactMessage}
                             onChange={(event) => setContactMessage(event.target.value)}
                             required
-                            className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                            className="min-h-[100px] w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
                           />
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-2">
                           <Button
                             type="submit"
                             disabled={isSubmittingContact}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                            className="w-full h-12 rounded-xl font-bold text-base bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/25"
                           >
-                            {isSubmittingContact && (
-                              <Icon
-                                icon="mdi:loading"
-                                className="me-2 h-4 w-4 animate-spin"
-                              />
+                            {isSubmittingContact ? (
+                              <span className="flex items-center gap-2">
+                                <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                                {t('common.sending', { defaultValue: 'Sending...' })}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-2">
+                                <Icon icon="mdi:send" className="h-5 w-5" />
+                                {t('company_profile.contact.submit')}
+                              </span>
                             )}
-                            {t('company_profile.contact.submit')}
                           </Button>
                         </DialogFooter>
                       </form>
@@ -575,7 +595,7 @@ const CompanyProfilePage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(company.services ?? []).map(service => (
                       <div key={service} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-[#f7b500]" />
+                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-[#f5a623]" />
                         <span className="text-sm font-medium text-slate-700">{service}</span>
                       </div>
                     ))}
@@ -646,7 +666,7 @@ const CompanyProfilePage = () => {
                 <CardContent className="space-y-4">
                   {/* Review Form */}
                   {canWriteReviews && isReviewFormOpen && (
-                    <Card className="border-[#f7b500]/30 bg-[#f7b500]/5">
+                    <Card className="border-[#f5a623]/30 bg-[#f5a623]/5">
                       <CardContent className="pt-6">
                         <form className="space-y-4" onSubmit={handleSubmitReview}>
                           <div className="space-y-2">
@@ -657,7 +677,7 @@ const CompanyProfilePage = () => {
                                   <button
                                     key={star}
                                     type="button"
-                                    className="focus:outline-none focus:ring-2 focus:ring-[#f7b500] rounded hover:scale-110 transition-transform"
+                                    className="focus:outline-none focus:ring-2 focus:ring-[#f5a623] rounded hover:scale-110 transition-transform"
                                     onClick={() => setReviewRating(star)}
                                     aria-label={`${star} stars`}
                                   >
@@ -665,7 +685,7 @@ const CompanyProfilePage = () => {
                                       icon="mdi:star"
                                       className={`h-5 w-5 ${
                                         star <= reviewRating
-                                          ? 'text-[#f7b500] fill-current'
+                                          ? 'text-[#f5a623] fill-current'
                                           : 'text-slate-300'
                                       }`}
                                     />
@@ -842,7 +862,7 @@ const CompanyProfilePage = () => {
                                     key={index}
                                     icon="mdi:star"
                                     className={`h-3.5 w-3.5 ${
-                                      index < review.rating ? 'text-[#f7b500] fill-current' : 'text-slate-300'
+                                      index < review.rating ? 'text-[#f5a623] fill-current' : 'text-slate-300'
                                     }`}
                                   />
                                 ))}
@@ -858,7 +878,7 @@ const CompanyProfilePage = () => {
                                     <button
                                       key={star}
                                       type="button"
-                                      className="focus:outline-none focus:ring-2 focus:ring-[#f7b500] rounded"
+                                      className="focus:outline-none focus:ring-2 focus:ring-[#f5a623] rounded"
                                       onClick={() => setEditRating(star)}
                                       aria-label={`${star} stars`}
                                     >
@@ -866,7 +886,7 @@ const CompanyProfilePage = () => {
                                         icon="mdi:star"
                                         className={`h-5 w-5 ${
                                           star <= editRating
-                                            ? 'text-[#f7b500] fill-current'
+                                            ? 'text-[#f5a623] fill-current'
                                             : 'text-slate-300'
                                         }`}
                                       />
@@ -1007,7 +1027,7 @@ const CompanyProfilePage = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {/* Rating */}
                     <div className="flex flex-col items-center p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                      <Icon icon="mdi:star" className="h-6 w-6 text-[#f7b500] fill-current mb-2" />
+                      <Icon icon="mdi:star" className="h-6 w-6 text-[#f5a623] fill-current mb-2" />
                       <span className="text-xl font-bold text-slate-900">{company.rating}</span>
                       <p className="text-xs text-slate-500 mt-1">{t('company_profile.stats.rating')}</p>
                     </div>
@@ -1037,7 +1057,7 @@ const CompanyProfilePage = () => {
               </Card>
 
               {/* Call to Action - Yellow accent */}
-              <Card className="bg-[#f7b500] border-none shadow-lg">
+              <Card className="bg-[#f5a623] border-none shadow-lg">
                 <CardContent className="pt-6">
                   <h3 className="font-semibold text-slate-900 mb-2">{t('company_profile.cta.title')}</h3>
                   <p className="text-sm text-slate-700/80 mb-4">

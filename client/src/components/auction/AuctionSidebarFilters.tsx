@@ -487,7 +487,7 @@ export function AuctionSidebarFilters({
       <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
         <Button 
           onClick={onApply} 
-          className="w-full h-7 text-[10px] bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-bold"
+          className="w-full h-7 text-[10px] bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-bold"
         >
           {t('auction.filters.apply')}
         </Button>

@@ -185,7 +185,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                         <Badge variant="outline" className="font-mono text-[10px] text-slate-600 bg-white/90 border-slate-300">
                             VIN: {vin}
                         </Badge>
-                        <Badge className="bg-[#f7b500] text-slate-900 hover:bg-[#f7b500]/90 border-none font-semibold">
+                        <Badge className="bg-[#f5a623] text-slate-900 hover:bg-[#f5a623]/90 border-none font-semibold">
                             <Icon icon="mdi:check-decagram" className="mr-1 h-3 w-3" />
                             {t('common.verified')}
                         </Badge>
@@ -345,7 +345,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
           
           {/* Feature 1: Estimated Cost Widget - Yellow accent */}
           {estimatedImportCost && (
-             <Card className="border-none shadow-lg bg-[#f7b500] text-slate-900 overflow-hidden relative">
+             <Card className="border-none shadow-lg bg-[#f5a623] text-slate-900 overflow-hidden relative">
                  <div className="absolute top-0 right-0 p-6 opacity-20">
                     <Icon icon="mdi:calculator" className="h-20 w-20" />
                  </div>

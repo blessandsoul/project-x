@@ -185,11 +185,13 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                             <CardContent className="flex-1 overflow-y-auto">
                               <form
                                 onSubmit={handleLoginSubmit}
-                                className="space-y-4"
+                                className="space-y-5"
                                 aria-busy={isLoading}
                               >
                                 <div className="space-y-2">
-                                  <Label htmlFor="auth-login-email">{t('auth.login.email')}</Label>
+                                  <Label htmlFor="auth-login-email" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {t('auth.login.email')}
+                                  </Label>
                                   <Input
                                     id="auth-login-email"
                                     type="email"
@@ -197,10 +199,13 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                     onChange={(event) => setLoginEmail(event.target.value)}
                                     placeholder={t('auth.placeholders.email')}
                                     required
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="auth-login-password">{t('auth.login.password')}</Label>
+                                  <Label htmlFor="auth-login-password" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {t('auth.login.password')}
+                                  </Label>
                                   <Input
                                     id="auth-login-password"
                                     type="password"
@@ -208,21 +213,32 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                     onChange={(event) => setLoginPassword(event.target.value)}
                                     placeholder={t('auth.placeholders.password')}
                                     required
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                                   />
                                 </div>
                                 {loginError && (
-                                  <p className="text-sm text-destructive" aria-live="polite">
-                                    {loginError}
-                                  </p>
+                                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100" aria-live="polite">
+                                    <Icon icon="mdi:alert-circle" className="h-4 w-4 text-red-500 shrink-0" />
+                                    <p className="text-sm text-red-600">{loginError}</p>
+                                  </div>
                                 )}
                                 <Button
                                   type="submit"
-                                  className="w-full mt-2"
+                                  className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
                                   disabled={isLoading}
                                   aria-disabled={isLoading}
                                 >
-                                  <Icon icon="mdi:login" className="mr-2 h-4 w-4" />
-                                  {isLoading ? t('auth.login.loading') : t('auth.login.submit')}
+                                  {isLoading ? (
+                                    <span className="flex items-center gap-2">
+                                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                                      {t('auth.login.loading')}
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-2">
+                                      <Icon icon="mdi:login" className="h-5 w-5" />
+                                      {t('auth.login.submit')}
+                                    </span>
+                                  )}
                                 </Button>
                               </form>
                             </CardContent>
@@ -354,17 +370,22 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                   )}
                                 </AnimatePresence>
                                 <div className="space-y-2">
-                                  <Label htmlFor="auth-register-name">{t('auth.register.name')}</Label>
+                                  <Label htmlFor="auth-register-name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {t('auth.register.name')}
+                                  </Label>
                                   <Input
                                     id="auth-register-name"
                                     value={name}
                                     onChange={(event) => setName(event.target.value)}
                                     placeholder={t('auth.placeholders.name')}
                                     required
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="auth-register-email">{t('auth.register.email')}</Label>
+                                  <Label htmlFor="auth-register-email" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {t('auth.register.email')}
+                                  </Label>
                                   <Input
                                     id="auth-register-email"
                                     type="email"
@@ -372,10 +393,13 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                     onChange={(event) => setRegisterEmail(event.target.value)}
                                     placeholder={t('auth.placeholders.email')}
                                     required
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="auth-register-password">{t('auth.register.password')}</Label>
+                                  <Label htmlFor="auth-register-password" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {t('auth.register.password')}
+                                  </Label>
                                   <Input
                                     id="auth-register-password"
                                     type="password"
@@ -383,21 +407,32 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
                                     onChange={(event) => setRegisterPassword(event.target.value)}
                                     placeholder={t('auth.placeholders.password')}
                                     required
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                                   />
                                 </div>
                                 {registerError && (
-                                  <p className="text-sm text-destructive" aria-live="polite">
-                                    {registerError}
-                                  </p>
+                                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100" aria-live="polite">
+                                    <Icon icon="mdi:alert-circle" className="h-4 w-4 text-red-500 shrink-0" />
+                                    <p className="text-sm text-red-600">{registerError}</p>
+                                  </div>
                                 )}
                                 <Button
                                   type="submit"
-                                  className="w-full mt-2"
+                                  className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all mt-2"
                                   disabled={isLoading}
                                   aria-disabled={isLoading}
                                 >
-                                  <Icon icon="mdi:account-plus" className="mr-2 h-4 w-4" />
-                                  {isLoading ? t('auth.register.loading') : t('auth.register.submit')}
+                                  {isLoading ? (
+                                    <span className="flex items-center gap-2">
+                                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                                      {t('auth.register.loading')}
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-2">
+                                      <Icon icon="mdi:account-plus" className="h-5 w-5" />
+                                      {t('auth.register.submit')}
+                                    </span>
+                                  )}
                                 </Button>
                               </form>
                             </CardContent>

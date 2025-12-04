@@ -184,15 +184,17 @@ export function CompanyComparisonModal({
           exit={{ opacity: 0 }}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute inset-0 bg-primary/60 backdrop-blur-sm" onClick={onClose} />
 
           {/* Modal Window */}
           <motion.div
-            className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200"
+            className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl shadow-primary/10 flex flex-col overflow-hidden border-2 border-primary/20"
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
           >
+            {/* Accent top border */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-sub to-accent rounded-t-2xl z-30" />
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shrink-0 z-20 relative">
               <div className="flex items-center gap-2.5">

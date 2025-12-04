@@ -78,7 +78,7 @@ export function WhatIsCopartSection() {
           <div className="space-y-4">
             <h2
               id="home-what-is-copart-heading"
-              className="text-xl md:text-2xl font-semibold text-[#f7b500] text-balance tracking-tight"
+              className="text-xl md:text-2xl font-semibold text-[#f5a623] text-balance tracking-tight"
             >
               {t('home.what_is_copart.title')}
             </h2>
@@ -88,7 +88,7 @@ export function WhatIsCopartSection() {
             </div>
             <Button 
               size="sm"
-              className="bg-[#f7b500] hover:bg-[#e5a800] text-slate-900 font-semibold text-xs rounded-full px-4"
+              className="bg-[#f5a623] hover:bg-[#e5a800] text-slate-900 font-semibold text-xs rounded-full px-4"
               onClick={() => navigate('/auction-listings')}
             >
               {t('home.what_is_copart.learn_more')}

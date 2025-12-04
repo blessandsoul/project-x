@@ -20,7 +20,7 @@ export function CopartHeroSection() {
     >
       {/* Yellow diagonal background shape */}
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f7b500]/90 dark:bg-[#f7b500]/80 z-0"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f5a623]/90 dark:bg-[#f5a623]/80 z-0"
         style={{
           clipPath: 'polygon(0 0, 100% 0, 76% 100%, 0 100%)',
         }}
@@ -113,10 +113,10 @@ export function CopartHeroSection() {
               <div className="relative z-10 grid grid-cols-2 gap-4 w-full max-w-md">
                 {/* Auction / Bidding */}
                 <div className="col-span-1 row-span-2 rounded-2xl bg-slate-900 text-white shadow-[0_18px_55px_rgba(15,23,42,0.45)] ring-1 ring-black/10 flex flex-col items-center justify-center p-6">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#f7b500] text-slate-900 shadow-lg mb-4">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#f5a623] text-slate-900 shadow-lg mb-4">
                     <Icon icon="mdi:gavel" className="w-10 h-10" aria-hidden="true" />
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f7b500] mb-1">Copart / IAAI</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">Copart / IAAI</p>
                   <p className="text-sm font-medium text-center">
                     {t('auction.price_comparison')}
                   </p>

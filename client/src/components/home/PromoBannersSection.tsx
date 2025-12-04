@@ -7,7 +7,7 @@ const PROMO_BANNERS = [
   {
     id: 'bid_anytime',
     icon: 'mdi:gavel',
-    bgColor: 'bg-[#1a2b4c]',
+    bgColor: 'bg-[#1a2744]',
     image: '/cars/1.webp',
   },
   {
@@ -19,13 +19,13 @@ const PROMO_BANNERS = [
   {
     id: 'no_license',
     icon: 'mdi:card-remove',
-    bgColor: 'bg-[#1a2b4c]',
+    bgColor: 'bg-[#1a2744]',
     image: '/cars/3.webp',
   },
   {
     id: 'bid_wins',
     icon: 'mdi:trophy',
-    bgColor: 'bg-[#f7b500]',
+    bgColor: 'bg-[#f5a623]',
     image: '/cars/1.webp',
     textDark: true,
   },
@@ -54,10 +54,10 @@ export function PromoBannersSection() {
               onClick={() => navigate('/auction-listings')}
             >
               {/* Text */}
-              <div className={banner.textDark ? 'text-[#1a2b4c]' : 'text-white'}>
+              <div className={banner.textDark ? 'text-[#1a2744]' : 'text-white'}>
                 <h3 className="text-lg font-bold leading-tight">
                   {t(`home.promo_banners.${banner.id}.title`)}<br />
-                  <span className={banner.textDark ? 'text-[#1a2b4c]/80' : 'text-[#f7b500]'}>
+                  <span className={banner.textDark ? 'text-[#1a2744]/80' : 'text-[#f5a623]'}>
                     {t(`home.promo_banners.${banner.id}.subtitle`)}
                   </span>
                 </h3>
