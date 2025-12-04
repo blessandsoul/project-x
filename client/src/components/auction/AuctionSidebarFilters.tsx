@@ -95,6 +95,47 @@ export function AuctionSidebarFilters({
     setFilters({ [key]: value });
   };
 
+  // Helper for local multi-select checkbox groups
+  const toggleValue = (list: string[], value: string) =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+  // Local multi-select state for groups that currently map to single filter fields.
+  // Backend still uses only the first selected value per group for now.
+  const [selectedTransportTypes, setSelectedTransportTypes] = useState<string[]>(
+    filters.searchKind ? [filters.searchKind] : []
+  );
+  const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>(
+    filters.fuelType ? [filters.fuelType] : []
+  );
+  const [selectedDrives, setSelectedDrives] = useState<string[]>(
+    filters.drive ? [filters.drive] : []
+  );
+  const [selectedSources, setSelectedSources] = useState<string[]>(
+    filters.auctionFilter ? [filters.auctionFilter] : []
+  );
+
+  // Additional purely visual multi-select groups (not yet mapped to backend)
+  const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([]);
+  const [selectedDamages, setSelectedDamages] = useState<string[]>([]);
+  const [selectedSaleDates, setSelectedSaleDates] = useState<string[]>([]);
+
+  // Sync local arrays when external filters are reset from the page
+  useEffect(() => {
+    setSelectedTransportTypes(filters.searchKind ? [filters.searchKind] : []);
+  }, [filters.searchKind]);
+
+  useEffect(() => {
+    setSelectedFuelTypes(filters.fuelType ? [filters.fuelType] : []);
+  }, [filters.fuelType]);
+
+  useEffect(() => {
+    setSelectedDrives(filters.drive ? [filters.drive] : []);
+  }, [filters.drive]);
+
+  useEffect(() => {
+    setSelectedSources(filters.auctionFilter ? [filters.auctionFilter] : []);
+  }, [filters.auctionFilter]);
+
   return (
     <div className="bg-white border border-slate-300 text-[11px]">
       {/* Header */}
@@ -116,12 +157,18 @@ export function AuctionSidebarFilters({
           ].map((type) => (
             <label key={type.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={filters.searchKind === type.value}
+                checked={selectedTransportTypes.includes(type.value)}
                 onCheckedChange={() => {
-                  updateFilter('searchKind', type.value as any);
-                  if (type.value === 'all') updateFilter('category', 'all');
-                  else if (type.value === 'car') updateFilter('category', 'v');
-                  else if (type.value === 'moto') updateFilter('category', 'c');
+                  const next = toggleValue(selectedTransportTypes, type.value);
+                  setSelectedTransportTypes(next);
+
+                  // Backend uses only the first selected type for now
+                  const primary = (next[0] ?? 'all') as FilterState['searchKind'];
+                  updateFilter('searchKind', primary);
+
+                  if (primary === 'all') updateFilter('category', 'all');
+                  else if (primary === 'car') updateFilter('category', 'v');
+                  else if (primary === 'moto') updateFilter('category', 'c');
                   else updateFilter('category', 'a');
                 }}
                 className="h-3.5 w-3.5 rounded-sm"
@@ -256,8 +303,10 @@ export function AuctionSidebarFilters({
           ].map((trans) => (
             <label key={trans.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={false}
-                onCheckedChange={() => {}}
+                checked={selectedTransmissions.includes(trans.value)}
+                onCheckedChange={() => {
+                  setSelectedTransmissions((prev) => toggleValue(prev, trans.value));
+                }}
                 className="h-3.5 w-3.5 rounded-sm"
               />
               <span className="text-[11px] text-slate-700">{trans.label}</span>
@@ -279,8 +328,15 @@ export function AuctionSidebarFilters({
           ].map((fuel) => (
             <label key={fuel.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={filters.fuelType === fuel.value}
-                onCheckedChange={() => updateFilter('fuelType', fuel.value)}
+                checked={selectedFuelTypes.includes(fuel.value)}
+                onCheckedChange={() => {
+                  const next = toggleValue(selectedFuelTypes, fuel.value);
+                  setSelectedFuelTypes(next);
+
+                  // Backend: use first selected or 'all'
+                  const primary = (next[0] ?? 'all') as string;
+                  updateFilter('fuelType', primary);
+                }}
                 className="h-3.5 w-3.5 rounded-sm"
               />
               <span className="text-[11px] text-slate-700">{fuel.label}</span>
@@ -300,8 +356,14 @@ export function AuctionSidebarFilters({
           ].map((drive) => (
             <label key={drive.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={filters.drive === drive.value}
-                onCheckedChange={() => updateFilter('drive', drive.value)}
+                checked={selectedDrives.includes(drive.value)}
+                onCheckedChange={() => {
+                  const next = toggleValue(selectedDrives, drive.value);
+                  setSelectedDrives(next);
+
+                  const primary = (next[0] ?? 'all') as string;
+                  updateFilter('drive', primary as any);
+                }}
                 className="h-3.5 w-3.5 rounded-sm"
               />
               <span className="text-[11px] text-slate-700">{drive.label}</span>
@@ -323,8 +385,10 @@ export function AuctionSidebarFilters({
           ].map((damage) => (
             <label key={damage.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={false}
-                onCheckedChange={() => {}}
+                checked={selectedDamages.includes(damage.value)}
+                onCheckedChange={() => {
+                  setSelectedDamages((prev) => toggleValue(prev, damage.value));
+                }}
                 className="h-3.5 w-3.5 rounded-sm"
               />
               <span className="text-[11px] text-slate-700">{damage.label}</span>
@@ -351,8 +415,10 @@ export function AuctionSidebarFilters({
             ].map((date) => (
               <label key={date.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
                 <Checkbox
-                  checked={false}
-                  onCheckedChange={() => {}}
+                  checked={selectedSaleDates.includes(date.value)}
+                  onCheckedChange={() => {
+                    setSelectedSaleDates((prev) => toggleValue(prev, date.value));
+                  }}
                   className="h-3.5 w-3.5 rounded-sm"
                 />
                 <span className="text-[11px] text-slate-700">{date.label}</span>
@@ -389,8 +455,14 @@ export function AuctionSidebarFilters({
           ].map((source) => (
             <label key={source.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
               <Checkbox
-                checked={filters.auctionFilter === source.value}
-                onCheckedChange={() => updateFilter('auctionFilter', source.value as any)}
+                checked={selectedSources.includes(source.value)}
+                onCheckedChange={() => {
+                  const next = toggleValue(selectedSources, source.value);
+                  setSelectedSources(next);
+
+                  const primary = (next[0] ?? 'all') as string;
+                  updateFilter('auctionFilter', primary as any);
+                }}
                 className="h-3.5 w-3.5 rounded-sm"
               />
               <span className="text-[11px] text-slate-700">{source.label}</span>

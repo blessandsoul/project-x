@@ -1490,103 +1490,113 @@ const AuctionListingsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    {viewMode === 'list' ? (
-                      /* List View - Copart Style */
-                      <div className="bg-white rounded border border-slate-200 overflow-hidden">
-                        {/* List Header - Blue like Copart */}
-                        <div className="hidden lg:flex items-stretch bg-[#0047AB] text-white text-[11px] font-semibold">
-                          <div className="w-[130px] flex-shrink-0 py-2 px-2">{t('auction.columns.image')}</div>
-                          <div className="flex-[1.2] min-w-[180px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.lot_info')}</div>
-                          <div className="flex-[1.6] min-w-[200px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.vehicle_info')}</div>
-                          <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.condition')}</div>
-                          <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.sale_info')}</div>
-                          <div className="w-[130px] flex-shrink-0 py-2 px-2 border-l border-blue-400/30 text-right">{t('auction.columns.bids')}</div>
-                        </div>
-                        {/* List Items */}
-                        {displayedItems.map((item, idx) => (
-                          <AuctionVehicleListItem
-                            key={`${item.id}-${item.vehicle_id}`}
-                            item={item}
-                            priority={idx < 4}
-                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                            showCompareCheckbox={showCompareCheckboxes}
-                            isWatched={isWatched(item.vehicle_id ?? item.id)}
-                            onToggleSelect={(checked: boolean) => {
-                              const id = item.vehicle_id ?? item.id;
-                              const isMobile = window.innerWidth < 640;
-                              const maxCompare = isMobile ? 2 : 5;
-                              setSelectedVehicleIds((prev) =>
-                                checked
-                                  ? prev.length < maxCompare
-                                    ? [...prev, id]
-                                    : prev
-                                  : prev.filter((pid) => pid !== id)
-                              );
-                            }}
-                            onToggleWatch={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              if (!isAuthenticated) {
-                                setIsAuthDialogOpen(true);
-                                return;
-                              }
-                              toggleWatch(id);
-                            }}
-                            onCalculate={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              setIsCalcModalOpen(true);
-                              calculateQuotes(id);
-                            }}
-                            onViewDetails={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              navigate({ pathname: `/vehicle/${id}` });
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      /* Grid View */
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
-                        {displayedItems.map((item, idx) => (
-                          <AuctionVehicleCard
-                            key={`${item.id}-${item.vehicle_id}`}
-                            item={item}
-                            priority={idx < 4}
-                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                            showCompareCheckbox={showCompareCheckboxes}
-                            isWatched={isWatched(item.vehicle_id ?? item.id)}
-                            onToggleSelect={(checked: boolean) => {
-                              const id = item.vehicle_id ?? item.id;
-                              const isMobile = window.innerWidth < 640;
-                              const maxCompare = isMobile ? 2 : 5;
-                              setSelectedVehicleIds((prev) =>
-                                checked
-                                  ? prev.length < maxCompare
-                                    ? [...prev, id]
-                                    : prev
-                                  : prev.filter((pid) => pid !== id)
-                              );
-                            }}
-                            onToggleWatch={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              if (!isAuthenticated) {
-                                setIsAuthDialogOpen(true);
-                                return;
-                              }
-                              toggleWatch(id);
-                            }}
-                            onCalculate={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              setIsCalcModalOpen(true);
-                              calculateQuotes(id);
-                            }}
-                            onViewDetails={() => {
-                              const id = item.vehicle_id ?? item.id;
-                              navigate({ pathname: `/vehicle/${id}` });
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={viewMode}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                      >
+                        {viewMode === 'list' ? (
+                          /* List View - Copart Style */
+                          <div className="bg-white rounded border border-slate-200 overflow-hidden">
+                            {/* List Header - Blue like Copart */}
+                            <div className="hidden lg:flex items-stretch bg-[#0047AB] text-white text-[11px] font-semibold">
+                              <div className="w-[130px] flex-shrink-0 py-2 px-2">{t('auction.columns.image')}</div>
+                              <div className="flex-[1.2] min-w-[180px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.lot_info')}</div>
+                              <div className="flex-[1.6] min-w-[200px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.vehicle_info')}</div>
+                              <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.condition')}</div>
+                              <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.sale_info')}</div>
+                              <div className="w-[130px] flex-shrink-0 py-2 px-2 border-l border-blue-400/30 text-right">{t('auction.columns.bids')}</div>
+                            </div>
+                            {/* List Items */}
+                            {displayedItems.map((item, idx) => (
+                              <AuctionVehicleListItem
+                                key={`${item.id}-${item.vehicle_id}`}
+                                item={item}
+                                priority={idx < 4}
+                                isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                                showCompareCheckbox={showCompareCheckboxes}
+                                isWatched={isWatched(item.vehicle_id ?? item.id)}
+                                onToggleSelect={(checked: boolean) => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  const isMobile = window.innerWidth < 640;
+                                  const maxCompare = isMobile ? 2 : 5;
+                                  setSelectedVehicleIds((prev) =>
+                                    checked
+                                      ? prev.length < maxCompare
+                                        ? [...prev, id]
+                                        : prev
+                                      : prev.filter((pid) => pid !== id)
+                                  );
+                                }}
+                                onToggleWatch={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  if (!isAuthenticated) {
+                                    setIsAuthDialogOpen(true);
+                                    return;
+                                  }
+                                  toggleWatch(id);
+                                }}
+                                onCalculate={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  setIsCalcModalOpen(true);
+                                  calculateQuotes(id);
+                                }}
+                                onViewDetails={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  navigate({ pathname: `/vehicle/${id}` });
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          /* Grid View */
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
+                            {displayedItems.map((item, idx) => (
+                              <AuctionVehicleCard
+                                key={`${item.id}-${item.vehicle_id}`}
+                                item={item}
+                                priority={idx < 4}
+                                isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                                showCompareCheckbox={showCompareCheckboxes}
+                                isWatched={isWatched(item.vehicle_id ?? item.id)}
+                                onToggleSelect={(checked: boolean) => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  const isMobile = window.innerWidth < 640;
+                                  const maxCompare = isMobile ? 2 : 5;
+                                  setSelectedVehicleIds((prev) =>
+                                    checked
+                                      ? prev.length < maxCompare
+                                        ? [...prev, id]
+                                        : prev
+                                      : prev.filter((pid) => pid !== id)
+                                  );
+                                }}
+                                onToggleWatch={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  if (!isAuthenticated) {
+                                    setIsAuthDialogOpen(true);
+                                    return;
+                                  }
+                                  toggleWatch(id);
+                                }}
+                                onCalculate={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  setIsCalcModalOpen(true);
+                                  calculateQuotes(id);
+                                }}
+                                onViewDetails={() => {
+                                  const id = item.vehicle_id ?? item.id;
+                                  navigate({ pathname: `/vehicle/${id}` });
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
 
                     {/* Pagination & Load More */}
                     <div className="flex flex-col items-center gap-4 pt-4 border-t">

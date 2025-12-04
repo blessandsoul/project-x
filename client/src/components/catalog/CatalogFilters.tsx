@@ -190,12 +190,12 @@ export const CatalogFilters = ({
 
       {/* Search */}
       <div className="space-y-1 sm:space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.search')}</label>
+        <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{t('common.search')}</label>
         <div className="relative">
-          <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <Input
             placeholder={t('catalog.filters.search_placeholder', 'Company name...')}
-            className="pl-9 bg-white h-9 sm:h-10"
+            className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40 h-9 sm:h-10 focus:bg-white/15"
             ref={searchInputRef}
             defaultValue={initialSearch}
             onChange={(e) => {
@@ -211,16 +211,16 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator className="my-1 sm:my-2" />
+      <Separator className="my-1 sm:my-2 bg-white/10" />
 
       {/* Country */}
       <div className="space-y-1 sm:space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.country', 'Country')}</label>
+        <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{t('catalog.filters.country', 'Country')}</label>
         <div className="relative">
-          <Icon icon="mdi:earth" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Icon icon="mdi:earth" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <Input 
             placeholder={t('catalog.filters.country_placeholder', 'Georgia, USA...')}
-            className="pl-9 bg-white h-9 sm:h-10"
+            className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40 h-9 sm:h-10 focus:bg-white/15"
             ref={countryInputRef}
             defaultValue={initialCountry}
             onChange={(e) => {
@@ -235,16 +235,16 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator className="my-1 sm:my-2" />
+      <Separator className="my-1 sm:my-2 bg-white/10" />
 
       {/* City Search */}
       <div className="space-y-1 sm:space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.city_placeholder')}</label>
+        <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{t('catalog.filters.city_placeholder')}</label>
         <div className="relative">
-          <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Icon icon="mdi:map-marker" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <Input 
             placeholder="თბილისი, ბათუმი..." 
-            className="pl-9 bg-white h-9 sm:h-10"
+            className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40 h-9 sm:h-10 focus:bg-white/15"
             ref={cityInputRef}
             defaultValue={initialCity}
             onChange={(e) => {
@@ -259,11 +259,11 @@ export const CatalogFilters = ({
         </div>
       </div>
 
-      <Separator className="my-1 sm:my-2" />
+      <Separator className="my-1 sm:my-2 bg-white/10" />
 
       {/* Rating */}
       <div className="space-y-1 sm:space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.rating')}</label>
+        <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{t('catalog.filters.rating')}</label>
         <Select
           value={initialMinRating && initialMinRating > 0 ? String(initialMinRating) : '0'}
           onValueChange={(value) => {
@@ -273,7 +273,7 @@ export const CatalogFilters = ({
             }
           }}
         >
-          <SelectTrigger className="bg-white h-9 sm:h-10">
+          <SelectTrigger className="bg-white/10 border-white/20 text-white h-9 sm:h-10 hover:bg-white/15">
             <SelectValue placeholder={t('catalog.filters.rating_all')} />
           </SelectTrigger>
           <SelectContent>
@@ -289,14 +289,14 @@ export const CatalogFilters = ({
       <div className="space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('catalog.filters.price')}</label>
+             <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{t('catalog.filters.price')}</label>
              <button
                 onClick={() => {
                   const emptyRange: [number, number] = [0, 0];
                   setPriceRange(emptyRange);
                   onPriceRangeChange?.(emptyRange);
                 }}
-                className="text-slate-400 hover:text-blue-600 transition-colors"
+                className="text-white/40 hover:text-primary transition-colors"
                 title={t('common.reset')}
              >
                 <Icon icon="mdi:refresh" className="w-3 h-3" />
@@ -305,10 +305,10 @@ export const CatalogFilters = ({
         </div>
         <div className="grid grid-cols-2 gap-2">
            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-white/40">$</span>
               <Input 
                 type="number" 
-                className="h-9 pl-5 text-xs bg-white" 
+                className="h-9 pl-5 text-xs bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/15" 
                 placeholder={t('common.from')}
                 value={priceRange[0] || ''}
                 onChange={(e) => {
@@ -320,10 +320,10 @@ export const CatalogFilters = ({
               />
            </div>
            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-white/40">$</span>
               <Input 
                 type="number" 
-                className="h-9 pl-5 text-xs bg-white" 
+                className="h-9 pl-5 text-xs bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/15" 
                 placeholder={t('common.to')}
                 value={priceRange[1] || ''}
                 onChange={(e) => {
@@ -339,21 +339,22 @@ export const CatalogFilters = ({
 
       {/* Toggles */}
       <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
-        <div className="flex items-center space-x-3 rounded-lg border border-slate-100 p-2.5 sm:p-3 bg-white hover:bg-slate-50 transition-colors">
+        <div className="flex items-center space-x-3 rounded-lg border border-white/20 p-2.5 sm:p-3 bg-white/5 hover:bg-white/10 transition-colors">
           <Checkbox
             id="vip"
             checked={!!initialIsVip}
             onCheckedChange={(checked) => onVipChange?.(!!checked)}
+            className="border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
           <div className="grid gap-1 leading-none">
             <label
               htmlFor="vip"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-white"
             >
               {t('catalog.filters.vip_only')}
               <Icon icon="mdi:crown" className="h-3.5 w-3.5 text-amber-500" />
             </label>
-            <p className="text-[10px] text-slate-500">{t('catalog.filters.vip_desc')}</p>
+            <p className="text-[10px] text-white/50">{t('catalog.filters.vip_desc')}</p>
           </div>
         </div>
       </div>
@@ -361,7 +362,7 @@ export const CatalogFilters = ({
       <div className="flex gap-2 lg:flex hidden">
         <Button 
           variant="outline" 
-          className="flex-1"
+          className="flex-1 border-white/20 text-white/80 hover:bg-white/10 hover:text-white"
           onClick={() => {
             if (searchInputRef.current) searchInputRef.current.value = '';
             if (countryInputRef.current) countryInputRef.current.value = '';
@@ -375,7 +376,7 @@ export const CatalogFilters = ({
           {t('catalog.filters.reset')}
         </Button>
         <Button 
-          className="flex-1"
+          className="flex-1 bg-primary hover:bg-primary/90"
           onClick={() => {
             onApplyFilters?.();
           }}
@@ -390,12 +391,12 @@ export const CatalogFilters = ({
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={cn("hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-fit sticky top-24", className)}>
+      <div className={cn("hidden lg:block bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 h-fit sticky top-24", className)}>
         <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-slate-100 rounded-lg">
-            <Icon icon="mdi:filter-variant" className="h-5 w-5 text-slate-700" />
+          <div className="p-2 bg-white/10 rounded-lg">
+            <Icon icon="mdi:filter-variant" className="h-5 w-5 text-white" />
           </div>
-          <h3 className="font-bold text-slate-900">{t('catalog.filters.title', 'Filters')}</h3>
+          <h3 className="font-bold text-white">{t('catalog.filters.title', 'Filters')}</h3>
         </div>
         {filterContent}
       </div>
@@ -403,10 +404,10 @@ export const CatalogFilters = ({
       {/* Mobile Bottom Sheet */}
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="lg:hidden w-full h-12 border-slate-200 shadow-sm bg-white justify-between px-4">
+          <Button variant="outline" className="lg:hidden w-full h-12 border-white/20 shadow-lg bg-white/5 backdrop-blur-sm justify-between px-4 hover:bg-white/10">
             <div className="flex items-center gap-2">
-              <Icon icon="mdi:filter-variant" className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold text-slate-700">{t('catalog.filters.title', 'Filters')}</span>
+              <Icon icon="mdi:filter-variant" className="h-5 w-5 text-white" />
+              <span className="font-semibold text-white">{t('catalog.filters.title', 'Filters')}</span>
             </div>
           </Button>
         </SheetTrigger>

@@ -342,9 +342,9 @@ const CompanyCatalogPage = () => {
     () => (
       <div className="lg:col-span-3 space-y-6">
         {/* Results Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
-          <p className="text-sm font-medium text-slate-600">
-            {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/20">
+          <p className="text-sm font-medium text-white/70">
+            {t('catalog.results.showing')} <span className="font-bold text-white">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-white">{totalResults}</span> {t('catalog.results.of')}
           </p>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -353,13 +353,13 @@ const CompanyCatalogPage = () => {
               onPressedChange={setIsCompareMode}
               variant="outline"
               aria-label="Toggle compare mode"
-              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200 flex-1 sm:flex-none"
+              className="gap-2 border-white/20 text-white/80 hover:bg-white/10 hover:text-white data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/40 flex-1 sm:flex-none"
             >
               <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
               <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
             </Toggle>
 
-            <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
+            <span className="text-sm text-white/50 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
             <Select
               value={filters.orderBy}
               onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
@@ -371,7 +371,7 @@ const CompanyCatalogPage = () => {
                 updateUrlFromFilters(nextFilters, 1);
               }}
             >
-              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white border-slate-200 shadow-sm">
+              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white/10 border-white/20 text-white hover:bg-white/15">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -387,15 +387,15 @@ const CompanyCatalogPage = () => {
         {isLoading ? (
           <div className="space-y-4">
             {[1,2,3,4,5].map(i => (
-              <div key={i} className="h-32 rounded-xl border border-slate-100 bg-white p-4 flex gap-4 items-center">
-                <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
+              <div key={i} className="h-32 rounded-xl border border-white/10 bg-white/5 p-4 flex gap-4 items-center">
+                <Skeleton className="h-16 w-16 rounded-xl shrink-0 bg-white/10" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-6 w-1/3 bg-white/10" />
+                  <Skeleton className="h-4 w-1/4 bg-white/10" />
                 </div>
                 <div className="w-32 space-y-2 hidden md:block">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-8 w-full bg-white/10" />
+                  <Skeleton className="h-4 w-2/3 bg-white/10" />
                 </div>
               </div>
             ))}
@@ -444,10 +444,10 @@ const CompanyCatalogPage = () => {
               disabled={page <= 1}
               aria-disabled={page <= 1}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
                 page <= 1
-                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
-                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+                  ? 'border border-dashed border-white/20 text-white/30 bg-transparent cursor-not-allowed'
+                  : 'border border-white/20 text-white/80 bg-white/10 hover:bg-white/20 hover:text-white'
               )}
             >
               <Icon icon="mdi:chevron-left" className="h-5 w-5" />
@@ -470,10 +470,10 @@ const CompanyCatalogPage = () => {
                     }}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
                       isActive
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-110 pointer-events-none'
-                        : 'bg-slate-100 border-transparent text-slate-800 hover:bg-slate-200 hover:text-slate-900'
+                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/30 scale-110 pointer-events-none'
+                        : 'bg-white/10 border-transparent text-white/80 hover:bg-white/20 hover:text-white'
                     )}
                   >
                     {p}
@@ -499,10 +499,10 @@ const CompanyCatalogPage = () => {
               disabled={page >= totalPages}
               aria-disabled={page >= totalPages}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#1F1F1F]',
                 page >= totalPages
-                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
-                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+                  ? 'border border-dashed border-white/20 text-white/30 bg-transparent cursor-not-allowed'
+                  : 'border border-white/20 text-white/80 bg-white/10 hover:bg-white/20 hover:text-white'
               )}
             >
               <Icon icon="mdi:chevron-right" className="h-5 w-5" />
@@ -533,29 +533,39 @@ const CompanyCatalogPage = () => {
   );
 
   return (
-    <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50 font-sans">
-      {/* Soft decorative orb in background */}
-      <div
-        className="pointer-events-none absolute -top-24 -right-40 h-[320px] w-[320px] rounded-full bg-gradient-to-br from-[#f7b500]/14 via-[#f97316]/10 to-transparent blur-3xl z-0"
-      />
+    <div className="flex-1 flex flex-col relative overflow-hidden bg-[#1F1F1F] font-sans min-h-screen">
+      {/* Animated background - matching HeroSection style */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Base green blurred blobs */}
+        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-emerald-400/30 rounded-full blur-[110px]" />
+        <div className="absolute top-1/4 -right-52 w-[640px] h-[640px] bg-emerald-500/25 rounded-full blur-[130px]" />
+        <div className="absolute -bottom-52 left-1/4 w-[580px] h-[580px] bg-teal-400/25 rounded-full blur-[110px]" />
+        
+        {/* Warm orange glow accents */}
+        <div className="absolute top-[20%] right-[10%] w-[420px] h-[420px] bg-orange-400/25 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] left-[5%] w-[360px] h-[360px] bg-amber-300/20 rounded-full blur-[110px]" />
+        
+        {/* Subtle dark overlay */}
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
 
       <div className="relative z-10 flex-1 flex flex-col">
-        {/* Breadcrumb-like Header Section */}
-        <div className="bg-white border-b border-slate-200 shadow-sm">
+        {/* Header Section - Dark glassmorphism style */}
+        <div className="border-b border-white/10">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="max-w-4xl">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
                   {t('catalog.title')}
                 </h1>
-                <p className="text-lg text-slate-600 max-w-2xl">
+                <p className="text-lg text-white/70 max-w-2xl">
                   {t('catalog.subtitle')}
                 </p>
               </div>
 
               <div className="w-full lg:w-auto hidden lg:block">
-                <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 text-white border border-blue-500/80 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
-                  <span className="text-[11px] font-semibold tracking-wider text-white/85 uppercase">
+                <div className="bg-white/5 backdrop-blur-sm text-white border border-white/20 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-lg">
+                  <span className="text-[11px] font-semibold tracking-wider text-white/70 uppercase">
                     {t('catalog.filters.auction', 'Auction shipping')}
                   </span>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -576,7 +586,7 @@ const CompanyCatalogPage = () => {
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
+                        <SelectTrigger className="bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -600,7 +610,7 @@ const CompanyCatalogPage = () => {
                       >
                         <SelectTrigger
                           ref={branchSelectRef}
-                          className={`bg-white h-9 sm:h-10 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                          className={`bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
                         >
                           <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                         </SelectTrigger>
@@ -634,7 +644,7 @@ const CompanyCatalogPage = () => {
                           setSelectedPort(value);
                         }}
                       >
-                        <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
+                        <SelectTrigger className="bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15">
                           <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -654,10 +664,10 @@ const CompanyCatalogPage = () => {
       </div>
 
       {/* Mobile Auction / Shipping Selector */}
-      <div className="relative z-10 lg:hidden border-b border-slate-200/80 bg-white">
+      <div className="relative z-10 lg:hidden border-b border-white/10">
         <div className="container mx-auto px-4 pt-3 pb-4">
-          <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 text-white border border-blue-500/80 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
-            <span className="text-[11px] font-semibold tracking-wider text-white/85 uppercase">
+          <div className="bg-white/5 backdrop-blur-sm text-white border border-white/20 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-lg">
+            <span className="text-[11px] font-semibold tracking-wider text-white/70 uppercase">
               {t('catalog.filters.auction', 'Auction shipping')}
             </span>
             <div className="flex flex-col gap-2">
@@ -686,7 +696,7 @@ const CompanyCatalogPage = () => {
                       }
                     }}
                   >
-                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
+                    <SelectTrigger className="bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -710,7 +720,7 @@ const CompanyCatalogPage = () => {
                   >
                     <SelectTrigger
                       ref={branchSelectRef}
-                      className={`bg-white h-9 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                      className={`bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
                     >
                       <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                     </SelectTrigger>
@@ -744,7 +754,7 @@ const CompanyCatalogPage = () => {
                       setSelectedPort(value);
                     }}
                   >
-                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
+                    <SelectTrigger className="bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15">
                       <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -911,7 +921,7 @@ const CompanyCatalogPage = () => {
                  setSelectedCompanies([]);
                  setIsCompareMode(false);
                }}
-               className="shadow-sm bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 h-8 rounded-full px-4"
+               className="shadow-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 h-8 rounded-full px-4"
             >
                <Icon icon="mdi:close" className="h-4 w-4 mr-1" />
                {t('catalog.comparison.cancel')}
@@ -919,11 +929,11 @@ const CompanyCatalogPage = () => {
             
             <Button 
                onClick={() => setIsComparisonModalOpen(true)} 
-               className="bg-slate-900 hover:bg-blue-600 text-white shadow-xl shadow-blue-900/20 rounded-full px-6 h-14 flex items-center gap-3 transition-all hover:scale-105"
+               className="bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 rounded-full px-6 h-14 flex items-center gap-3 transition-all hover:scale-105"
             >
                <div className="relative">
                  <Icon icon="mdi:compare-horizontal" className="h-6 w-6" />
-                 <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full border border-slate-900">
+                 <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                    {selectedCompanies.length}
                  </span>
                </div>

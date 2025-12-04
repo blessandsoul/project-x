@@ -112,12 +112,6 @@ export function AuctionVehicleListItem({
               {t('auction.actions.watch')}
             </button>
           )}
-          <button className="p-1 rounded border border-slate-300 hover:bg-slate-50">
-            <Icon icon="mdi:plus-circle-outline" className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-          <button className="p-1 rounded border border-slate-300 hover:bg-slate-50">
-            <Icon icon="mdi:check-circle-outline" className="w-3.5 h-3.5 text-slate-500" />
-          </button>
         </div>
       </div>
 

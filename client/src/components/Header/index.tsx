@@ -107,20 +107,17 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                 />
                 <Button 
                   type="submit"
-                  className="h-10 px-6 rounded-l-none rounded-r-md bg-[#0066cc] hover:bg-[#0052a3] text-white font-semibold text-sm"
+                  className="h-10 px-6 rounded-l-none rounded-r-md bg-[#0066cc] hover:bg-[#0052a3]"
                 >
-                  {t('auction.search.cta')}
+                  <Icon icon="mdi:magnify" className="w-5 h-5 text-white" />
                 </Button>
               </div>
             </form>
 
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-              {/* Language & Region */}
-              <div className="hidden lg:flex items-center gap-2 text-white/80 text-sm">
-                <Icon icon="mdi:web" className="w-4 h-4" />
-                <span>USA</span>
-                <span className="text-white/40">|</span>
+              {/* Language Switcher */}
+              <div className="hidden lg:flex items-center">
                 <LanguageSwitcher />
               </div>
 
