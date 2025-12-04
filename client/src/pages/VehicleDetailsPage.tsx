@@ -701,7 +701,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
             <AuctionVehicleCard
                 item={item}
                 priority={false}
-                onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
                 onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
                 onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
             />
@@ -720,7 +719,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
                     <AuctionVehicleCard
                         item={item}
                         priority={false}
-                        onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
                         onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
                         onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
                     />

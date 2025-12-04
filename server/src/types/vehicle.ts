@@ -71,6 +71,14 @@ export interface Vehicle {
   cylinders?: string | null;
   category?: string | null;
 
+  // Title / document info
+  document?: string | null;
+  sale_title_type?: string | null;
+
+  // Sale date fields
+  sold_at_date?: string | null;
+  sold_at_time?: string | null;
+
   // Primary image for list/search views
   primary_photo_url?: string | null;
   primary_thumb_url?: string | null;

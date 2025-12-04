@@ -11,16 +11,6 @@ const auctionRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send(result);
   });
 
-  fastify.get('/auction/locations/copart', async (request, reply) => {
-    const result = await controller.getCopartLocations();
-    return reply.send(result);
-  });
-
-  fastify.get('/auction/locations/iaai', async (request, reply) => {
-    const result = await controller.getIaaiLocations();
-    return reply.send(result);
-  });
-
   // POST /auction/calculate-shipping
   // Calculate shipping quotes for all companies based on auction branch address
   fastify.post<{

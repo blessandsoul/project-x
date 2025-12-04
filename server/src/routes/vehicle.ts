@@ -3,6 +3,10 @@ import { VehicleModel } from '../models/VehicleModel.js';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
 import { withCache, buildCacheKeyFromObject, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
+import {
+  vehicleSearchQuerySchema,
+  VehicleSearchFilters,
+} from '../schemas/vehicleSearchSchema.js';
 
 /**
  * Vehicle Routes
@@ -19,54 +23,28 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /vehicles/search
   //
   // Search vehicles by filters suitable for frontend search UI.
-  // Supports make/model/year range, price range, mileage range and
-  // several other fields. Returns paginated results with meta data.
+  // Supports make/model/year range, price range, mileage/odometer range,
+  // title type, transmission, fuel, drive, cylinders, sale date, and more.
+  // Returns paginated results with meta data.
+  //
+  // All query params are validated with Zod before processing.
   // ---------------------------------------------------------------------------
   fastify.get('/vehicles/search', async (request, reply) => {
-    const query = request.query as {
-      make?: string;
-      model?: string;
-      year?: string;
-      year_from?: string;
-      year_to?: string;
-      price_from?: string;
-      price_to?: string;
-      mileage_from?: string;
-      mileage_to?: string;
-      fuel_type?: string;
-      category?: string;
-      drive?: string;
-      source?: string;
-      search?: string;
-      page?: string;
-      limit?: string;
-      buy_now?: string;
-      sort?: string;
-    };
+    // Validate query params with Zod
+    const parseResult = vehicleSearchQuerySchema.safeParse(request.query);
+    if (!parseResult.success) {
+      // Zod v4 uses .issues instead of .errors
+      const issues = parseResult.error.issues || [];
+      const messages = issues.map((issue: { message: string }) => issue.message).join(', ');
+      throw new ValidationError(messages || 'Invalid query parameters');
+    }
 
-    const filters: {
-      make?: string;
-      model?: string;
-      year?: number;
-      yearFrom?: number;
-      yearTo?: number;
-      priceFrom?: number;
-      priceTo?: number;
-      mileageFrom?: number;
-      mileageTo?: number;
-      fuelType?: string;
-      category?: string;
-      drive?: string;
-      source?: string;
-      buyNow?: boolean;
-      vin?: string;
-      sourceLotId?: string;
-    } = {};
+    const query = parseResult.data;
+
+    // Build filters object for model layer
+    const filters: VehicleSearchFilters = {};
 
     // Optional combined search param: search="make model year" or VIN / lot id.
-    // Parsed into make/model/year or vin/sourceLotId when those are not
-    // already provided explicitly. For VIN/lot searches we *only* set
-    // vin/sourceLotId and skip make/model/year derivation.
     if (query.search && query.search.trim().length > 0) {
       const raw = query.search.trim();
 
@@ -80,11 +58,10 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       } else if (looksLikeLotId && !filters.sourceLotId) {
         filters.sourceLotId = compact;
       }
+
       // Only attempt make/model/year derivation when the string does NOT
       // look like a VIN or numeric lot id.
       if (!looksLikeVin && !looksLikeLotId) {
-        // Try to extract a reasonable model year (1950–2100) from the search
-        // string and treat the remaining words as make/model.
         const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
 
         let derivedYear: number | undefined;
@@ -117,72 +94,92 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
+    // Explicit make/model override search-derived values
     if (query.make && query.make.trim().length > 0) {
       filters.make = query.make.trim();
     }
     if (query.model && query.model.trim().length > 0) {
       filters.model = query.model.trim();
     }
-    if (query.year) {
-      const v = Number.parseInt(query.year, 10);
-      if (Number.isFinite(v)) filters.year = v;
+
+    // Year filters
+    if (query.year !== undefined) filters.year = query.year;
+    if (query.year_from !== undefined) filters.yearFrom = query.year_from;
+    if (query.year_to !== undefined) filters.yearTo = query.year_to;
+
+    // Price filters
+    if (query.price_from !== undefined) filters.priceFrom = query.price_from;
+    if (query.price_to !== undefined) filters.priceTo = query.price_to;
+
+    // Odometer/mileage filters (odometer_from/to take precedence, fallback to mileage_from/to)
+    if (query.odometer_from !== undefined) {
+      filters.mileageFrom = query.odometer_from;
+    } else if (query.mileage_from !== undefined) {
+      filters.mileageFrom = query.mileage_from;
     }
-    if (query.year_from) {
-      const v = Number.parseInt(query.year_from, 10);
-      if (Number.isFinite(v)) filters.yearFrom = v;
+    if (query.odometer_to !== undefined) {
+      filters.mileageTo = query.odometer_to;
+    } else if (query.mileage_to !== undefined) {
+      filters.mileageTo = query.mileage_to;
     }
-    if (query.year_to) {
-      const v = Number.parseInt(query.year_to, 10);
-      if (Number.isFinite(v)) filters.yearTo = v;
+
+    // Title type filter (multi-value)
+    if (query.title_type && query.title_type.length > 0) {
+      filters.titleTypes = query.title_type;
     }
-    if (query.price_from) {
-      const v = Number.parseFloat(query.price_from);
-      if (Number.isFinite(v)) filters.priceFrom = v;
+
+    // Transmission filter (multi-value)
+    if (query.transmission && query.transmission.length > 0) {
+      filters.transmissionTypes = query.transmission;
     }
-    if (query.price_to) {
-      const v = Number.parseFloat(query.price_to);
-      if (Number.isFinite(v)) filters.priceTo = v;
-    }
-    if (query.mileage_from) {
-      const v = Number.parseInt(query.mileage_from, 10);
-      if (Number.isFinite(v)) filters.mileageFrom = v;
-    }
-    if (query.mileage_to) {
-      const v = Number.parseInt(query.mileage_to, 10);
-      if (Number.isFinite(v)) filters.mileageTo = v;
-    }
-    if (query.fuel_type && query.fuel_type.trim().length > 0) {
+
+    // Fuel filter (multi-value, new param takes precedence over legacy fuel_type)
+    if (query.fuel && query.fuel.length > 0) {
+      filters.fuelTypes = query.fuel;
+    } else if (query.fuel_type && query.fuel_type.trim().length > 0) {
       filters.fuelType = query.fuel_type.trim();
     }
+
+    // Drive filter (multi-value, new param takes precedence over legacy drive)
+    if (query.drive && query.drive.length > 0) {
+      filters.driveTypes = query.drive;
+    }
+
+    // Cylinders filter (multi-value)
+    if (query.cylinders && query.cylinders.length > 0) {
+      filters.cylinderTypes = query.cylinders;
+    }
+
+    // Sale date filter
+    if (query.sold_from) {
+      filters.soldFrom = query.sold_from;
+    }
+    if (query.sold_to) {
+      filters.soldTo = query.sold_to;
+    }
+
+    // Category filter
     if (query.category && query.category.trim().length > 0) {
       filters.category = query.category.trim();
     }
-    if (query.drive && query.drive.trim().length > 0) {
-      filters.drive = query.drive.trim();
-    }
+
+    // Source filter
     if (query.source && query.source.trim().length > 0) {
       filters.source = query.source.trim();
     }
 
-    // Optional flag: buy_now=true → only lots with active buy_it_now
+    // Buy now flag
     if (typeof query.buy_now === 'string' && query.buy_now.toLowerCase() === 'true') {
       filters.buyNow = true;
     }
 
-    // Parse sort parameter
-    const validSorts = ['price_asc', 'price_desc', 'year_desc', 'year_asc', 'mileage_asc'] as const;
-    type SortOption = (typeof validSorts)[number];
-    let sort: SortOption | undefined;
-    if (query.sort && validSorts.includes(query.sort as SortOption)) {
-      sort = query.sort as SortOption;
-    }
+    // Pagination
+    const limit = query.limit;
+    const page = query.page;
+    const offset = (page - 1) * limit;
 
-    const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
-
-    const pageParam = query.page ? Number.parseInt(query.page, 10) : 1;
-    const pageFromClient = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-    const offset = (pageFromClient - 1) * limit;
+    // Sort
+    const sort = query.sort;
 
     // If an Authorization header is present, attempt to authenticate so
     // we can optionally attach is_favorite flags. If authentication
@@ -192,13 +189,10 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         await (fastify as any).authenticate(request, reply);
       } catch (authError) {
-        // Check if reply was already sent (e.g., 401 response)
         if (reply.sent) {
           return;
         }
-        // Log the auth failure for debugging but continue as anonymous
         fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
-        // Ensure request.user is undefined for anonymous access
         (request as any).user = undefined;
       }
     }
@@ -239,7 +233,6 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       }));
     }
 
-    const page = Math.floor(offset / limit) + 1;
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
     return reply.send({ items: itemsWithFavoriteFlag, total, limit, page, totalPages });
