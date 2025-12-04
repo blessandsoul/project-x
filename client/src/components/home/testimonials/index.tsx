@@ -143,44 +143,31 @@ export function TestimonialsSection() {
 
   return (
     <section
-      className="border-b bg-muted/10 py-16 md:py-24"
+      id="home-testimonials-section"
+      className="relative min-h-screen flex items-center justify-center py-10 md:py-16"
       aria-labelledby="home-testimonials-heading"
     >
-      <div className="container mx-auto px-4">
+      <div className="w-full max-w-6xl mx-auto px-4">
         {/* Section Header */}
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-col gap-4">
-            <h2
-              id="home-testimonials-heading"
-              className="text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl"
-            >
-              {t('home.testimonials.title')}
-            </h2>
-            {/* <div className="flex flex-wrap gap-2">
-              {['all', 'speed', 'price', 'quality', 'docs'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                    activeFilter === filter
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground ring-1 ring-border hover:bg-muted hover:text-foreground'
-                  }`}
-                  aria-pressed={activeFilter === filter}
-                >
-                  {t(`home.testimonials.filters.${filter}`)}
-                </button>
-              ))}
-            </div> */}
+        <div className="mb-10 flex flex-col items-center gap-4 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span>{t('home.testimonials.title')}</span>
           </div>
-          
-          <StatsWidget />
+          <h2
+            id="home-testimonials-heading"
+            className="text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-white max-w-3xl"
+          >
+            {t('home.testimonials.title')}
+          </h2>
         </div>
+
+        <StatsWidget />
 
         {/* Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
           {testimonials.length === 0 ? (
-            <Card className="col-span-full p-8 text-center">
+            <Card className="col-span-full p-8 text-center bg-white/5 border-white/10 text-white">
               <EmptyState
                 icon="mdi:account-off"
                 title={t('home.testimonials.empty.title')}

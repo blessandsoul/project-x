@@ -52,15 +52,11 @@ export interface Vehicle {
   source_lot_id: string | null;
   vin: string;
 
-  // Brand / model
+  // Brand / model (aliased from brand_name/model_name columns)
   brand_id?: number | null;
-  brand_name: string; // mapped from vehicles.brand_name
-  model_id: number;
-  model_name: string; // mapped from vehicles.model_name
-
-  // Backwards compatible fields used by existing code
-  make: string; // alias of brand_name
-  model: string; // alias of model_name
+  model_id?: number | null;
+  make: string;
+  model: string;
 
   // Specs
   year: number;
@@ -74,6 +70,14 @@ export interface Vehicle {
   transmission?: string | null;
   cylinders?: string | null;
   category?: string | null;
+
+  // Title / document info
+  document?: string | null;
+  sale_title_type?: string | null;
+
+  // Sale date fields
+  sold_at_date?: string | null;
+  sold_at_time?: string | null;
 
   // Primary image for list/search views
   primary_photo_url?: string | null;

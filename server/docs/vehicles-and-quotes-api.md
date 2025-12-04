@@ -109,31 +109,127 @@ This endpoint is intentionally minimal and does **not** include photos. Use `/ve
 
 **Description:**
 
-Search vehicles by filters suitable for frontend search UI. Supports make/model/year range, price/mileage range, fuel type, category, drive, and pagination. Returns a paginated list with basic vehicle info and a single thumbnail per vehicle.
+Search vehicles by filters suitable for frontend search UI. Supports make/model/year range, price/odometer range, fuel type, transmission, drive, title type, cylinders, sale date, and pagination. Returns a paginated list with vehicle info and a single thumbnail per vehicle.
+
+All query parameters are validated with Zod before processing. Invalid values return a `400 Bad Request` with validation error details.
 
 **Method:** `GET`
 
 **Query params:**
 
-- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `source`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
-- `buy_now` (optional, boolean-like: `true` / `false`) – when set to `true`, only return vehicles where `buy_it_now` is active (e.g. lot has Buy It Now option). Any other value (or omission) means no filter on this field.
-- `search` (optional, string) – combined free-text search over make/model/year.
+#### Basic Filters
 
-  When provided, the backend will try to parse the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+- `make` (optional, string) – partial match on brand name.
+- `model` (optional, string) – partial match on model name.
+- `source` (optional, string) – exact match on source (e.g. `copart`, `iaai`).
+- `category` (optional, string) – partial match on vehicle type.
+- `buy_now` (optional, boolean-like: `true` / `false`) – when `true`, only return vehicles with active Buy It Now option.
 
-  - Extracts a year in the range `1950–2099` from the string (if present) and treats it as `year`.
+#### Year Filter
+
+- `year` (optional, number) – exact year match.
+- `year_from` (optional, number) – minimum year (inclusive).
+- `year_to` (optional, number) – maximum year (inclusive).
+
+#### Price Filter
+
+- `price_from` (optional, number) – minimum price, must be ≥ 0.
+- `price_to` (optional, number) – maximum price, must be ≥ 0.
+
+#### Odometer Filter
+
+- `odometer_from` (optional, number) – minimum mileage, must be ≥ 0.
+- `odometer_to` (optional, number) – maximum mileage, must be ≤ 250,000.
+- `mileage_from`, `mileage_to` (optional) – legacy aliases, same behavior as odometer params.
+
+> **Note:** Maps to DB column `mileage`.
+
+#### Title Type Filter
+
+- `title_type` (optional, string) – comma-separated list of title types.
+- **Allowed values:** `clean title`, `nonrepairable`, `salvage title`
+- Example: `title_type=clean title,salvage title`
+
+> **Note:** Uses partial matching (LIKE) on DB column `document`. For example, `clean title` will match "CLEAN TITLE - GA", "Clean Title - TX", etc.
+
+#### Transmission Filter
+
+- `transmission` (optional, string) – comma-separated list.
+- **Allowed values:** `auto`, `manual`
+- Example: `transmission=auto,manual`
+
+#### Fuel Filter
+
+- `fuel` (optional, string) – comma-separated list of fuel types.
+- **Allowed values:** `petrol`, `diesel`, `electric`, `flexible`, `hybrid`
+- Example: `fuel=petrol,diesel,hybrid`
+- `fuel_type` (optional) – legacy single-value filter (partial match).
+
+> **Note:** Filters on DB columns `engine_fuel` and `engine_fuel_rus`.
+
+#### Drive Filter
+
+- `drive` (optional, string) – comma-separated list of drive types.
+- **Allowed values:** `front`, `rear`, `full`
+- Example: `drive=front,full`
+
+> **Special rule:** When `full` is selected, it matches DB values containing `full`, `full/front`, or `full/rear`.
+
+#### Cylinders Filter
+
+- `cylinders` (optional, string) – comma-separated list.
+- **Allowed values:** `0`, `1`, `2`, `3`, `4`, `5`, `6`, `8`, `10`, `12`, `U`
+- Example: `cylinders=4,6,8`
+
+> **Note:** Values are kept as strings (not numbers). `U` = Unknown.
+
+#### Sale Date Filter
+
+- `sold_from` (optional, string) – minimum sale date.
+- `sold_to` (optional, string) – maximum sale date.
+- **Accepted formats:** `YYYY-MM-DD` or `YYYY-MM-DD HH:mm:ss`
+- Example: `sold_from=2024-01-01&sold_to=2024-12-31`
+
+> **Note:** Combines DB columns `sold_at_date` and `sold_at_time` for filtering.
+
+#### Pagination & Sorting
+
+- `page` (optional, number, default: 1) – page number, must be ≥ 1.
+- `limit` (optional, number, default: 20, max: 250) – items per page.
+- `sort` (optional, string) – sorting order:
+
+| Value            | Description                | Use Case                          |
+| ---------------- | -------------------------- | --------------------------------- |
+| `price_asc`      | Price low → high           | Find cheapest vehicles            |
+| `price_desc`     | Price high → low           | Browse premium vehicles           |
+| `year_desc`      | Year newest → oldest       | Find newest models                |
+| `year_asc`       | Year oldest → newest       | Find classic/older vehicles       |
+| `mileage_asc`    | Mileage low → high         | Find low-mileage vehicles         |
+| `mileage_desc`   | Mileage high → low         | Find high-mileage deals           |
+| `sold_date_desc` | Recently sold first        | See latest auction results        |
+| `sold_date_asc`  | Oldest sold first          | Historical analysis               |
+| `best_value`     | Best price + mileage combo | **Recommended** – Find best deals |
+| _(default)_      | Most recently added        | New listings first                |
+
+> **Tip:** Use `best_value` to find vehicles with the best combination of low price and low mileage. This is ideal for users looking for the best deals.
+
+#### Free-Text Search
+
+- `search` (optional, string) – combined free-text search over make/model/year or VIN/lot ID.
+
+  The backend parses the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+
+  - Extracts a year in the range `1950–2099` from the string (if present).
   - Uses the first remaining word as `make`.
-  - Uses the remaining words (if any) joined with spaces as `model`.
+  - Uses the remaining words joined with spaces as `model`.
+  - If the string looks like a VIN (alphanumeric, ≥11 chars), searches by VIN.
+  - If the string is purely numeric, searches by lot ID.
 
   Examples:
 
   - `GET /vehicles/search?search=Toyota` → `make="Toyota"`.
-  - `GET /vehicles/search?search=Toyota Corolla` → `make="Toyota"`, `model="Corolla"`.
   - `GET /vehicles/search?search=Toyota Corolla 2018` → `make="Toyota"`, `model="Corolla"`, `year=2018`.
-
-  Explicit query params always win over values derived from `search`. For example:
-
-  - `GET /vehicles/search?search=Toyota Corolla 2018&make=Honda&year=2020` → `make="Honda"`, `model="Corolla"`, `year=2020`.
+  - `GET /vehicles/search?search=1HGBH41JXMN109186` → searches by VIN.
 
 **Response 200 JSON:**
 
@@ -142,8 +238,8 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
   "items": [
     {
       "id": 123,
-      "brand_name": "Toyota",
-      "model_name": "Corolla",
+      "vin": "1HGBH41JXMN109186",
+      "source_lot_id": "12345678",
       "make": "Toyota",
       "model": "Corolla",
       "year": 2018,
@@ -153,12 +249,19 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
       "retail_value": 20000,
       "calc_price": 7300,
       "buy_it_now_price": 7600,
-      "buy_it_now": 7500,
-      "fuel_type": "Gasoline",
+      "buy_it_now": 1,
+      "engine_fuel": "petrol",
+      "engine_volume": 2.0,
       "category": "Sedan",
-      "drive": "FWD",
-      "primary_photo_url": "https://.../full.jpg", // first full-size photo or null
-      "primary_thumb_url": "https://.../thumb_min.jpg" // first thumbnail, ideal for lists
+      "drive": "front",
+      "document": "clean title",
+      "transmission": "auto",
+      "cylinders": "4",
+      "sold_at_date": "2024-06-15",
+      "sold_at_time": "14:30:00",
+      "sold_at": "2024-06-15 14:30:00",
+      "primary_photo_url": "https://.../full.jpg",
+      "primary_thumb_url": "https://.../thumb_min.jpg"
     }
   ],
   "total": 1234,
@@ -168,7 +271,63 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
 }
 ```
 
+**Response Fields:**
+
+| Field               | Type   | Description                     |
+| ------------------- | ------ | ------------------------------- |
+| `id`                | number | Vehicle ID                      |
+| `vin`               | string | Vehicle Identification Number   |
+| `source_lot_id`     | string | Lot ID from auction source      |
+| `make`              | string | Brand name                      |
+| `model`             | string | Model name                      |
+| `year`              | number | Model year                      |
+| `mileage`           | number | Odometer reading                |
+| `yard_name`         | string | Auction yard location           |
+| `source`            | string | Auction source (copart/iaai)    |
+| `retail_value`      | number | Estimated retail value          |
+| `calc_price`        | number | Current auction price           |
+| `buy_it_now_price`  | number | Buy It Now price (if available) |
+| `buy_it_now`        | number | Buy It Now flag (1 = active)    |
+| `engine_fuel`       | string | Fuel type                       |
+| `engine_volume`     | number | Engine displacement             |
+| `category`          | string | Vehicle category/type           |
+| `drive`             | string | Drive type (front/rear/full)    |
+| `document`          | string | Title/document type             |
+| `transmission`      | string | Transmission type               |
+| `cylinders`         | string | Number of cylinders             |
+| `sold_at_date`      | string | Sale date (YYYY-MM-DD)          |
+| `sold_at_time`      | string | Sale time (HH:mm:ss)            |
+| `sold_at`           | string | Combined sale datetime          |
+| `primary_photo_url` | string | Full-size photo URL             |
+| `primary_thumb_url` | string | Thumbnail URL                   |
+
 > **UI hint:** Use `primary_thumb_url` for catalog/list thumbnails, and `primary_photo_url` when you need a larger image preview.
+
+**Example Requests:**
+
+```bash
+# Basic search by make and year range
+GET /vehicles/search?make=bmw&year_from=2018&year_to=2022
+
+# Filter by odometer and title type
+GET /vehicles/search?odometer_from=10000&odometer_to=80000&title_type=clean title
+
+# Multi-value filters
+GET /vehicles/search?transmission=auto,manual&fuel=petrol,diesel&drive=front,full
+
+# Filter by cylinders and sort by price
+GET /vehicles/search?cylinders=4,6,8&sort=price_asc
+
+# Filter by sale date range
+GET /vehicles/search?sold_from=2024-01-01&sold_to=2024-06-30
+
+# Combined filters with pagination
+GET /vehicles/search?make=toyota&fuel=hybrid&page=2&limit=50
+```
+
+**Error Responses:**
+
+- `400 Bad Request` – Invalid query parameters (Zod validation failed).
 
 ---
 
@@ -861,20 +1020,28 @@ Constraints:
 
 ## Summary of Filters vs Columns
 
-| Request field  | Internal filter key | Column(s) used                                       |
-| -------------- | ------------------- | ---------------------------------------------------- |
-| `make`         | `make`              | `vehicles.brand_name`                                |
-| `model`        | `model`             | `vehicles.model_name`                                |
-| `year`         | `year`              | `vehicles.year`                                      |
-| `year_from`    | `yearFrom`          | `vehicles.year >=`                                   |
-| `year_to`      | `yearTo`            | `vehicles.year <=`                                   |
-| `mileage_from` | `mileageFrom`       | `vehicles.mileage >=`                                |
-| `mileage_to`   | `mileageTo`         | `vehicles.mileage <=`                                |
-| `fuel_type`    | `fuelType`          | `vehicles.engine_fuel` OR `vehicles.engine_fuel_rus` |
-| `category`     | `category`          | `vehicles.vehicle_type`                              |
-| `drive`        | `drive`             | `vehicles.drive`                                     |
-| `price_from`   | `priceFrom`         | in-memory filter on `total_price` (quotes)           |
-| `price_to`     | `priceTo`           | in-memory filter on `total_price` (quotes)           |
+| Request field   | Internal filter key | Column(s) used                                       |
+| --------------- | ------------------- | ---------------------------------------------------- |
+| `make`          | `make`              | `vehicles.brand_name`                                |
+| `model`         | `model`             | `vehicles.model_name`                                |
+| `year`          | `year`              | `vehicles.year`                                      |
+| `year_from`     | `yearFrom`          | `vehicles.year >=`                                   |
+| `year_to`       | `yearTo`            | `vehicles.year <=`                                   |
+| `odometer_from` | `mileageFrom`       | `vehicles.mileage >=`                                |
+| `odometer_to`   | `mileageTo`         | `vehicles.mileage <=`                                |
+| `mileage_from`  | `mileageFrom`       | `vehicles.mileage >=` (legacy alias)                 |
+| `mileage_to`    | `mileageTo`         | `vehicles.mileage <=` (legacy alias)                 |
+| `title_type`    | `titleTypes`        | `vehicles.document` (IN clause, multi-value)         |
+| `transmission`  | `transmissionTypes` | `vehicles.transmission` (IN clause, multi-value)     |
+| `fuel`          | `fuelTypes`         | `vehicles.engine_fuel` OR `engine_fuel_rus` (multi)  |
+| `fuel_type`     | `fuelType`          | `vehicles.engine_fuel` OR `engine_fuel_rus` (legacy) |
+| `drive`         | `driveTypes`        | `vehicles.drive` (multi-value, special `full` logic) |
+| `cylinders`     | `cylinderTypes`     | `vehicles.cylinders` (IN clause, multi-value)        |
+| `sold_from`     | `soldFrom`          | `vehicles.sold_at_date` + `sold_at_time >=`          |
+| `sold_to`       | `soldTo`            | `vehicles.sold_at_date` + `sold_at_time <=`          |
+| `category`      | `category`          | `vehicles.vehicle_type`                              |
+| `price_from`    | `priceFrom`         | `vehicles.calc_price >=`                             |
+| `price_to`      | `priceTo`           | `vehicles.calc_price <=`                             |
 
 ---
 

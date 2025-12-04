@@ -20,6 +20,7 @@ import { fetchCopartLocations, fetchIaaiLocations, calculateShipping } from '@/a
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
 import { navigationItems, footerLinks } from '@/config/navigation';
+import { cn } from '@/lib/utils';
 
 // NOTE: Sorting is currently visual-only; backend ordering will be wired later.
 
@@ -49,6 +50,8 @@ const CompanyCatalogPage = () => {
   const [selectedPort, setSelectedPort] = useState('poti_georgia');
   const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
   const branchSelectRef = useRef<HTMLButtonElement>(null);
+  const [desktopBranchOpen, setDesktopBranchOpen] = useState(false);
+  const [mobileBranchOpen, setMobileBranchOpen] = useState(false);
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -158,9 +161,18 @@ const CompanyCatalogPage = () => {
   }, [selectedAuctionBranch, auctionSource, selectedPort]);
 
   const toggleComparison = (id: number) => {
-    setSelectedCompanies(prev => 
-      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
-    );
+    setSelectedCompanies(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(cId => cId !== id);
+      }
+
+      // Limit comparison to maximum 3 companies
+      if (prev.length >= 3) {
+        return prev;
+      }
+
+      return [...prev, id];
+    });
   };
 
   const filteredAuctionBranches = auctionBranches.filter((branch: AuctionLocation) => {
@@ -416,10 +428,14 @@ const CompanyCatalogPage = () => {
         {/* Pagination */}
         {!isLoading && totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-12">
+            {/* Prev */}
             <Button 
+              id="catalog-prev-page"
+              type="button"
               variant="outline" 
               size="icon"
               onClick={() => {
+                if (page <= 1) return;
                 const nextPage = page - 1;
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
@@ -427,36 +443,54 @@ const CompanyCatalogPage = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page <= 1}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
+              aria-disabled={page <= 1}
+              className={cn(
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                page <= 1
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+              )}
             >
               <Icon icon="mdi:chevron-left" className="h-5 w-5" />
             </Button>
             
+            {/* Page numbers */}
             <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPage(p);
-                    void loadCompanies(p, filters);
-                    updateUrlFromFilters(filters, p);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`h-10 w-10 rounded-full text-sm font-medium transition-all ${
-                    p === currentPage 
-                      ? 'bg-slate-900 text-white shadow-md scale-110' 
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                const isActive = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) return;
+                      setPage(p);
+                      void loadCompanies(p, filters);
+                      updateUrlFromFilters(filters, p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                      isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-110 pointer-events-none'
+                        : 'bg-slate-100 border-transparent text-slate-800 hover:bg-slate-200 hover:text-slate-900'
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
             </div>
             
+            {/* Next */}
             <Button 
+              id="catalog-next-page"
+              type="button"
               variant="outline" 
               size="icon"
               onClick={() => {
+                if (page >= totalPages) return;
                 const nextPage = page + 1;
                 setPage(nextPage);
                 void loadCompanies(nextPage, filters);
@@ -464,7 +498,13 @@ const CompanyCatalogPage = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }} 
               disabled={page >= totalPages}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
+              aria-disabled={page >= totalPages}
+              className={cn(
+                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                page >= totalPages
+                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+              )}
             >
               <Icon icon="mdi:chevron-right" className="h-5 w-5" />
             </Button>
@@ -494,7 +534,7 @@ const CompanyCatalogPage = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pt-16">
       <Header navigationItems={navigationItems} user={null} />
 
       {/* Breadcrumb-like Header Section */}
@@ -511,8 +551,8 @@ const CompanyCatalogPage = () => {
             </div>
 
             <div className="w-full lg:w-auto hidden lg:block">
-              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
-                <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+              <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border border-primary/60 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
+                <span className="text-[11px] font-semibold tracking-wider text-primary-foreground/80 uppercase">
                   {t('catalog.filters.auction', 'Auction shipping')}
                 </span>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -524,13 +564,16 @@ const CompanyCatalogPage = () => {
                         setSelectedAuctionBranch('');
                         if (value !== 'all') {
                           setBranchNeedsAttention(true);
-                          setTimeout(() => branchSelectRef.current?.click(), 100);
+                          setDesktopBranchOpen(true);
+                          setMobileBranchOpen(false);
                         } else {
                           setBranchNeedsAttention(false);
+                          setDesktopBranchOpen(false);
+                          setMobileBranchOpen(false);
                         }
                       }}
                     >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -543,6 +586,8 @@ const CompanyCatalogPage = () => {
 
                   <div className="flex-1 min-w-[180px]">
                     <Select
+                      open={desktopBranchOpen}
+                      onOpenChange={setDesktopBranchOpen}
                       value={selectedAuctionBranch ?? ''}
                       onValueChange={(value) => {
                         setSelectedAuctionBranch(value);
@@ -552,7 +597,7 @@ const CompanyCatalogPage = () => {
                     >
                       <SelectTrigger 
                         ref={branchSelectRef}
-                        className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                        className={`bg-white h-9 sm:h-10 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                       >
                         <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                       </SelectTrigger>
@@ -586,7 +631,7 @@ const CompanyCatalogPage = () => {
                         setSelectedPort(value);
                       }}
                     >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
+                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full text-slate-900">
                         <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -597,6 +642,114 @@ const CompanyCatalogPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Auction / Shipping Selector */}
+      <div className="lg:hidden bg-slate-50/80 border-b border-slate-200/80">
+        <div className="container mx-auto px-4 pt-3 pb-4">
+          <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border border-primary/60 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
+            <span className="text-[11px] font-semibold tracking-wider text-primary-foreground/80 uppercase">
+              {t('catalog.filters.auction', 'Auction shipping')}
+            </span>
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="sm:w-full">
+                  <Select
+                    value={auctionSource}
+                    onValueChange={(value: 'all' | 'copart' | 'iaai') => {
+                      setAuctionSource(value);
+                      setSelectedAuctionBranch('');
+                      if (value !== 'all') {
+                        setBranchNeedsAttention(true);
+                        if (typeof window !== 'undefined') {
+                          if (window.innerWidth >= 1024) {
+                            setDesktopBranchOpen(true);
+                            setMobileBranchOpen(false);
+                          } else {
+                            setMobileBranchOpen(true);
+                            setDesktopBranchOpen(false);
+                          }
+                        }
+                      } else {
+                        setBranchNeedsAttention(false);
+                        setDesktopBranchOpen(false);
+                        setMobileBranchOpen(false);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
+                      <SelectItem value="copart">Copart</SelectItem>
+                      <SelectItem value="iaai">IAAI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1 min-w-[180px]">
+                  <Select
+                    open={mobileBranchOpen}
+                    onOpenChange={setMobileBranchOpen}
+                    value={selectedAuctionBranch ?? ''}
+                    onValueChange={(value) => {
+                      setSelectedAuctionBranch(value);
+                      setBranchNeedsAttention(false);
+                    }}
+                    disabled={auctionSource === 'all' || auctionBranches.length === 0}
+                  >
+                    <SelectTrigger
+                      ref={branchSelectRef}
+                      className={`bg-white h-9 w-full text-slate-900 disabled:opacity-100 ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                    >
+                      <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
+                    </SelectTrigger>
+                    <SelectContent
+                      position="popper"
+                      className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
+                    >
+                      <div className="p-2 border-b bg-white sticky top-0 z-10">
+                        <Input
+                          placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
+                          value={auctionBranchSearch}
+                          onChange={(e) => setAuctionBranchSearch(e.target.value)}
+                          className="h-8 text-xs bg-white"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredAuctionBranches.map((branch) => (
+                          <SelectItem key={branch.address} value={branch.address}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="sm:w-full">
+                  <Select
+                    value={selectedPort}
+                    onValueChange={(value) => {
+                      setSelectedPort(value);
+                    }}
+                  >
+                    <SelectTrigger className="bg-white h-9 w-full text-slate-900">
+                      <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
+                      <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
+                      <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
+                      <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

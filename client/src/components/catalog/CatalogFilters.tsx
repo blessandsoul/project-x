@@ -410,7 +410,7 @@ export const CatalogFilters = ({
             </div>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-full sm:w-[400px] p-0 flex flex-col h-full">
+        <SheetContent side="left" className="w-full sm:w-[400px] p-0 flex flex-col h-full bg-white">
           <SheetHeader className="px-4 py-3 border-b border-slate-100">
             <SheetTitle className="text-left flex items-center gap-2 text-base">
               <Icon icon="mdi:filter-variant" /> {t('catalog.filters.title', 'Filters')}
@@ -422,30 +422,40 @@ export const CatalogFilters = ({
           </div>
           
           <SheetFooter className="px-4 py-3 border-t border-slate-100 bg-slate-50/50">
-            <div className="flex gap-2 w-full">
-              <Button
-                variant="outline"
-                className="flex-1 h-10 text-sm font-semibold shadow-sm"
-                onClick={() => {
-                  if (searchInputRef.current) searchInputRef.current.value = '';
-                  if (countryInputRef.current) countryInputRef.current.value = '';
-                  if (cityInputRef.current) cityInputRef.current.value = '';
-                  setPriceRange([0, 0]);
-                  onPriceRangeChange?.([0, 0]);
-                  onResetFilters?.();
-                }}
-              >
-                <Icon icon="mdi:refresh" className="mr-2 h-4 w-4" />
-                {t('catalog.filters.reset')}
-              </Button>
-              <SheetClose asChild>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex gap-2 w-full">
                 <Button
-                  className="flex-1 h-10 text-sm font-semibold shadow-md"
+                  variant="outline"
+                  className="flex-1 h-10 text-sm font-semibold shadow-sm"
                   onClick={() => {
-                    onApplyFilters?.();
+                    if (searchInputRef.current) searchInputRef.current.value = '';
+                    if (countryInputRef.current) countryInputRef.current.value = '';
+                    if (cityInputRef.current) cityInputRef.current.value = '';
+                    setPriceRange([0, 0]);
+                    onPriceRangeChange?.([0, 0]);
+                    onResetFilters?.();
                   }}
                 >
-                  {t('catalog.filters.show_results', 'Show Results')}
+                  <Icon icon="mdi:refresh" className="mr-2 h-4 w-4" />
+                  {t('catalog.filters.reset')}
+                </Button>
+                <SheetClose asChild>
+                  <Button
+                    className="flex-1 h-10 text-sm font-semibold shadow-md"
+                    onClick={() => {
+                      onApplyFilters?.();
+                    }}
+                  >
+                    {t('catalog.filters.show_results', 'Show Results')}
+                  </Button>
+                </SheetClose>
+              </div>
+              <SheetClose asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-sm font-medium text-slate-600"
+                >
+                  {t('common.close', 'Close')}
                 </Button>
               </SheetClose>
             </div>

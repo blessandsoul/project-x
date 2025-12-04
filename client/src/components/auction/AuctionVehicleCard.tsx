@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,15 +15,47 @@ import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
 
+// Shared mobile detection to avoid multiple resize listeners
+let mobileState = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
+const listeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  let resizeTimeout: ReturnType<typeof setTimeout>;
+  window.addEventListener('resize', () => {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const newState = window.innerWidth < 640;
+      if (newState !== mobileState) {
+        mobileState = newState;
+        listeners.forEach(listener => listener());
+      }
+    }, 100);
+  });
+}
+
+function useMobileDetect(): boolean {
+  const subscribe = useCallback((callback: () => void) => {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  }, []);
+  
+  const getSnapshot = useCallback(() => mobileState, []);
+  const getServerSnapshot = useCallback(() => false, []);
+  
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
   isSelected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
-  onOpenGallery: () => void;
   onCalculate: () => void;
   onViewDetails: () => void;
   showCompareCheckbox?: boolean;
   priority?: boolean;
+  onToggleWatch?: () => void;
+  isWatched?: boolean;
 }
 
 const formatMoney = (
@@ -40,21 +72,17 @@ export function AuctionVehicleCard({
   item,
   isSelected = false,
   onToggleSelect,
-  onOpenGallery,
   onCalculate,
   onViewDetails,
   showCompareCheckbox = false,
   priority = false,
+  onToggleWatch,
+  isWatched = false,
 }: AuctionVehicleCardProps) {
   const { t } = useTranslation();
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMobileDetect();
 
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const [showWatchBurst, setShowWatchBurst] = useState(false);
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -131,9 +159,9 @@ export function AuctionVehicleCard({
           <div className="relative w-28 flex-shrink-0 overflow-hidden bg-muted/20">
             <button
               type="button"
-              className="w-full h-full focus:outline-none cursor-zoom-in"
-              onClick={onOpenGallery}
-              aria-label={t('common.view_photos')}
+              className="w-full h-full focus:outline-none cursor-pointer"
+              onClick={onViewDetails}
+              aria-label={t('auction.view_vehicle_details')}
             >
               <img
                 src={mainPhotoUrl}
@@ -172,7 +200,7 @@ export function AuctionVehicleCard({
           <CardContent className="flex flex-row flex-1 p-2 gap-2 min-w-0">
             {/* Left: Info */}
             <div className="flex flex-col flex-1 min-w-0 gap-0.5 justify-between h-full">
-              <div>
+              <div className="space-y-1">
                 <h3 className="font-semibold text-[15px] leading-tight truncate" title={`${item.year} ${item.make} ${item.model}`}>
                   {item.year} {item.make} {item.model}
                 </h3>
@@ -186,10 +214,44 @@ export function AuctionVehicleCard({
                     {translateFuel(item.fuel_type)}
                   </span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-primary leading-tight">
+                    {formatMoney(displayPrice)}
+                  </span>
+                  {onToggleWatch && (
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isWatched) {
+                          setShowWatchBurst(true);
+                        }
+                        onToggleWatch();
+                      }}
+                      className={`relative flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                        isWatched 
+                          ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                          : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
+                      }`}
+                      title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
+                    >
+                      {showWatchBurst && !isWatched && (
+                        <motion.span
+                          initial={{ scale: 0, opacity: 0, y: 0 }}
+                          animate={{ scale: 1.6, opacity: 0, y: -10 }}
+                          transition={{ duration: 0.4, ease: 'easeOut' }}
+                          onAnimationComplete={() => setShowWatchBurst(false)}
+                          className="absolute -top-1 -right-1 text-orange-400 pointer-events-none"
+                        >
+                          <Icon icon="mdi:star" className="w-3 h-3" />
+                        </motion.span>
+                      )}
+                      <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-3.5 h-3.5" />
+                      <span>{t('auction.watch')}</span>
+                    </motion.button>
+                  )}
+                </div>
               </div>
-              <span className="text-[15px] font-bold text-primary leading-tight">
-                {formatMoney(displayPrice)}
-              </span>
             </div>
             {/* Right: Actions stacked vertically */}
             <div className="flex flex-col justify-between items-end h-full">
@@ -202,9 +264,9 @@ export function AuctionVehicleCard({
               <button
                 className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors text-[11px] font-semibold min-w-[44px]"
                 onClick={onViewDetails}
-                title={t('common.details')}
+                title={t('auction.join_live_auction')}
               >
-                {t('common.details')}
+                {t('auction.join_live_auction')}
               </button>
             </div>
           </CardContent>
@@ -227,9 +289,9 @@ export function AuctionVehicleCard({
         <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
           <button
             type="button"
-            className="w-full h-full focus:outline-none cursor-zoom-in"
-            onClick={onOpenGallery}
-            aria-label={t('common.view_photos')}
+            className="w-full h-full focus:outline-none cursor-pointer"
+            onClick={onViewDetails}
+            aria-label={t('auction.view_vehicle_details')}
           >
             <img
               src={mainPhotoUrl}
@@ -358,35 +420,68 @@ export function AuctionVehicleCard({
             </div>
 
             {/* Footer: Price & Actions */}
-            <div className="pt-1 flex items-end justify-between gap-2">
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
-              </span>
-              <span className="text-xl font-extrabold text-primary tracking-tight">
-                {formatMoney(displayPrice)}
-              </span>
+            <div className="pt-1 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
+                  </span>
+                  <span className="text-xl font-extrabold text-primary tracking-tight">
+                    {formatMoney(displayPrice)}
+                  </span>
+                </div>
+                {onToggleWatch && (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isWatched) {
+                        setShowWatchBurst(true);
+                      }
+                      onToggleWatch();
+                    }}
+                    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isWatched 
+                        ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm' 
+                        : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
+                    }`}
+                    title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
+                  >
+                    {showWatchBurst && !isWatched && (
+                      <motion.span
+                        initial={{ scale: 0, opacity: 0, y: 0 }}
+                        animate={{ scale: 1.8, opacity: 0, y: -12 }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                        onAnimationComplete={() => setShowWatchBurst(false)}
+                        className="absolute -top-1 -right-1 text-orange-400 pointer-events-none"
+                      >
+                        <Icon icon="mdi:star" className="w-3.5 h-3.5" />
+                      </motion.span>
+                    )}
+                    <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
+                    <span>{t('auction.watch')}</span>
+                  </motion.button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
+                  onClick={onCalculate}
+                  title={t('auction.calculate_cost')}
+                >
+                  <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 h-9 rounded-full px-4 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  onClick={onViewDetails}
+                >
+                  {t('auction.join_live_auction')}
+                </Button>
+              </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
-                onClick={onCalculate}
-                title={t('auction.calculate_cost')}
-              >
-                <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 rounded-full px-5 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                onClick={onViewDetails}
-              >
-                {t('common.details')}
-              </Button>
-            </div>
-          </div>
           </div>
         </CardContent>
       </Card>

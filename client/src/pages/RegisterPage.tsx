@@ -65,6 +65,31 @@ const RegisterPage = () => {
       >
         <Card className="w-full shadow-lg border-0 sm:border sm:shadow-sm overflow-hidden" role="form" aria-label={t('auth.register.title')}>
           <CardHeader className="space-y-2 text-center pb-6">
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => navigate(-1)}
+                aria-label={t('common.back')}
+              >
+                <Icon icon="mdi:arrow-left" className="h-4 w-4" />
+              </Button>
+              <Button
+                asChild
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                aria-label={t('navigation.home')}
+              >
+                <Link to="/">
+                  <Icon icon="mdi:home" className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
             <Link to="/" className="mx-auto flex items-center gap-2 mb-4">
               <motion.div 
                 whileHover={{ scale: 1.05 }}

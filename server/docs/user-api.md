@@ -1,6 +1,6 @@
 # User API
 
-Authentication, user profile, avatar management, favorites, and activity tracking endpoints.
+Authentication, user profile, avatar management, favorites, vehicle watchlist, and activity tracking endpoints.
 
 Routes defined in: `src/routes/user.ts`
 
@@ -349,7 +349,17 @@ Add a company to the user's favorites.
 
 ```jsonc
 {
-  "success": true
+  "success": true,
+  "status": "created"
+}
+```
+
+**Response 200** (already in watchlist)
+
+```jsonc
+{
+  "success": true,
+  "status": "already_exists"
 }
 ```
 
@@ -436,6 +446,111 @@ Record that the user viewed a company (for tracking recently viewed).
   "success": true
 }
 ```
+
+---
+
+## Vehicle Watchlist
+
+### GET `/favorites/vehicles`
+
+**Description**
+
+List the authenticated user's favorite vehicles (watchlist) with pagination.
+
+**Method:** `GET`
+
+**Authentication:** Required (JWT)
+
+**Query params:**
+
+- `page` (optional) – page number (default: 1)
+- `limit` (optional) – items per page (default: 20, max: 250)
+
+**Response 200**
+
+```jsonc
+{
+  "items": [
+    {
+      "id": 12345,
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2022,
+      "mileage": 45000,
+      "yard_name": "Copart - Los Angeles",
+      "source": "copart",
+      "retail_value": 25000,
+      "calc_price": 18500,
+      "fuel_type": "Gasoline",
+      "category": "Sedan",
+      "drive": "FWD",
+      "primary_photo_url": "https://example.com/photos/12345.jpg",
+      "primary_thumb_url": "https://example.com/thumbs/12345.jpg"
+    }
+  ],
+  "total": 42,
+  "limit": 20,
+  "page": 1,
+  "totalPages": 3
+}
+```
+
+**Error responses**
+
+- `401 Unauthorized` – missing/invalid token.
+
+---
+
+### POST `/favorites/vehicles/:vehicleId`
+
+**Description**
+
+Add a vehicle to the user's watchlist.
+
+**Method:** `POST`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 201**
+
+```jsonc
+{
+  "success": true
+}
+```
+
+**Error responses**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
+- `404 Not Found` – vehicle does not exist.
+
+---
+
+### DELETE `/favorites/vehicles/:vehicleId`
+
+**Description**
+
+Remove a vehicle from the user's watchlist.
+
+**Method:** `DELETE`
+
+**Authentication:** Required (JWT)
+
+**Path params:**
+
+- `vehicleId` – numeric vehicle ID
+
+**Response 204** – No content on success.
+
+**Error responses**
+
+- `400 Bad Request` – invalid vehicle ID.
+- `401 Unauthorized` – missing/invalid token.
 
 ---
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { MobileStickyCta } from '@/components/home/MobileStickyCta'
 import { PageLoader } from '@/components/ui/page-loader'
 import HomePage from './pages/HomePage.tsx'
 import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
@@ -17,6 +16,7 @@ const CarfaxPage = lazy(() => import('./pages/CarfaxPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const VehicleDetailsPage = lazy(() => import('./pages/VehicleDetailsPage'))
+const FavoriteVehiclesPage = lazy(() => import('./pages/FavoriteVehiclesPage'))
 
 function ScrollToTop() {
   const location = useLocation()
@@ -166,6 +166,14 @@ function AppRoutes() {
             element={<LazyRoute><AuctionListingsPage /></LazyRoute>}
           />
           <Route
+            path="/favorite-vehicles"
+            element={
+              <RequireAuth>
+                <LazyRoute><FavoriteVehiclesPage /></LazyRoute>
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/vin"
             element={<LazyRoute><CarfaxPage /></LazyRoute>}
           />
@@ -175,7 +183,6 @@ function AppRoutes() {
           />
         </Routes>
       </AnimatePresence>
-      <MobileStickyCta />
     </>
   )
 }

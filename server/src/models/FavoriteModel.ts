@@ -1,17 +1,34 @@
 import { FastifyInstance } from 'fastify';
 import { BaseModel } from './BaseModel.js';
 import { Vehicle } from '../types/vehicle.js';
+import { NotFoundError } from '../types/errors.js';
 
 export class FavoriteModel extends BaseModel {
   constructor(fastify: FastifyInstance) {
     super(fastify);
   }
 
-  async addFavorite(userId: number, vehicleId: number): Promise<void> {
-    await this.executeCommand(
+  async addFavorite(userId: number, vehicleId: number): Promise<boolean> {
+    // Verify vehicle exists before adding to favorites
+    const rows = await this.executeQuery(
+      'SELECT id FROM vehicles WHERE id = ? LIMIT 1',
+      [vehicleId],
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new NotFoundError('Vehicle');
+    }
+
+    const result = await this.executeCommand(
       'INSERT IGNORE INTO user_favorite_vehicles (user_id, vehicle_id, created_at) VALUES (?, ?, NOW())',
       [userId, vehicleId],
     );
+
+    const affected = (result && typeof (result as any).affectedRows === 'number')
+      ? (result as any).affectedRows
+      : 0;
+
+    return affected > 0;
   }
 
   async removeFavorite(userId: number, vehicleId: number): Promise<void> {
@@ -28,8 +45,6 @@ export class FavoriteModel extends BaseModel {
     const query = `
       SELECT
         v.id,
-        v.brand_name,
-        v.model_name,
         v.brand_name AS make,
         v.model_name AS model,
         v.year,

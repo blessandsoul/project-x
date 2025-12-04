@@ -701,7 +701,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
             <AuctionVehicleCard
                 item={item}
                 priority={false}
-                onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
                 onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
                 onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
             />
@@ -720,7 +719,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
                     <AuctionVehicleCard
                         item={item}
                         priority={false}
-                        onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
                         onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
                         onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
                     />
@@ -982,7 +980,7 @@ const VehicleDetailsPage = () => {
         <nav className="flex items-center text-sm text-muted-foreground mb-6 overflow-hidden">
           <button onClick={() => navigate('/')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_home')}</button>
           <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <button onClick={() => navigate('/catalog')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_vehicles')}</button>
+          <button onClick={() => navigate('/auction-listings')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_vehicles')}</button>
           <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
           <span className="text-foreground font-medium truncate">{vehicle.year} {vehicle.make} {vehicle.model}</span>
         </nav>

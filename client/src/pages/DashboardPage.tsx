@@ -654,13 +654,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt-16">
       <Header
         user={null}
         navigationItems={navigationItems}
       />
       <SidebarProvider>
-        <AppSidebar className="top-14" />
+        <AppSidebar className="top-16" />
         <SidebarInset>
           <header className="flex h-11 sm:h-12 shrink-0 items-center gap-2 border-b px-3 sm:px-4">
             <SidebarTrigger className="-ml-1" />

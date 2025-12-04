@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import crypto from 'crypto';
 
 /**
  * Cache utility for Redis-based caching with automatic fallback
@@ -54,8 +55,10 @@ export function buildCacheKeyFromObject(prefix: string, obj: Record<string, unkn
       {} as Record<string, unknown>,
     );
 
-  const hash = JSON.stringify(sorted);
-  return `${prefix}:${Buffer.from(hash).toString('base64').slice(0, 32)}`;
+  const json = JSON.stringify(sorted);
+  // Use crypto hash for a fixed-length, collision-resistant key
+  const hash = crypto.createHash('sha256').update(json).digest('hex').slice(0, 32);
+  return `${prefix}:${hash}`;
 }
 
 /**

@@ -1,7 +1,5 @@
 export interface VehicleSummary {
   id: number
-  brand_name: string
-  model_name: string
   make: string
   model: string
   year: number
@@ -117,6 +115,8 @@ export interface SearchQuotesResponse {
   totalPages: number
 }
 
+export type VehicleSortOption = 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc'
+
 export interface VehiclesSearchFilters {
   search?: string
   make?: string
@@ -135,6 +135,7 @@ export interface VehiclesSearchFilters {
   buy_now?: boolean
   limit?: number
   offset?: number
+  sort?: VehicleSortOption
 }
 
 export interface VehicleSearchItem extends VehicleDetails {

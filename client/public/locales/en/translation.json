@@ -60,9 +60,9 @@
     "drive_types": {
       "fwd": "Front Wheel Drive",
       "rwd": "Rear Wheel Drive",
-      "awd": "All Wheel Drive",
-      "4wd": "4WD",
-      "full": "Full Drive"
+      "awd": "4x4",
+      "4wd": "4x4",
+      "full": "4x4"
     },
     "offer": "Offer",
     "reviews": "reviews",
@@ -153,6 +153,15 @@
     "language": "Language",
     "open_profile_menu": "Open profile menu",
     "avatar_alt": "User avatar"
+  },
+  "profile": {
+    "title": "My Profile",
+    "save": "Save changes",
+    "delete_account": "Delete account",
+    "avatar_label": "Upload avatar",
+    "username": "Username",
+    "email": "Email",
+    "new_password": "New password"
   },
   "home": {
     "hero": {
@@ -257,6 +266,43 @@
           "3": "SUV segment is popular"
         }
       }
+    },
+    "how_it_works": {
+      "badge": "How It Works",
+      "title": "Import Your Car in 4 Simple Steps",
+      "subtitle": "We've made the process as simple as possible. Just follow these steps and get your car delivered.",
+      "steps": {
+        "search": {
+          "title": "Search & Find",
+          "description": "Browse our catalog of verified import companies and compare their services and prices."
+        },
+        "compare": {
+          "title": "Compare Offers",
+          "description": "Review detailed quotes, ratings, and reviews to find the best deal for your needs."
+        },
+        "choose": {
+          "title": "Choose Company",
+          "description": "Select your preferred company and submit your request. They'll handle everything."
+        },
+        "import": {
+          "title": "Get Your Car",
+          "description": "Track your shipment and receive your car at your doorstep with all documents ready."
+        }
+      },
+      "second_slide": {
+        "title": "Get Your Car Delivered",
+        "description": "We'll handle all the paperwork and logistics, so you can focus on what matters most - getting your car delivered safely and efficiently.",
+        "steps": {
+          "step1": {
+            "title": "Track Your Shipment",
+            "description": "Stay up-to-date on the status of your shipment and receive notifications when your car is on its way."
+          },
+          "step2": {
+            "title": "Receive Your Car",
+            "description": "Get your car delivered right to your doorstep, with all necessary documents and paperwork taken care of."
+          }
+        }
+      }
     }
   },
   "footer": {
@@ -358,6 +404,8 @@
     "total_estimate": "Total Estimate",
     "retail_value": "Retail Value",
     "load_more": "Load More",
+    "watch_auth_title": "Save vehicle to watchlist",
+    "watch_auth_description": "To save vehicles to your watch list, please sign in or create an account.",
     "filters": {
       "title": "Filters",
       "auction": "Auction",
@@ -367,7 +415,8 @@
       "model": "Model",
       "category": "Category",
       "year": "Year",
-      "price": "Price"
+      "price": "Price",
+      "mileage": "Mileage"
     },
     "compare": {
       "title": "Compare Total Cost",
@@ -380,7 +429,13 @@
       "distance": "Distance",
       "other_offers": "Other Offers",
       "no_other_offers": "No other offers"
-    }
+    },
+    "watch": "Watch List",
+    "add_to_watchlist": "Add to watchlist",
+    "remove_from_watchlist": "Remove from watchlist",
+    "join_live_auction": "Live Auction",
+    "view_vehicle_details": "View vehicle details",
+    "more_filters": "More Filters"
   },
   "pages": {
     "auction": {
@@ -388,11 +443,13 @@
     }
   },
   "sort": {
+    "none": "Default",
     "relevance": "Relevance",
     "price_low": "Price: Low to High",
     "price_high": "Price: High to Low",
-    "year_new": "Year: Newest",
-    "year_old": "Year: Oldest"
+    "year_old": "Year: Oldest to Newest",
+    "year_new": "Year: Newest to Oldest",
+    "mileage_low": "Mileage: Low to High"
   },
   "error": {
     "failed_to_load_data": "Failed to load data",

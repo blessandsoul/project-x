@@ -302,8 +302,13 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Invalid company id');
     }
 
-    await userCompanyActivityModel.addFavoriteCompany(request.user.id, id);
-    return reply.code(201).send({ success: true });
+    const newlyAdded = await userCompanyActivityModel.addFavoriteCompany(request.user.id, id);
+
+    if (newlyAdded) {
+      return reply.code(201).send({ success: true, status: 'created' });
+    }
+
+    return reply.code(200).send({ success: true, status: 'already_exists' });
   });
 
   fastify.delete('/user/favorites/:companyId', {

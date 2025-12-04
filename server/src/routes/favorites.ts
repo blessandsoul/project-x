@@ -46,8 +46,13 @@ const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    await favoriteModel.addFavorite(request.user.id, id);
-    return reply.code(201).send({ success: true });
+    const newlyAdded = await favoriteModel.addFavorite(request.user.id, id);
+
+    if (newlyAdded) {
+      return reply.code(201).send({ success: true, status: 'created' });
+    }
+
+    return reply.code(200).send({ success: true, status: 'already_exists' });
   });
 
   // Remove a vehicle from favorites

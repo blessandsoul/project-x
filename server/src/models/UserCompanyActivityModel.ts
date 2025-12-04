@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { BaseModel } from './BaseModel.js';
+import { NotFoundError } from '../types/errors.js';
 
 export interface UserFavoriteCompanyRow {
   user_id: number;
@@ -30,12 +31,28 @@ export class UserCompanyActivityModel extends BaseModel {
     return Array.isArray(rows) ? (rows as UserFavoriteCompanyRow[]) : [];
   }
 
-  async addFavoriteCompany(userId: number, companyId: number): Promise<void> {
-    await this.executeCommand(
+  async addFavoriteCompany(userId: number, companyId: number): Promise<boolean> {
+    // Verify company exists before adding to favorites
+    const rows = await this.executeQuery(
+      'SELECT id FROM companies WHERE id = ? LIMIT 1',
+      [companyId],
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new NotFoundError('Company');
+    }
+
+    const result = await this.executeCommand(
       `INSERT IGNORE INTO user_favorite_companies (user_id, company_id, created_at)
        VALUES (?, ?, NOW())`,
       [userId, companyId],
     );
+
+    const affected = (result && typeof (result as any).affectedRows === 'number')
+      ? (result as any).affectedRows
+      : 0;
+
+    return affected > 0;
   }
 
   async removeFavoriteCompany(userId: number, companyId: number): Promise<void> {

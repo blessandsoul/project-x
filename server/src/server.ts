@@ -26,12 +26,19 @@ import { companyRoutes } from './routes/company.js';
 import { auctionRoutes } from './routes/auction.js';
 import { vehicleRoutes } from './routes/vehicle.js';
 import { favoritesRoutes } from './routes/favorites.js';
-import { catalogRoutes } from './routes/catalog.js';
 import { leadRoutes } from './routes/lead.js';
 import { dashboardRoutes } from './routes/dashboard.js';
+import { citiesRoutes } from './routes/cities.js';
+import { portsRoutes } from './routes/ports.js';
+import { auctionsRoutes } from './routes/auctions.js';
+import { calculatorRoutes } from './routes/calculator.js';
+import { vehicleMakesRoutes } from './routes/vehicle-makes.js';
+import { vehicleModelsRoutes } from './routes/vehicle-models.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
-import { CatalogModel } from './models/CatalogModel.js';
+import { CitiesService } from './services/CitiesService.js';
+import { PortsService } from './services/PortsService.js';
+import { AuctionsService } from './services/AuctionsService.js';
 /**
  * Fastify Server Application
  *
@@ -244,9 +251,14 @@ await fastify.register(companyRoutes);
 await fastify.register(auctionRoutes);
 await fastify.register(vehicleRoutes);
 await fastify.register(favoritesRoutes);
-await fastify.register(catalogRoutes);
 await fastify.register(leadRoutes);
 await fastify.register(dashboardRoutes);
+await fastify.register(citiesRoutes);
+await fastify.register(portsRoutes);
+await fastify.register(auctionsRoutes);
+await fastify.register(calculatorRoutes);
+await fastify.register(vehicleMakesRoutes);
+await fastify.register(vehicleModelsRoutes);
 
 // ---------------------------------------------------------------------------
 // Background jobs
@@ -254,7 +266,9 @@ await fastify.register(dashboardRoutes);
 
 const auctionApiService = new AuctionApiService(fastify);
 const fxRateService = new FxRateService(fastify);
-const catalogModel = new CatalogModel(fastify);
+const citiesService = new CitiesService(fastify);
+const portsService = new PortsService(fastify);
+const auctionsService = new AuctionsService(fastify);
 
 // Refresh USD->GEL FX rate once per day. The FxRateService checks the
 // exchange_rates table first and only calls the external API if there is
@@ -269,22 +283,44 @@ cron.schedule('5 0 * * *', async () => {
   }
 });
 
-// Sync vehicle makes/models catalog from VPIC once per month. This keeps the
-// local vehicle_makes and vehicle_models tables reasonably fresh without
-// hitting the external API on every request.
-cron.schedule('0 3 1 * *', async () => {
+// Sync cities from external API every 24 hours
+cron.schedule('0 0 * * *', async () => {
   try {
-    fastify.log.info('Running monthly catalog sync for vehicle makes/models');
-    await catalogModel.syncVehicleType('car');
-    await catalogModel.syncVehicleType('motorcycle');
-    fastify.log.info('Monthly catalog sync completed');
+    fastify.log.info('Running daily cities sync job');
+    await citiesService.syncCities();
+    fastify.log.info('Daily cities sync job completed');
   } catch (error) {
-    fastify.log.error({ error }, 'Monthly catalog sync failed');
+    fastify.log.error({ error }, 'Daily cities sync job failed');
+  }
+});
+
+// Sync ports from external API every 10 days
+// Runs at 00:00 on day-of-month 1, 11, and 21
+cron.schedule('0 0 1,11,21 * *', async () => {
+  try {
+    fastify.log.info('Running ports sync job (every 10 days)');
+    await portsService.syncPorts();
+    fastify.log.info('Ports sync job completed');
+  } catch (error) {
+    fastify.log.error({ error }, 'Ports sync job failed');
+  }
+});
+
+// Sync auctions from external API every 10 days
+// Runs at 00:00 on day-of-month 1, 11, and 21
+cron.schedule('0 0 1,11,21 * *', async () => {
+  try {
+    fastify.log.info('Running auctions sync job (every 10 days)');
+    await auctionsService.syncAuctions();
+    fastify.log.info('Auctions sync job completed');
+  } catch (error) {
+    fastify.log.error({ error }, 'Auctions sync job failed');
   }
 });
 
 // Note: FX rate is fetched in start() before server listens.
 // This ensures the rate is available before accepting requests.
+// Cities, ports, and auctions are also synced on startup (see start() function).
 
 // ---------------------------------------------------------------------------
 // Graceful shutdown handlers
@@ -319,6 +355,15 @@ const start = async () => {
     // server. If a rate already exists for the current UTC date, this
     // is a no-op and does not call the external API.
     await fxRateService.ensureTodayUsdGelRate();
+
+    // Sync cities on server startup
+    await citiesService.syncCities();
+
+    // Sync ports on server startup
+    await portsService.syncPorts();
+
+    // Sync auctions on server startup
+    await auctionsService.syncAuctions();
 
     await fastify.listen({ port, host });
     fastify.log.info(`Server listening on http://${host}:${port}`);
