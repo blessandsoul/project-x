@@ -2,10 +2,11 @@ import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { PageLoader } from '@/components/ui/page-loader'
-import HomePage from './pages/HomePage.tsx'
 import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
+import MainLayout from '@/layouts/MainLayout'
 
-// Lazy load pages for better performance (Code Splitting)
+// Lazy load ALL pages for better performance (Code Splitting)
+const HomePage = lazy(() => import('./pages/HomePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CompanyCatalogPage = lazy(() => import('./pages/CompanyCatalogPage'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage'))
@@ -82,105 +83,95 @@ function AppRoutes() {
       <ScrollToTop />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          {/* HomePage loaded eagerly for LCP */}
-          <Route path="/" element={renderWithTransition(<HomePage />)} />
-          
-          <Route
-            path="/login"
-            element={
-              <RequireGuest>
-                <LazyRoute><LoginPage /></LazyRoute>
-              </RequireGuest>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <RequireGuest>
-                <LazyRoute><RegisterPage /></LazyRoute>
-              </RequireGuest>
-            }
-          />
-          <Route
-            path="/catalog"
-            element={<LazyRoute><CompanyCatalogPage /></LazyRoute>}
-          />
-          <Route
-            path="/companies"
-            element={<LazyRoute><CompanyCatalogPage /></LazyRoute>}
-          />
-          <Route
-            path="/company/:id"
-            element={<LazyRoute><CompanyProfilePage /></LazyRoute>}
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <LazyRoute><DashboardPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireAuth>
-                <LazyRoute><ProfilePage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/user"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/dealer"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/company"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/auction-listings"
-            element={<LazyRoute><AuctionListingsPage /></LazyRoute>}
-          />
-          <Route
-            path="/favorite-vehicles"
-            element={
-              <RequireAuth>
-                <LazyRoute><FavoriteVehiclesPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/vin"
-            element={<LazyRoute><CarfaxPage /></LazyRoute>}
-          />
-          <Route
-            path="/vehicle/:id"
-            element={<LazyRoute><VehicleDetailsPage /></LazyRoute>}
-          />
+          {/* All routes wrapped in MainLayout for consistent Header/Footer */}
+          <Route element={<MainLayout />}>
+            {/* Public Pages */}
+            <Route path="/" element={<LazyRoute><HomePage /></LazyRoute>} />
+            <Route path="/catalog" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
+            <Route path="/companies" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
+            <Route path="/company/:id" element={<LazyRoute><CompanyProfilePage /></LazyRoute>} />
+            <Route path="/auction-listings" element={<LazyRoute><AuctionListingsPage /></LazyRoute>} />
+            <Route path="/vin" element={<LazyRoute><CarfaxPage /></LazyRoute>} />
+            <Route path="/vehicle/:id" element={<LazyRoute><VehicleDetailsPage /></LazyRoute>} />
+
+            {/* Auth Pages (Guest Only) */}
+            <Route
+              path="/login"
+              element={
+                <RequireGuest>
+                  <LazyRoute><LoginPage /></LazyRoute>
+                </RequireGuest>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <RequireGuest>
+                  <LazyRoute><RegisterPage /></LazyRoute>
+                </RequireGuest>
+              }
+            />
+
+            {/* Protected Pages (Auth Required) */}
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <LazyRoute><DashboardPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <LazyRoute><ProfilePage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/favorite-vehicles"
+              element={
+                <RequireAuth>
+                  <LazyRoute><FavoriteVehiclesPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+
+            {/* Onboarding Routes */}
+            <Route
+              path="/onboarding"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/user"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/dealer"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/company"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+          </Route>
         </Routes>
       </AnimatePresence>
     </>

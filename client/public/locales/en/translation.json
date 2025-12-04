@@ -303,6 +303,106 @@
           }
         }
       }
+    },
+    "copart_hero": {
+      "title": "100% Online Auto Auctions",
+      "subtitle": "Over <strong>4 Million</strong> used cars, trucks and SUVs for sale. Find the best deal with transparent pricing and trusted partners.",
+      "download_appstore": "Download on the",
+      "appstore": "App Store",
+      "get_on": "Get it on",
+      "google_play": "Google Play",
+      "buyer_protection": "Buyer Protection",
+      "nationwide_delivery": "Nationwide Delivery",
+      "vehicle_history": "Vehicle History",
+      "browse_inventory": "Browse Inventory"
+    },
+    "popular_vehicles": {
+      "title": "Popular",
+      "title_highlight": "vehicles",
+      "subtitle": "A quick glance at some of the most viewed and bid-on vehicles right now.",
+      "current_bid": "Current Bid",
+      "buy_now": "Buy Now",
+      "sale": "Sale",
+      "bid_now": "Bid Now"
+    },
+    "membership": {
+      "title": "Membership Options",
+      "subtitle": "Choose the plan that works best for you. Upgrade anytime to unlock more features.",
+      "tab_individuals": "For individuals",
+      "tab_business": "Business / Membership Tiers",
+      "tab_corporate": "Corporate / Bulk orders",
+      "register_now": "Register Now",
+      "plans": {
+        "guest": {
+          "name": "Guest",
+          "price": "Free",
+          "features": ["View all vehicle listings", "Basic vehicle information", "Search & filter vehicles"],
+          "button": "Browse Free"
+        },
+        "basic": {
+          "name": "Basic",
+          "price": "$99",
+          "period": "/yr",
+          "features": ["All Guest features", "Bid on vehicles", "Buy It Now purchases", "Full vehicle history"],
+          "button": "Get Basic"
+        },
+        "premier": {
+          "name": "Premier",
+          "price": "$249",
+          "period": "/yr",
+          "features": ["All Basic features", "Unlimited bidding", "Early access to listings", "Priority support 24/7"],
+          "button": "Go Premier"
+        }
+      }
+    },
+    "vehicle_catalog": {
+      "title": "Copart Auto Auction - Used & Repairable Cars for Sale",
+      "subtitle": "Quickly browse by popular makes, models, body types, or trending searches.",
+      "tabs": {
+        "makes": "Makes",
+        "models": "Models",
+        "types": "Types",
+        "trending": "Trending"
+      },
+      "see_more": "See More",
+      "promo": {
+        "title_line1": "THOUSANDS",
+        "title_line2": "OF",
+        "title_line3": "VEHICLES",
+        "badge": "NO LICENSE REQUIRED",
+        "button": "View Now"
+      }
+    },
+    "what_is_copart": {
+      "title": "What is Copart?",
+      "description1": "Copart is a global leader in online vehicle auctions, offering over 4 million vehicles annually. Whether you're looking for a daily driver, a project car, or a wholesale opportunity, Copart provides access to salvage and clean title vehicles from insurance companies, dealerships, and fleet operators.",
+      "description2": "With 200+ locations across the United States and international shipping options, Copart makes it easy to find, bid on, and purchase vehicles from anywhere in the world.",
+      "learn_more": "Learn More",
+      "browse_categories": "Browse Categories",
+      "categories": {
+        "wholesale": "Wholesale Vehicles",
+        "trucks": "Trucks",
+        "motorcycles": "Motorcycles"
+      }
+    },
+    "promo_banners": {
+      "bid_anytime": {
+        "title": "BID ANYTIME",
+        "subtitle": "ANYWHERE"
+      },
+      "daily_sales": {
+        "title": "DAILY",
+        "subtitle": "SALES"
+      },
+      "no_license": {
+        "title": "NO LICENSE",
+        "subtitle": "NEEDED"
+      },
+      "bid_wins": {
+        "title": "BID &",
+        "subtitle": "WIN"
+      },
+      "follow_us": "Follow Us"
     }
   },
   "footer": {

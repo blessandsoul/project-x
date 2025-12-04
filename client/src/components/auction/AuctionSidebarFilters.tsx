@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,60 @@ interface AuctionSidebarFiltersProps {
   onReset: () => void;
 }
 
+// Copart-style collapsible section with animation
+function FilterSection({ 
+  title, 
+  children, 
+  defaultOpen = true 
+}: { 
+  title: string; 
+  children: React.ReactNode; 
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(defaultOpen ? undefined : 0);
+
+  useEffect(() => {
+    if (isOpen) {
+      const contentEl = contentRef.current;
+      if (contentEl) {
+        setHeight(contentEl.scrollHeight);
+        // After animation, set to auto for dynamic content
+        const timer = setTimeout(() => setHeight(undefined), 200);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setHeight(0);
+    }
+  }, [isOpen]);
+  
+  return (
+    <div className="border-b border-slate-200">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-50 hover:bg-slate-100 transition-colors"
+      >
+        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
+          {title}
+        </span>
+        <Icon 
+          icon="mdi:chevron-down" 
+          className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+      <div 
+        className="overflow-hidden transition-all duration-200 ease-in-out"
+        style={{ height: height === undefined ? 'auto' : height }}
+      >
+        <div ref={contentRef} className="px-2 py-2 bg-white">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AuctionSidebarFilters({
   filters,
   setFilters,
@@ -36,331 +91,340 @@ export function AuctionSidebarFilters({
 }: AuctionSidebarFiltersProps) {
   const { t } = useTranslation();
 
-  const currentYear = new Date().getFullYear() + 1;
-  const years = Array.from({ length: currentYear - 1990 + 1 }, (_, i) => currentYear - i);
-
   const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters({ [key]: value });
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 space-y-3">
-      <div className="flex items-center gap-2 pb-2 border-b">
-        <Icon icon="mdi:tune" className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm">
-          {t('auction.filters.title')}
-        </h3>
-      </div>
-
-      {/* Search Input */}
-      <div className="relative">
-        <Icon
-          icon="mdi:magnify"
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-        />
-        <Input
-          placeholder={t('auction.search_placeholder')}
-          value={filters.searchQuery}
-          onChange={(e) => updateFilter('searchQuery', e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onApply();
-          }}
-          className="pl-8 h-9 text-sm bg-white"
-        />
+    <div className="bg-white border border-slate-300 text-[11px]">
+      {/* Header */}
+      <div className="flex items-center gap-1.5 px-2 py-2 bg-[#0047AB] text-white">
+        <Icon icon="mdi:filter-variant" className="w-3.5 h-3.5" />
+        <span className="font-semibold text-[11px] uppercase tracking-wide">
+          {t('auction.filters.refine')}
+        </span>
       </div>
 
       {/* Vehicle Type */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          {t('auction.transport_type')}
-        </label>
-        <div className="grid grid-cols-4 gap-1">
+      <FilterSection title={t('auction.transport_type')}>
+        <div className="space-y-1">
           {[
-            { value: 'all', label: 'ყველა', icon: 'mdi:apps', categoryValue: 'all' as const },
-            { value: 'car', label: 'მანქანა', icon: 'mdi:car', categoryValue: 'v' as const },
-            { value: 'moto', label: 'მოტო', icon: 'mdi:motorbike', categoryValue: 'c' as const },
-            { value: 'van', label: 'კვადრო', icon: 'mdi:van-utility', categoryValue: 'a' as const },
+            { value: 'all', label: t('auction.filters.all_vehicles'), count: null },
+            { value: 'car', label: t('auction.filters.automobiles'), count: null },
+            { value: 'moto', label: t('auction.filters.motorcycles'), count: null },
+            { value: 'van', label: t('auction.filters.industrial_equipment'), count: null },
           ].map((type) => (
-            <button
-              key={type.value}
-              onClick={() => {
-                updateFilter('searchKind', type.value as any);
-                if (type.categoryValue === 'all') updateFilter('category', 'all');
-                else updateFilter('category', type.categoryValue);
-              }}
-              className={`flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-md border text-[9px] font-medium transition-all ${
-                filters.searchKind === type.value
-                  ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
-              }`}
-            >
-              <Icon icon={type.icon} className="w-3.5 h-3.5" />
-              <span className="truncate w-full text-center">{type.label}</span>
-            </button>
+            <label key={type.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={filters.searchKind === type.value}
+                onCheckedChange={() => {
+                  updateFilter('searchKind', type.value as any);
+                  if (type.value === 'all') updateFilter('category', 'all');
+                  else if (type.value === 'car') updateFilter('category', 'v');
+                  else if (type.value === 'moto') updateFilter('category', 'c');
+                  else updateFilter('category', 'a');
+                }}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{type.label}</span>
+            </label>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Make & Model */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          {t('auction.brand_and_model')}
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <Select
-            value={filters.selectedMakeId}
-            onValueChange={(val) => {
-              updateFilter('selectedMakeId', val);
-              updateFilter('selectedModelId', 'all');
-            }}
-            disabled={isLoadingMakes}
-          >
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('auction.filters.make')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common.all')}</SelectItem>
-              {(catalogMakes ?? []).map((make) => (
-                <SelectItem key={make.makeId} value={String(make.makeId)}>
-                  {make.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.selectedModelId}
-            onValueChange={(val) => updateFilter('selectedModelId', val)}
-            disabled={filters.selectedMakeId === 'all' || isLoadingModels}
-          >
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('auction.filters.model')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common.all')}</SelectItem>
-              {(catalogModels ?? []).map((model) => (
-                <SelectItem key={model.modelId} value={String(model.modelId)}>
-                  {model.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Year Range */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            {t('auction.filters.year')}
-          </label>
-          <button
-            onClick={() => {
-              updateFilter('yearRange', [0, 0]);
-              updateFilter('exactYear', '');
-            }}
-            className="text-slate-400 hover:text-primary transition-colors"
-            title={t('common.reset')}
-          >
-            <Icon icon="mdi:refresh" className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Select
-            value={filters.yearRange[0] > 0 ? String(filters.yearRange[0]) : ''}
-            onValueChange={(v) => updateFilter('yearRange', [Number(v), filters.yearRange[1]])}
-          >
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('common.from')} />
-            </SelectTrigger>
-            <SelectContent className="max-h-[200px]">
-              {years.map((year) => (
-                <SelectItem key={year} value={String(year)}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.yearRange[1] > 0 ? String(filters.yearRange[1]) : ''}
-            onValueChange={(v) => updateFilter('yearRange', [filters.yearRange[0], Number(v)])}
-          >
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('common.to')} />
-            </SelectTrigger>
-            <SelectContent className="max-h-[200px]">
-              {years.map((year) => (
-                <SelectItem key={year} value={String(year)}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <span className="text-[10px] font-medium text-slate-500">{t('auction.exact_year')}</span>
+      {/* Year */}
+      <FilterSection title={t('auction.filters.year')}>
+        <div className="flex items-center gap-1">
           <Input
             type="number"
-            className="h-8 w-full text-xs px-2 bg-white"
-            placeholder="2020"
-            value={filters.exactYear}
-            onChange={(e) => updateFilter('exactYear', e.target.value ? Number(e.target.value) : '')}
+            placeholder={t('common.from')}
+            value={filters.yearRange[0] || ''}
+            onChange={(e) => updateFilter('yearRange', [Number(e.target.value) || 0, filters.yearRange[1]])}
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+          />
+          <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
+          <Input
+            type="number"
+            placeholder={t('common.to')}
+            value={filters.yearRange[1] || ''}
+            onChange={(e) => updateFilter('yearRange', [filters.yearRange[0], Number(e.target.value) || 0])}
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
           />
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Price Range */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            {t('auction.filters.price')}
-          </label>
-          <button
-            onClick={() => updateFilter('priceRange', [0, 0])}
-            className="text-slate-400 hover:text-primary transition-colors"
-            title={t('common.reset')}
-          >
-            <Icon icon="mdi:refresh" className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">$</span>
-            <Input
-              type="number"
-              className="h-8 w-full pl-5 text-xs bg-white"
-              placeholder={t('common.from')}
-              value={filters.priceRange[0] || ''}
-              onChange={(e) => updateFilter('priceRange', [Number(e.target.value), filters.priceRange[1]])}
-            />
-          </div>
-          <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">$</span>
-            <Input
-              type="number"
-              className="h-8 w-full pl-5 text-xs bg-white"
-              placeholder={t('common.to')}
-              value={filters.priceRange[1] || ''}
-              onChange={(e) => updateFilter('priceRange', [filters.priceRange[0], Number(e.target.value)])}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Make */}
+      <FilterSection title={t('auction.filters.make')}>
+        <Select
+          value={filters.selectedMakeId}
+          onValueChange={(val) => {
+            updateFilter('selectedMakeId', val);
+            updateFilter('selectedModelId', 'all');
+          }}
+          disabled={isLoadingMakes}
+        >
+          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
+            <SelectValue placeholder={t('auction.filters.any_make')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('auction.filters.any_make')}</SelectItem>
+            {(catalogMakes ?? []).map((make) => (
+              <SelectItem key={make.makeId} value={String(make.makeId)}>
+                {make.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterSection>
 
-      {/* Mileage Range */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            {t('auction.filters.mileage')}
-          </label>
-          <button
-            onClick={() => updateFilter('mileageRange', [0, 0])}
-            className="text-slate-400 hover:text-primary transition-colors"
-            title={t('common.reset')}
-          >
-            <Icon icon="mdi:refresh" className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
+      {/* Model */}
+      <FilterSection title={t('auction.filters.model')}>
+        <Select
+          value={filters.selectedModelId}
+          onValueChange={(val) => updateFilter('selectedModelId', val)}
+          disabled={filters.selectedMakeId === 'all' || isLoadingModels}
+        >
+          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
+            <SelectValue placeholder={t('auction.filters.any_model')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('auction.filters.any_model')}</SelectItem>
+            {(catalogModels ?? []).map((model) => (
+              <SelectItem key={model.modelId} value={String(model.modelId)}>
+                {model.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterSection>
+
+      {/* Odometer */}
+      <FilterSection title={t('auction.filters.odometer')}>
+        <div className="flex items-center gap-1">
           <Input
             type="number"
-            className="h-8 w-full text-xs bg-white"
             placeholder={t('common.from')}
             value={filters.mileageRange[0] || ''}
-            onChange={(e) => updateFilter('mileageRange', [Number(e.target.value), filters.mileageRange[1]])}
+            onChange={(e) => updateFilter('mileageRange', [Number(e.target.value) || 0, filters.mileageRange[1]])}
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
           />
+          <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
           <Input
             type="number"
-            className="h-8 w-full text-xs bg-white"
             placeholder={t('common.to')}
             value={filters.mileageRange[1] || ''}
-            onChange={(e) => updateFilter('mileageRange', [filters.mileageRange[0], Number(e.target.value)])}
+            onChange={(e) => updateFilter('mileageRange', [filters.mileageRange[0], Number(e.target.value) || 0])}
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
           />
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Fuel & Drive */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          {t('auction.technical_data')}
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={filters.fuelType} onValueChange={(val) => updateFilter('fuelType', val)}>
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('auction.filters.fuel')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common.all')}</SelectItem>
-              <SelectItem value="petrol">{t('common.fuel_gas')}</SelectItem>
-              <SelectItem value="hybrid">{t('common.fuel_hybrid')}</SelectItem>
-              <SelectItem value="electric">{t('common.fuel_electric')}</SelectItem>
-              <SelectItem value="diesel">{t('common.fuel_diesel')}</SelectItem>
-              <SelectItem value="flexible">{t('common.fuel_flexible')}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.drive} onValueChange={(val) => updateFilter('drive', val)}>
-            <SelectTrigger className="h-8 w-full text-xs bg-white">
-              <SelectValue placeholder={t('common.drive')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common.all')}</SelectItem>
-              <SelectItem value="front">წინა</SelectItem>
-              <SelectItem value="rear">უკანა</SelectItem>
-              <SelectItem value="full">4x4</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Price/Bid */}
+      <FilterSection title={t('auction.filters.price_bid')}>
+        <div className="flex items-center gap-1">
+          <div className="relative flex-1">
+            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">$</span>
+            <Input
+              type="number"
+              placeholder={t('common.from')}
+              value={filters.priceRange[0] || ''}
+              onChange={(e) => updateFilter('priceRange', [Number(e.target.value) || 0, filters.priceRange[1]])}
+              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300"
+            />
+          </div>
+          <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
+          <div className="relative flex-1">
+            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">$</span>
+            <Input
+              type="number"
+              placeholder={t('common.to')}
+              value={filters.priceRange[1] || ''}
+              onChange={(e) => updateFilter('priceRange', [filters.priceRange[0], Number(e.target.value) || 0])}
+              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300"
+            />
+          </div>
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Auction Source */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          {t('auction.filters.auction')}
-        </label>
-        <div className="flex items-center gap-1 p-1 rounded-lg border bg-slate-50">
-          {(['all', 'Copart', 'IAAI'] as const).map((source) => (
-            <button
-              key={source}
-              onClick={() => updateFilter('auctionFilter', source)}
-              className={`flex-1 h-8 rounded-md text-xs font-medium transition-colors ${
-                filters.auctionFilter === source
-                  ? 'bg-white text-primary shadow-sm border'
-                  : 'hover:bg-white/50 text-slate-500'
-              }`}
-            >
-              {source === 'all' ? t('common.all') : source}
-            </button>
+      {/* Transmission - NEW */}
+      <FilterSection title={t('auction.filters.transmission')} defaultOpen={false}>
+        <div className="space-y-1">
+          {[
+            { value: 'all', label: t('auction.filters.all') },
+            { value: 'automatic', label: t('auction.filters.automatic') },
+            { value: 'manual', label: t('auction.filters.manual') },
+          ].map((trans) => (
+            <label key={trans.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={false}
+                onCheckedChange={() => {}}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{trans.label}</span>
+            </label>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Buy Now Toggle */}
-      <div className="flex items-center justify-between p-2 rounded-lg border bg-slate-50">
-        <label htmlFor="sidebar-buy-now" className="text-xs font-medium cursor-pointer">
-          {t('auction.filters.buy_now_only')}
+      {/* Fuel Type */}
+      <FilterSection title={t('auction.filters.fuel_type')} defaultOpen={false}>
+        <div className="space-y-1">
+          {[
+            { value: 'all', label: t('auction.filters.all') },
+            { value: 'petrol', label: t('auction.filters.gasoline') },
+            { value: 'diesel', label: t('auction.filters.diesel') },
+            { value: 'hybrid', label: t('auction.filters.hybrid') },
+            { value: 'electric', label: t('auction.filters.electric') },
+            { value: 'flexible', label: t('auction.filters.flexible_fuel') },
+          ].map((fuel) => (
+            <label key={fuel.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={filters.fuelType === fuel.value}
+                onCheckedChange={() => updateFilter('fuelType', fuel.value)}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{fuel.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Drive */}
+      <FilterSection title={t('auction.filters.drive')} defaultOpen={false}>
+        <div className="space-y-1">
+          {[
+            { value: 'all', label: t('auction.filters.all') },
+            { value: 'front', label: t('auction.filters.front_wheel') },
+            { value: 'rear', label: t('auction.filters.rear_wheel') },
+            { value: 'full', label: t('auction.filters.all_wheel') },
+          ].map((drive) => (
+            <label key={drive.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={filters.drive === drive.value}
+                onCheckedChange={() => updateFilter('drive', drive.value)}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{drive.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Damage - NEW */}
+      <FilterSection title={t('auction.filters.damage')} defaultOpen={false}>
+        <div className="space-y-1">
+          {[
+            { value: 'all', label: t('auction.filters.all') },
+            { value: 'front', label: t('auction.filters.front_end') },
+            { value: 'rear', label: t('auction.filters.rear_end') },
+            { value: 'side', label: t('auction.filters.side') },
+            { value: 'minor', label: t('auction.filters.minor_dents_scratches') },
+            { value: 'normal', label: t('auction.filters.normal_wear') },
+          ].map((damage) => (
+            <label key={damage.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={false}
+                onCheckedChange={() => {}}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{damage.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Sale Date - NEW */}
+      <FilterSection title={t('auction.filters.sale_date')} defaultOpen={false}>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1">
+            <Input
+              type="date"
+              className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+            />
+          </div>
+          <div className="space-y-1">
+            {[
+              { value: 'today', label: t('auction.sale_date.today') },
+              { value: 'tomorrow', label: t('auction.sale_date.tomorrow') },
+              { value: 'this_week', label: t('auction.sale_date.this_week') },
+              { value: 'next_week', label: t('auction.sale_date.next_week') },
+            ].map((date) => (
+              <label key={date.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+                <Checkbox
+                  checked={false}
+                  onCheckedChange={() => {}}
+                  className="h-3.5 w-3.5 rounded-sm"
+                />
+                <span className="text-[11px] text-slate-700">{date.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </FilterSection>
+
+      {/* Location - NEW */}
+      <FilterSection title={t('auction.filters.location')} defaultOpen={false}>
+        <Select>
+          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
+            <SelectValue placeholder={t('auction.location.any')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('auction.location.any')}</SelectItem>
+            <SelectItem value="ca">California</SelectItem>
+            <SelectItem value="tx">Texas</SelectItem>
+            <SelectItem value="fl">Florida</SelectItem>
+            <SelectItem value="ny">New York</SelectItem>
+            <SelectItem value="ga">Georgia</SelectItem>
+          </SelectContent>
+        </Select>
+      </FilterSection>
+
+      {/* Auction Source */}
+      <FilterSection title={t('auction.filters.source')}>
+        <div className="space-y-1">
+          {[
+            { value: 'all', label: 'All Sources' },
+            { value: 'Copart', label: 'Copart' },
+            { value: 'IAAI', label: 'IAAI' },
+          ].map((source) => (
+            <label key={source.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+                checked={filters.auctionFilter === source.value}
+                onCheckedChange={() => updateFilter('auctionFilter', source.value as any)}
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              <span className="text-[11px] text-slate-700">{source.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Buy Now Only */}
+      <FilterSection title="Buy It Now">
+        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+          <Checkbox
+            checked={filters.buyNowOnly}
+            onCheckedChange={(checked) => updateFilter('buyNowOnly', !!checked)}
+            className="h-3.5 w-3.5 rounded-sm"
+          />
+          <span className="text-[11px] text-slate-700">{t('auction.filters.buy_now_only')}</span>
         </label>
-        <Checkbox
-          id="sidebar-buy-now"
-          checked={filters.buyNowOnly}
-          onCheckedChange={(checked) => updateFilter('buyNowOnly', !!checked)}
-          className="h-4 w-4"
-        />
-      </div>
+      </FilterSection>
 
       {/* Action Buttons */}
-      <div className="space-y-2 pt-2 border-t">
+      <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
+        <Button 
+          onClick={onApply} 
+          className="w-full h-7 text-[10px] bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-bold"
+        >
+          {t('auction.filters.apply')}
+        </Button>
         <Button 
           variant="outline" 
           onClick={onReset} 
-          className="w-full h-9 text-sm border-amber-300 text-amber-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-400"
+          className="w-full h-7 text-[10px] border-slate-300 text-slate-600 hover:bg-slate-100"
         >
-          <Icon icon="mdi:filter-remove" className="w-4 h-4 mr-2" />
-          {t('common.clear_filters')}
-        </Button>
-        <Button onClick={onApply} className="w-full h-9">
-          {t('common.show_results')}
+          {t('common.clear_all')}
         </Button>
       </div>
     </div>

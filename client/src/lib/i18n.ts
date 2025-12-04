@@ -19,7 +19,7 @@ i18n
 
     backend: {
       // versioned query param to force browsers/dev server to refetch updated translation files
-      loadPath: '/locales/{{lng}}/translation.json?v=23',
+      loadPath: '/locales/{{lng}}/translation.json?v=24',
     },
 
     detection: {

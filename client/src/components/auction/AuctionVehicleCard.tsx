@@ -5,12 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
@@ -72,7 +66,7 @@ export function AuctionVehicleCard({
   item,
   isSelected = false,
   onToggleSelect,
-  onCalculate,
+  onCalculate: _onCalculate,
   onViewDetails,
   showCompareCheckbox = false,
   priority = false,
@@ -133,16 +127,7 @@ export function AuctionVehicleCard({
     return fuel;
   };
 
-  const translateDrive = (drive: string | null | undefined) => {
-    if (!drive) return 'N/A';
-    const key = drive.toLowerCase();
-    if (key.includes('fwd') || key.includes('front')) return t('common.drive_types.fwd');
-    if (key.includes('rwd') || key.includes('rear')) return t('common.drive_types.rwd');
-    if (key.includes('awd') || key.includes('all')) return t('common.drive_types.awd');
-    if (key.includes('4wd')) return t('common.drive_types.4wd');
-    if (key.includes('full')) return t('common.drive_types.full');
-    return drive;
-  };
+  // translateDrive function removed - not used in Copart-style card
 
 
   // Mobile compact card - horizontal layout to fit 5+ per screen
@@ -275,216 +260,149 @@ export function AuctionVehicleCard({
     );
   }
 
-  // Desktop card - original layout
+  // Desktop card - Copart style
+  const hasCleanTitle = item.sale_title_type?.toLowerCase().includes('clean');
+  const isRunDrive = item.run_and_drive?.toLowerCase().includes('run');
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.2 }}
-      className="h-full"
-    >
-      <Card className="group relative h-full overflow-hidden rounded-2xl border-border/40 bg-card shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col p-0 gap-0">
+    <div className="h-full">
+      <div className="group relative h-full overflow-hidden bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 flex flex-col">
         {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <button
             type="button"
             className="w-full h-full focus:outline-none cursor-pointer"
             onClick={onViewDetails}
-            aria-label={t('auction.view_vehicle_details')}
           >
             <img
               src={mainPhotoUrl}
               alt={`${item.year} ${item.make} ${item.model}`}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="h-full w-full object-cover"
               loading={priority ? 'eager' : 'lazy'}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </button>
 
-          {/* Top Actions Overlay */}
-          <div className="absolute top-3 inset-x-3 flex justify-start items-start pointer-events-none">
-            {/* Left: Compare Checkbox */}
-            <div className="pointer-events-auto flex gap-2">
-              {showCompareCheckbox && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-border/50 hover:bg-background transition-colors"
-                >
-                  <Checkbox
-                    id={`compare-${item.id}`}
-                    checked={isSelected}
-                    onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
-                    className="w-4 h-4 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <label
-                    htmlFor={`compare-${item.id}`}
-                    className="text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none"
-                  >
-                    {t('common.compare')}
-                  </label>
-                </motion.div>
-              )}
+          {/* Compare Checkbox */}
+          {showCompareCheckbox && (
+            <div className="absolute top-2 left-2">
+              <Checkbox
+                id={`compare-${item.id}`}
+                checked={isSelected}
+                onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
+                className="w-4 h-4 bg-white border-slate-300"
+              />
             </div>
-          </div>
+          )}
 
-          {/* Bottom Image Overlay (Badges) */}
-          <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5 pointer-events-none max-w-[70%]">
-            {(item.yard_name || item.source) && (
-              <>
-                {item.source && (
-                  <Badge
-                    className={cn(
-                      "pointer-events-auto text-[10px] px-2 py-0.5 h-5 backdrop-blur-md border-none shadow-sm font-bold tracking-wide",
-                      item.source.toLowerCase() === 'copart' ? "bg-[#0047AB] text-white" :
-                      item.source.toLowerCase() === 'iaai' ? "bg-[#D40000] text-white" :
-                      "bg-black/70 text-white"
-                    )}
-                  >
-                    {item.source.toUpperCase()}
-                  </Badge>
-                )}
-                {item.yard_name && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="pointer-events-auto text-[10px] px-2 py-0.5 h-5 bg-white/90 text-black backdrop-blur-md border-none shadow-sm max-w-full truncate cursor-help">
-                          {item.yard_name.length > 15 ? `${item.yard_name.slice(0, 15)}...` : item.yard_name}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{item.yard_name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </>
-            )}
-          </div>
+          {/* Watch button */}
+          {onToggleWatch && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatch();
+              }}
+              className="absolute top-2 right-2 bg-black/50 p-1 rounded hover:bg-black/70 transition-colors"
+            >
+              <Icon 
+                icon={isWatched ? "mdi:heart" : "mdi:heart-outline"} 
+                className={cn("w-4 h-4", isWatched ? "text-red-500" : "text-white")}
+              />
+            </button>
+          )}
 
+          {/* Photo count */}
+          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1">
+            <Icon icon="mdi:camera" className="w-3 h-3" />
+            <span>12</span>
+          </div>
         </div>
 
-        {/* Content Body */}
-        <CardContent className="flex flex-col flex-1 p-4 gap-3">
-          {/* Header */}
-          <div className="space-y-1">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-lg leading-tight truncate min-w-0 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
-                {item.year} {item.make} {item.model}
-              </h3>
-            </div>
-            {hasBuyNow && (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Badge className="bg-emerald-500/90 text-white border-none h-5 px-2 text-[10px] font-semibold tracking-wide flex items-center gap-1">
-                  <Icon icon="mdi:flash" className="w-3 h-3" />
-                  {t('auction.filters.buy_now_only')}
-                </Badge>
-                {buyNowPriceLabel && (
-                  <span className="text-xs font-semibold text-emerald-700">
-                    {buyNowPriceLabel}
-                  </span>
-                )}
-              </div>
+        {/* Content */}
+        <div className="flex flex-col flex-1 p-2.5">
+          {/* Title */}
+          <button onClick={onViewDetails} className="text-left mb-1">
+            <h3 className="font-bold text-[12px] text-[#0047AB] hover:underline leading-tight uppercase line-clamp-2">
+              {item.year} {item.make} {item.model}
+            </h3>
+          </button>
+
+          {/* Lot # */}
+          <div className="text-[10px] text-slate-500 mb-1.5">
+            Lot# {item.source_lot_id || item.id}
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-1 mb-2">
+            {hasCleanTitle && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                <Icon icon="mdi:check-circle" className="w-2.5 h-2.5" />
+                Clean Title
+              </span>
             )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {item.run_and_drive ? (
-                <>
-                  <span className={cn("font-medium flex items-center gap-1", item.run_and_drive.toLowerCase().includes('run') ? "text-emerald-600" : "text-orange-600")}>
-                    <Icon icon="mdi:engine" className="w-3.5 h-3.5" />
-                    {item.run_and_drive}
-                  </span>
-                </>
+            {isRunDrive && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                <Icon icon="mdi:car" className="w-2.5 h-2.5" />
+                Run & Drive
+              </span>
+            )}
+          </div>
+
+          {/* Specs */}
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-2">
+            <span className="flex items-center gap-0.5">
+              <Icon icon="mdi:speedometer" className="w-3 h-3" />
+              {item.mileage ? `${(item.mileage / 1000).toFixed(0)}k mi` : 'N/A'}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <Icon icon="mdi:gas-station" className="w-3 h-3" />
+              {item.fuel_type || 'Gas'}
+            </span>
+          </div>
+
+          {/* Price & Buttons */}
+          <div className="mt-auto space-y-2">
+            <div>
+              <div className="text-[9px] text-slate-400 uppercase">Current Bid</div>
+              <div className="text-[15px] font-bold text-slate-900">
+                {formatMoney(displayPrice)} <span className="text-[9px] font-normal text-slate-400">USD</span>
+              </div>
+              {hasBuyNow && buyNowPriceLabel && (
+                <div className="text-[10px] text-green-600 font-semibold">
+                  Buy Now: {buyNowPriceLabel}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Button
+                size="sm"
+                className="w-full h-6 text-[10px] bg-[#f7b500] hover:bg-[#e5a800] text-[#1a2b4c] font-bold rounded-sm"
+                onClick={onViewDetails}
+              >
+                Bid Now
+              </Button>
+              {hasBuyNow ? (
+                <Button
+                  size="sm"
+                  className="w-full h-6 text-[10px] bg-[#28a745] hover:bg-[#218838] text-white font-bold rounded-sm"
+                  onClick={onViewDetails}
+                >
+                  Buy Now
+                </Button>
               ) : (
-                <span className="h-4" /> // Spacer to keep alignment if no status
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-6 text-[10px] border-slate-300 text-slate-600 font-medium rounded-sm"
+                  onClick={onViewDetails}
+                >
+                  Details
+                </Button>
               )}
             </div>
           </div>
-
-          {/* Bottom Section - Specs + Footer (always aligned) */}
-          <div className="mt-auto flex flex-col gap-3">
-            {/* Specs Grid */}
-            <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
-            <div className="flex flex-col items-center justify-center text-center gap-0.5">
-              <Icon icon="mdi:speedometer" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium truncate w-full">{formatMileage(item.mileage)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
-              <Icon icon="mdi:gas-station" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{translateFuel(item.fuel_type)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
-              <Icon icon="mdi:car-traction-control" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{translateDrive(item.drive)}</span>
-            </div>
-            </div>
-
-            {/* Footer: Price & Actions */}
-            <div className="pt-1 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                    {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
-                  </span>
-                  <span className="text-xl font-extrabold text-primary tracking-tight">
-                    {formatMoney(displayPrice)}
-                  </span>
-                </div>
-                {onToggleWatch && (
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isWatched) {
-                        setShowWatchBurst(true);
-                      }
-                      onToggleWatch();
-                    }}
-                    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isWatched 
-                        ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm' 
-                        : 'bg-muted text-muted-foreground hover:bg-orange-100 hover:text-orange-600'
-                    }`}
-                    title={isWatched ? t('auction.remove_from_watchlist') : t('auction.add_to_watchlist')}
-                  >
-                    {showWatchBurst && !isWatched && (
-                      <motion.span
-                        initial={{ scale: 0, opacity: 0, y: 0 }}
-                        animate={{ scale: 1.8, opacity: 0, y: -12 }}
-                        transition={{ duration: 0.4, ease: 'easeOut' }}
-                        onAnimationComplete={() => setShowWatchBurst(false)}
-                        className="absolute -top-1 -right-1 text-orange-400 pointer-events-none"
-                      >
-                        <Icon icon="mdi:star" className="w-3.5 h-3.5" />
-                      </motion.span>
-                    )}
-                    <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
-                    <span>{t('auction.watch')}</span>
-                  </motion.button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
-                  onClick={onCalculate}
-                  title={t('auction.calculate_cost')}
-                >
-                  <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 h-9 rounded-full px-4 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                  onClick={onViewDetails}
-                >
-                  {t('auction.join_live_auction')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }

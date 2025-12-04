@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Header from '@/components/Header/index.tsx'
-import Footer from '@/components/Footer'
+// Header and Footer are provided by MainLayout
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { navigationItems } from '@/config/navigation'
+// navigationItems now handled by MainLayout
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist'
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes'
@@ -81,11 +80,7 @@ const FavoriteVehiclesPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white pt-16">
-      <Header
-        user={null}
-        navigationItems={navigationItems}
-      />
+    <div className="flex-1 flex flex-col bg-white">
       <main
         className="flex-1 flex flex-col"
         role="main"
@@ -206,8 +201,6 @@ const FavoriteVehiclesPage = () => {
           </div>
         </div>
       </main>
-
-      <Footer footerLinks={Object.values(navigationItems).flat()} />
 
       {/* Calculator Modal (reuse from AuctionListingsPage) */}
       <AnimatePresence>

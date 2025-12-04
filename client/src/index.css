@@ -48,6 +48,17 @@
 
 @theme {
   /* Modern Color Palette 2025 */
+  /* OKLCH aliases for 2025+ design system (currently mapped conceptually to existing palette) */
+  --oklch-bg: oklch(0.97 0.02 240);
+  --oklch-bg-elevated: oklch(0.94 0.03 240);
+  --oklch-surface: oklch(0.99 0 0);
+  --oklch-surface-muted: oklch(0.97 0.02 250);
+  --oklch-primary: oklch(0.45 0.13 150);
+  --oklch-primary-soft: oklch(0.7 0.07 150);
+  --oklch-accent: oklch(0.72 0.12 60);
+  --oklch-border-subtle: oklch(0.9 0.02 240);
+  --oklch-border-strong: oklch(0.8 0.04 240);
+
   --color-background: transparent;
   --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
 
@@ -264,6 +275,12 @@
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Long list optimization for 2025+ (Core Web Vitals) */
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px 600px;
   }
 
   /* Hero gradient mesh background with floating blurred spheres */

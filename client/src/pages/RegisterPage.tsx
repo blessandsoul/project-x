@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -15,6 +15,7 @@ const RegisterPage = () => {
   const { t } = useTranslation()
   const { register, isLoading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [accountType, setAccountType] = useState<'user' | 'dealer' | 'company'>('user')
   const [name, setName] = useState('')
@@ -23,6 +24,16 @@ const RegisterPage = () => {
   const [companyName, setCompanyName] = useState('')
   const [companyPhone, setCompanyPhone] = useState('')
   const [error, setError] = useState('')
+
+  // Sync account type from ?type= query param on first load and when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const type = params.get('type')
+
+    if (type === 'user' || type === 'dealer' || type === 'company') {
+      setAccountType(type)
+    }
+  }, [location.search])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

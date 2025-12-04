@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useReducedMotion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import Header from '@/components/Header/index.tsx'
+// Header is provided by MainLayout
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   Breadcrumb,
@@ -19,7 +19,7 @@ import { CompanyDashboardSections, type CompanyLeadBubble } from '@/components/d
 import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { navigationItems } from '@/config/navigation'
+// navigationItems now handled by MainLayout
 import { mockCompanies } from '@/mocks/_mockData'
 import type { UserRole, Company } from '@/types/api'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -654,13 +654,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col pt-16">
-      <Header
-        user={null}
-        navigationItems={navigationItems}
-      />
+    <div className="flex-1 flex flex-col">
       <SidebarProvider>
-        <AppSidebar className="top-16" />
+        <AppSidebar className="top-14" />
         <SidebarInset>
           <header className="flex h-11 sm:h-12 shrink-0 items-center gap-2 border-b px-3 sm:px-4">
             <SidebarTrigger className="-ml-1" />

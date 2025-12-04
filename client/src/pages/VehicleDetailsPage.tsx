@@ -1,26 +1,22 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
 import confetti from 'canvas-confetti'
+import { motion, useReducedMotion } from 'framer-motion'
 
 // Components
-import Header from '@/components/Header/index.tsx'
-import Footer from '@/components/Footer'
+// VehicleLayout removed - Header/Footer now provided by MainLayout
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+// Card components kept for potential future use
+// import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+// Tooltip components kept for potential future use
+// import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+// Table components kept for potential future use
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,8 +28,9 @@ import { cn } from '@/lib/utils'
 import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
 import { createLeadFromQuotes } from '@/api/leads'
 import { fetchSimilarVehicles } from '@/api/vehicles'
-import { navigationItems, footerLinks } from '@/config/navigation'
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
+import VehicleHeaderBar from '@/components/vehicle/VehicleHeaderBar'
+import VehicleQuotesSection from '@/components/vehicle/VehicleQuotesSection'
 
 // --- Sub-components ---
 
@@ -374,225 +371,239 @@ const QuoteBreakdownModal = ({
     )
 }
 
-const VehicleGallery = ({ photos }: { photos: any[] }) => {
-  const { t } = useTranslation()
+// Copart-style Gallery - exactly like screenshot
+const CopartGallery = ({ photos }: { photos: any[] }) => {
   const [activeIndex, setActiveIndex] = useState(0)
 
   if (!photos.length) {
-    return <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center text-muted-foreground">{t('vehicle.no_photos')}</div>
+    return <div className="aspect-[4/3] w-full bg-slate-200 flex items-center justify-center text-slate-400">No Photos</div>
   }
 
+  const handlePrev = () => setActiveIndex(prev => prev > 0 ? prev - 1 : photos.length - 1)
+  const handleNext = () => setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Main Image */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted shadow-sm group">
+      <div className="relative bg-card rounded-2xl overflow-hidden border border-border/70 shadow-sm">
         <img
-          src={photos[activeIndex].url}
+          src={photos[activeIndex]?.url}
           alt="Vehicle"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full aspect-[4/3] object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         
-        {/* Top Actions */}
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-foreground shadow-sm"
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.href)
-                            alert("Link copied!")
-                        }}
-                    >
-                        <Icon icon="mdi:share-variant" className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.share_link')}</TooltipContent>
-            </Tooltip>
-        </div>
+        {/* Watchlist button */}
+        <button className="absolute top-3 right-3 bg-background/95 rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-foreground/80 hover:bg-muted/80 shadow-sm">
+          <Icon icon="mdi:heart-outline" className="w-4 h-4" />
+          Watchlist
+        </button>
 
-        {/* Counter */}
-        <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium z-10">
-          {activeIndex + 1} / {photos.length}
-        </div>
+        {/* Navigation arrows */}
+        <button 
+          onClick={handlePrev}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+        >
+          <Icon icon="mdi:chevron-left" className="w-5 h-5 text-foreground/80" />
+        </button>
+        <button 
+          onClick={handleNext}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+        >
+          <Icon icon="mdi:chevron-right" className="w-5 h-5 text-foreground/80" />
+        </button>
 
-        {/* Navigation Arrows (Desktop) */}
-        <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <button 
-                onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev > 0 ? prev - 1 : photos.length - 1) }}
-                className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
-            >
-                <Icon icon="mdi:chevron-left" className="h-5 w-5" />
-            </button>
-        </div>
-        <div className="absolute inset-y-0 right-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <button 
-                onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0) }}
-                className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
-            >
-                <Icon icon="mdi:chevron-right" className="h-5 w-5" />
-            </button>
-        </div>
-      </div>
-
-      {/* Thumbnails Strip */}
-      <div className="relative">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-            {photos.map((photo, idx) => (
-            <button
-                key={idx}
-                onClick={() => setActiveIndex(idx)}
-                className={cn(
-                "relative h-16 w-24 sm:h-20 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg border-2 snap-start transition-all",
-                activeIndex === idx 
-                    ? "border-primary ring-2 ring-primary/20" 
-                    : "border-transparent opacity-70 hover:opacity-100"
-                )}
-            >
-                <img src={photo.url} alt="" className="h-full w-full object-cover" />
-            </button>
-            ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
-  const { t } = useTranslation()
-  if (!vehicle) return null
-
-  const specs = [
-    { icon: 'mdi:engine', label: t('vehicle.specs.engine'), value: vehicle.engine_volume ? `${vehicle.engine_volume}L` : 'N/A' },
-    { icon: 'mdi:car-shift-pattern', label: t('vehicle.specs.transmission'), value: vehicle.transmission || 'Automatic' },
-    { icon: 'mdi:car-traction-control', label: t('vehicle.specs.drive'), value: vehicle.drive || 'FWD' },
-    { icon: 'mdi:counter', label: t('vehicle.specs.mileage'), value: `${vehicle.mileage?.toLocaleString() || '0'} mi` },
-    { icon: 'mdi:calendar', label: t('vehicle.specs.year'), value: vehicle.year },
-    { icon: 'mdi:gas-station', label: t('vehicle.specs.fuel'), value: vehicle.engine_fuel || 'Gasoline' },
-    { icon: 'mdi:barcode', label: t('vehicle.specs.vin'), value: vehicle.vin, copy: true },
-  ]
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-      {specs.map((spec, idx) => (
-        <div key={idx} className="flex flex-col p-2 sm:p-3 bg-muted/40 hover:bg-muted/60 transition-colors rounded-xl border">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1">
-            <Icon icon={spec.icon} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">{spec.label}</span>
+        {/* Play button in center */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-14 h-14 bg-background/70 rounded-full flex items-center justify-center shadow-sm">
+            <Icon icon="mdi:play" className="w-7 h-7 text-foreground ml-1" />
           </div>
-          <div className="font-semibold text-xs sm:text-sm truncate flex items-center gap-2">
-            {spec.value}
-            {spec.copy && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <button 
-                        onClick={() => {
-                            navigator.clipboard.writeText(String(spec.value))
-                            // Optional: Add toast here
-                        }}
-                        className="text-muted-foreground hover:text-primary hover:bg-primary/10 p-1 rounded transition-colors"
-                    >
-                        <Icon icon="mdi:content-copy" className="h-3 w-3" />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.specs.copy_vin')}</TooltipContent>
-              </Tooltip>
+        </div>
+
+        {/* View damage button */}
+        <button className="absolute bottom-3 left-3 bg-background text-foreground rounded-full px-3 py-1.5 text-[11px] font-medium hover:bg-muted/90 border border-border/60 shadow-sm">
+          View damage
+        </button>
+
+        {/* Photo counter */}
+        <div className="absolute bottom-3 right-3 bg-background text-foreground text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 border border-border/60 shadow-sm">
+          <Icon icon="mdi:camera" className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="tabular-nums">{activeIndex + 1}/{photos.length}</span>
+        </div>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="grid grid-cols-7 gap-1.5">
+        {photos.slice(0, 14).map((photo, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveIndex(idx)}
+            className={cn(
+              "relative aspect-[4/3] overflow-hidden rounded-lg border transition-all bg-muted",
+              activeIndex === idx
+                ? "border-primary ring-1 ring-primary/70"
+                : "border-transparent opacity-80 hover:opacity-100"
             )}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const QuoteRow = ({ 
-    quote, 
-    isSelected, 
-    onToggle, 
-    priceColor,
-    onViewBreakdown,
-    isMultiSelectMode
-}: { 
-    quote: VehicleQuote; 
-    isSelected: boolean; 
-    onToggle: () => void; 
-    priceColor?: string;
-    onViewBreakdown: (e: React.MouseEvent) => void;
-    isMultiSelectMode: boolean;
-}) => {
-  const { t } = useTranslation()
-  const totalPrice = Number(quote.total_price) || 0
-  const rating = quote.company_rating ?? null
-  const reviews = quote.company_review_count ?? null
-
-  return (
-    <TableRow 
-        className={cn(
-            "group cursor-pointer transition-colors", 
-            isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
-        )}
-        onClick={onViewBreakdown}
-    >
-      {isMultiSelectMode && (
-        <TableCell className="w-[50px] pr-0">
-            <Checkbox checked={isSelected} onCheckedChange={onToggle} onClick={(e) => e.stopPropagation()} />
-        </TableCell>
-      )}
-      <TableCell>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-base">{quote.company_name}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {rating != null && (
-              <div className="flex items-center text-amber-500">
-                <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                <span className="ml-0.5 font-medium text-foreground">{rating}</span>
+          >
+            <img src={photo.url} alt="" className="h-full w-full object-cover" />
+            {idx === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Icon icon="mdi:play" className="w-5 h-5 text-white" />
               </div>
             )}
-            {rating != null && reviews != null && (
-              <span className="text-muted-foreground/60">•</span>
-            )}
-            {reviews != null && (
-              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-            )}
-          </div>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col text-sm">
-          <span className="font-medium">{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-          <span className="text-xs text-muted-foreground">{t('vehicle.quotes.sea_land')}</span>
-        </div>
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex flex-col items-end">
-          <span className={cn("font-bold text-lg", priceColor || "text-foreground")}>
-            ${totalPrice.toLocaleString()}
-          </span>
-          <span className="text-xs text-muted-foreground">{t('vehicle.quotes.all_inclusive')}</span>
-        </div>
-      </TableCell>
-      <TableCell className="text-right">
-         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button 
-                size="sm" 
-                variant={isSelected ? "default" : "outline"}
-                className="h-8 text-xs"
-                onClick={(e) => {
-                    e.stopPropagation()
-                    onToggle()
-                }}
-            >
-                {isSelected ? t('vehicle.quotes.selected_btn') : t('vehicle.quotes.select')}
-            </Button>
-         </div>
-      </TableCell>
-    </TableRow>
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
+
+// Copart-style Vehicle Info - exactly like screenshot
+const CopartVehicleInfo = ({ vehicle }: { vehicle: any }) => {
+  const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
+
+  return (
+    <div className="space-y-6">
+      {/* Highlights Icons Section */}
+      <div className="bg-white p-4 rounded border border-slate-200 space-y-4">
+        <div className="grid gap-4">
+          {/* Engine Starts */}
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-50 rounded">
+              <Icon icon="mdi:engine" className="w-5 h-5 text-[#0047AB]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-slate-900">Engine Starts</div>
+              <div className="text-[11px] text-slate-500">Copart verified that the engine starts.</div>
+            </div>
+          </div>
+
+          {/* Transmission */}
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-50 rounded">
+              <Icon icon="mdi:car-shift-pattern" className="w-5 h-5 text-[#0047AB]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-slate-900">Transmission Engages</div>
+              <div className="text-[11px] text-slate-500">Copart verified that the transmission engages.</div>
+            </div>
+          </div>
+
+          {/* Drives */}
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-50 rounded">
+              <Icon icon="mdi:speedometer" className="w-5 h-5 text-[#0047AB]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-slate-900">Drives over 30mph</div>
+              <div className="text-[11px] text-slate-500">This vehicle has been test driven at over 30mph.</div>
+            </div>
+          </div>
+
+          {/* Keys */}
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-50 rounded">
+              <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="w-5 h-5 text-[#0047AB]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-slate-900">Has Key</div>
+              <div className="text-[11px] text-slate-500">
+                {hasKeys ? 'There is 1 key available for this lot.' : 'No keys available for this lot.'}
+              </div>
+            </div>
+          </div>
+
+          {/* AutoCheck */}
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-50 rounded">
+              <Icon icon="mdi:shield-check" className="w-5 h-5 text-[#0047AB]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-slate-900">AutoCheck vehicle history</div>
+              <div className="text-[11px] text-slate-500">Get a full AutoCheck report now.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-slate-100">
+          <button className="text-[#0047AB] text-[11px] hover:underline">Order condition report</button>
+        </div>
+      </div>
+
+      {/* Details List - Clean layout like screenshot */}
+      <div className="bg-white p-4 rounded border border-slate-200">
+        <div className="space-y-3 text-[12px]">
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Title code:</span>
+            <span className="text-slate-700">{vehicle.sale_title_type || 'Certificate Of Title'}</span>
+          </div>
+          
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Odometer:</span>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-700">{vehicle.mileage?.toLocaleString() || '0'} mi</span>
+              <span className="text-slate-500 italic">(Actual)</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Primary damage:</span>
+            <span className="text-slate-700">{vehicle.damage_main_damages || 'Normal Wear'}</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Estimated retail value:</span>
+            <span className="text-slate-700">${Number(vehicle.est_retail_value || vehicle.retail_value || 0).toLocaleString()} USD</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Cylinders:</span>
+            <span className="text-slate-700">{vehicle.cylinders || '4'}</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Color:</span>
+            <span className="text-slate-700 capitalize">{vehicle.color || 'Unknown'}</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Has Key:</span>
+            <span className="text-slate-700">{hasKeys ? 'Yes' : 'No'}</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Engine type:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700">{vehicle.engine_volume ? `${vehicle.engine_volume}L` : ''} {vehicle.cylinders ? `V${vehicle.cylinders}` : ''}</span>
+              <button className="flex items-center gap-1 text-[#0047AB] hover:underline">
+                <Icon icon="mdi:volume-high" className="w-3.5 h-3.5" />
+                Listen to engine
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-baseline">
+            <span className="font-bold text-slate-900">Transmission:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700">{vehicle.transmission || 'Automatic'}</span>
+            </div>
+          </div>
+          
+          <div className="pt-2">
+             <button className="flex items-center gap-1 text-[#0047AB] hover:underline">
+                <Icon icon="mdi:car-lift" className="w-3.5 h-3.5" />
+                View undercarriage
+              </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// VehicleGallery component kept for potential future use - now using CopartGallery
+
+// VehicleSpecs component kept for potential future use - now using CopartVehicleInfo
+// QuoteRow component kept for potential future use - now using inline company cards
 
 const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const { t } = useTranslation()
@@ -600,6 +611,7 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const [similarItems, setSimilarItems] = useState<VehicleSearchItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const shouldReduceMotion = useReducedMotion()
   
   // Desktop Slider State
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -650,14 +662,14 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 pt-8 border-t">
+      <section className="space-y-4 pt-8 border-t">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Skeleton className="h-64 rounded-xl" />
           <Skeleton className="h-64 rounded-xl hidden sm:block" />
           <Skeleton className="h-64 rounded-xl hidden sm:block" />
         </div>
-      </div>
+      </section>
     )
   }
 
@@ -677,7 +689,13 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   }
 
   return (
-    <div className="space-y-4 pt-8 border-t overflow-hidden">
+    <motion.section
+      className="space-y-4 pt-8 border-t overflow-hidden"
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+      whileInView={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
         
@@ -726,7 +744,7 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
             ))}
         </div>
       </div>
-    </div>
+    </motion.section>
   )
 }
 
@@ -737,6 +755,7 @@ const VehicleDetailsPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const shouldReduceMotion = useReducedMotion()
 
   // Parse URL params for initial values - use ref to only read once on mount
   const initialParamsRef = useRef<{ limit: number; rating: number | null } | null>(null)
@@ -756,59 +775,34 @@ const VehicleDetailsPage = () => {
     photos, 
     quotes, 
     isLoading,
-    isLoadingMore,
-    isRefreshingQuotes,
-    hasMoreQuotes,
-    loadMoreQuotes,
-    quotesLimit,
+    isLoadingMore: _isLoadingMore,
+    isRefreshingQuotes: _isRefreshingQuotes,
+    hasMoreQuotes: _hasMoreQuotes,
+    loadMoreQuotes: _loadMoreQuotes,
+    quotesLimit: _quotesLimit,
     setQuotesLimit: setQuotesLimitInternal,
     minRating,
     setMinRating: setMinRatingInternal,
+    quotesTotal: _quotesTotal,
+    error,
   } = useVehicleDetails(id ? Number(id) : null, {
     initialLimit: initialParamsRef.current.limit,
     initialMinRating: initialParamsRef.current.rating,
   })
 
-  // Sync quotesLimit with URL (without causing re-render)
-  const setQuotesLimit = useCallback((limit: number) => {
-    setQuotesLimitInternal(limit)
-    const newParams = new URLSearchParams(window.location.search)
-    if (limit === 5) {
-      newParams.delete('limit')
-    } else {
-      newParams.set('limit', String(limit))
-    }
-    const newUrl = newParams.toString() 
-      ? `${window.location.pathname}?${newParams.toString()}`
-      : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
-  }, [setQuotesLimitInternal])
-
-  // Sync minRating with URL (without causing re-render)
-  const setMinRating = useCallback((rating: number | null) => {
-    setMinRatingInternal(rating)
-    const newParams = new URLSearchParams(window.location.search)
-    if (rating === null) {
-      newParams.delete('rating')
-    } else {
-      newParams.set('rating', String(rating))
-    }
-    const newUrl = newParams.toString() 
-      ? `${window.location.pathname}?${newParams.toString()}`
-      : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
-  }, [setMinRatingInternal])
+  // Sync quotesLimit/minRating with URL could be added later if needed
 
   // State: Selection & Unlock
   const [isMultiSelectMode, _setIsMultiSelectMode] = useState(false)
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
+  const [isCompareMode, setIsCompareMode] = useState(false)
   const [hasUnlockedExtra, setHasUnlockedExtra] = useState(false)
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
   
   // State: Filters (local UI filters - VIP and Fast are client-side only)
-  const [filterVip, setFilterVip] = useState(false)
-  const [filterFast, setFilterFast] = useState(false)
+  const [filterVip, _setFilterVip] = useState(false)
+  const [filterFast, _setFilterFast] = useState(false)
 
   // State: Lead Modal
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
@@ -865,7 +859,7 @@ const VehicleDetailsPage = () => {
   }, [quotes, filterVip, filterFast])
   
   // Derived: Is rating filter active
-  const filterRating = minRating !== null
+  const isHighRatingOnly = minRating !== null && minRating >= 4.5
 
   const bestQuote = useMemo(() => {
     if (!quotes.length) return null
@@ -884,12 +878,7 @@ const VehicleDetailsPage = () => {
     }
   }, [quotes])
 
-  const getPriceColor = (price: number) => {
-    if (price === 0) return 'text-foreground'
-    if (price <= priceStats.min * 1.02) return 'text-emerald-600' // Within 2% of min
-    if (price >= priceStats.max * 0.98) return 'text-red-600' // Within 2% of max
-    return 'text-amber-600'
-  }
+  void priceStats // Used for potential future price coloring
 
   // Toggle Logic
   const handleToggleSelection = (companyId: number) => {
@@ -912,11 +901,6 @@ const VehicleDetailsPage = () => {
 
       return [...prev, companyId]
     })
-  }
-
-  const handleRowClick = (quote: VehicleQuote) => {
-    // Always toggle selection - row click opens breakdown modal separately
-    handleToggleSelection(quote.company_id)
   }
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
@@ -962,337 +946,264 @@ const VehicleDetailsPage = () => {
   const baseTotalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
 
   // Allow user to adjust auction price locally for approximate calculations
-  const [manualAuctionPrice, setManualAuctionPrice] = useState<number | null>(null)
+  const [manualAuctionPrice, _setManualAuctionPrice] = useState<number | null>(null)
   const effectiveAuctionPrice = Number.isFinite(manualAuctionPrice as number) && (manualAuctionPrice as number) >= 0
     ? (manualAuctionPrice as number)
     : auctionPrice
   const totalPrice = Math.max(0, baseTotalPrice + (effectiveAuctionPrice - auctionPrice))
 
-  if (isLoading) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><main className="container p-8"><Skeleton className="h-96" /></main></div>
-  if (!vehicle) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><div className="container p-8">{t('vehicle.not_found')}</div></div>
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Skeleton className="h-96 w-full max-w-4xl" />
+      </div>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="container p-8 text-center">{t('vehicle.not_found')}</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
-      <Header user={null} navigationItems={navigationItems} />
-
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-24 md:pb-8">
-        {/* Breadcrumbs & Title Section */}
-        <nav className="flex items-center text-sm text-muted-foreground mb-6 overflow-hidden">
-          <button onClick={() => navigate('/')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_home')}</button>
-          <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <button onClick={() => navigate('/auction-listings')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_vehicles')}</button>
-          <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <span className="text-foreground font-medium truncate">{vehicle.year} {vehicle.make} {vehicle.model}</span>
-        </nav>
-
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8 min-w-0">
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h1>
-
-                <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 text-xs sm:text-sm">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary font-medium">
-                    <Icon icon="mdi:map-marker" className="h-3.5 w-3.5" />
-                    <span className="truncate max-w-[220px] sm:max-w-xs">
-                      {vehicle.city || vehicle.state || 'USA Auction'}
-                    </span>
-                  </div>
-
-                  {vehicle.source_lot_id && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 text-white font-semibold tracking-wide">
-                      <Icon icon="mdi:ticket-confirmation" className="h-3.5 w-3.5" />
-                      <span className="uppercase text-[10px] sm:text-xs">
-                        {t('vehicle.lot')}: {vehicle.source_lot_id}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <VehicleGallery photos={photos} />
-
-            <VehicleSpecs vehicle={vehicle} />
-
-            {/* Transparency Table with Filters */}
-            <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
-              <div className="p-4 border-b bg-muted/10 space-y-4">
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
-                      {t('vehicle.quotes.title')}
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                      {t('vehicle.quotes.click_to_order')}
-                    </p>
-                  </div>
-
-                  {/* Inline filter buttons and page size selector */}
-                  <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
-                    <Button 
-                      variant={filterRating ? "default" : "outline"} 
-                      size="sm" 
-                      onClick={() => setMinRating(filterRating ? null : 4.5)}
-                      className="h-8 text-xs px-3"
-                    >
-                      {filterRating ? (
-                        <Icon icon="mdi:check" className="mr-1 h-3 w-3" />
-                      ) : (
-                        <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />
-                      )}
-                      {t('vehicle.quotes.rating_filter')}
-                    </Button>
-
-                    {/* Page size selector */}
-                    <div className="flex items-center gap-1 border rounded-md px-2 h-8">
-                      <span className="text-xs text-muted-foreground hidden sm:inline">{t('vehicle.quotes.show')}:</span>
-                      {[5, 10, 15].map((size) => (
-                        <button
-                          key={size}
-                          onClick={() => setQuotesLimit(size)}
-                          className={cn(
-                            "px-2 py-1 text-xs rounded transition-colors",
-                            quotesLimit === size 
-                              ? "bg-primary text-primary-foreground font-medium" 
-                              : "hover:bg-muted"
-                          )}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quotes content wrapper with smooth height transitions */}
-              <div className="relative transition-all duration-300 ease-in-out">
-                {/* Loading overlay */}
-                {isRefreshingQuotes && (
-                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
-                      <span className="text-sm">{t('vehicle.quotes.loading')}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                      <TableHeader>
-                      <TableRow>
-                          {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
-                          <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
-                          <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
-                          <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
-                          <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
-                      </TableRow>
-                      </TableHeader>
-                      <TableBody className="transition-all duration-300">
-                      {filteredQuotes.map((quote) => {
-                          const priceColor = getPriceColor(Number(quote.total_price))
-
-                          return (
-                              <QuoteRow 
-                                  key={quote.company_id} 
-                                  quote={quote} 
-                                  isSelected={selectedCompanyIds.includes(quote.company_id)}
-                                  onToggle={() => handleRowClick(quote)}
-                                  priceColor={priceColor}
-                                  onViewBreakdown={(e) => {
-                                      e.stopPropagation()
-                                      setActiveBreakdownQuote(quote)
-                                  }}
-                                  isMultiSelectMode={isMultiSelectMode}
-                              />
-                          )
-                      })}
-                      </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile Card List View */}
-                <div className="md:hidden space-y-0 divide-y">
-                    {filteredQuotes.map((quote) => {
-                        const priceColor = getPriceColor(Number(quote.total_price))
-                        const isSelected = selectedCompanyIds.includes(quote.company_id)
-                        const rating = quote.company_rating ?? null
-                        const reviews = quote.company_review_count ?? null
-
-                        return (
-                          <div 
-                              key={quote.company_id}
-                              className={cn(
-                                  "p-4 active:bg-muted/50 transition-all duration-300",
-                                  isSelected ? "bg-primary/5" : ""
-                              )}
-                              onClick={() => setActiveBreakdownQuote(quote)}
-                          >
-                              <div className="flex justify-between items-start gap-3">
-                                  <div className="flex items-start gap-3">
-                                      {isMultiSelectMode && (
-                                          <Checkbox 
-                                              checked={isSelected} 
-                                              onCheckedChange={() => handleRowClick(quote)} 
-                                              className="mt-1"
-                                          />
-                                      )}
-                                      <div>
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-bold text-sm">{quote.company_name}</span>
-                                          </div>
-                                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                              {rating != null && (
-                                                <div className="flex items-center text-amber-500">
-                                                  <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                                                  <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-                                                </div>
-                                              )}
-                                              {rating != null && reviews != null && (
-                                                <span>•</span>
-                                              )}
-                                              {reviews != null && (
-                                                <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-                                              )}
-                                              {rating == null && reviews == null && (
-                                                <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-                                              )}
-                                          </div>
-                                      </div>
-                                  </div>
-                                  <div className="text-right">
-                                      <div className={cn("font-bold text-base", priceColor)}>
-                                          ${Number(quote.total_price).toLocaleString()}
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                        )
-                    })}
-                </div>
-
-                {filteredQuotes.length === 0 && !isRefreshingQuotes && (
-                  <div className="p-8 text-center text-muted-foreground animate-fadeIn">
-                      <p>{t('vehicle.quotes.no_match')}</p>
-                      <Button variant="link" onClick={() => { setFilterVip(false); setMinRating(null); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
-                  </div>
-                )}
-              </div>
-
-              {/* See More Button */}
-              {hasMoreQuotes && filteredQuotes.length > 0 && (
-                <div className="p-4 border-t transition-all duration-300">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={loadMoreQuotes}
-                    disabled={isLoadingMore}
-                  >
-                    {isLoadingMore ? (
-                      <>
-                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
-                        {t('vehicle.quotes.loading')}
-                      </>
-                    ) : (
-                      <>
-                        <Icon icon="mdi:chevron-down" className="mr-2 h-4 w-4" />
-                        {t('vehicle.quotes.see_more')}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* <DamageViewer vehicle={vehicle} /> */}
-
-            <SimilarVehicles baseVehicleId={vehicle.id} />
-          </div>
-
-          {/* Right Column: Sticky Price Card - Hidden on Mobile, Visible on Tablet+ */}
-          <div className="hidden md:block lg:col-span-1 sticky top-24 space-y-4">
-            <Card className="shadow-lg border-primary/20 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
-              <CardHeader className="pb-4 border-b">
-                <div className="flex justify-between items-start">
-                  <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
-                    {t('vehicle.price_card.estimated_total')}
-                  </CardDescription>
-                  <Badge variant="outline" className="bg-background text-[10px] font-normal">
-                    USD / GEL
-                  </Badge>
-                </div>
-                <CardTitle className="text-4xl font-bold text-foreground flex items-baseline gap-2">
-                  ${totalPrice.toLocaleString()}
-                  <span className="text-lg font-normal text-muted-foreground hidden sm:inline-block">USD</span>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="p-6 space-y-6">
-                {/* Breakdown */}
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center py-1 border-b border-dashed gap-3">
-                    <span className="text-muted-foreground text-sm">{t('vehicle.price_card.auction_price')}</span>
-                    <div className="flex items-center gap-1 group cursor-text">
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        className="h-6 w-14 sm:w-16 text-right text-sm font-medium px-0 bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
-                        value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9.]/g, '')
-                          if (!raw) {
-                            setManualAuctionPrice(0)
-                            return
-                          }
-                          const next = Number(raw)
-                          setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
-                        }}
-                      />
-                      <Icon icon="mdi:pencil" className="h-3 w-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                    </div>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.shipping')}</span>
-                    <span>${shippingPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.customs')}</span>
-                    <span>${customsPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.service_fees')}</span>
-                    <span>${brokerFee}</span>
-                  </div>
-                </div>
-
-                {/* CTA - shows when companies are selected */}
-                {selectedCompanyIds.length > 0 && (
-                  <div className="space-y-3 animate-fadeIn">
-                    <Button
-                      className="w-full h-12 text-base font-bold shadow-lg transition-all"
-                      onClick={() => setIsLeadModalOpen(true)}
-                    >
-                      {t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })}
-                    </Button>
-                  </div>
-                )}
-
-                {/** MarketPriceWidget ("below market" / "save" text) intentionally hidden per requirements */}
-                {/* <MarketPriceWidget price={totalPrice || 0} /> */}
-              </CardContent>
-            </Card>
+    <div className="flex-1 flex flex-col bg-slate-50">
+        {/* Copart-style Header Bar */}
+        <div className="bg-[#1a2b4c] text-white py-3 px-8">
+          <div className="container mx-auto">
+            <nav className="flex items-center text-xs text-white/70 gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="h-6 px-0 text-xs text-white/70 hover:text-white transition-colors"
+              >
+                Home
+              </Button>
+              <Icon icon="mdi:chevron-right" className="h-3 w-3" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/auction-listings')}
+                className="h-6 px-0 text-xs text-white/70 hover:text-white transition-colors"
+              >
+                Vehicle Finder
+              </Button>
+              <Icon icon="mdi:chevron-right" className="h-3 w-3" />
+              <span className="text-white">{vehicle.year} {vehicle.make} {vehicle.model}</span>
+            </nav>
           </div>
         </div>
-      </main>
 
+        <div className="container mx-auto px-8 py-8 lg:py-10">
+          {/* Title Header with Back to Results and Location */}
+          <VehicleHeaderBar
+            year={vehicle.year}
+            make={vehicle.make}
+            model={vehicle.model}
+            lotId={vehicle.source_lot_id || vehicle.id}
+            vin={vehicle.vin}
+            locationCity={(vehicle as any).location_city}
+            locationState={(vehicle as any).location_state}
+            locationName={(vehicle as any).location_name}
+          />
+
+          <motion.div
+            className="grid lg:grid-cols-12 gap-5 xl:gap-6 items-start min-h-[60vh] lg:min_h-[70vh] pb-6"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            {/* Left Column - Gallery + quick condition */}
+            <div className="lg:col-span-4 space-y-4">
+              <CopartGallery photos={photos} />
+              
+              {/* Exterior Condition Section */}
+              <div className="bg-card p-4 rounded-2xl border border-border/70 shadow-sm">
+                <h3 className="font-semibold text-foreground mb-3 text-[13px] tracking-tight flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">EX</span>
+                  <span>Exterior condition</span>
+                </h3>
+                <div className="space-y-3 text-[12px] text-muted-foreground">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Primary damage</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{vehicle.damage_main_damages || 'Normal Wear'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Secondary damage</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{vehicle.damage_secondary_damages || 'None'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Body style</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{(vehicle as any).body_type || 'Sedan'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Color</span>
+                        <span className="text-foreground/80 capitalize text-right truncate max-w-[8rem]">{vehicle.color || 'Unknown'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Doors</span>
+                        <span className="text-foreground/80">{(vehicle as any).doors || '4'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Interior color</span>
+                        <span className="text-foreground/80 capitalize text-right truncate max-w-[8rem]">{(vehicle as any).interior_color || 'Black'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Damage Details Section */}
+                  <div className="pt-3 border-t border-border/60">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Icon icon="mdi:alert-outline" className="w-4 h-4 text-amber-600" />
+                      <span className="font-medium text-[11px] text-foreground uppercase tracking-wide">Damage summary</span>
+                    </div>
+                    <div className="bg-muted rounded-xl p-3 space-y-2 text-[11px]">
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:alert" className="w-4 h-4 text-amber-600 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-semibold text-foreground">Front End Damage</div>
+                          <div className="text-muted-foreground mt-1">
+                            Bumper, hood, and front fender show significant impact damage. Headlights and grille need replacement.
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:car-door" className="w-4 h-4 text-amber-500 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-semibold text-foreground">Side Damage</div>
+                          <div className="text-muted-foreground mt-1">
+                            Driver side door has minor scratches and dent. Passenger side appears clean.
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:shield-check" className="w-4 h-4 text-primary mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-semibold text-foreground">Structural</div>
+                          <div className="text-muted-foreground mt-1">
+                            Frame appears straight. No visible structural damage detected.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                    <button className="flex items-center gap-1 text-primary hover:underline text-[11px]">
+                      <Icon icon="mdi:image-search" className="w-3.5 h-3.5" />
+                      View all exterior photos
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">Visual inspection only, not a full report.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Vehicle Details Section */}
+              <div className="bg-card p-4 rounded-2xl border border-border/70 shadow-sm">
+                <h3 className="font-semibold text-foreground mb-3 text-[13px] tracking-tight flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">ID</span>
+                  <span>Full vehicle details</span>
+                </h3>
+                <div className="space-y-3 text-[12px] text-muted-foreground">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">VIN</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.vin}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Year</span>
+                        <span className="text-foreground/80">{vehicle.year}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Make</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.make}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Model</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.model}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Trim</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).trim || 'Base'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Fuel type</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).fuel_type || 'Gasoline'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Engine</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.engine_volume ? `${vehicle.engine_volume}L` : ''} {vehicle.cylinders ? `V${vehicle.cylinders}` : ''}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Transmission</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.transmission || 'Automatic'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Drive type</span>
+                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).drive_type || 'FWD'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-medium text-foreground">Cylinders</span>
+                        <span className="text-foreground/80">{vehicle.cylinders || '4'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                    <button className="flex items-center gap-1 text-primary hover:underline text-[11px]">
+                      <Icon icon="mdi:file-document" className="w-3.5 h-3.5" />
+                      Download full specification sheet
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">PDF summary for offline review.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Column - Vehicle Details */}
+            <div className="lg:col-span-4 space-y-5">
+              <CopartVehicleInfo vehicle={vehicle} />
+            </div>
+
+            {/* Right Column - Price & Aggregator */}
+            <div className="lg:col-span-4 space-y-7">
+              <VehicleQuotesSection
+                quotes={quotes}
+                filteredQuotes={filteredQuotes}
+                priceStats={priceStats}
+                selectedCompanyIds={selectedCompanyIds}
+                isCompareMode={isCompareMode}
+                quotesLimit={_quotesLimit}
+                totalQuotes={_quotesTotal}
+                isHighRatingOnly={isHighRatingOnly}
+                error={error}
+                onToggleHighRating={() => setMinRatingInternal(isHighRatingOnly ? null : 4.5)}
+                onChangeLimit={(limit) => setQuotesLimitInternal(limit)}
+                onToggleCompareMode={() => setIsCompareMode((prev) => !prev)}
+                onToggleSelection={handleToggleSelection}
+                onOpenBreakdown={(quote) => setActiveBreakdownQuote(quote)}
+                onOpenLeadModal={() => setIsLeadModalOpen(true)}
+              />
+            </div>
+          </motion.div>
+
+          {/* Similar Vehicles - Full Width Below */}
+          <div className="mt-8">
+            <SimilarVehicles baseVehicleId={vehicle.id} />
+          </div>
+        </div>
       {/* Success Modal */}
       <SuccessModal isOpen={isSuccessModalOpen} onClose={() => setIsSuccessModalOpen(false)} count={selectedCompanyIds.length || 1} />
 
@@ -1404,7 +1315,6 @@ const VehicleDetailsPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Footer footerLinks={footerLinks} />
     </div>
   )
 }

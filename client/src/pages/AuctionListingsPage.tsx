@@ -1,21 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import Header from "@/components/Header/index.tsx";
-import Footer from "@/components/Footer";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+// Header and Footer are provided by MainLayout
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@iconify/react/dist/iconify.js";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -24,41 +23,37 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
-} from "@/components/ui/dialog";
-import { navigationItems } from "@/config/navigation";
-import {
-  searchVehicles,
-  compareVehicles,
-} from "@/api/vehicles";
-import type { VehiclesCompareResponse } from "@/api/vehicles";
-import { fetchCatalogMakes, fetchCatalogModels } from "@/api/catalog";
+} from '@/components/ui/dialog';
+// navigationItems now handled by MainLayout
+import { searchVehicles, compareVehicles } from '@/api/vehicles';
+import type { VehiclesCompareResponse } from '@/api/vehicles';
+import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type {
   CatalogMake,
   CatalogModel,
   VehicleCatalogType,
-} from "@/api/catalog";
+} from '@/api/catalog';
 import type {
   SearchVehiclesResponse,
   VehiclesSearchFilters,
   VehicleSortOption,
-} from "@/types/vehicles";
-import { useCalculateVehicleQuotes } from "@/hooks/useCalculateVehicleQuotes";
-import { useVehicleWatchlist } from "@/hooks/useVehicleWatchlist";
-import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "react-i18next";
-import {
-  AuctionFilters,
-  type FilterState,
-} from "@/components/auction/AuctionFilters";
-import { AuctionSidebarFilters } from "@/components/auction/AuctionSidebarFilters";
-import { AuctionVehicleCard } from "@/components/auction/AuctionVehicleCard";
+} from '@/types/vehicles';
+import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
+import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
+import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
+import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
+import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListItem';
+import { ComparisonModal } from '@/components/auction/ComparisonModal';
 
-import { ComparisonModal } from "@/components/auction/ComparisonModal";
+type ViewMode = 'grid' | 'list';
 
-type AuctionHouse = "all" | "Copart" | "IAAI";
-type LotStatus = "all" | "run" | "enhanced" | "non-runner";
-type DamageType = "all" | "front" | "rear" | "side";
-type SortOption = "none" | VehicleSortOption;
+type AuctionHouse = 'all' | 'Copart' | 'IAAI';
+type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
+type DamageType = 'all' | 'front' | 'rear' | 'side';
+type SortOption = 'none' | VehicleSortOption;
 
 // NOTE: mockCars-based auction listings were used earlier for mock/testing purposes.
 // The page now relies solely on real API data via /vehicles/search.
@@ -219,6 +214,7 @@ const AuctionListingsPage = () => {
     endPage: number;
     items: BackendItem[];
   } | null>(null);
+  const [_isAdvancedFiltersOpen, _setIsAdvancedFiltersOpen] = useState(false);
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
@@ -236,6 +232,7 @@ const AuctionListingsPage = () => {
   } = useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Only initialize state from URL once on initial mount.
   const hasInitializedFromUrl = useRef(false);
@@ -892,10 +889,7 @@ const AuctionListingsPage = () => {
         });
       }
     } catch (error) {
-      console.error(
-        "[AuctionListingsPage] Failed to load more vehicles",
-        error
-      );
+      console.error('[AuctionListingsPage] Failed to load more vehicles', error);
     }
   };
 
@@ -903,20 +897,16 @@ const AuctionListingsPage = () => {
   const handleFilterChange = (updates: Partial<FilterState>) => {
     if (updates.searchQuery !== undefined) setSearchQuery(updates.searchQuery);
     if (updates.searchKind !== undefined) setSearchKind(updates.searchKind);
-    if (updates.auctionFilter !== undefined)
-      setAuctionFilter(updates.auctionFilter);
+    if (updates.auctionFilter !== undefined) setAuctionFilter(updates.auctionFilter);
     if (updates.fuelType !== undefined) setFuelType(updates.fuelType);
     if (updates.category !== undefined) setCategory(updates.category);
     if (updates.drive !== undefined) setDrive(updates.drive);
     if (updates.yearRange !== undefined) setYearRange(updates.yearRange);
     if (updates.priceRange !== undefined) setPriceRange(updates.priceRange);
-    if (updates.mileageRange !== undefined)
-      setMileageRange(updates.mileageRange);
+    if (updates.mileageRange !== undefined) setMileageRange(updates.mileageRange);
     if (updates.exactYear !== undefined) setExactYear(updates.exactYear);
-    if (updates.selectedMakeId !== undefined)
-      setSelectedMakeId(updates.selectedMakeId);
-    if (updates.selectedModelId !== undefined)
-      setSelectedModelId(updates.selectedModelId);
+    if (updates.selectedMakeId !== undefined) setSelectedMakeId(updates.selectedMakeId);
+    if (updates.selectedModelId !== undefined) setSelectedModelId(updates.selectedModelId);
     if (updates.buyNowOnly !== undefined) setBuyNowOnly(updates.buyNowOnly);
     if (updates.limit !== undefined) setLimit(updates.limit);
   };
@@ -924,7 +914,6 @@ const AuctionListingsPage = () => {
   const applyFilters = () => {
     const trimmed = searchQuery.trim();
     if (trimmed.length > 0 && trimmed.length < 3) {
-      // Validation handled by input constraints or toast in future
       return;
     }
 
@@ -952,14 +941,11 @@ const AuctionListingsPage = () => {
     setAppliedPage(1);
     setAppliedFilters(nextFilters);
     setExtraLoaded(null);
+    _setIsAdvancedFiltersOpen(false);
 
-    // Update URL directly from computed filters
     updateUrlFromFilters(nextFilters, { replace: false });
   };
 
-  // Reset only the draft filter controls inside the drawer, without
-  // touching appliedFilters/backend data or URL. User must still click
-  // "Show results" to apply the cleared state.
   const resetDrawerFilters = () => {
     const defaultYearRange: [number, number] = [0, 0];
     const defaultPriceRange: [number, number] = [0, 0];
@@ -1028,12 +1014,10 @@ const AuctionListingsPage = () => {
     setAppliedPage(1);
     setExtraLoaded(null);
 
-    // Update URL directly from computed filters (not from state which hasn't updated yet)
     updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   const handleRemoveFilter = (id: string) => {
-    // Mutate local state first
     switch (id) {
       case "search":
         setSearchQuery("");
@@ -1077,7 +1061,6 @@ const AuctionListingsPage = () => {
         break;
     }
 
-    // Recompute filters from the *next* logical state, not URL
     const draft: DraftFiltersInput = {
       searchQuery: id === "search" ? "" : searchQuery,
       exactYear: id === "yearExact" ? "" : exactYear,
@@ -1093,8 +1076,7 @@ const AuctionListingsPage = () => {
       auctionFilter: id === "auction" ? "all" : auctionFilter,
       buyNowOnly: id === "buyNow" ? false : buyNowOnly,
       selectedMakeName: id === "make" ? undefined : selectedMakeName,
-      selectedModelName:
-        id === "make" || id === "model" ? undefined : selectedModelName,
+      selectedModelName: id === "make" || id === "model" ? undefined : selectedModelName,
       sort: sortBy,
     };
 
@@ -1104,28 +1086,69 @@ const AuctionListingsPage = () => {
     setAppliedFilters(nextFilters);
     setExtraLoaded(null);
 
-    // Update URL directly from computed filters (not from state which hasn't updated yet)
     updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white pt-16">
-      <Header user={null} navigationItems={navigationItems} />
+    <div className="flex-1 flex flex-col bg-background">
       <main
         className="flex-1 flex flex-col"
         role="main"
         aria-label={t("auction.active_auctions")}
       >
-        {/* Hero Section */}
-        <div className="bg-white border-b">
-          <div className="container mx-auto px-4 py-8">
-            <div className="max-w-4xl">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-                {t("auction.active_auctions")}
-              </h1>
-              <p className="text-lg text-slate-600 max-w-2xl">
-                {t("auction.description")}
-              </p>
+        {/* Filter Tabs Bar */}
+        <div className="bg-card/95 border-b border-border/60 backdrop-blur supports-[backdrop-filter]:bg-card/90">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-1 py-2 overflow-x-auto text-[11px]">
+              <button className="px-3 py-1.5 bg-[#f7b500] text-[#1a2b4c] font-bold rounded whitespace-nowrap">
+                {t('auction.tabs.saved_vehicles')}
+              </button>
+              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 whitespace-nowrap">
+                {t('auction.tabs.auctions')}
+              </button>
+              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 whitespace-nowrap">
+                {t('auction.tabs.buy_now')}
+              </button>
+              <button className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded hover:bg-slate-200 flex items-center gap-1 whitespace-nowrap">
+                <Icon icon="mdi:tune-variant" className="w-4 h-4" />
+                {t('auction.tabs.more_filters')}
+              </button>
+              <button className="ml-auto px-3 py-1.5 bg-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1 whitespace-nowrap">
+                <Icon icon="mdi:history" className="w-4 h-4" />
+                {t('auction.tabs.recent_searches')}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Results Count Bar */}
+        <div className="border-b border-border/60 bg-muted/40">
+          <div className="container mx-auto px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                <h1 className="text-sm font-semibold text-foreground">
+                  {backendData
+                    ? t('auction.results.count', { count: backendData.total })
+                    : t('auction.results.count', { count: 0 })}
+                </h1>
+                <span className="text-[11px] text-muted-foreground">
+                  {backendData &&
+                    t('auction.results.showing', {
+                      shown: displayedItems.length,
+                      total: backendData.total,
+                    })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] rounded-full border-border bg-background hover:bg-muted/80"
+                >
+                  <Icon icon="mdi:content-save-outline" className="w-3.5 h-3.5 mr-1" />
+                  {t('auction.results.save_search')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1133,7 +1156,7 @@ const AuctionListingsPage = () => {
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="grid lg:grid-cols-5 gap-6 items-start">
             {/* Sidebar Filters - Desktop */}
-            <aside className="hidden lg:block lg:col-span-1 lg:sticky lg:top-24 z-30">
+            <aside className="hidden lg:block lg:col-span-1">
               <AuctionSidebarFilters
                 filters={{
                   searchQuery,
@@ -1252,6 +1275,7 @@ const AuctionListingsPage = () => {
                   onRemoveFilter={handleRemoveFilter}
                 />
               </div>
+
 
               {/* Results Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b">
@@ -1385,6 +1409,24 @@ const AuctionListingsPage = () => {
                       {t("common.compare")}
                     </Button>
                   )}
+
+                  {/* View Mode Toggle */}
+                  <div className="hidden sm:flex items-center border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 ${viewMode === 'list' ? 'bg-[#0047AB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      title={t('auction.view_list')}
+                    >
+                      <Icon icon="mdi:view-list" className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 ${viewMode === 'grid' ? 'bg-[#0047AB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      title={t('auction.view_grid')}
+                    >
+                      <Icon icon="mdi:view-grid" className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1448,57 +1490,109 @@ const AuctionListingsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
-                      {displayedItems.map((item, idx) => (
-                        <AuctionVehicleCard
-                          key={`${item.id}-${item.vehicle_id}`}
-                          item={item}
-                          priority={idx < 4}
-                          isSelected={selectedVehicleIds.includes(
-                            item.vehicle_id ?? item.id
-                          )}
-                          showCompareCheckbox={showCompareCheckboxes}
-                          isWatched={isWatched(item.vehicle_id ?? item.id)}
-                          onToggleSelect={(checked: boolean) => {
-                            const id = item.vehicle_id ?? item.id;
-                            const isMobile = window.innerWidth < 640;
-                            const limit = isMobile ? 2 : 5;
-
-                            setSelectedVehicleIds((prev) =>
-                              checked
-                                ? prev.length < limit
-                                  ? [...prev, id]
-                                  : prev
-                                : prev.filter((pid) => pid !== id)
-                            );
-                          }}
-                          onToggleWatch={() => {
-                            const id = item.vehicle_id ?? item.id;
-                            if (!isAuthenticated) {
-                              setIsAuthDialogOpen(true);
-                              return;
-                            }
-                            toggleWatch(id);
-                          }}
-                          onCalculate={() => {
-                            const id = item.vehicle_id ?? item.id;
-                            setIsCalcModalOpen(true);
-                            calculateQuotes(id);
-                          }}
-                          onViewDetails={() => {
-                            const id = item.vehicle_id ?? item.id;
-                            navigate({ pathname: `/vehicle/${id}` });
-                          }}
-                        />
-                      ))}
-                    </div>
+                    {viewMode === 'list' ? (
+                      /* List View - Copart Style */
+                      <div className="bg-white rounded border border-slate-200 overflow-hidden">
+                        {/* List Header - Blue like Copart */}
+                        <div className="hidden lg:flex items-stretch bg-[#0047AB] text-white text-[11px] font-semibold">
+                          <div className="w-[130px] flex-shrink-0 py-2 px-2">{t('auction.columns.image')}</div>
+                          <div className="flex-[1.2] min-w-[180px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.lot_info')}</div>
+                          <div className="flex-[1.6] min-w-[200px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.vehicle_info')}</div>
+                          <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.condition')}</div>
+                          <div className="flex-[0.9] min-w-[140px] py-2 px-2 border-l border-blue-400/30">{t('auction.columns.sale_info')}</div>
+                          <div className="w-[130px] flex-shrink-0 py-2 px-2 border-l border-blue-400/30 text-right">{t('auction.columns.bids')}</div>
+                        </div>
+                        {/* List Items */}
+                        {displayedItems.map((item, idx) => (
+                          <AuctionVehicleListItem
+                            key={`${item.id}-${item.vehicle_id}`}
+                            item={item}
+                            priority={idx < 4}
+                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                            showCompareCheckbox={showCompareCheckboxes}
+                            isWatched={isWatched(item.vehicle_id ?? item.id)}
+                            onToggleSelect={(checked: boolean) => {
+                              const id = item.vehicle_id ?? item.id;
+                              const isMobile = window.innerWidth < 640;
+                              const maxCompare = isMobile ? 2 : 5;
+                              setSelectedVehicleIds((prev) =>
+                                checked
+                                  ? prev.length < maxCompare
+                                    ? [...prev, id]
+                                    : prev
+                                  : prev.filter((pid) => pid !== id)
+                              );
+                            }}
+                            onToggleWatch={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              if (!isAuthenticated) {
+                                setIsAuthDialogOpen(true);
+                                return;
+                              }
+                              toggleWatch(id);
+                            }}
+                            onCalculate={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              setIsCalcModalOpen(true);
+                              calculateQuotes(id);
+                            }}
+                            onViewDetails={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              navigate({ pathname: `/vehicle/${id}` });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      /* Grid View */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
+                        {displayedItems.map((item, idx) => (
+                          <AuctionVehicleCard
+                            key={`${item.id}-${item.vehicle_id}`}
+                            item={item}
+                            priority={idx < 4}
+                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                            showCompareCheckbox={showCompareCheckboxes}
+                            isWatched={isWatched(item.vehicle_id ?? item.id)}
+                            onToggleSelect={(checked: boolean) => {
+                              const id = item.vehicle_id ?? item.id;
+                              const isMobile = window.innerWidth < 640;
+                              const maxCompare = isMobile ? 2 : 5;
+                              setSelectedVehicleIds((prev) =>
+                                checked
+                                  ? prev.length < maxCompare
+                                    ? [...prev, id]
+                                    : prev
+                                  : prev.filter((pid) => pid !== id)
+                              );
+                            }}
+                            onToggleWatch={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              if (!isAuthenticated) {
+                                setIsAuthDialogOpen(true);
+                                return;
+                              }
+                              toggleWatch(id);
+                            }}
+                            onCalculate={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              setIsCalcModalOpen(true);
+                              calculateQuotes(id);
+                            }}
+                            onViewDetails={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              navigate({ pathname: `/vehicle/${id}` });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Pagination & Load More */}
                     <div className="flex flex-col items-center gap-4 pt-4 border-t">
                       <span className="text-sm text-muted-foreground">
                         {t("common.page")} {appliedPage} /{" "}
-                        {backendData!.totalPages ??
-                          Math.ceil(backendData!.total / limit)}
+                        {backendData!.totalPages ?? Math.ceil(backendData!.total / limit)}
                       </span>
 
                       {canLoadMore && (
@@ -1599,7 +1693,6 @@ const AuctionListingsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <Footer footerLinks={Object.values(navigationItems).flat()} />
 
       <ComparisonModal
         isOpen={isCompareOpen}
