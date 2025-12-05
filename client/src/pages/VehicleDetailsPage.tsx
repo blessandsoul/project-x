@@ -504,7 +504,7 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
       </div>
 
       {/* Thumbnails */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="copart-gallery-thumbs grid grid-cols-7 gap-1.5">
         {photos.slice(0, 14).map((photo, idx) => (
           <button
             key={idx}
@@ -604,12 +604,12 @@ const CopartVehicleInfo = ({ vehicle }: { vehicle: any }) => {
       {/* Details List - Clean layout like screenshot */}
       <div className="bg-white p-4 rounded border border-slate-200">
         <div className="space-y-3 text-[12px]">
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Title code:</span>
             <span className="text-slate-700">{vehicle.sale_title_type || 'Certificate Of Title'}</span>
           </div>
           
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Odometer:</span>
             <div className="flex items-center gap-1">
               <span className="text-slate-700">{vehicle.mileage?.toLocaleString() || '0'} mi</span>
@@ -617,32 +617,32 @@ const CopartVehicleInfo = ({ vehicle }: { vehicle: any }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Primary damage:</span>
             <span className="text-slate-700">{vehicle.damage_main_damages || 'Normal Wear'}</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Estimated retail value:</span>
             <span className="text-slate-700">${Number(vehicle.est_retail_value || vehicle.retail_value || 0).toLocaleString()} USD</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Cylinders:</span>
             <span className="text-slate-700">{vehicle.cylinders || '4'}</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Color:</span>
             <span className="text-slate-700 capitalize">{vehicle.color || 'Unknown'}</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Has Key:</span>
             <span className="text-slate-700">{hasKeys ? 'Yes' : 'No'}</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Engine type:</span>
             <div className="flex items-center gap-2">
               <span className="text-slate-700">{vehicle.engine_volume ? `${vehicle.engine_volume}L` : ''} {vehicle.cylinders ? `V${vehicle.cylinders}` : ''}</span>
@@ -653,7 +653,7 @@ const CopartVehicleInfo = ({ vehicle }: { vehicle: any }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-baseline">
+          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
             <span className="font-bold text-slate-900">Transmission:</span>
             <div className="flex items-center gap-2">
               <span className="text-slate-700">{vehicle.transmission || 'Automatic'}</span>
@@ -684,10 +684,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const shouldReduceMotion = useReducedMotion()
-  
-  // Desktop Slider State
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const ITEMS_PER_VIEW_DESKTOP = 3
 
   useEffect(() => {
     let isMounted = true
@@ -700,7 +696,8 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
         const response = await fetchSimilarVehicles(baseVehicleId, { limit: 20 })
         if (!isMounted) return
         const items = Array.isArray(response.items) ? response.items : []
-        setSimilarItems(items)
+        // Cap to a maximum of 10 similar vehicles to keep the strip compact
+        setSimilarItems(items.slice(0, 10))
       } catch (err) {
         if (!isMounted) return
         const message = err instanceof Error ? err.message : 'Failed to load similar vehicles'
@@ -719,18 +716,7 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     }
   }, [baseVehicleId])
 
-  // Autoplay for Desktop
-  useEffect(() => {
-    if (similarItems.length <= ITEMS_PER_VIEW_DESKTOP) return
-
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => 
-        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
-      )
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [similarItems.length])
+  // Note: Desktop autoplay removed to avoid unexpected jumping/scrolling
 
   if (isLoading) {
     return (
@@ -749,20 +735,9 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     return null
   }
 
-  // Desktop Navigation Handlers
-  const handlePrev = () => {
-    setCurrentIndex(prev => Math.max(0, prev - 1))
-  }
-
-  const handleNext = () => {
-    setCurrentIndex(prev => 
-        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
-    )
-  }
-
   return (
     <motion.section
-      className="space-y-4 pt-8 border-t overflow-hidden"
+      className="similar-vehicles-section space-y-4 pt-8 border-t overflow-hidden"
       initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
       whileInView={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
@@ -770,50 +745,35 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
-        
-        {/* Desktop Controls */}
-        {similarItems.length > ITEMS_PER_VIEW_DESKTOP && (
-          <div className="hidden md:flex gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
-                  <Icon icon="mdi:chevron-left" className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext} disabled={currentIndex + ITEMS_PER_VIEW_DESKTOP >= similarItems.length}>
-                  <Icon icon="mdi:chevron-right" className="h-4 w-4" />
-              </Button>
-          </div>
-        )}
       </div>
 
       {/* Mobile Slider (Snap Scroll) */}
-      <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
+      <div className="similar-vehicles-slider-track flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
         {similarItems.map((item) => (
-          <div key={item.id} className="min-w-[85vw] snap-center">
+          <div key={item.id} className="similar-vehicle-card snap-start">
             <AuctionVehicleCard
-                item={item}
-                priority={false}
-                onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+              item={item}
+              priority={false}
+              onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
+              onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
             />
           </div>
         ))}
       </div>
 
-      {/* Desktop Slider (Transform) */}
+      {/* Desktop row/grid (no slider transform) */}
       <div className="hidden md:block relative overflow-hidden">
-        <div 
-            className="flex gap-4 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(calc(-${currentIndex} * (33.333% + 5.33px)))` }}
-        >
-            {similarItems.map((item) => (
-                <div key={item.id} className="w-[calc((100%-32px)/3)] flex-shrink-0">
-                    <AuctionVehicleCard
-                        item={item}
-                        priority={false}
-                        onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                        onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                    />
-                </div>
-            ))}
+        <div className="similar-vehicles-track flex gap-4">
+          {similarItems.map((item) => (
+            <div key={item.id} className="similar-vehicles-card similar-vehicle-card flex-shrink-0">
+              <AuctionVehicleCard
+                item={item}
+                priority={false}
+                onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
+                onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </motion.section>
@@ -825,7 +785,6 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
 const VehicleDetailsPage = () => {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const shouldReduceMotion = useReducedMotion()
 
@@ -1042,36 +1001,7 @@ const VehicleDetailsPage = () => {
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50">
-        {/* Copart-style Header Bar */}
-        <div className="bg-[#1a2744] text-white py-3 px-8">
-          <div className="container mx-auto">
-            <nav className="flex items-center text-xs text-white/70 gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/')}
-                className="h-6 px-0 text-xs text-white/70 hover:text-white transition-colors"
-              >
-                Home
-              </Button>
-              <Icon icon="mdi:chevron-right" className="h-3 w-3" />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/auction-listings')}
-                className="h-6 px-0 text-xs text-white/70 hover:text-white transition-colors"
-              >
-                Vehicle Finder
-              </Button>
-              <Icon icon="mdi:chevron-right" className="h-3 w-3" />
-              <span className="text-white">{vehicle.year} {vehicle.make} {vehicle.model}</span>
-            </nav>
-          </div>
-        </div>
-
-        <div className="container mx-auto px-8 py-8 lg:py-10">
+        <div className="vehicle-details-container container mx-auto px-8 py-8 lg:py-10">
           {/* Title Header with Back to Results and Location */}
           <VehicleHeaderBar
             year={vehicle.year}
@@ -1085,7 +1015,7 @@ const VehicleDetailsPage = () => {
           />
 
           <motion.div
-            className="grid lg:grid-cols-12 gap-5 xl:gap-6 items-start min-h-[60vh] lg:min_h-[70vh] pb-6"
+            className="vehicle-main-grid grid lg:grid-cols-12 gap-5 xl:gap-6 items-start min-h-[60vh] lg:min_h-[70vh] pb-6"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
             animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
@@ -1101,7 +1031,7 @@ const VehicleDetailsPage = () => {
                   <span>Exterior condition</span>
                 </h3>
                 <div className="space-y-3 text-[12px] text-muted-foreground">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="vehicle-condition-grid grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between gap-2">
                         <span className="font-medium text-foreground">Primary damage</span>

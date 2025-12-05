@@ -116,7 +116,7 @@ export class VehicleModel extends BaseModel {
    * - priceFrom/priceTo: inclusive range on calc_price
    * - mileageFrom/mileageTo: inclusive range on mileage
    * - fuelType: partial match on engine_fuel / engine_fuel_rus
-   * - category: partial match on vehicle_type
+   * - category: exact match on vehicle_type code ('v' vehicles, 'c' motorcycles)
    * - drive: partial match on drive
    */
   async searchByFilters(
@@ -132,10 +132,11 @@ export class VehicleModel extends BaseModel {
       mileageTo?: number;
       fuelType?: string;
       fuelTypes?: string[];
-      category?: string;
+      categoryCodes?: ('v' | 'c')[];
       drive?: string;
       driveTypes?: string[];
       source?: string;
+      sourceTypes?: string[];
       buyNow?: boolean;
       vin?: string;
       sourceLotId?: string;
@@ -144,6 +145,7 @@ export class VehicleModel extends BaseModel {
       cylinderTypes?: string[];
       soldFrom?: string;
       soldTo?: string;
+      location?: string;
     },
     limit: number = 50,
     offset: number = 0,
@@ -179,7 +181,8 @@ export class VehicleModel extends BaseModel {
       conditions.push('calc_price >= ?');
       params.push(filters.priceFrom);
     }
-    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
+    // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
       conditions.push('calc_price <= ?');
       params.push(filters.priceTo);
     }
@@ -187,7 +190,8 @@ export class VehicleModel extends BaseModel {
       conditions.push('mileage >= ?');
       params.push(filters.mileageFrom);
     }
-    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo)) {
+    // When mileageTo is 250000, it means "250000 and more" - don't apply upper bound
+    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo) && filters.mileageTo < 250000) {
       conditions.push('mileage <= ?');
       params.push(filters.mileageTo);
     }
@@ -196,9 +200,11 @@ export class VehicleModel extends BaseModel {
       const pattern = `%${filters.fuelType}%`;
       params.push(pattern, pattern);
     }
-    if (filters.category) {
-      conditions.push('vehicle_type LIKE ?');
-      params.push(`%${filters.category}%`);
+    // Category codes filter (v = vehicles/cars, c = motorcycles)
+    if (filters.categoryCodes && filters.categoryCodes.length > 0) {
+      const placeholders = filters.categoryCodes.map(() => '?').join(', ');
+      conditions.push(`vehicle_type IN (${placeholders})`);
+      params.push(...filters.categoryCodes);
     }
     if (filters.drive) {
       conditions.push('drive LIKE ?');
@@ -208,8 +214,14 @@ export class VehicleModel extends BaseModel {
       conditions.push('source = ?');
       params.push(filters.source);
     }
+    // Multi-value source filter
+    if (filters.sourceTypes && filters.sourceTypes.length > 0) {
+      const placeholders = filters.sourceTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(source) IN (${placeholders})`);
+      params.push(...filters.sourceTypes.map((s) => s.toLowerCase()));
+    }
     if (filters.buyNow) {
-      conditions.push('buy_it_now = 1');
+      conditions.push('buy_it_now IS NOT NULL AND buy_it_now > 0');
     }
     if (filters.vin) {
       conditions.push('vin LIKE ?');
@@ -287,6 +299,12 @@ export class VehicleModel extends BaseModel {
       params.push(datePart, datePart, timePart);
     }
 
+    // Location filter (matches yard_name, both lowercase with spaces removed)
+    if (filters.location) {
+      conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+      params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+    }
+
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
@@ -362,10 +380,11 @@ export class VehicleModel extends BaseModel {
     mileageTo?: number;
     fuelType?: string;
     fuelTypes?: string[];
-    category?: string;
+    categoryCodes?: ('v' | 'c')[];
     drive?: string;
     driveTypes?: string[];
     source?: string;
+    sourceTypes?: string[];
     buyNow?: boolean;
     vin?: string;
     titleTypes?: string[];
@@ -374,6 +393,7 @@ export class VehicleModel extends BaseModel {
     soldFrom?: string;
     soldTo?: string;
     sourceLotId?: string;
+    location?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -402,7 +422,8 @@ export class VehicleModel extends BaseModel {
       conditions.push('calc_price >= ?');
       params.push(filters.priceFrom);
     }
-    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
+    // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
       conditions.push('calc_price <= ?');
       params.push(filters.priceTo);
     }
@@ -410,7 +431,8 @@ export class VehicleModel extends BaseModel {
       conditions.push('mileage >= ?');
       params.push(filters.mileageFrom);
     }
-    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo)) {
+    // When mileageTo is 250000, it means "250000 and more" - don't apply upper bound
+    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo) && filters.mileageTo < 250000) {
       conditions.push('mileage <= ?');
       params.push(filters.mileageTo);
     }
@@ -419,9 +441,11 @@ export class VehicleModel extends BaseModel {
       const pattern = `%${filters.fuelType}%`;
       params.push(pattern, pattern);
     }
-    if (filters.category) {
-      conditions.push('vehicle_type LIKE ?');
-      params.push(`%${filters.category}%`);
+    // Category codes filter (v = vehicles/cars, c = motorcycles)
+    if (filters.categoryCodes && filters.categoryCodes.length > 0) {
+      const placeholders = filters.categoryCodes.map(() => '?').join(', ');
+      conditions.push(`vehicle_type IN (${placeholders})`);
+      params.push(...filters.categoryCodes);
     }
     if (filters.drive) {
       conditions.push('drive LIKE ?');
@@ -430,6 +454,15 @@ export class VehicleModel extends BaseModel {
     if (filters.source) {
       conditions.push('source = ?');
       params.push(filters.source);
+    }
+    // Multi-value source filter
+    if (filters.sourceTypes && filters.sourceTypes.length > 0) {
+      const placeholders = filters.sourceTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(source) IN (${placeholders})`);
+      params.push(...filters.sourceTypes.map((s) => s.toLowerCase()));
+    }
+    if (filters.buyNow) {
+      conditions.push('buy_it_now IS NOT NULL AND buy_it_now > 0');
     }
     if (filters.vin) {
       conditions.push('vin LIKE ?');
@@ -504,6 +537,12 @@ export class VehicleModel extends BaseModel {
       const timePart = parts[1] || '23:59:59';
       conditions.push('(sold_at_date < ? OR (sold_at_date = ? AND (sold_at_time IS NULL OR sold_at_time <= ?)))');
       params.push(datePart, datePart, timePart);
+    }
+
+    // Location filter (matches yard_name, both lowercase with spaces removed)
+    if (filters.location) {
+      conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+      params.push(filters.location.toLowerCase().replace(/\s/g, ''));
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

@@ -190,7 +190,7 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                             {t('common.verified')}
                         </Badge>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-tight drop-shadow-md">
                         {vehicleTitle}
                     </h2>
                     {highlights.length > 0 && (

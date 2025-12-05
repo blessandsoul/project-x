@@ -133,6 +133,11 @@ export interface VehiclesSearchFilters {
   price_from?: number
   price_to?: number
   buy_now?: boolean
+  title_type?: string
+  transmission?: string
+  fuel?: string
+  location?: string
+  cylinders?: string
   limit?: number
   offset?: number
   sort?: VehicleSortOption

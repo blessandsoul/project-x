@@ -551,7 +551,6 @@
       "bids": "ბიდები"
     },
     "actions": {
-      "watch": "Watch List",
       "bid_now": "ბიდის დადება",
       "buy_it_now": "ყიდვა"
     },
@@ -568,7 +567,7 @@
     },
     "filters": {
       "title": "ფილტრები",
-      "refine": "ფილტრების დაკონკრეტება",
+      "refine": "ფილტრები",
       "auction": "აუქციონი",
       "fuel": "საწვავი",
       "buy_now_only": "მხოლოდ ყიდვა",
@@ -629,6 +628,7 @@
     "watch": "Watch List",
     "add_to_watchlist": "დაკვირვების სიაში დამატება",
     "remove_from_watchlist": "დაკვირვების სიიდან წაშლა",
+    "buy_now_short": "ახლავე ყიდვა",
     "join_live_auction": "Join Live Auction",
     "view_vehicle_details": "მანქანის დეტალების ნახვა",
     "more_filters": "დამატებითი ფილტრები",

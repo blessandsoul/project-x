@@ -102,7 +102,7 @@ export function AuctionVehicleListItem({
       <div className="w-[160px] flex-shrink-0 p-2.5 border-l border-border">
         {/* Title */}
         <button onClick={onViewDetails} className="text-left">
-          <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase">
+          <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase whitespace-normal break-words">
             {item.year} {item.make} {item.model}
           </h3>
         </button>

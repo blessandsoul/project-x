@@ -92,12 +92,12 @@ const VehicleQuotesSection = ({
 
   return (
     <section 
-      className="rounded-2xl border border-slate-200/60 bg-white overflow-hidden"
+      className="vehicle-quotes-section rounded-2xl border border-slate-200/60 bg-white overflow-hidden"
       aria-label="Import quotes"
     >
       {/* Minimal header */}
       <header className="px-5 py-4 border-b border-slate-100">
-        <div className="flex items-center justify-between">
+        <div className="vehicle-quotes-header flex items-center justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-slate-900">
               Shipping Quotes
@@ -125,7 +125,7 @@ const VehicleQuotesSection = ({
               type="button"
               onClick={() => onOpenBreakdown(quote)}
               className={cn(
-                'w-full px-5 py-4 flex items-center gap-4 text-left transition-colors',
+                'vehicle-quotes-item w-full px-5 py-4 flex items-center gap-4 text-left transition-colors',
                 'hover:bg-slate-50/80 focus:outline-none focus-visible:bg-slate-50',
                 isBest && index === 0 && 'bg-emerald-50/40'
               )}
@@ -160,7 +160,7 @@ const VehicleQuotesSection = ({
               </div>
 
               {/* Price */}
-              <div className="text-right shrink-0">
+              <div className="vehicle-quote-price text-right shrink-0">
                 <div className={cn(
                   'text-base font-semibold tabular-nums',
                   isBest && index === 0 ? 'text-emerald-600' : 'text-slate-900'

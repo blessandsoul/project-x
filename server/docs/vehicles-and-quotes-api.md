@@ -119,61 +119,98 @@ All query parameters are validated with Zod before processing. Invalid values re
 
 #### Basic Filters
 
-- `make` (optional, string) – partial match on brand name.
-- `model` (optional, string) – partial match on model name.
-- `source` (optional, string) – exact match on source (e.g. `copart`, `iaai`).
-- `category` (optional, string) – partial match on vehicle type.
-- `buy_now` (optional, boolean-like: `true` / `false`) – when `true`, only return vehicles with active Buy It Now option.
+- `make` (optional, string, max 255 chars) – partial match on brand name. Trimmed before matching.
+- `model` (optional, string, max 255 chars) – partial match on model name. Trimmed before matching.
+- `source` (optional, string) – comma-separated list of auction sources. Max 50 characters.
+  - **Allowed values (enum):** `copart`, `iaai`
+  - Accepts multiple values separated by comma (any combination)
+  - Case-insensitive
+  - Example: `source=copart` or `source=copart,iaai`
+  - Invalid values return `400 Bad Request`.
+- `category` (optional, string) – vehicle-type code filter. Strictly validated:
+  - `v` — vehicles/cars only
+  - `c` — motorcycles only
+  - `v,c` or `c,v` — both vehicles and motorcycles
+  - Any other value returns `400 Bad Request` with validation error.
+  - If omitted, all vehicle types are returned.
+- `buy_now` (optional, string) – filter for Buy It Now availability. Strictly validated:
+  - **Allowed values:** `true`, `false` (case-insensitive)
+  - When `true`, only return vehicles with active Buy It Now option
+  - When `false` or omitted, no Buy It Now filtering is applied
+  - Any other value returns `400 Bad Request` with validation error.
 
 #### Year Filter
 
-- `year` (optional, number) – exact year match.
-- `year_from` (optional, number) – minimum year (inclusive).
-- `year_to` (optional, number) – maximum year (inclusive).
+- `year` (optional, number) – exact year match. Must be exactly 4 digits (1900-2099).
+- `year_from` (optional, number) – minimum year (inclusive). Must be exactly 4 digits (1900-2099).
+- `year_to` (optional, number) – maximum year (inclusive). Must be exactly 4 digits (1900-2099).
+
+> **Note:** Invalid year values (e.g., `201`, `20001`) return `400 Bad Request`.
 
 #### Price Filter
 
-- `price_from` (optional, number) – minimum price, must be ≥ 0.
-- `price_to` (optional, number) – maximum price, must be ≥ 0.
+- `price_from` (optional, number) – minimum price. Must be 0-500,000.
+- `price_to` (optional, number) – maximum price. Must be 0-500,000.
+
+> **Note:** When `price_to=500000`, it means "500,000 and more" (no upper bound applied in query). Invalid values return `400 Bad Request`.
 
 #### Odometer Filter
 
-- `odometer_from` (optional, number) – minimum mileage, must be ≥ 0.
-- `odometer_to` (optional, number) – maximum mileage, must be ≤ 250,000.
-- `mileage_from`, `mileage_to` (optional) – legacy aliases, same behavior as odometer params.
+- `odometer_from` (optional, integer) – minimum mileage. Must be 0-250,000.
+- `odometer_to` (optional, integer) – maximum mileage. Must be 0-250,000.
+- `mileage_from`, `mileage_to` (optional) – legacy aliases, same validation as odometer params.
 
-> **Note:** Maps to DB column `mileage`.
+> **Note:** Maps to DB column `mileage`. When `odometer_to=250000`, it means "250,000 and more" (no upper bound applied in query). Invalid values return `400 Bad Request`.
 
 #### Title Type Filter
 
-- `title_type` (optional, string) – comma-separated list of title types.
-- **Allowed values:** `clean title`, `nonrepairable`, `salvage title`
+- `title_type` (optional, string) – comma-separated list of title types. Max 100 characters.
+- **Allowed values (enum):** `clean title`, `nonrepairable`, `salvage title`
+- Accepts multiple values separated by comma
+- Case-insensitive
 - Example: `title_type=clean title,salvage title`
 
-> **Note:** Uses partial matching (LIKE) on DB column `document`. For example, `clean title` will match "CLEAN TITLE - GA", "Clean Title - TX", etc.
+> **Note:** Uses partial matching (LIKE) on DB column `document`. Invalid values return `400 Bad Request`.
 
 #### Transmission Filter
 
-- `transmission` (optional, string) – comma-separated list.
-- **Allowed values:** `auto`, `manual`
-- Example: `transmission=auto,manual`
+- `transmission` (optional, string) – filter by transmission type. Max 50 characters.
+- **Allowed values (enum):** `auto`, `manual`, or `auto,manual`
+- `auto` – filters only automatic transmission
+- `manual` – filters only manual transmission
+- `auto,manual` – filters both (same as not specifying)
+- Case-insensitive
+
+> **Note:** Invalid values return `400 Bad Request`.
 
 #### Fuel Filter
 
-- `fuel` (optional, string) – comma-separated list of fuel types.
-- **Allowed values:** `petrol`, `diesel`, `electric`, `flexible`, `hybrid`
+- `fuel` (optional, string) – comma-separated list of fuel types. Max 100 characters.
+- **Allowed values (enum):** `petrol`, `diesel`, `electric`, `flexible`, `hybrid`
+- Accepts multiple values separated by comma (any combination)
+- Case-insensitive
 - Example: `fuel=petrol,diesel,hybrid`
 - `fuel_type` (optional) – legacy single-value filter (partial match).
 
-> **Note:** Filters on DB columns `engine_fuel` and `engine_fuel_rus`.
+> **Note:** Filters on DB columns `engine_fuel` and `engine_fuel_rus`. Invalid values return `400 Bad Request`.
 
 #### Drive Filter
 
-- `drive` (optional, string) – comma-separated list of drive types.
-- **Allowed values:** `front`, `rear`, `full`
+- `drive` (optional, string) – comma-separated list of drive types. Max 100 characters.
+- **Allowed values (enum):** `front`, `rear`, `full`
+- Accepts multiple values separated by comma (any combination)
+- Case-insensitive
 - Example: `drive=front,full`
 
-> **Special rule:** When `full` is selected, it matches DB values containing `full`, `full/front`, or `full/rear`.
+> **Special rule:** When `full` is selected, it matches DB values containing `full`, `full/front`, or `full/rear`. Invalid values return `400 Bad Request`.
+
+#### Location Filter
+
+- `location` (optional, string) – city/yard name to filter by. Max 100 characters.
+- Case-insensitive matching against the `yard_name` column with spaces removed.
+- Example: `location=Los Angeles`
+
+> **Note:** Available cities can be fetched from `/api/cities` endpoint. Both the filter value and `yard_name` are compared lowercase with spaces removed for flexible matching.
 
 #### Cylinders Filter
 

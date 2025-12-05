@@ -44,7 +44,7 @@ export function PromoBannersSection() {
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
-      <div className="container mx-auto px-4">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
         {/* Banners Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {PROMO_BANNERS.map((banner) => (

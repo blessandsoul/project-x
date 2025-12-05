@@ -24,7 +24,7 @@ const Footer = ({ footerLinks, onNavigate }) => {
 
   return (
     <footer className="border-t bg-background" role="contentinfo">
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10 text-center md:text-left">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto py-6 md:py-10 text-center md:text-left">
         <div className="grid gap-6 md:gap-8 md:grid-cols-4">
           {/* Brand & trust section */}
           <div className="space-y-4">

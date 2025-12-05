@@ -36,6 +36,7 @@ import {
 import type {
   ColumnDef,
   Row,
+  VisibilityState,
 } from '@tanstack/react-table';
 import {
   flexRender,
@@ -60,9 +61,10 @@ import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes';
 import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { AuctionFilters, type FilterState } from '@/components/auction/AuctionFilters';
-import { AuctionSidebarFilters } from '@/components/auction/AuctionSidebarFilters';
+import { AuctionSidebarFilters, type CategoryFilter } from '@/components/auction/AuctionSidebarFilters';
+import { AuctionFiltersDrawer } from '@/components/auction/AuctionFiltersDrawer';
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
+import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListItem';
 import { ComparisonModal } from '@/components/auction/ComparisonModal';
 import { QuotesShowcase } from '@/components/auction/QuotesShowcase';
 
@@ -96,6 +98,13 @@ type DraftFiltersInput = {
   selectedMakeName?: string;
   selectedModelName?: string;
   sort?: SortOption;
+  titleType?: string;
+  transmission?: string;
+  fuel?: string;
+  driveFilter?: string;
+  cylinders?: string;
+  location?: string;
+  sourceFilter?: string;
 };
 
 const buildFiltersFromDraftState = (
@@ -126,12 +135,20 @@ const buildFiltersFromDraftState = (
     fuel_type: input.fuelType === "all" ? undefined : input.fuelType,
     // category codes: 'v', 'c', 'a'; 'all' means no category filter
     category: input.category === "all" ? undefined : input.category,
-    drive: input.drive === "all" ? undefined : input.drive,
-    // auction/source mapping: Copart/IAAI -> copart/iaai
-    source:
-      input.auctionFilter && input.auctionFilter !== "all"
-        ? input.auctionFilter.toLowerCase()
-        : undefined,
+    // drive filter: comma-separated values (front, rear, full)
+    drive: input.driveFilter || undefined,
+    // source filter: comma-separated values (copart, iaai)
+    source: input.sourceFilter || undefined,
+    // title type filter: comma-separated values
+    title_type: input.titleType || undefined,
+    // transmission filter: 'auto', 'manual', or 'auto,manual'
+    transmission: input.transmission || undefined,
+    // fuel filter: comma-separated values
+    fuel: input.fuel || undefined,
+    // location filter: city/yard name (normalized: lowercase, spaces removed)
+    location: input.location ? input.location.toLowerCase().replace(/\s/g, '') : undefined,
+    // cylinders filter: comma-separated, normalized to uppercase for API
+    cylinders: input.cylinders ? input.cylinders.toUpperCase() : undefined,
     limit: input.limit,
     page: input.page,
   };
@@ -189,7 +206,8 @@ const createColumns = (
   onToggleWatch: (item: BackendItem) => void,
   onViewDetails: (item: BackendItem) => void,
   isWatched: (id: number) => boolean,
-  t: any
+  t: any,
+  isLargeScreen: boolean,
 ): ColumnDef<BackendItem>[] => [
   // Checkbox column
   ...(showCompareCheckbox ? [{
@@ -229,7 +247,7 @@ const createColumns = (
       return (
         <button
           type="button"
-          className="aspect-[4/3] w-20 rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+          className="aspect-[4/3] w-32 rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
           onClick={() => onViewDetails(item)}
         >
           <img
@@ -242,7 +260,7 @@ const createColumns = (
       );
     },
     enableSorting: false,
-    size: 100,
+    size: 150,
   },
   // Lot Info column
   {
@@ -251,15 +269,21 @@ const createColumns = (
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       return (
-        <div className="min-w-[140px]">
+        <div className="max-w-[140px]">
           <button onClick={() => onViewDetails(item)} className="text-left">
-            <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase">
+            <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase whitespace-normal break-words">
               {item.year} {item.make} {item.model}
             </h3>
           </button>
           <div className="text-muted-foreground mt-0.5 text-[11px]">
             {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
           </div>
+          {/* Below 1280px, show yard name above the Watch List button to replace the hidden sale_info column */}
+          {!isLargeScreen && item.yard_name && (
+            <div className="mt-1 text-[11px] font-medium text-primary truncate" title={item.yard_name}>
+              {item.yard_name}
+            </div>
+          )}
           <div className="flex items-center gap-1 mt-2">
             <Button
               variant={isWatched(item.vehicle_id ?? item.id) ? "default" : "outline"}
@@ -277,12 +301,12 @@ const createColumns = (
         </div>
       );
     },
-    size: 160,
+    size: 110,
   },
   // Vehicle Info column
   {
     id: 'vehicle_info',
-    header: t('auction.columns.vehicle_info'),
+    header: 'ინფორმაცია',
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       const retailValue = item.retail_value
@@ -290,7 +314,7 @@ const createColumns = (
         : null;
 
       return (
-        <div className="min-w-[140px]">
+        <div>
           <div className="text-muted-foreground text-[11px]">{t('auction.fields.odometer')}</div>
           <div className="font-semibold text-foreground">
             {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
@@ -302,7 +326,7 @@ const createColumns = (
         </div>
       );
     },
-    size: 140,
+    size: 105,
   },
   // Condition column
   {
@@ -311,7 +335,7 @@ const createColumns = (
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       return (
-        <div className="min-w-[150px]">
+        <div className="max-w-[180px] whitespace-normal break-words">
           <div className="text-foreground font-medium text-[11px]">
             {item.sale_title_type || t('auction.fields.clean_title')} ({item.state || 'N/A'})
           </div>
@@ -324,7 +348,7 @@ const createColumns = (
         </div>
       );
     },
-    size: 150,
+    size: 120,
   },
   // Sale Info column
   {
@@ -333,7 +357,7 @@ const createColumns = (
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       return (
-        <div className="min-w-[150px]">
+        <div>
           <div className="text-primary font-medium flex items-center gap-1 text-[11px]">
             {item.yard_name || item.city || 'N/A'}
             <Icon icon="mdi:chevron-right" className="w-3 h-3" />
@@ -344,7 +368,7 @@ const createColumns = (
         </div>
       );
     },
-    size: 150,
+    size: 110,
   },
   // Bids column
   {
@@ -377,7 +401,7 @@ const createColumns = (
       const hasBuyNow = buyNowPrice != null;
 
       return (
-        <div className="min-w-[180px]">
+        <div className="flex flex-col">
           <div className="text-muted-foreground text-[10px]">Current bid:</div>
           <div className="text-base font-bold text-foreground mb-2">
             {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
@@ -392,16 +416,16 @@ const createColumns = (
           </Button>
 
           {hasBuyNow ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-0.5 text-[10px] sm:flex-row sm:items-center sm:gap-1">
               <Button
                 size="sm"
-                className="h-7 px-3 text-[11px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold"
+                className="w-full sm:w-auto h-7 px-3 text-[10px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold whitespace-nowrap"
                 onClick={() => onViewDetails(item)}
               >
                 {t('auction.actions.buy_it_now')}
               </Button>
-              <span className="text-sm text-foreground font-semibold">
-                {formatMoney(buyNowPrice)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+              <span className="text-[10px] text-foreground font-semibold whitespace-nowrap">
+                {formatMoney(buyNowPrice)} <span className="text-[9px] font-normal text-muted-foreground">USD</span>
               </span>
             </div>
           ) : (
@@ -417,7 +441,7 @@ const createColumns = (
         </div>
       );
     },
-    size: 200,
+    size: 170,
   },
 ];
 
@@ -436,6 +460,13 @@ const AuctionListingsPage = () => {
   const [fuelType, setFuelType] = useState("all");
   const [category, setCategory] = useState("all");
   const [drive, setDrive] = useState("all");
+  const [titleType, setTitleType] = useState<string | undefined>(undefined);
+  const [transmission, setTransmission] = useState<string | undefined>(undefined);
+  const [fuel, setFuel] = useState<string | undefined>(undefined);
+  const [driveFilter, setDriveFilter] = useState<string | undefined>(undefined);
+  const [cylinders, setCylinders] = useState<string | undefined>(undefined);
+  const [locationFilter, setLocationFilter] = useState<string | undefined>(undefined);
+  const [sourceFilter, setSourceFilter] = useState<string | undefined>(undefined);
   const [limit, setLimit] = useState(36);
   const [, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
@@ -443,6 +474,11 @@ const AuctionListingsPage = () => {
   const [sortBy, setSortBy] = useState<SortOption>("none");
   const [selectedMakeId, setSelectedMakeId] = useState<string>("all");
   const [selectedModelId, setSelectedModelId] = useState<string>("all");
+  // Track make/model names for API filtering (from new vehicle-makes/models API)
+  const [filterMakeName, setFilterMakeName] = useState<string | undefined>(undefined);
+  const [filterModelName, setFilterModelName] = useState<string | undefined>(undefined);
+  // Ref to always get latest filterMakeName in callbacks (avoids stale closure)
+  const filterMakeNameRef = useRef<string | undefined>(undefined);
   const [catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
   const [catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
   const [isLoadingMakes, setIsLoadingMakes] = useState(false);
@@ -483,6 +519,7 @@ const AuctionListingsPage = () => {
   const [compareResult, setCompareResult] =
     useState<VehiclesCompareResponse | null>(null);
   const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const { isWatched, toggleWatch } = useVehicleWatchlist();
   const { isAuthenticated } = useAuth();
   const {
@@ -494,6 +531,10 @@ const AuctionListingsPage = () => {
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [isLargeScreen, setIsLargeScreen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1280;
+  });
   
   const hasInitializedFromUrl = useRef(false);
 
@@ -501,6 +542,25 @@ const AuctionListingsPage = () => {
     () => (extraLoaded ? extraLoaded.items : backendData?.items ?? []),
     [extraLoaded, backendData?.items]
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1280);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setColumnVisibility((prev) => ({
+      ...prev,
+      sale_info: isLargeScreen,
+    }));
+  }, [isLargeScreen]);
 
   // Create table columns and instance
   const columns = useMemo(() => createColumns(
@@ -531,13 +591,18 @@ const AuctionListingsPage = () => {
       navigate({ pathname: `/vehicle/${id}` });
     },
     (id: number) => isWatched(id),
-    t
-  ), [showCompareCheckboxes, selectedVehicleIds, isAuthenticated, toggleWatch, navigate, isWatched, t]);
+    t,
+    isLargeScreen,
+  ), [showCompareCheckboxes, selectedVehicleIds, isAuthenticated, toggleWatch, navigate, isWatched, t, isLargeScreen]);
 
   const table = useReactTable({
     data: displayedItems,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    state: {
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
   });
 
   const vehicleCatalogType: VehicleCatalogType = useMemo(() => {
@@ -636,6 +701,38 @@ const AuctionListingsPage = () => {
       searchParams.set("buy_now", "true");
     }
 
+    if (filters.title_type) {
+      searchParams.set("title_type", filters.title_type);
+    }
+
+    if (filters.transmission) {
+      searchParams.set("transmission", filters.transmission);
+    }
+
+    if (filters.fuel) {
+      searchParams.set("fuel", filters.fuel);
+    }
+
+    if (filters.drive) {
+      searchParams.set("drive", filters.drive);
+    }
+
+    if (filters.cylinders) {
+      searchParams.set("cylinders", filters.cylinders);
+    }
+
+    if (filters.location) {
+      searchParams.set("location", filters.location);
+    }
+
+    if (filters.source) {
+      searchParams.set("source", filters.source);
+    }
+
+    if (filters.buy_now) {
+      searchParams.set("buy_now", "true");
+    }
+
     if (filters.sort) {
       searchParams.set("sort", filters.sort);
     }
@@ -684,9 +781,15 @@ const AuctionListingsPage = () => {
       searchKind,
       auctionFilter,
       buyNowOnly,
-      selectedMakeName,
-      selectedModelName,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
       sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
     });
 
     updateUrlFromFilters(filters, { replace: options?.replace ?? true });
@@ -770,8 +873,8 @@ const AuctionListingsPage = () => {
         categoryLabel = t("common.cars");
       } else if (appliedFilters.category === "c") {
         categoryLabel = t("common.motorcycles");
-      } else if (appliedFilters.category === "a") {
-        categoryLabel = t("common.vans");
+      } else if (appliedFilters.category === "v,c" || appliedFilters.category === "c,v") {
+        categoryLabel = `${t("common.cars")} & ${t("common.motorcycles")}`;
       } else {
         categoryLabel = appliedFilters.category;
       }
@@ -916,6 +1019,70 @@ const AuctionListingsPage = () => {
         ? driveParam
         : "all";
 
+    // Title type filter - comma-separated, validated against allowed values
+    const titleTypeParam = params.get("title_type");
+    const allowedTitleTypes = ["clean title", "nonrepairable", "salvage title"];
+    const nextTitleType = (() => {
+      if (!titleTypeParam) return undefined;
+      const values = titleTypeParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedTitleTypes.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
+    // Transmission filter - validated against allowed values
+    const transmissionParam = params.get("transmission");
+    const allowedTransmissions = ["auto", "manual"];
+    const nextTransmission = (() => {
+      if (!transmissionParam) return undefined;
+      const values = transmissionParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedTransmissions.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
+    // Fuel filter - validated against allowed values
+    const fuelFilterParam = params.get("fuel");
+    const allowedFuels = ["petrol", "diesel", "electric", "flexible", "hybrid"];
+    const nextFuel = (() => {
+      if (!fuelFilterParam) return undefined;
+      const values = fuelFilterParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedFuels.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
+    // Drive filter - validated against allowed values
+    const driveFilterParam = params.get("drive");
+    const allowedDrives = ["front", "rear", "full"];
+    const nextDriveFilter = (() => {
+      if (!driveFilterParam) return undefined;
+      const values = driveFilterParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedDrives.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
+    // Cylinders filter - validated against allowed values
+    const cylindersParam = params.get("cylinders");
+    const allowedCylinders = ["0", "1", "2", "3", "4", "5", "6", "8", "10", "12", "u"];
+    const nextCylinders = (() => {
+      if (!cylindersParam) return undefined;
+      const values = cylindersParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedCylinders.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
+    // Location filter - city name from URL
+    const locationParam = params.get("location");
+    const nextLocation = locationParam || undefined;
+
+    // Source filter - copart, iaai or both (multi-value)
+    const sourceFilterParam = params.get("source");
+    const allowedSources = ["copart", "iaai"];
+    const nextSourceFilter = (() => {
+      if (!sourceFilterParam) return undefined;
+      const values = sourceFilterParam.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+      const validValues = values.filter((v) => allowedSources.includes(v));
+      return validValues.length > 0 ? validValues.join(",") : undefined;
+    })();
+
     // Year range – default is "no filter" [0, 0]
     const yearFromParam = params.get("year_from");
     const yearToParam = params.get("year_to");
@@ -1007,9 +1174,15 @@ const AuctionListingsPage = () => {
       searchKind: nextSearchKind,
       auctionFilter: nextAuctionFilter,
       buyNowOnly: nextBuyNowOnly,
-      selectedMakeName: urlMake ?? selectedMakeName,
-      selectedModelName: urlModel ?? selectedModelName,
+      selectedMakeName: urlMake ?? filterMakeName,
+      selectedModelName: urlModel ?? filterModelName,
       sort: nextSortBy,
+      titleType: nextTitleType,
+      transmission: nextTransmission,
+      fuel: nextFuel,
+      driveFilter: nextDriveFilter,
+      location: nextLocation,
+      sourceFilter: nextSourceFilter,
     });
 
     // Set all state values
@@ -1019,6 +1192,13 @@ const AuctionListingsPage = () => {
     setFuelType(nextFuelType);
     setCategory(nextCategory);
     setDrive(nextDrive);
+    setTitleType(nextTitleType);
+    setTransmission(nextTransmission);
+    setFuel(nextFuel);
+    setDriveFilter(nextDriveFilter);
+    setCylinders(nextCylinders ? nextCylinders.toUpperCase() : undefined);
+    setLocationFilter(nextLocation);
+    setSourceFilter(nextSourceFilter);
     setYearRange(nextYearRange);
     setExactYear(nextExactYear);
     setMileageRange(nextMileageRange);
@@ -1027,10 +1207,16 @@ const AuctionListingsPage = () => {
     setBuyNowOnly(nextBuyNowOnly);
     setLimit(nextLimit);
     setPage(nextPage);
+    // Sync make/model names from URL
+    if (urlMake) {
+      setFilterMakeName(urlMake);
+      filterMakeNameRef.current = urlMake;
+    }
+    if (urlModel) setFilterModelName(urlModel);
     setAppliedFilters(filters);
     setAppliedPage(filters.page);
     setExtraLoaded(null);
-  }, [location.search, selectedMakeName, selectedModelName]);
+  }, [location.search, filterMakeName, filterModelName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1179,22 +1365,568 @@ const AuctionListingsPage = () => {
     }
   };
 
-  // Bridge function to update state from AuctionFilters
-  const handleFilterChange = (updates: Partial<FilterState>) => {
-    if (updates.searchQuery !== undefined) setSearchQuery(updates.searchQuery);
-    if (updates.searchKind !== undefined) setSearchKind(updates.searchKind);
-    if (updates.auctionFilter !== undefined) setAuctionFilter(updates.auctionFilter);
-    if (updates.fuelType !== undefined) setFuelType(updates.fuelType);
-    if (updates.category !== undefined) setCategory(updates.category);
-    if (updates.drive !== undefined) setDrive(updates.drive);
-    if (updates.yearRange !== undefined) setYearRange(updates.yearRange);
-    if (updates.priceRange !== undefined) setPriceRange(updates.priceRange);
-    if (updates.mileageRange !== undefined) setMileageRange(updates.mileageRange);
-    if (updates.exactYear !== undefined) setExactYear(updates.exactYear);
-    if (updates.selectedMakeId !== undefined) setSelectedMakeId(updates.selectedMakeId);
-    if (updates.selectedModelId !== undefined) setSelectedModelId(updates.selectedModelId);
-    if (updates.buyNowOnly !== undefined) setBuyNowOnly(updates.buyNowOnly);
-    if (updates.limit !== undefined) setLimit(updates.limit);
+  // Handler for category filter changes - triggers immediate data fetch
+  const handleCategoryChange = (newCategory: CategoryFilter) => {
+    // Convert CategoryFilter to the category string used in state/API
+    const categoryValue = newCategory ?? "all";
+    setCategory(categoryValue);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category: categoryValue,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for year range filter changes - triggers immediate data fetch
+  const handleYearRangeChange = (yearFrom: number, yearTo: number) => {
+    const newYearRange: [number, number] = [yearFrom, yearTo];
+    setYearRange(newYearRange);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange: newYearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for odometer/mileage range filter changes - triggers immediate data fetch
+  const handleOdometerRangeChange = (odometerFrom: number, odometerTo: number) => {
+    const newMileageRange: [number, number] = [odometerFrom, odometerTo];
+    setMileageRange(newMileageRange);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange: newMileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for price range filter changes - triggers immediate data fetch
+  const handlePriceRangeChange = (priceFrom: number, priceTo: number) => {
+    const newPriceRange: [number, number] = [priceFrom, priceTo];
+    setPriceRange(newPriceRange);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange: newPriceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for title type filter changes - triggers immediate data fetch
+  const handleTitleTypeChange = (newTitleType: string | undefined) => {
+    setTitleType(newTitleType);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType: newTitleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for transmission filter changes - triggers immediate data fetch
+  const handleTransmissionChange = (newTransmission: string | undefined) => {
+    setTransmission(newTransmission);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission: newTransmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for fuel filter changes - triggers immediate data fetch
+  const handleFuelChange = (newFuel: string | undefined) => {
+    setFuel(newFuel);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel: newFuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for drive filter changes - triggers immediate data fetch
+  const handleDriveFilterChange = (newDrive: string | undefined) => {
+    setDriveFilter(newDrive);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter: newDrive,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for location filter changes - triggers immediate data fetch
+  const handleLocationChange = (newLocation: string | undefined) => {
+    setLocationFilter(newLocation);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: newLocation,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for cylinders filter changes - triggers immediate data fetch
+  const handleCylindersChange = (newCylinders: string | undefined) => {
+    setCylinders(newCylinders);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      cylinders: newCylinders,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for source filter changes - triggers immediate data fetch
+  const handleSourceChange = (newSource: string | undefined) => {
+    setSourceFilter(newSource);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      cylinders,
+      location: locationFilter,
+      sourceFilter: newSource,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for buy now filter changes - triggers immediate data fetch
+  const handleBuyNowChange = (newBuyNow: boolean) => {
+    setBuyNowOnly(newBuyNow);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly: newBuyNow,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      cylinders,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for make filter changes - triggers immediate data fetch
+  const handleMakeChange = (makeId: number | undefined, makeName: string | undefined) => {
+    // Update state - use string "all" for undefined to match existing state type
+    setSelectedMakeId(makeId ? String(makeId) : "all");
+    setFilterMakeName(makeName);
+    filterMakeNameRef.current = makeName; // Keep ref in sync for model handler
+    // Clear model when make changes
+    setSelectedModelId("all");
+    setFilterModelName(undefined);
+    setCatalogModels([]);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: makeName,
+      selectedModelName: undefined,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for model filter changes - triggers immediate data fetch
+  const handleModelChange = (modelId: number | undefined, modelName: string | undefined) => {
+    // Update state
+    setSelectedModelId(modelId ? String(modelId) : "all");
+    setFilterModelName(modelName);
+
+    // Build and apply filters immediately - use ref for current make (avoids stale closure)
+    const currentMakeName = filterMakeNameRef.current;
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: currentMakeName,
+      selectedModelName: modelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
   };
 
   const applyFilters = () => {
@@ -1217,9 +1949,15 @@ const AuctionListingsPage = () => {
       searchKind,
       auctionFilter,
       buyNowOnly,
-      selectedMakeName,
-      selectedModelName,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
       sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      location: locationFilter,
+      sourceFilter,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -1248,6 +1986,9 @@ const AuctionListingsPage = () => {
     setPriceRange(defaultPriceRange);
     setSelectedMakeId("all");
     setSelectedModelId("all");
+    setFilterMakeName(undefined);
+    setFilterModelName(undefined);
+    filterMakeNameRef.current = undefined;
     setCatalogModels([]);
     setBuyNowOnly(false);
     setLimit(36);
@@ -1268,11 +2009,21 @@ const AuctionListingsPage = () => {
     setFuelType("all");
     setCategory("all");
     setDrive("all");
+    setTitleType(undefined);
+    setTransmission(undefined);
+    setFuel(undefined);
+    setDriveFilter(undefined);
+    setLocationFilter(undefined);
     setLimit(36);
     setPage(1);
     setBuyNowOnly(false);
     setSearchQuery("");
     setSortBy("none");
+    setSelectedMakeId("all");
+    setSelectedModelId("all");
+    setFilterMakeName(undefined);
+    setFilterModelName(undefined);
+    filterMakeNameRef.current = undefined;
     setBackendData(null);
     setBackendError(null);
 
@@ -1293,6 +2044,12 @@ const AuctionListingsPage = () => {
       selectedMakeName: undefined,
       selectedModelName: undefined,
       sort: "none",
+      titleType: undefined,
+      transmission: undefined,
+      fuel: undefined,
+      driveFilter: undefined,
+      location: undefined,
+      sourceFilter: undefined,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -1323,10 +2080,14 @@ const AuctionListingsPage = () => {
       case "make":
         setSelectedMakeId("all");
         setSelectedModelId("all");
+        setFilterMakeName(undefined);
+        setFilterModelName(undefined);
+        filterMakeNameRef.current = undefined;
         setCatalogModels([]);
         break;
       case "model":
         setSelectedModelId("all");
+        setFilterModelName(undefined);
         break;
       case "yearExact":
         setExactYear("");
@@ -1361,9 +2122,15 @@ const AuctionListingsPage = () => {
       searchKind,
       auctionFilter: id === "auction" ? "all" : auctionFilter,
       buyNowOnly: id === "buyNow" ? false : buyNowOnly,
-      selectedMakeName: id === "make" ? undefined : selectedMakeName,
-      selectedModelName: id === "make" || id === "model" ? undefined : selectedModelName,
+      selectedMakeName: id === "make" ? undefined : filterMakeName,
+      selectedModelName: id === "make" || id === "model" ? undefined : filterModelName,
       sort: sortBy,
+      titleType: id === "titleType" ? undefined : titleType,
+      transmission: id === "transmission" ? undefined : transmission,
+      fuel: id === "fuel" ? undefined : fuel,
+      driveFilter: id === "driveFilter" ? undefined : driveFilter,
+      location: id === "location" ? undefined : locationFilter,
+      sourceFilter: id === "source" ? undefined : sourceFilter,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -1382,45 +2149,50 @@ const AuctionListingsPage = () => {
         role="main"
         aria-label={t("auction.active_auctions")}
       >
-        <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex-1 w-full px-2 lg:px-4 py-4 lg:py-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="grid lg:grid-cols-5 gap-6 items-start">
             {/* Sidebar Filters - Desktop */}
             <aside className="hidden lg:block lg:col-span-1">
               <AuctionSidebarFilters
-                filters={{
-                  searchQuery,
-                  searchKind,
-                  auctionFilter,
-                  fuelType,
-                  category,
-                  drive,
-                  yearRange,
-                  priceRange,
-                  mileageRange,
-                  exactYear,
-                  selectedMakeId,
-                  selectedModelId,
-                  buyNowOnly,
-                  limit,
-                }}
-                setFilters={handleFilterChange}
-                catalogMakes={catalogMakes}
-                catalogModels={catalogModels}
-                isLoadingMakes={isLoadingMakes}
-                isLoadingModels={isLoadingModels}
-                onApply={applyFilters}
-                onReset={resetDrawerFilters}
+                categoryFilter={category === 'all' ? undefined : category as CategoryFilter}
+                onCategoryChange={handleCategoryChange}
+                yearRange={yearRange as [number, number]}
+                onYearRangeChange={handleYearRangeChange}
+                selectedMakeId={selectedMakeId !== 'all' ? parseInt(selectedMakeId, 10) : undefined}
+                onMakeChange={handleMakeChange}
+                selectedModelId={selectedModelId !== 'all' ? parseInt(selectedModelId, 10) : undefined}
+                onModelChange={handleModelChange}
+                odometerRange={mileageRange as [number, number]}
+                onOdometerRangeChange={handleOdometerRangeChange}
+                priceRange={priceRange as [number, number]}
+                onPriceRangeChange={handlePriceRangeChange}
+                titleType={titleType}
+                onTitleTypeChange={handleTitleTypeChange}
+                transmission={transmission}
+                onTransmissionChange={handleTransmissionChange}
+                fuel={fuel}
+                onFuelChange={handleFuelChange}
+                drive={driveFilter}
+                onDriveChange={handleDriveFilterChange}
+                cylinders={cylinders}
+                onCylindersChange={handleCylindersChange}
+                location={locationFilter}
+                onLocationChange={handleLocationChange}
+                source={sourceFilter}
+                onSourceChange={handleSourceChange}
+                buyNow={buyNowOnly}
+                onBuyNowChange={handleBuyNowChange}
               />
             </aside>
 
             {/* Main Content */}
             <div className="lg:col-span-4 space-y-6">
-              {/* Desktop Search Bar */}
-              <div className="hidden lg:flex gap-3">
-                <div className="relative flex-1">
+              {/* Search Bar + Mobile Filters (inline below 1024px) */}
+              <div className="flex gap-1.5 sm:gap-2 items-stretch">
+                <div className="relative flex-1 min-w-0">
                   <Icon
                     icon="mdi:magnify"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
+                    className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400"
                   />
                   <Input
                     placeholder={t("auction.search_placeholder")}
@@ -1429,12 +2201,50 @@ const AuctionListingsPage = () => {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") applyFilters();
                     }}
-                    className="pl-11 h-11 text-base bg-white border-slate-200 shadow-sm rounded-lg"
+                    className="pl-9 sm:pl-11 h-10 sm:h-11 text-sm sm:text-base bg-white border-slate-200 shadow-sm rounded-lg"
                   />
                 </div>
-                <Button onClick={applyFilters} className="h-11 px-6 bg-[#0066CC] hover:bg-[#0052a3] text-white">
-                  {t("common.search")}
+                <Button
+                  onClick={applyFilters}
+                  className="h-10 sm:h-11 px-3 sm:px-6 bg-[#0066CC] hover:bg-[#0052a3] text-white whitespace-nowrap text-sm sm:text-base"
+                >
+                  <Icon icon="mdi:magnify" className="w-4 h-4 sm:hidden" />
+                  <span className="hidden sm:inline">{t("common.search")}</span>
                 </Button>
+                {/* Mobile Filters Trigger - inline with search on small screens */}
+                <div className="lg:hidden flex items-stretch">
+                  <AuctionFiltersDrawer
+                    showLabel={false}
+                    categoryFilter={category === 'all' ? undefined : category as CategoryFilter}
+                    onCategoryChange={handleCategoryChange}
+                    yearRange={yearRange as [number, number]}
+                    onYearRangeChange={handleYearRangeChange}
+                    selectedMakeId={selectedMakeId !== 'all' ? parseInt(selectedMakeId, 10) : undefined}
+                    onMakeChange={handleMakeChange}
+                    selectedModelId={selectedModelId !== 'all' ? parseInt(selectedModelId, 10) : undefined}
+                    onModelChange={handleModelChange}
+                    odometerRange={mileageRange as [number, number]}
+                    onOdometerRangeChange={handleOdometerRangeChange}
+                    priceRange={priceRange as [number, number]}
+                    onPriceRangeChange={handlePriceRangeChange}
+                    titleType={titleType}
+                    onTitleTypeChange={handleTitleTypeChange}
+                    transmission={transmission}
+                    onTransmissionChange={handleTransmissionChange}
+                    fuel={fuel}
+                    onFuelChange={handleFuelChange}
+                    drive={driveFilter}
+                    onDriveChange={handleDriveFilterChange}
+                    cylinders={cylinders}
+                    onCylindersChange={handleCylindersChange}
+                    location={locationFilter}
+                    onLocationChange={handleLocationChange}
+                    source={sourceFilter}
+                    onSourceChange={handleSourceChange}
+                    buyNow={buyNowOnly}
+                    onBuyNowChange={handleBuyNowChange}
+                  />
+                </div>
               </div>
 
               {/* Desktop Active Filter Chips */}
@@ -1468,38 +2278,6 @@ const AuctionListingsPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Mobile Filters */}
-              <div className="lg:hidden">
-                <AuctionFilters
-                  filters={{
-                    searchQuery,
-                    searchKind,
-                    auctionFilter,
-                    fuelType,
-                    category,
-                    drive,
-                    yearRange,
-                    priceRange,
-                    mileageRange,
-                    exactYear,
-                    selectedMakeId,
-                    selectedModelId,
-                    buyNowOnly,
-                    limit,
-                  }}
-                  setFilters={handleFilterChange}
-                  catalogMakes={catalogMakes}
-                  catalogModels={catalogModels}
-                  isLoadingMakes={isLoadingMakes}
-                  isLoadingModels={isLoadingModels}
-                  onApply={applyFilters}
-                  onReset={resetFilters}
-                  activeFilterLabels={activeFilterLabels}
-                  onRemoveFilter={handleRemoveFilter}
-                />
-              </div>
-
 
               {/* Results Header (counts only in subtitle) */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b">
@@ -1551,9 +2329,14 @@ const AuctionListingsPage = () => {
                         searchKind,
                         auctionFilter,
                         buyNowOnly,
-                        selectedMakeName,
-                        selectedModelName,
+                        selectedMakeName: filterMakeName,
+                        selectedModelName: filterModelName,
                         sort: newSort,
+                        titleType,
+                        transmission,
+                        fuel,
+                        driveFilter,
+                        location: locationFilter,
                       };
                       const nextFilters = buildFiltersFromDraftState(draft);
                       setPage(1);
@@ -1588,8 +2371,8 @@ const AuctionListingsPage = () => {
 
                   {/* Compare feature hidden for now */}
 
-                  {/* View Mode Toggle */}
-                  <div className="hidden sm:flex items-center border rounded-lg overflow-hidden">
+                  {/* View Mode Toggle (hidden below 768px) */}
+                  <div className="hidden md:flex items-center border rounded-lg overflow-hidden">
                     <button
                       onClick={() => setViewMode('list')}
                       className={`p-2 ${viewMode === 'list' ? 'bg-[#0047AB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
@@ -1677,57 +2460,110 @@ const AuctionListingsPage = () => {
                         transition={{ duration: 0.18, ease: 'easeOut' }}
                       >
                         {viewMode === 'list' ? (
-                          /* Table View - shadcn Table */
-                          <div className="rounded-md border overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                  <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => {
-                                      return (
-                                        <TableHead key={header.id} className="bg-muted/50 whitespace-nowrap">
-                                          {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
+                          <>
+                            {/* Table View (md and up) */}
+                            <div className="hidden md:block rounded-md border overflow-x-auto">
+                              <div>
+                                <Table className="w-full table-fixed xl:table-auto">
+                                  <TableHeader>
+                                    {table.getHeaderGroups().map((headerGroup) => (
+                                      <TableRow key={headerGroup.id}>
+                                        {headerGroup.headers.map((header) => (
+                                          <TableHead 
+                                            key={header.id} 
+                                            className={`bg-muted/50 whitespace-normal lg:whitespace-nowrap ${header.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px]' : ''}`}
+                                          >
+                                            {header.isPlaceholder
+                                              ? null
+                                              : flexRender(
+                                                  header.column.columnDef.header,
+                                                  header.getContext()
+                                                )}
+                                          </TableHead>
+                                        ))}
+                                      </TableRow>
+                                    ))}
+                                  </TableHeader>
+                                  <TableBody>
+                                    {table.getRowModel().rows?.length ? (
+                                      table.getRowModel().rows.map((row) => (
+                                        <TableRow
+                                          key={row.id}
+                                          data-state={row.getIsSelected() && "selected"}
+                                        >
+                                          {row.getVisibleCells().map((cell) => (
+                                            <TableCell 
+                                              key={cell.id} 
+                                              className={`align-top whitespace-normal lg:whitespace-nowrap break-words p-2 ${cell.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px] px-1 overflow-visible' : 'overflow-hidden'}`}
+                                            >
+                                              {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
                                               )}
-                                        </TableHead>
-                                      )
-                                    })}
-                                  </TableRow>
-                                ))}
-                              </TableHeader>
-                              <TableBody>
-                                {table.getRowModel().rows?.length ? (
-                                  table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                      key={row.id}
-                                      data-state={row.getIsSelected() && "selected"}
-                                    >
-                                      {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="whitespace-nowrap">
-                                          {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                          )}
+                                            </TableCell>
+                                          ))}
+                                        </TableRow>
+                                      ))
+                                    ) : (
+                                      <TableRow>
+                                        <TableCell
+                                          colSpan={columns.length}
+                                          className="h-24 text-center"
+                                        >
+                                          No results.
                                         </TableCell>
-                                      ))}
-                                    </TableRow>
-                                  ))
-                                ) : (
-                                  <TableRow>
-                                    <TableCell
-                                      colSpan={columns.length}
-                                      className="h-24 text-center"
-                                    >
-                                      No results.
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
+                                      </TableRow>
+                                    )}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
+
+                            {/* Mobile List View (<768px) - Copart-style cards */}
+                            <div className="md:hidden space-y-1">
+                              {displayedItems.length > 0 ? (
+                                displayedItems.map((item, idx) => (
+                                  <AuctionVehicleCard
+                                    key={`${item.id}-${item.vehicle_id}`}
+                                    item={item as any}
+                                    priority={idx < 4}
+                                    isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                                    showCompareCheckbox={showCompareCheckboxes}
+                                    isWatched={isWatched(item.vehicle_id ?? item.id)}
+                                    onToggleSelect={(checked: boolean) => {
+                                      const id = item.vehicle_id ?? item.id;
+                                      const isMobile = window.innerWidth < 640;
+                                      const maxCompare = isMobile ? 2 : 5;
+                                      setSelectedVehicleIds((prev) =>
+                                        checked
+                                          ? prev.length < maxCompare
+                                            ? [...prev, id]
+                                            : prev
+                                          : prev.filter((pid) => pid !== id)
+                                      );
+                                    }}
+                                    onToggleWatch={() => {
+                                      const id = item.vehicle_id ?? item.id;
+                                      if (!isAuthenticated) {
+                                        setIsAuthDialogOpen(true);
+                                        return;
+                                      }
+                                      toggleWatch(id);
+                                    }}
+                                    onCalculate={() => {
+                                      const id = item.vehicle_id ?? item.id;
+                                      setIsCalcModalOpen(true);
+                                      calculateQuotes(id);
+                                    }}
+                                    onViewDetails={() => {
+                                      const id = item.vehicle_id ?? item.id;
+                                      navigate({ pathname: `/vehicle/${id}` });
+                                    }}
+                                  />
+                                ))
+                              ) : null}
+                            </div>
+                          </>
                         ) : (
                           /* Grid View */
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">

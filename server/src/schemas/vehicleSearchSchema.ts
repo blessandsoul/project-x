@@ -9,6 +9,7 @@ export const ALLOWED_TRANSMISSIONS = ['auto', 'manual'] as const;
 export const ALLOWED_FUELS = ['petrol', 'diesel', 'electric', 'flexible', 'hybrid'] as const;
 export const ALLOWED_DRIVES = ['front', 'rear', 'full'] as const;
 export const ALLOWED_CYLINDERS = ['0', '1', '2', '3', '4', '5', '6', '8', '10', '12', 'U'] as const;
+export const ALLOWED_SOURCES = ['copart', 'iaai'] as const;
 
 // ---------------------------------------------------------------------------
 // Helper: Parse comma-separated string into array
@@ -23,9 +24,10 @@ const commaSeparatedString = z.string().transform((val) => {
 // Helper: Validate each element in array against allowed values
 // ---------------------------------------------------------------------------
 
-function commaSeparatedEnum<T extends readonly string[]>(allowed: T) {
+function commaSeparatedEnum<T extends readonly string[]>(allowed: T, maxLength = 100) {
   return z
     .string()
+    .max(maxLength, { message: `Value must be at most ${maxLength} characters` })
     .optional()
     .transform((val) => {
       if (!val || val.trim() === '') return undefined;
@@ -65,62 +67,157 @@ const dateOrDatetime = z
 // ---------------------------------------------------------------------------
 
 export const vehicleSearchQuerySchema = z.object({
-  // Existing filters
-  make: z.string().optional(),
-  model: z.string().optional(),
+  // Make filter: string, max 255 chars, trimmed
+  make: z
+    .string()
+    .max(255, { message: 'Make must be at most 255 characters' })
+    .transform((val) => val?.trim() || undefined)
+    .optional(),
+  // Model filter: string, max 255 chars, trimmed
+  model: z
+    .string()
+    .max(255, { message: 'Model must be at most 255 characters' })
+    .transform((val) => val?.trim() || undefined)
+    .optional(),
   search: z.string().optional(),
-  source: z.string().optional(),
-  category: z.string().optional(),
-  buy_now: z.string().optional(),
+  
+  // Source filter (comma-separated, max 50 chars)
+  // Allowed: 'copart', 'iaai' or any combination
+  source: commaSeparatedEnum(ALLOWED_SOURCES, 50),
 
-  // Year filter
-  year: z.coerce.number().int().optional(),
-  year_from: z.coerce.number().int().optional(),
-  year_to: z.coerce.number().int().optional(),
+  // Category filter: strict validation for v, c, v,c, or c,v only
+  category: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const allowed = ['v', 'c', 'v,c', 'c,v'];
+        return allowed.includes(val);
+      },
+      { message: 'Invalid category. Allowed values: v, c, v,c, c,v' },
+    )
+    .transform((val) => {
+      if (!val) return undefined;
+      if (val === 'v') return ['v'] as ('v' | 'c')[];
+      if (val === 'c') return ['c'] as ('v' | 'c')[];
+      // v,c or c,v both mean both categories
+      return ['v', 'c'] as ('v' | 'c')[];
+    }),
 
-  // Price filter (existing)
-  price_from: z.coerce.number().min(0).optional(),
-  price_to: z.coerce.number().min(0).optional(),
+  // Buy now filter - strictly accepts only 'true' or 'false'
+  buy_now: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const lower = val.toLowerCase();
+        return lower === 'true' || lower === 'false';
+      },
+      { message: "Invalid buy_now value. Allowed values: 'true', 'false'" },
+    )
+    .transform((val) => {
+      if (!val) return undefined;
+      return val.toLowerCase() === 'true';
+    }),
+
+  // Year filter - must be exactly 4 digits (1900-2099)
+  year: z.coerce
+    .number()
+    .int()
+    .min(1900, { message: 'Year must be at least 1900' })
+    .max(2099, { message: 'Year must be at most 2099' })
+    .refine((val) => val >= 1000 && val <= 9999, {
+      message: 'Year must be exactly 4 digits',
+    })
+    .optional(),
+  year_from: z.coerce
+    .number()
+    .int()
+    .min(1900, { message: 'Year must be at least 1900' })
+    .max(2099, { message: 'Year must be at most 2099' })
+    .refine((val) => val >= 1000 && val <= 9999, {
+      message: 'Year must be exactly 4 digits',
+    })
+    .optional(),
+  year_to: z.coerce
+    .number()
+    .int()
+    .min(1900, { message: 'Year must be at least 1900' })
+    .max(2099, { message: 'Year must be at most 2099' })
+    .refine((val) => val >= 1000 && val <= 9999, {
+      message: 'Year must be exactly 4 digits',
+    })
+    .optional(),
+
+  // Price filter - price_from: 0+, price_to: 0-500000
+  // When price_to is 500000, it means "500000 and more" (no upper bound applied)
+  price_from: z.coerce
+    .number()
+    .min(0, { message: 'Price must be at least 0' })
+    .max(500000, { message: 'Price must be at most 500,000' })
+    .optional(),
+  price_to: z.coerce
+    .number()
+    .min(0, { message: 'Price must be at least 0' })
+    .max(500000, { message: 'Price must be at most 500,000' })
+    .optional(),
 
   // Odometer filter (maps to DB column: mileage)
-  odometer_from: z.coerce.number().int().min(0).optional(),
-  odometer_to: z.coerce.number().int().max(250000).optional(),
+  // Both accept 0-250000. When 250000 is selected, it means "250000 and more"
+  odometer_from: z.coerce
+    .number()
+    .int({ message: 'Odometer must be a whole number' })
+    .min(0, { message: 'Odometer must be at least 0' })
+    .max(250000, { message: 'Odometer must be at most 250,000' })
+    .optional(),
+  odometer_to: z.coerce
+    .number()
+    .int({ message: 'Odometer must be a whole number' })
+    .min(0, { message: 'Odometer must be at least 0' })
+    .max(250000, { message: 'Odometer must be at most 250,000' })
+    .optional(),
 
-  // Legacy mileage params (for backward compatibility)
-  mileage_from: z.coerce.number().int().min(0).optional(),
-  mileage_to: z.coerce.number().int().optional(),
+  // Legacy mileage params (for backward compatibility) - same validation
+  mileage_from: z.coerce
+    .number()
+    .int({ message: 'Mileage must be a whole number' })
+    .min(0, { message: 'Mileage must be at least 0' })
+    .max(250000, { message: 'Mileage must be at most 250,000' })
+    .optional(),
+  mileage_to: z.coerce
+    .number()
+    .int({ message: 'Mileage must be a whole number' })
+    .min(0, { message: 'Mileage must be at least 0' })
+    .max(250000, { message: 'Mileage must be at most 250,000' })
+    .optional(),
 
   // Title type filter (comma-separated, maps to DB column: sale_title_type)
   title_type: commaSeparatedEnum(ALLOWED_TITLE_TYPES),
 
-  // Transmission filter (comma-separated)
-  transmission: commaSeparatedEnum(ALLOWED_TRANSMISSIONS),
+  // Transmission filter (comma-separated, max 50 chars)
+  // Allowed: 'auto', 'manual', or 'auto,manual'
+  transmission: commaSeparatedEnum(ALLOWED_TRANSMISSIONS, 50),
 
-  // Fuel filter (comma-separated, maps to DB column: engine_fuel)
-  fuel: commaSeparatedEnum(ALLOWED_FUELS),
+  // Fuel filter (comma-separated, max 100 chars, maps to DB column: engine_fuel)
+  // Allowed: 'petrol', 'diesel', 'electric', 'flexible', 'hybrid' or any combination
+  fuel: commaSeparatedEnum(ALLOWED_FUELS, 100),
 
   // Legacy fuel_type param (for backward compatibility)
   fuel_type: z.string().optional(),
 
-  // Drive filter (comma-separated)
-  drive: commaSeparatedEnum(ALLOWED_DRIVES),
+  // Drive filter (comma-separated, max 100 chars)
+  // Allowed: 'front', 'rear', 'full' or any combination
+  // Note: 'full' matches DB values 'full', 'full/front', 'full/rear'
+  drive: commaSeparatedEnum(ALLOWED_DRIVES, 100),
 
-  // Cylinders filter (comma-separated, kept as strings)
-  cylinders: z
-    .string()
-    .optional()
-    .transform((val) => {
-      if (!val || val.trim() === '') return undefined;
-      return val.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
-    })
-    .refine(
-      (arr): arr is string[] | undefined => {
-        if (!arr) return true;
-        const allowedUpper = ALLOWED_CYLINDERS.map((v) => v.toUpperCase());
-        return arr.every((v) => allowedUpper.includes(v));
-      },
-      { message: `Invalid cylinder values. Allowed: ${ALLOWED_CYLINDERS.join(', ')}` },
-    ),
+  // Location filter (city name, max 100 chars)
+  location: z.string().max(100).optional(),
+
+  // Cylinders filter (comma-separated, max 50 chars)
+  // Allowed: 0,1,2,3,4,5,6,8,10,12,U (any combination, case-insensitive)
+  cylinders: commaSeparatedEnum(ALLOWED_CYLINDERS, 50),
 
   // Sale date filter (maps to DB columns: sold_at_date, sold_at_time)
   sold_from: dateOrDatetime,
@@ -164,10 +261,11 @@ export interface VehicleSearchFilters {
   mileageTo?: number;
   fuelType?: string;
   fuelTypes?: string[];
-  category?: string;
+  categoryCodes?: ('v' | 'c')[];
   drive?: string;
   driveTypes?: string[];
   source?: string;
+  sourceTypes?: string[];
   buyNow?: boolean;
   vin?: string;
   sourceLotId?: string;
@@ -176,4 +274,5 @@ export interface VehicleSearchFilters {
   cylinderTypes?: string[];
   soldFrom?: string;
   soldTo?: string;
+  location?: string;
 }

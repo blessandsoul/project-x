@@ -84,7 +84,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
     <header className="sticky top-0 z-50 w-full" role="banner">
       {/* Top Bar - Dark Blue Gradient */}
       <div className="bg-gradient-to-r from-[#1a2744] via-[#243754] to-[#1a2744]">
-        <div className="container mx-auto px-4 lg:px-8">
+        {/* Full-width below 1024px, centered and capped width on lg+ */}
+        <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="flex h-14 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -94,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
               </span>
             </Link>
 
-            {/* Search Bar - Desktop */}
+            {/* Desktop search temporarily disabled
             <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-4">
               <div className="relative w-full flex">
                 <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -113,6 +114,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                 </Button>
               </div>
             </form>
+            */}
 
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -137,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   <Button
                     size="sm"
                     onClick={() => navigate('/login')}
-                    className="h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-white rounded-md text-sm font-medium"
+                    className="hidden sm:flex h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-white rounded-md text-sm font-medium"
                   >
                     {t('navigation.sign_in')}
                   </Button>
@@ -190,7 +192,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                       </SheetClose>
                     ))}
                     
-                    <div className="border-t border-white/10 mt-4 pt-4 px-4">
+                    <div className="border-t border-white/10 mt-4 pt-4 px-4 space-y-2">
+                      {/* Active listings CTA */}
                       <SheetClose asChild>
                         <Button
                           onClick={() => navigate('/auction-listings')}
@@ -199,6 +202,27 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                           {t('auction.header.active_listings_cta')}
                         </Button>
                       </SheetClose>
+
+                      {/* Register / Login buttons, same golden style */}
+                      <div className="flex flex-col gap-2">
+                        <SheetClose asChild>
+                          <Button
+                            onClick={() => navigate('/register')}
+                            className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
+                          >
+                            {t('navigation.register')}
+                          </Button>
+                        </SheetClose>
+
+                        <SheetClose asChild>
+                          <Button
+                            onClick={() => navigate('/login')}
+                            className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
+                          >
+                            {t('navigation.sign_in')}
+                          </Button>
+                        </SheetClose>
+                      </div>
                     </div>
                   </div>
                 </SheetContent>
@@ -208,12 +232,12 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
         </div>
       </div>
 
-      {/* Bottom Nav Bar - Slightly Lighter Blue */}
-      <div className="bg-[#141f33] border-b border-white/10">
-        <div className="container mx-auto px-4 lg:px-8">
+      {/* Bottom Nav Bar - Slightly Lighter Blue (hidden below 1024px) */}
+      <div className="hidden lg:block bg-[#141f33] border-b border-white/10">
+        <div className="px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="flex items-center justify-between h-10">
             {/* Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="flex items-center gap-1">
               {navigationItems.map((item) => (
                 <NavLink
                   key={item.id}

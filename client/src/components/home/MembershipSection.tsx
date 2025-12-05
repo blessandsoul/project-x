@@ -50,7 +50,8 @@ export function MembershipSection() {
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
     >
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
+        <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-10 space-y-3">
           <h2
@@ -124,6 +125,7 @@ export function MembershipSection() {
           >
             {t('home.membership.register_now')}
           </Button>
+        </div>
         </div>
       </div>
     </motion.section>

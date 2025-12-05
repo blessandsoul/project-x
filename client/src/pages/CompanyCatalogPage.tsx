@@ -533,39 +533,24 @@ const CompanyCatalogPage = () => {
   );
 
   return (
-    <div className="flex-1 flex flex-col relative overflow-hidden bg-[#1F1F1F] font-sans min-h-screen">
-      {/* Animated background - matching HeroSection style */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Base green blurred blobs */}
-        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-emerald-400/30 rounded-full blur-[110px]" />
-        <div className="absolute top-1/4 -right-52 w-[640px] h-[640px] bg-emerald-500/25 rounded-full blur-[130px]" />
-        <div className="absolute -bottom-52 left-1/4 w-[580px] h-[580px] bg-teal-400/25 rounded-full blur-[110px]" />
-        
-        {/* Warm orange glow accents */}
-        <div className="absolute top-[20%] right-[10%] w-[420px] h-[420px] bg-orange-400/25 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] left-[5%] w-[360px] h-[360px] bg-amber-300/20 rounded-full blur-[110px]" />
-        
-        {/* Subtle dark overlay */}
-        <div className="absolute inset-0 bg-black/30" />
-      </div>
-
-      <div className="relative z-10 flex-1 flex flex-col">
-        {/* Header Section - Dark glassmorphism style */}
-        <div className="border-b border-white/10">
-          <div className="container mx-auto px-4 py-8">
+    <div className="flex-1 flex flex-col font-sans min-h-screen bg-transparent">
+      <div className="flex-1 flex flex-col">
+        {/* Header Section */}
+        <div className="border-b border-slate-200 bg-white/80">
+          <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="max-w-4xl">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
                   {t('catalog.title')}
                 </h1>
-                <p className="text-lg text-white/70 max-w-2xl">
+                <p className="text-lg text-slate-600 max-w-2xl">
                   {t('catalog.subtitle')}
                 </p>
               </div>
 
               <div className="w-full lg:w-auto hidden lg:block">
-                <div className="bg-white/5 backdrop-blur-sm text-white border border-white/20 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-lg">
-                  <span className="text-[11px] font-semibold tracking-wider text-white/70 uppercase">
+                <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
+                  <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                     {t('catalog.filters.auction', 'Auction shipping')}
                   </span>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -586,7 +571,7 @@ const CompanyCatalogPage = () => {
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15">
+                        <SelectTrigger className="bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -610,7 +595,7 @@ const CompanyCatalogPage = () => {
                       >
                         <SelectTrigger
                           ref={branchSelectRef}
-                          className={`bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
+                          className={`bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
                         >
                           <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                         </SelectTrigger>
@@ -644,7 +629,7 @@ const CompanyCatalogPage = () => {
                           setSelectedPort(value);
                         }}
                       >
-                        <SelectTrigger className="bg-white/10 border-white/20 h-9 sm:h-10 w-full text-white hover:bg-white/15">
+                        <SelectTrigger className="bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50">
                           <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -664,10 +649,10 @@ const CompanyCatalogPage = () => {
       </div>
 
       {/* Mobile Auction / Shipping Selector */}
-      <div className="relative z-10 lg:hidden border-b border-white/10">
+      <div className="relative z-10 lg:hidden border-b border-slate-200 bg-white/80">
         <div className="container mx-auto px-4 pt-3 pb-4">
-          <div className="bg-white/5 backdrop-blur-sm text-white border border-white/20 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-white/70 uppercase">
+          <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
+            <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
               {t('catalog.filters.auction', 'Auction shipping')}
             </span>
             <div className="flex flex-col gap-2">
@@ -696,7 +681,7 @@ const CompanyCatalogPage = () => {
                       }
                     }}
                   >
-                    <SelectTrigger className="bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15">
+                    <SelectTrigger className="bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -720,7 +705,7 @@ const CompanyCatalogPage = () => {
                   >
                     <SelectTrigger
                       ref={branchSelectRef}
-                      className={`bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
+                      className={`bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
                     >
                       <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
                     </SelectTrigger>
@@ -754,7 +739,7 @@ const CompanyCatalogPage = () => {
                       setSelectedPort(value);
                     }}
                   >
-                    <SelectTrigger className="bg-white/10 border-white/20 h-9 w-full text-white hover:bg-white/15">
+                    <SelectTrigger className="bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50">
                       <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -771,7 +756,7 @@ const CompanyCatalogPage = () => {
         </div>
       </div>
 
-      <main className="relative z-10 flex-1 container mx-auto px-4 py-8">
+      <main className="relative z-10 flex-1 w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8">
         <div className="grid lg:grid-cols-4 gap-8 items-start">
           {/* Sidebar Filters */}
           <aside className="lg:col-span-1 lg:sticky lg:top-24 z-30">

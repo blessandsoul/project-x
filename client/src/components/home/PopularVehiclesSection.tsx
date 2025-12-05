@@ -192,7 +192,7 @@ export function PopularVehiclesSection() {
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
-      <div className="container mx-auto px-4">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
         {/* Section Header */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="space-y-1">

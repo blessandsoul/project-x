@@ -53,7 +53,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
     >
       {/* Semantic Article */}
       <article 
-        className="group relative flex flex-col sm:flex-row bg-white/5 backdrop-blur-sm rounded-lg border border-white/20 shadow-lg hover:shadow-xl hover:border-primary/40 hover:bg-white/10 transition-all duration-200 overflow-hidden cursor-pointer"
+        className="group relative flex flex-col sm:flex-row bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-slate-50 transition-all duration-200 overflow-hidden cursor-pointer"
         onClick={() => {
           if (isCompareMode) {
             onToggleCompare?.(!isSelected);
@@ -85,7 +85,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         {/* Mobile Wrapper for Logo + Info */}
         <div className="flex flex-row w-full sm:contents">
           {/* Left: Logo & Partners */}
-          <div className="flex sm:flex-col items-center sm:items-center sm:justify-center gap-3 p-3 sm:w-28 sm:bg-white/5 sm:border-r border-white/10 shrink-0">
+          <div className="flex sm:flex-col items-center sm:items-center sm:justify-center gap-3 p-3 sm:w-28 sm:bg-slate-50 sm:border-r border-slate-200/80 shrink-0">
             <div className="relative h-12 w-12 sm:h-16 sm:w-16 group-hover:scale-105 transition-transform">
               <Image 
                 src={company.logo ?? ''} 
@@ -107,8 +107,8 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
             
             {/* Official Partners (Mock Visuals) */}
             {company.vipStatus && (
-               <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-70 grayscale group-hover:grayscale-0 transition-all">
-                  <span className="text-[8px] font-bold text-white/40 uppercase tracking-tighter">{t('common.official')}</span>
+               <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-80 grayscale group-hover:grayscale-0 transition-all">
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{t('common.official')}</span>
                   <div className="flex gap-1">
                      <Icon icon="mdi:shield-check" className="h-3 w-3 text-blue-400" />
                      <Icon icon="mdi:gavel" className="h-3 w-3 text-red-400" />
@@ -121,7 +121,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           <div className="flex-1 flex flex-col justify-center p-3 pl-0 sm:pl-5 space-y-2 min-w-0">
              {/* Header Row */}
              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-white text-lg leading-none group-hover:text-primary transition-colors">
+                <h3 className="font-bold text-slate-900 text-lg leading-none group-hover:text-primary transition-colors">
                   {company.name}
                 </h3>
                 
@@ -157,21 +157,21 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
              </div>
 
              {/* Compact Metadata */}
-             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-white/60 font-medium">
-                <div className="flex items-center gap-1 text-white/70">
-                   <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 text-white/40" />
+             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
+                <div className="flex items-center gap-1 text-slate-600">
+                   <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 text-slate-400" />
                    {company.location?.city || 'Tbilisi'}
                 </div>
-                <span className="text-white/20">|</span>
-                <div className="flex items-center gap-1 text-white/70">
-                   <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-white/40" />
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1 text-slate-600">
+                   <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-slate-400" />
                    45-60 {t('common.days')}
                 </div>
                 <span className="text-white/20">|</span>
-                <div className="flex items-center gap-1 text-amber-400 font-bold bg-amber-500/20 px-1.5 rounded-full">
+                <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-100 px-1.5 rounded-full">
                    <Icon icon="mdi:star" className="h-3 w-3" />
                    {company.rating}
-                   <span className="text-white/50 font-normal ml-0.5">({company.reviewCount})</span>
+                   <span className="text-slate-500 font-normal ml-0.5">({company.reviewCount})</span>
                 </div>
              </div>
 
@@ -180,17 +180,17 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
 
         {/* Right: Price & CTA (only shown when an auction branch is selected) */}
         {hasAuctionBranch && (
-          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-white/5 sm:border-l border-t sm:border-t-0 border-white/10">
+          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50 sm:border-l border-t sm:border-t-0 border-slate-200/80">
              <div className="flex flex-col sm:items-end">
                 {isLoadingShipping ? (
                   // Loading state
                   <>
-                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                       {t('catalog.card.shipping_cost', 'Shipping Cost')}
                     </span>
                     <div className="flex items-center gap-2 py-1">
                       <Icon icon="mdi:loading" className="h-5 w-5 text-primary animate-spin" />
-                      <span className="text-sm text-white/60 font-medium">
+                      <span className="text-sm text-slate-600 font-medium">
                         {t('common.calculating', 'Calculating...')}
                       </span>
                     </div>
@@ -202,8 +202,8 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-1 cursor-help">
-                             <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider border-b border-dashed border-white/20">{t('catalog.card.shipping_cost', 'Shipping Cost')}</span>
-                             <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-white/40" />
+                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">{t('catalog.card.shipping_cost', 'Shipping Cost')}</span>
+                             <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-slate-400" />
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="left" className="max-w-[200px] text-xs">
@@ -213,19 +213,19 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
                     </TooltipProvider>
                     
                     <div className="flex items-baseline gap-1">
-                       <span className="text-lg sm:text-xl font-black text-white tracking-tight">
+                       <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                          {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 
                            ? formatCurrency(calculatedShippingPrice) 
                            : t('catalog.card.contact', 'Contact')}
                        </span>
                     </div>
                     {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 ? (
-                      <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-0.5">
+                      <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-0.5">
                         <Icon icon="mdi:map-marker-check" className="h-3 w-3" />
                         {t('catalog.card.location_based', 'Location-based')}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-white/40 font-medium">
+                      <span className="text-[10px] text-slate-500 font-medium">
                         {t('catalog.card.for_pricing', 'for pricing')}
                       </span>
                     )}
@@ -236,13 +236,13 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
              {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
              {isCompareMode && (
                <div 
-                 className="sm:hidden flex items-center justify-center gap-2 text-xs text-white/60 py-1 cursor-pointer"
+                 className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-600 py-1 cursor-pointer"
                  onClick={(e) => {
                    e.stopPropagation();
                    onToggleCompare?.(!isSelected);
                  }}
                >
-                 <Checkbox checked={isSelected} className="h-3.5 w-3.5 border-white/30" />
+                 <Checkbox checked={isSelected} className="h-3.5 w-3.5 border-slate-300" />
                  <span>{t('catalog.results.compare')}</span>
                </div>
              )}

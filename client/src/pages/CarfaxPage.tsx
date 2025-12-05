@@ -119,7 +119,7 @@ const CarfaxPage = () => {
   return (
     <div className="flex-1 flex flex-col">
       {/* Hero Section - Yellow diagonal background like CopartHeroSection */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-background/95">
+      <section className="vin-hero relative overflow-hidden bg-gradient-to-b from-background via-background to-background/95">
         {/* Yellow diagonal background shape */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f5a623] z-0"
@@ -129,14 +129,14 @@ const CarfaxPage = () => {
         />
         
         {/* Subtle texture overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/5 mix-blend-soft-light" />
+        <div className="vin-hero-overlay absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/5 mix-blend-soft-light" />
 
         {/* Hero Content */}
-        <div className="relative z-10">
-          <div className="container mx-auto px-4 pt-12 pb-10 md:pt-16 md:pb-12 lg:pt-20 lg:pb-14">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="vin-hero-inner relative z-10">
+          <div className="vin-hero-container w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto pt-12 pb-10 md:pt-16 md:pb-12 lg:pt-20 lg:pb-14">
+            <div className="vin-hero-grid grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Left Column - Text & Form */}
-              <div className="space-y-6 text-slate-900 max-w-xl">
+              <div className="vin-hero-content space-y-6 text-slate-900 max-w-xl">
                 <h1 className="text-3xl md:text-4xl lg:text-[42px] font-semibold leading-tight tracking-tight">
                   {t('vin.title')}
                 </h1>
@@ -145,9 +145,9 @@ const CarfaxPage = () => {
                 </p>
 
                 {/* VIN Input Form */}
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="relative flex-1">
+                <form onSubmit={handleSubmit} className="vin-hero-form space-y-3">
+                  <div className="vin-hero-form-row flex flex-col sm:flex-row gap-2">
+                    <div className="vin-hero-input-wrapper relative flex-1">
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                         <Icon icon="mdi:barcode-scan" className="h-5 w-5" />
                       </div>
@@ -190,14 +190,14 @@ const CarfaxPage = () => {
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-600">
+                  <p className="vin-hero-hint text-xs text-slate-600">
                     {t('vin.vin_hint', 'Enter a 17-character VIN (letters A-Z except I, O, Q and digits 0-9).')}
                   </p>
                 </form>
 
                 {/* Feature Icons */}
-                <div className="flex flex-wrap items-center gap-4 pt-2 text-xs md:text-sm text-slate-800">
-                  <div className="inline-flex items-center gap-2">
+                <div className="vin-hero-features flex flex-wrap items-center gap-4 pt-2 text-xs md:text-sm text-slate-800">
+                  <div className="vin-hero-feature inline-flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
                       <Icon icon="mdi:shield-check" className="w-4 h-4" />
                     </div>
@@ -219,8 +219,8 @@ const CarfaxPage = () => {
 
                 {/* History Section */}
                 {vinHistory.length > 0 && (
-                  <div className="pt-2 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                  <div className="vin-hero-recent pt-2 space-y-2">
+                    <div className="vin-hero-recent-header flex items-center gap-2 text-sm text-slate-600 font-medium">
                       <Icon icon="mdi:history" className="h-4 w-4" />
                       <span>{t('vin.recent_checks')}:</span>
                       <Button
@@ -233,7 +233,7 @@ const CarfaxPage = () => {
                         {t('common.clear_all')}
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="vin-hero-recent-chips flex flex-wrap gap-2">
                       {vinHistory.map((item) => (
                         <div key={item} className="group relative inline-flex items-center">
                           <button
@@ -262,9 +262,19 @@ const CarfaxPage = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Tablet-only car illustration card (stacked layout 768–1024px) */}
+                <div className="vin-hero-tablet-card hidden md:block lg:hidden pt-6">
+                  <div className="max-w-md mx-auto">
+                    <div className="relative w-full">
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 to-transparent rounded-3xl" />
+                      <Icon icon="mdi:car-info" className="w-full h-56 text-slate-900/20" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Right Column - Decorative car image (hidden on mobile) */}
+              {/* Right Column - Decorative car image (desktop only) */}
               <div className="relative hidden lg:flex items-center justify-center">
                 <div className="relative w-full max-w-md">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 to-transparent rounded-3xl" />
@@ -278,7 +288,8 @@ const CarfaxPage = () => {
 
       {/* Results Section - Clean white background */}
       <main className="flex-1 bg-slate-50" role="main" aria-label={t('vin.title')}>
-        <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
+        <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto py-8">
+          <div className="max-w-6xl mx-auto space-y-6">
           {/* Error State */}
           {error && (
             <div
@@ -341,6 +352,7 @@ const CarfaxPage = () => {
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>

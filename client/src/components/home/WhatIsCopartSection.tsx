@@ -72,7 +72,7 @@ export function WhatIsCopartSection() {
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.55, ease: 'easeOut' }}
     >
-      <div className="container mx-auto px-4">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
         <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)] gap-8 items-start">
           {/* Left: Text Content */}
           <div className="space-y-4">

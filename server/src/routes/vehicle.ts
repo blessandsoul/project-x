@@ -145,6 +145,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       filters.driveTypes = query.drive;
     }
 
+    // Location filter (city name)
+    if (query.location && query.location.trim().length > 0) {
+      filters.location = query.location.trim();
+    }
+
     // Cylinders filter (multi-value)
     if (query.cylinders && query.cylinders.length > 0) {
       filters.cylinderTypes = query.cylinders;
@@ -158,18 +163,18 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       filters.soldTo = query.sold_to;
     }
 
-    // Category filter
-    if (query.category && query.category.trim().length > 0) {
-      filters.category = query.category.trim();
+    // Category filter (supports multiple codes: v,c)
+    if (query.category && Array.isArray(query.category) && query.category.length > 0) {
+      filters.categoryCodes = query.category;
     }
 
-    // Source filter
-    if (query.source && query.source.trim().length > 0) {
-      filters.source = query.source.trim();
+    // Source filter (multi-value, validated against allowed values)
+    if (query.source && query.source.length > 0) {
+      filters.sourceTypes = query.source;
     }
 
-    // Buy now flag
-    if (typeof query.buy_now === 'string' && query.buy_now.toLowerCase() === 'true') {
+    // Buy now flag (already validated and transformed to boolean by schema)
+    if (query.buy_now === true) {
       filters.buyNow = true;
     }
 
