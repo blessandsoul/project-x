@@ -336,21 +336,35 @@
         "guest": {
           "name": "Guest",
           "price": "Free",
-          "features": ["View all vehicle listings", "Basic vehicle information", "Search & filter vehicles"],
+          "features": [
+            "View all vehicle listings",
+            "Basic vehicle information",
+            "Search & filter vehicles"
+          ],
           "button": "Browse Free"
         },
         "basic": {
           "name": "Basic",
           "price": "$99",
           "period": "/yr",
-          "features": ["All Guest features", "Bid on vehicles", "Buy It Now purchases", "Full vehicle history"],
+          "features": [
+            "All Guest features",
+            "Bid on vehicles",
+            "Buy It Now purchases",
+            "Full vehicle history"
+          ],
           "button": "Get Basic"
         },
         "premier": {
           "name": "Premier",
           "price": "$249",
           "period": "/yr",
-          "features": ["All Basic features", "Unlimited bidding", "Early access to listings", "Priority support 24/7"],
+          "features": [
+            "All Basic features",
+            "Unlimited bidding",
+            "Early access to listings",
+            "Priority support 24/7"
+          ],
           "button": "Go Premier"
         }
       }
@@ -516,7 +530,11 @@
       "category": "Category",
       "year": "Year",
       "price": "Price",
-      "mileage": "Mileage"
+      "mileage": "Mileage",
+      "title_type": "Title",
+      "transmission": "Transmission",
+      "cylinders": "Cylinders",
+      "location": "Location"
     },
     "compare": {
       "title": "Compare Total Cost",
@@ -570,7 +588,11 @@
     "price_high": "Price: High to Low",
     "year_old": "Year: Oldest to Newest",
     "year_new": "Year: Newest to Oldest",
-    "mileage_low": "Mileage: Low to High"
+    "mileage_low": "Mileage: Low to High",
+    "mileage_high": "Mileage: High to Low",
+    "sold_date_desc": "Recently Sold",
+    "sold_date_asc": "Oldest Sold",
+    "best_value": "Best Value"
   },
   "error": {
     "failed_to_load_data": "Failed to load data",

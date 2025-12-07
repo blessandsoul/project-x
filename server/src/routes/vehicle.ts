@@ -225,14 +225,26 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
 
+    // Fetch bid histories for all vehicles in the result set
+    const vehicleIds = items.map((v: any) => v.id as number);
+    const bidsMap = await vehicleModel.getBidsForVehicles(vehicleIds);
+
+    // Attach only the last (most recent) bid to each vehicle for search results
+    let itemsWithBids = items.map((v: any) => {
+      const allBids = bidsMap.get(v.id) || [];
+      const lastBid = allBids.length > 0 ? allBids[0] : null; // First item is most recent (sorted DESC)
+      return {
+        ...v,
+        last_bid: lastBid,
+      };
+    });
+
     // If user is authenticated, mark which vehicles are already in favorites
-    let itemsWithFavoriteFlag = items;
     const user = (request as any).user as { id: number } | undefined;
-    if (user && Array.isArray(items) && items.length > 0) {
-      const vehicleIds = items.map((v: any) => v.id as number);
+    if (user && Array.isArray(itemsWithBids) && itemsWithBids.length > 0) {
       const favoriteIds = await favoriteModel.getFavoritesForUserAndVehicles(user.id, vehicleIds);
       const favoriteSet = new Set(favoriteIds);
-      itemsWithFavoriteFlag = items.map((v: any) => ({
+      itemsWithBids = itemsWithBids.map((v: any) => ({
         ...v,
         is_favorite: favoriteSet.has(v.id),
       }));
@@ -240,7 +252,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
-    return reply.send({ items: itemsWithFavoriteFlag, total, limit, page, totalPages });
+    return reply.send({ items: itemsWithBids, total, limit, page, totalPages });
   });
 
   // ---------------------------------------------------------------------------
@@ -280,7 +292,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       throw new NotFoundError('Vehicle');
     }
 
-    return reply.send(vehicle);
+    // Fetch all bids for this vehicle
+    const bidsMap = await vehicleModel.getBidsForVehicles([vehicleId]);
+    const bids = bidsMap.get(vehicleId) || [];
+
+    return reply.send({ ...vehicle, bids });
   });
 
   // ---------------------------------------------------------------------------

@@ -36,6 +36,8 @@ interface AuctionFiltersDrawerProps {
   onSourceChange?: (source: string | undefined) => void;
   buyNow?: boolean;
   onBuyNowChange?: (buyNow: boolean) => void;
+  onApplyFilters?: () => void;
+  onResetFilters?: () => void;
 }
 
 /**
@@ -73,6 +75,8 @@ export function AuctionFiltersDrawer({
   onSourceChange,
   buyNow,
   onBuyNowChange,
+  onApplyFilters,
+  onResetFilters,
 }: AuctionFiltersDrawerProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -144,6 +148,8 @@ export function AuctionFiltersDrawer({
               onSourceChange={onSourceChange}
               buyNow={buyNow}
               onBuyNowChange={onBuyNowChange}
+              onApplyFilters={onApplyFilters}
+              onResetFilters={onResetFilters}
             />
           </div>
         </SheetContent>

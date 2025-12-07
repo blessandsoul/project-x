@@ -21,6 +21,7 @@ import {
   uploadCompanyLogo,
   validateImageMime,
 } from '../services/ImageUploadService.js';
+import { CalculatorRequestBuilder } from '../services/CalculatorRequestBuilder.js';
 
 /**
  * Company, Social Links, and Quotes Routes
@@ -667,13 +668,22 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * POST /vehicles/:vehicleId/calculate-quotes
    *
-   * Calculate quotes for ALL companies for a given vehicle. The client
-   * only provides vehicleId in the URL and never sends distance or
-   * company_id. The backend:
-   * - Loads the vehicle (including yard_name and source)
-   * - Derives distance_miles from yard_name -> Poti, Georgia
-   * - Loads all companies and creates one company_quotes row per company
-   * - Returns a vehicle + quotes object to the frontend.
+   * Calculate shipping quotes for ALL companies for a given vehicle.
+   * 
+   * CLIENT INPUT (JSON body):
+   * - auction (string, required): Auction source, e.g., "copart" or "iaai"
+   * - usacity (string, required): US city name (can be noisy, will be smart-matched)
+   * 
+   * SERVER BEHAVIOR:
+   * - Normalizes auction to canonical value (e.g., "copart" -> "Copart")
+   * - Smart-matches usacity to canonical city from /api/cities
+   * - Builds calculator request with strict defaults:
+   *   - buyprice: 1 (always)
+   *   - vehicletype: "standard" (default)
+   *   - vehiclecategory: "Sedan" (default)
+   *   - destinationport: "POTI" (default)
+   * - Calls POST /api/calculator with normalized values
+   * - Returns quotes from all companies
    */
   fastify.post('/vehicles/:vehicleId/calculate-quotes', {
     schema: {
@@ -682,6 +692,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['vehicleId'],
         properties: {
           vehicleId: { type: 'integer', minimum: 1 },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['auction', 'usacity'],
+        properties: {
+          auction: { type: 'string', minLength: 1, maxLength: 50 },
+          usacity: { type: 'string', minLength: 1, maxLength: 100 },
         },
       },
       querystring: {
@@ -696,13 +714,58 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     },
   }, async (request, reply) => {
     const { vehicleId } = request.params as { vehicleId: string };
-    const { limit, offset, currency, minRating } = request.query as { limit?: number; offset?: number; currency?: string; minRating?: number };
+    const { auction, usacity } = request.body as { auction: string; usacity: string };
+    const { limit, offset, currency, minRating } = request.query as { 
+      limit?: number; 
+      offset?: number; 
+      currency?: string; 
+      minRating?: number;
+    };
+    
     const id = parseInt(vehicleId, 10);
     if (!Number.isFinite(id) || id <= 0) {
       throw new ValidationError('Invalid vehicle id');
     }
 
-    request.log.info(`Calculating quotes for vehicle ${id} at ${new Date().toISOString()} with currency ${currency}`);
+    request.log.info(
+      { vehicleId: id, auction, usacity, currency },
+      'Calculating quotes for vehicle'
+    );
+
+    // Build normalized calculator request using smart matching
+    const calculatorRequestBuilder = new CalculatorRequestBuilder(fastify);
+    const buildResult = await calculatorRequestBuilder.buildCalculatorRequest({
+      auction,
+      usacity,
+    });
+
+    // If city/auction couldn't be matched, return a response indicating price unavailable
+    if (!buildResult.success || !buildResult.request) {
+      request.log.warn(
+        { vehicleId: id, auction, usacity, error: buildResult.error },
+        'Could not build calculator request - price calculation unavailable'
+      );
+      
+      // Return a response indicating price couldn't be calculated (not an error)
+      return reply.code(200).send({
+        vehicle_id: id,
+        price_available: false,
+        message: buildResult.error || 'Price calculation is not available for this location.',
+        unmatched_city: buildResult.unmatchedCity,
+        quotes: [],
+        total: 0,
+        limit: 5,
+        offset: 0,
+        totalPages: 0,
+      });
+    }
+
+    const calculatorInput = buildResult.request;
+
+    request.log.info(
+      { calculatorInput },
+      'Built normalized calculator request'
+    );
 
     // Parse pagination for companies/quotes
     const parsedLimit = typeof limit === 'number' ? limit : NaN;
@@ -716,14 +779,24 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       { limit: 5, maxLimit: 50 },
     );
 
-    // Cache quote calculations - same vehicle + currency + pagination + filters = same result
+    // Cache quote calculations - same vehicle + calculator input + currency + pagination = same result
     const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 5 ? minRating : undefined;
-    const cacheKey = buildCacheKey('quotes:calculate', id, currency || 'USD', safeLimit, safeOffset, safeMinRating ?? 'none');
+    const cacheKey = buildCacheKey(
+      'quotes:calculate', 
+      id, 
+      calculatorInput.auction,
+      calculatorInput.usacity || 'none',
+      currency || 'USD', 
+      safeLimit, 
+      safeOffset, 
+      safeMinRating ?? 'none'
+    );
+    
     const fullResult = await withCache(
       fastify,
       cacheKey,
       CACHE_TTL.CALCULATION, // 10 minutes
-      () => controller.calculateQuotesForVehicle(id, currency, {
+      () => controller.calculateQuotesForVehicleWithInput(id, calculatorInput, currency, {
         limit: safeLimit,
         offset: safeOffset,
         ...(safeMinRating !== undefined && { minRating: safeMinRating }),
@@ -741,8 +814,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     // Do not slice quotes here; controller already paginates companies/quotes
     const { totalCompanies, ...rest } = fullResult as any;
 
-    return reply.code(201).send({
+    return reply.code(200).send({
       ...rest,
+      price_available: true,
       total,
       limit: safeLimit,
       offset: safeOffset,

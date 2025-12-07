@@ -77,17 +77,34 @@ export function AuctionVehicleCard({
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
-  // Price calculation
-  let priceRaw: number | null = null;
-  if (item.calc_price != null) {
+  // Last bid from API (preferred) or fallback to calc_price
+  const lastBid = item.last_bid;
+  let displayPrice: number = 0;
+  let bidTime: string | null = null;
+
+  if (lastBid && lastBid.bid != null) {
+    displayPrice = lastBid.bid;
+    bidTime = lastBid.bid_time;
+  } else if (item.calc_price != null) {
     const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
-    if (Number.isFinite(numericCalc)) priceRaw = numericCalc;
+    if (Number.isFinite(numericCalc)) displayPrice = Math.max(0, numericCalc);
   }
-  if (priceRaw == null && item.retail_value != null) {
-    const numericRetail = typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value);
-    if (Number.isFinite(numericRetail)) priceRaw = numericRetail;
-  }
-  const displayPrice = priceRaw != null && Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+
+  // Format bid time for display
+  const formatBidTime = (isoTime: string | null): string => {
+    if (!isoTime) return '';
+    try {
+      const date = new Date(isoTime);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  };
 
   // Buy Now price (only when strictly positive)
   let buyNowRaw: number | null = null;
@@ -114,6 +131,40 @@ export function AuctionVehicleCard({
       ? `${item.mileage.toLocaleString()} ${t('common.miles_short')} (E)`
       : 'N/A';
 
+    const auctionInfo = (() => {
+      if (!item.sold_at_date) return null;
+      try {
+        const auctionDate = new Date(item.sold_at_date);
+        const now = new Date();
+        const isUpcoming = auctionDate > now;
+
+        const dateStr = auctionDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+
+        let timeStr = '';
+        if (item.sold_at_time) {
+          const [hours, minutes] = item.sold_at_time.split(':');
+          const hour = parseInt(hours, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          timeStr = `${hour12}:${minutes} ${ampm}`;
+        } else {
+          timeStr = auctionDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          });
+        }
+
+        return { date: dateStr, time: timeStr, isUpcoming };
+      } catch {
+        return null;
+      }
+    })();
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -121,9 +172,9 @@ export function AuctionVehicleCard({
         transition={{ duration: 0.15 }}
         className="w-full mb-1.5"
       >
-        <div className="w-full overflow-hidden bg-white border border-slate-200 shadow-md flex flex-col">
+        <div className="auction-card-mobile w-full overflow-hidden bg-white border border-slate-200 shadow-md flex flex-col">
           {/* 1️⃣ HEADER - Title + Lot (Copart-style) */}
-          <div className="px-4 py-3">
+          <div className="auction-card-header px-4 py-3">
             <h3 className="font-bold text-[16px] leading-snug text-slate-900 uppercase tracking-tight">
               {item.year} {item.make} {item.model}
             </h3>
@@ -133,9 +184,9 @@ export function AuctionVehicleCard({
           </div>
 
           {/* 2️⃣ MIDDLE ROW - Image (50%) + Info (50%), SAME HEIGHT */}
-          <div className="flex flex-row items-stretch" style={{ minHeight: '140px' }}>
+          <div className="auction-card-middle flex flex-row items-stretch" style={{ minHeight: '140px' }}>
             {/* LEFT: Car Image - 50% width, full height */}
-            <div className="relative w-1/2 flex-shrink-0">
+            <div className="auction-card-image relative w-1/2 flex-shrink-0">
               <button
                 type="button"
                 className="w-full h-full bg-slate-100 focus:outline-none cursor-pointer overflow-hidden"
@@ -163,7 +214,7 @@ export function AuctionVehicleCard({
             </div>
 
             {/* RIGHT: Info - 50% width, full height, top-aligned, light gray background */}
-            <div className="w-1/2 flex flex-col justify-start p-3 gap-1 bg-slate-100">
+            <div className="auction-card-info w-1/2 flex flex-col justify-start p-3 gap-1 bg-slate-100">
               {/* Odometer section */}
               <div className="mb-1">
                 <p className="text-[13px] font-bold text-slate-800">Odometer</p>
@@ -176,6 +227,9 @@ export function AuctionVehicleCard({
                 <p className="text-[15px] font-bold text-slate-900">
                   {formatMoney(displayPrice)} <span className="text-[12px] font-normal text-slate-500">USD</span>
                 </p>
+                {bidTime && (
+                  <p className="text-[10px] text-slate-500">{formatBidTime(bidTime)}</p>
+                )}
               </div>
 
               {/* Buy Now section - plain text like Copart, only if exists */}
@@ -187,11 +241,38 @@ export function AuctionVehicleCard({
                   </p>
                 </div>
               )}
+
+              {/* Auction start date (mobile) */}
+              {auctionInfo && (
+                <div className="mt-1 flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <Icon
+                      icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"}
+                      className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`}
+                    />
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${
+                      auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
+                    }`}>
+                      {auctionInfo.isUpcoming ? 'Auction Starts' : 'Auction Start Date'}
+                    </span>
+                  </div>
+                  <div className={`text-[13px] font-bold ${
+                    auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+                  }`}>
+                    {auctionInfo.date}
+                  </div>
+                  <div className={`text-[12px] font-semibold ${
+                    auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+                  }`}>
+                    {auctionInfo.time}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 3️⃣ BOTTOM BUTTONS - Always 3 buttons on mobile */}
-          <div className="grid grid-cols-3 border-t border-slate-200">
+          <div className="auction-card-buttons grid grid-cols-3 border-t border-slate-200">
             {/* DETAILS button - Yellow/Gold */}
             <button
               type="button"
@@ -340,6 +421,11 @@ export function AuctionVehicleCard({
               <div className="text-[16px] font-semibold text-slate-900">
                 {formatMoney(displayPrice)} <span className="text-[9px] font-normal text-slate-400">USD</span>
               </div>
+              {bidTime && (
+                <div className="text-[9px] text-slate-400">
+                  {formatBidTime(bidTime)}
+                </div>
+              )}
               {hasBuyNow && buyNowPriceLabel && (
                 <div className="text-[10px] text-green-600 font-semibold">
                   Buy Now: {buyNowPriceLabel}

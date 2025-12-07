@@ -278,9 +278,9 @@ const createColumns = (
           <div className="text-muted-foreground mt-0.5 text-[11px]">
             {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
           </div>
-          {/* Below 1280px, show yard name above the Watch List button to replace the hidden sale_info column */}
-          {!isLargeScreen && item.yard_name && (
-            <div className="mt-1 text-[11px] font-medium text-primary truncate" title={item.yard_name}>
+          {/* Yard name - always visible under lot */}
+          {item.yard_name && (
+            <div className="mt-0.5 text-[11px] text-muted-foreground truncate" title={item.yard_name}>
               {item.yard_name}
             </div>
           )}
@@ -328,47 +328,89 @@ const createColumns = (
     },
     size: 105,
   },
-  // Condition column
+  // Document column (renamed from Condition)
   {
-    id: 'condition',
-    header: t('auction.columns.condition'),
+    id: 'document',
+    header: 'დოკუმენტი',
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
+      
+      // Format auction start date/time
+      const formatAuctionDate = (): { date: string; time: string; isUpcoming: boolean } | null => {
+        if (!item.sold_at_date) return null;
+        
+        try {
+          const auctionDate = new Date(item.sold_at_date);
+          const now = new Date();
+          const isUpcoming = auctionDate > now;
+          
+          // Format date: "Nov 12, 2025"
+          const dateStr = auctionDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+          
+          // Format time from sold_at_time if available, otherwise from the date
+          let timeStr = '';
+          if (item.sold_at_time) {
+            // Parse "18:00:00" format
+            const [hours, minutes] = item.sold_at_time.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            timeStr = `${hour12}:${minutes} ${ampm}`;
+          } else {
+            timeStr = auctionDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            });
+          }
+          
+          return { date: dateStr, time: timeStr, isUpcoming };
+        } catch {
+          return null;
+        }
+      };
+      
+      const auctionInfo = formatAuctionDate();
+      
       return (
         <div className="max-w-[180px] whitespace-normal break-words">
-          <div className="text-foreground font-medium text-[11px]">
-            {item.sale_title_type || t('auction.fields.clean_title')} ({item.state || 'N/A'})
-          </div>
-          <div className="text-muted-foreground mt-0.5 text-[11px]">
-            {item.damage_main_damages || t('auction.fields.minor_damage')}
-          </div>
-          <div className="text-muted-foreground mt-0.5 text-[11px]">
-            {item.has_keys_readable || t('auction.fields.keys_available')}
-          </div>
+          <div className="text-muted-foreground text-[10px] mb-0.5">Sale Document</div>
+          <div className="text-foreground font-medium text-[11px]">{item.document || 'N/A'}</div>
+          
+          {/* Auction Start Date - Eye-catching display */}
+          {auctionInfo && (
+            <div className="mt-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Icon 
+                  icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"} 
+                  className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`} 
+                />
+                <span className={`text-[9px] font-semibold uppercase tracking-wide ${
+                  auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
+                }`}>
+                  {auctionInfo.isUpcoming ? 'Auction Starts' : 'Auction Start Date'}
+                </span>
+              </div>
+              <div className={`text-[12px] font-bold ${
+                auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+              }`}>
+                {auctionInfo.date}
+              </div>
+              <div className={`text-[11px] font-semibold ${
+                auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+              }`}>
+                {auctionInfo.time}
+              </div>
+            </div>
+          )}
         </div>
       );
     },
-    size: 120,
-  },
-  // Sale Info column
-  {
-    id: 'sale_info',
-    header: t('auction.columns.sale_info'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      return (
-        <div>
-          <div className="text-primary font-medium flex items-center gap-1 text-[11px]">
-            {item.yard_name || item.city || 'N/A'}
-            <Icon icon="mdi:chevron-right" className="w-3 h-3" />
-          </div>
-          <div className="text-primary font-medium mt-0.5 text-[11px]">
-            {t('auction.fields.auction_time_placeholder')}
-          </div>
-        </div>
-      );
-    },
-    size: 110,
+    size: 140,
   },
   // Bids column
   {
@@ -377,16 +419,34 @@ const createColumns = (
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
 
-      // Current bid price
-      let currentBid: number | null = null;
-      if (item.calc_price != null) {
+      // Last bid from API (preferred) or fallback to calc_price
+      const lastBid = item.last_bid;
+      let currentBidValue: number | null = null;
+      let bidTime: string | null = null;
+
+      if (lastBid && lastBid.bid != null) {
+        currentBidValue = lastBid.bid;
+        bidTime = lastBid.bid_time;
+      } else if (item.calc_price != null) {
         const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
-        if (Number.isFinite(numericCalc)) currentBid = numericCalc;
+        if (Number.isFinite(numericCalc)) currentBidValue = numericCalc;
       }
-      if (currentBid == null && item.retail_value != null) {
-        const numericRetail = typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value);
-        if (Number.isFinite(numericRetail)) currentBid = numericRetail;
-      }
+
+      // Format bid time for display
+      const formatBidTime = (isoTime: string | null): string => {
+        if (!isoTime) return '';
+        try {
+          const date = new Date(isoTime);
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } catch {
+          return '';
+        }
+      };
 
       // Buy Now price
       let buyNowPrice: number | null = null;
@@ -403,9 +463,15 @@ const createColumns = (
       return (
         <div className="flex flex-col">
           <div className="text-muted-foreground text-[10px]">Current bid:</div>
-          <div className="text-base font-bold text-foreground mb-2">
-            {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+          <div className="text-base font-bold text-foreground">
+            {formatMoney(currentBidValue)} <span className="text-xs font-normal text-muted-foreground">USD</span>
           </div>
+          {bidTime && (
+            <div className="text-[9px] text-muted-foreground mb-1.5">
+              {formatBidTime(bidTime)}
+            </div>
+          )}
+          {!bidTime && <div className="mb-2" />}
 
           <Button
             size="sm"
@@ -820,33 +886,34 @@ const AuctionListingsPage = () => {
       });
     }
 
-    if (appliedFilters.fuel_type) {
-      let fuelLabel: string;
-      switch (appliedFilters.fuel_type) {
-        case "petrol":
-          fuelLabel = t("common.fuel_gas");
-          break;
-        case "diesel":
-          fuelLabel = t("common.fuel_diesel");
-          break;
-        case "hybrid":
-          fuelLabel = t("common.fuel_hybrid");
-          break;
-        case "electric":
-          fuelLabel = t("common.fuel_electric");
-          break;
-        case "flexible":
-          fuelLabel = t("common.fuel_flexible");
-          break;
-        default:
-          fuelLabel = appliedFilters.fuel_type;
-          break;
-      }
-
-      labels.push({
-        id: "fuel",
-        label: `${t("auction.filters.fuel")}: ${fuelLabel}`,
+    // Fuel filter chip - handles both fuel_type (legacy) and fuel (new comma-separated)
+    if (appliedFilters.fuel_type || appliedFilters.fuel) {
+      const fuelValue = appliedFilters.fuel || appliedFilters.fuel_type || "";
+      const fuelTypes = fuelValue.split(",").map((f) => f.trim().toLowerCase()).filter(Boolean);
+      
+      const fuelLabels = fuelTypes.map((fuelType) => {
+        switch (fuelType) {
+          case "petrol":
+            return t("common.fuel_gas");
+          case "diesel":
+            return t("common.fuel_diesel");
+          case "hybrid":
+            return t("common.fuel_hybrid");
+          case "electric":
+            return t("common.fuel_electric");
+          case "flexible":
+            return t("common.fuel_flexible");
+          default:
+            return fuelType;
+        }
       });
+
+      if (fuelLabels.length > 0) {
+        labels.push({
+          id: "fuel",
+          label: `${t("auction.filters.fuel")}: ${fuelLabels.join(", ")}`,
+        });
+      }
     }
 
     if (appliedFilters.buy_now) {
@@ -936,9 +1003,11 @@ const AuctionListingsPage = () => {
       const to = appliedFilters.price_to ?? 0;
       // Only show chip if at least one value is meaningful (not 0)
       if (from > 0 || to > 0) {
+        const fromDisplay = from > 0 ? `$${from.toLocaleString()}` : "$0";
+        const toDisplay = to > 0 ? `$${to.toLocaleString()}` : "∞";
         labels.push({
           id: "price",
-          label: `${t("auction.filters.price")}: $${from || "?"}-$${to || "?"}`,
+          label: `${t("auction.filters.price")}: ${fromDisplay} – ${toDisplay}`,
         });
       }
     }
@@ -951,13 +1020,101 @@ const AuctionListingsPage = () => {
       const to = appliedFilters.mileage_to ?? 0;
       // Only show chip if at least one value is meaningful (not 0)
       if (from > 0 || to > 0) {
+        const fromDisplay = from > 0 ? from.toLocaleString() : "0";
+        const toDisplay = to > 0 ? to.toLocaleString() : "∞";
         labels.push({
           id: "mileage",
-          label: `${t("auction.filters.mileage")}: ${
-            from.toLocaleString() || "?"
-          }-${to.toLocaleString() || "?"}`,
+          label: `${t("auction.filters.mileage")}: ${fromDisplay} – ${toDisplay}`,
         });
       }
+    }
+
+    // Title type filter chip
+    if (appliedFilters.title_type) {
+      const titleTypes = appliedFilters.title_type.split(",").map((t) => t.trim());
+      const titleLabels = titleTypes.map((type) => {
+        const lower = type.toLowerCase();
+        if (lower === "clean title") return "Clean";
+        if (lower === "salvage title") return "Salvage";
+        if (lower === "nonrepairable") return "Non-repairable";
+        return type;
+      });
+      labels.push({
+        id: "titleType",
+        label: `${t("auction.filters.title_type")}: ${titleLabels.join(", ")}`,
+      });
+    }
+
+    // Transmission filter chip
+    if (appliedFilters.transmission) {
+      const transmissionTypes = appliedFilters.transmission.split(",").map((t) => t.trim().toLowerCase());
+      const transmissionLabels = transmissionTypes.map((type) => {
+        if (type === "auto") return "Automatic";
+        if (type === "manual") return "Manual";
+        return type;
+      });
+      labels.push({
+        id: "transmission",
+        label: `${t("auction.filters.transmission")}: ${transmissionLabels.join(", ")}`,
+      });
+    }
+
+    // Cylinders filter chip
+    if (appliedFilters.cylinders) {
+      const cylinderValues = appliedFilters.cylinders.split(",").map((c) => c.trim().toUpperCase());
+      const cylinderLabels = cylinderValues.map((c) => (c === "U" ? "Unknown" : c));
+      labels.push({
+        id: "cylinders",
+        label: `${t("auction.filters.cylinders")}: ${cylinderLabels.join(", ")}`,
+      });
+    }
+
+    // Location filter chip
+    if (appliedFilters.location) {
+      labels.push({
+        id: "location",
+        label: `${t("auction.filters.location")}: ${appliedFilters.location}`,
+      });
+    }
+
+    // Sort filter chip
+    if (appliedFilters.sort) {
+      let sortLabel: string;
+      switch (appliedFilters.sort) {
+        case "price_asc":
+          sortLabel = t("sort.price_asc");
+          break;
+        case "price_desc":
+          sortLabel = t("sort.price_desc");
+          break;
+        case "year_asc":
+          sortLabel = t("sort.year_asc");
+          break;
+        case "year_desc":
+          sortLabel = t("sort.year_desc");
+          break;
+        case "mileage_asc":
+          sortLabel = t("sort.mileage_asc");
+          break;
+        case "mileage_desc":
+          sortLabel = t("sort.mileage_desc");
+          break;
+        case "sold_date_asc":
+          sortLabel = t("sort.sold_date_asc");
+          break;
+        case "sold_date_desc":
+          sortLabel = t("sort.sold_date_desc");
+          break;
+        case "best_value":
+          sortLabel = t("sort.best_value");
+          break;
+        default:
+          sortLabel = appliedFilters.sort;
+      }
+      labels.push({
+        id: "sort",
+        label: `${t("common.sort_by")}: ${sortLabel}`,
+      });
     }
 
     return labels;
@@ -1009,7 +1166,7 @@ const AuctionListingsPage = () => {
 
     const categoryParam = params.get("category");
     const nextCategory =
-      categoryParam && ["all", "v", "c", "a"].includes(categoryParam)
+      categoryParam && ["all", "v", "c", "a", "v,c", "c,v"].includes(categoryParam)
         ? categoryParam
         : "all";
 
@@ -1133,6 +1290,10 @@ const AuctionListingsPage = () => {
       "year_desc",
       "year_asc",
       "mileage_asc",
+      "mileage_desc",
+      "sold_date_desc",
+      "sold_date_asc",
+      "best_value",
     ];
     const nextSortBy =
       sortParam && validSorts.includes(sortParam) ? sortParam : "none";
@@ -1181,6 +1342,7 @@ const AuctionListingsPage = () => {
       transmission: nextTransmission,
       fuel: nextFuel,
       driveFilter: nextDriveFilter,
+      cylinders: nextCylinders ? nextCylinders.toUpperCase() : undefined,
       location: nextLocation,
       sourceFilter: nextSourceFilter,
     });
@@ -1393,6 +1555,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1433,6 +1596,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1473,6 +1637,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1513,6 +1678,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1552,6 +1718,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1591,6 +1758,7 @@ const AuctionListingsPage = () => {
       transmission: newTransmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1630,6 +1798,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel: newFuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1669,6 +1838,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter: newDrive,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1708,6 +1878,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: newLocation,
       sourceFilter,
     };
@@ -1874,6 +2045,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1916,6 +2088,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -1956,6 +2129,7 @@ const AuctionListingsPage = () => {
       transmission,
       fuel,
       driveFilter,
+      cylinders,
       location: locationFilter,
       sourceFilter,
     };
@@ -2013,7 +2187,9 @@ const AuctionListingsPage = () => {
     setTransmission(undefined);
     setFuel(undefined);
     setDriveFilter(undefined);
+    setCylinders(undefined);
     setLocationFilter(undefined);
+    setSourceFilter(undefined);
     setLimit(36);
     setPage(1);
     setBuyNowOnly(false);
@@ -2048,6 +2224,7 @@ const AuctionListingsPage = () => {
       transmission: undefined,
       fuel: undefined,
       driveFilter: undefined,
+      cylinders: undefined,
       location: undefined,
       sourceFilter: undefined,
     };
@@ -2067,9 +2244,11 @@ const AuctionListingsPage = () => {
         break;
       case "auction":
         setAuctionFilter("all");
+        setSourceFilter(undefined);
         break;
       case "fuel":
         setFuelType("all");
+        setFuel(undefined);
         break;
       case "category":
         setCategory("all");
@@ -2104,6 +2283,21 @@ const AuctionListingsPage = () => {
       case "drive":
         setDrive("all");
         break;
+      case "titleType":
+        setTitleType(undefined);
+        break;
+      case "transmission":
+        setTransmission(undefined);
+        break;
+      case "cylinders":
+        setCylinders(undefined);
+        break;
+      case "location":
+        setLocationFilter(undefined);
+        break;
+      case "sort":
+        setSortBy("none");
+        break;
       default:
         break;
     }
@@ -2124,13 +2318,14 @@ const AuctionListingsPage = () => {
       buyNowOnly: id === "buyNow" ? false : buyNowOnly,
       selectedMakeName: id === "make" ? undefined : filterMakeName,
       selectedModelName: id === "make" || id === "model" ? undefined : filterModelName,
-      sort: sortBy,
+      sort: id === "sort" ? "none" : sortBy,
       titleType: id === "titleType" ? undefined : titleType,
       transmission: id === "transmission" ? undefined : transmission,
       fuel: id === "fuel" ? undefined : fuel,
       driveFilter: id === "driveFilter" ? undefined : driveFilter,
+      cylinders: id === "cylinders" ? undefined : cylinders,
       location: id === "location" ? undefined : locationFilter,
-      sourceFilter: id === "source" ? undefined : sourceFilter,
+      sourceFilter: id === "auction" ? undefined : sourceFilter,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -2182,6 +2377,8 @@ const AuctionListingsPage = () => {
                 onSourceChange={handleSourceChange}
                 buyNow={buyNowOnly}
                 onBuyNowChange={handleBuyNowChange}
+                onApplyFilters={applyFilters}
+                onResetFilters={resetFilters}
               />
             </aside>
 
@@ -2243,6 +2440,8 @@ const AuctionListingsPage = () => {
                     onSourceChange={handleSourceChange}
                     buyNow={buyNowOnly}
                     onBuyNowChange={handleBuyNowChange}
+                    onApplyFilters={applyFilters}
+                    onResetFilters={resetFilters}
                   />
                 </div>
               </div>
@@ -2336,7 +2535,9 @@ const AuctionListingsPage = () => {
                         transmission,
                         fuel,
                         driveFilter,
+                        cylinders,
                         location: locationFilter,
+                        sourceFilter,
                       };
                       const nextFilters = buildFiltersFromDraftState(draft);
                       setPage(1);
@@ -2351,20 +2552,32 @@ const AuctionListingsPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("sort.none")}</SelectItem>
+                      <SelectItem value="best_value">
+                        {t("sort.best_value")}
+                      </SelectItem>
                       <SelectItem value="price_asc">
                         {t("sort.price_low")}
                       </SelectItem>
                       <SelectItem value="price_desc">
                         {t("sort.price_high")}
                       </SelectItem>
-                      <SelectItem value="year_asc">
-                        {t("sort.year_old")}
-                      </SelectItem>
                       <SelectItem value="year_desc">
                         {t("sort.year_new")}
                       </SelectItem>
+                      <SelectItem value="year_asc">
+                        {t("sort.year_old")}
+                      </SelectItem>
                       <SelectItem value="mileage_asc">
                         {t("sort.mileage_low")}
+                      </SelectItem>
+                      <SelectItem value="mileage_desc">
+                        {t("sort.mileage_high")}
+                      </SelectItem>
+                      <SelectItem value="sold_date_desc">
+                        {t("sort.sold_date_desc")}
+                      </SelectItem>
+                      <SelectItem value="sold_date_asc">
+                        {t("sort.sold_date_asc")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -2520,7 +2733,7 @@ const AuctionListingsPage = () => {
                             </div>
 
                             {/* Mobile List View (<768px) - Copart-style cards */}
-                            <div className="md:hidden space-y-1">
+                            <div className="md:hidden space-y-1 auction-cards-grid">
                               {displayedItems.length > 0 ? (
                                 displayedItems.map((item, idx) => (
                                   <AuctionVehicleCard

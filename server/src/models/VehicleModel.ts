@@ -27,11 +27,13 @@ export class VehicleModel extends BaseModel {
   private getSortClause(
     sort?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc' | 'sold_date_desc' | 'sold_date_asc' | 'best_value',
   ): string {
+    // Price sorting uses last_bid (from vehicle_lot_bids) with fallback to calc_price
+    // The last_bid_value alias is defined in the SELECT clause
     switch (sort) {
       case 'price_asc':
-        return 'calc_price ASC, id DESC';
+        return 'COALESCE(last_bid_value, calc_price, 999999999) ASC, id DESC';
       case 'price_desc':
-        return 'calc_price DESC, id DESC';
+        return 'COALESCE(last_bid_value, calc_price, 0) DESC, id DESC';
       case 'year_desc':
         return 'year DESC, id DESC';
       case 'year_asc':
@@ -45,9 +47,9 @@ export class VehicleModel extends BaseModel {
       case 'sold_date_asc':
         return 'sold_at_date ASC, sold_at_time ASC, id DESC';
       case 'best_value':
-        // Normalized score: lower price + lower mileage = better value
+        // Normalized score: lower price (last_bid or calc_price) + lower mileage = better value
         // Using COALESCE to handle NULLs, putting them last
-        return 'COALESCE(calc_price, 999999999) + COALESCE(mileage, 999999999) * 0.1 ASC, id DESC';
+        return 'COALESCE(last_bid_value, calc_price, 999999999) + COALESCE(mileage, 999999999) * 0.1 ASC, id DESC';
       default:
         return 'id DESC';
     }
@@ -177,13 +179,20 @@ export class VehicleModel extends BaseModel {
       conditions.push('year <= ?');
       params.push(filters.yearTo);
     }
+    // Price filtering uses last_bid (from vehicle_lot_bids) with fallback to calc_price
     if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
-      conditions.push('calc_price >= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) >= ?`);
       params.push(filters.priceFrom);
     }
     // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
     if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
-      conditions.push('calc_price <= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) <= ?`);
       params.push(filters.priceTo);
     }
     if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
@@ -351,7 +360,14 @@ export class VehicleModel extends BaseModel {
           WHERE vp.vehicle_id = vehicles.id
           ORDER BY vp.id ASC
           LIMIT 1
-        ) AS primary_thumb_url
+        ) AS primary_thumb_url,
+        (
+          SELECT vlb.bid
+          FROM vehicle_lot_bids vlb
+          WHERE vlb.vehicle_id = vehicles.id
+          ORDER BY vlb.bid_time DESC
+          LIMIT 1
+        ) AS last_bid_value
       FROM vehicles
       ${where}
       ORDER BY ${this.getSortClause(sort)}
@@ -418,13 +434,20 @@ export class VehicleModel extends BaseModel {
       conditions.push('year <= ?');
       params.push(filters.yearTo);
     }
+    // Price filtering uses last_bid (from vehicle_lot_bids) with fallback to calc_price
     if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
-      conditions.push('calc_price >= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) >= ?`);
       params.push(filters.priceFrom);
     }
     // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
     if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
-      conditions.push('calc_price <= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) <= ?`);
       params.push(filters.priceTo);
     }
     if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
@@ -1074,5 +1097,44 @@ export class VehicleModel extends BaseModel {
 
     const insert = `${baseInsert} ${values.join(', ')}`;
     await this.executeCommand(insert, params);
+  }
+
+  /**
+   * Fetch bid histories for multiple vehicles at once.
+   * Returns a map of vehicle_id -> array of bids (sorted by bid_time DESC).
+   */
+  async getBidsForVehicles(vehicleIds: number[]): Promise<Map<number, { bid: number | null; bid_time: string | null }[]>> {
+    const result = new Map<number, { bid: number | null; bid_time: string | null }[]>();
+
+    if (!vehicleIds.length) {
+      return result;
+    }
+
+    const placeholders = vehicleIds.map(() => '?').join(', ');
+    const query = `
+      SELECT vehicle_id, bid, bid_time
+      FROM vehicle_lot_bids
+      WHERE vehicle_id IN (${placeholders})
+      ORDER BY vehicle_id, bid_time DESC
+    `;
+
+    const rows = await this.executeQuery(query, vehicleIds);
+
+    if (!Array.isArray(rows)) {
+      return result;
+    }
+
+    for (const row of rows as { vehicle_id: number; bid: number | null; bid_time: Date | null }[]) {
+      const vehicleId = row.vehicle_id;
+      if (!result.has(vehicleId)) {
+        result.set(vehicleId, []);
+      }
+      result.get(vehicleId)!.push({
+        bid: row.bid,
+        bid_time: row.bid_time ? row.bid_time.toISOString() : null,
+      });
+    }
+
+    return result;
   }
 }

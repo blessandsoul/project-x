@@ -602,7 +602,7 @@
   }
 
   .similar-vehicle-card {
-    flex: 0 0 260px;   /* compact fixed width so several cards fit in view */
+    flex: 0 0 260px; /* compact fixed width so several cards fit in view */
     max-width: 260px;
     scroll-snap-align: start;
     height: auto;
@@ -746,7 +746,7 @@
     max-width: 100%;
     margin-left: 0;
     margin-right: 0;
-    padding-left: 0.75rem;  /* ~12px */
+    padding-left: 0.75rem; /* ~12px */
     padding-right: 0.75rem; /* ~12px */
   }
 
@@ -841,7 +841,7 @@
   }
 
   .vehicle-header-meta-row span:nth-child(3)::before {
-    content: 'VIN: ';
+    content: "VIN: ";
   }
 
   /* Exterior condition grid: single column */
@@ -865,6 +865,163 @@
     width: 100%;
     text-align: left;
     margin-top: 0.25rem;
+  }
+}
+
+/* ==========================================================================
+   AUCTION VEHICLE CARDS - Mobile (<600px)
+   Two-column grid layout with compact cards
+   ========================================================================== */
+@media (max-width: 599px) {
+  /* Grid container for vehicle cards - 2 columns, equal height rows */
+  .auction-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  /* Card motion wrapper: stretch to fill grid cell */
+  .auction-cards-grid > div {
+    display: flex !important;
+    height: 100% !important;
+  }
+
+  /* Card wrapper: compact, fill grid cell, equal height */
+  .auction-card-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 6px !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Middle section (image + info) grows to fill space */
+  .auction-card-mobile .auction-card-middle {
+    flex: 1 1 auto !important;
+  }
+
+  /* Info panel grows to fill remaining space in middle section */
+  .auction-card-mobile .auction-card-info {
+    flex: 1 1 auto !important;
+  }
+
+  /* Buttons stick to bottom of card */
+  .auction-card-mobile .auction-card-buttons {
+    flex-shrink: 0 !important;
+  }
+
+  /* Header section: very compact */
+  .auction-card-mobile .auction-card-header {
+    padding: 0.375rem 0.5rem !important; /* 6px 8px */
+  }
+
+  .auction-card-mobile .auction-card-header h3 {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .auction-card-mobile .auction-card-header p {
+    font-size: 9px !important;
+    margin-top: 1px !important;
+  }
+
+  /* Middle row: vertical stack */
+  .auction-card-mobile .auction-card-middle {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  /* Image container: aspect ratio controlled */
+  .auction-card-mobile .auction-card-image {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important;
+    background-color: #f0f1f3 !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Image button wrapper: fill container, clickable */
+  .auction-card-mobile .auction-card-image > button {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: #f0f1f3 !important;
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Image: cover to fill, centered */
+  .auction-card-mobile .auction-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
+  /* Info panel: very compact */
+  .auction-card-mobile .auction-card-info {
+    width: 100% !important;
+    padding: 0.375rem 0.5rem !important; /* 6px 8px */
+    gap: 0.125rem !important; /* 2px */
+    background-color: #f8f9fa !important;
+  }
+
+  .auction-card-mobile .auction-card-info > div {
+    margin-bottom: 0.125rem !important; /* 2px */
+  }
+
+  .auction-card-mobile .auction-card-info p {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Smaller text overrides */
+  .auction-card-mobile .auction-card-info .text-\[13px\] {
+    font-size: 9px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[15px\] {
+    font-size: 11px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[12px\] {
+    font-size: 9px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[10px\],
+  .auction-card-mobile .auction-card-info .text-\[11px\] {
+    font-size: 8px !important;
+  }
+
+  /* Hide auction date section to save space */
+  .auction-card-mobile .auction-card-info > div:last-child:has(.text-emerald-600),
+  .auction-card-mobile .auction-card-info > div:last-child:has(.text-emerald-700) {
+    display: none !important;
+  }
+
+  /* Buttons row: compact, single row */
+  .auction-card-mobile .auction-card-buttons {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .auction-card-mobile .auction-card-buttons button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    font-size: 9px !important;
+    gap: 0.125rem !important;
+    padding: 0 0.25rem !important;
+  }
+
+  .auction-card-mobile .auction-card-buttons button svg,
+  .auction-card-mobile .auction-card-buttons button .iconify {
+    width: 12px !important;
+    height: 12px !important;
   }
 }
 

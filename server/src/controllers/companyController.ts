@@ -21,6 +21,7 @@ import { FxRateService } from '../services/FxRateService.js';
 import { withTransaction } from '../utils/transactions.js';
 import type { PoolConnection } from 'mysql2/promise';
 import { getUserAvatarUrls, getCompanyLogoUrls } from '../services/ImageUploadService.js';
+import { CalculatorRequestBody } from '../services/CalculatorRequestBuilder.js';
 
 interface CalculatedQuoteResponse {
   company_id: number;
@@ -588,21 +589,12 @@ export class CompanyController {
   }
 
   /**
-   * Calculate and persist quotes for companies for a given vehicle.
+   * Calculate quotes for a single vehicle across all companies.
    *
-   * Workflow:
-   * - Load full vehicle data (make, model, year, yard_name, source)
-   * - Derive distance_miles from yard_name -> Poti, Georgia
-   * - Load companies (optionally paginated) and, for each company:
-   *   - Apply default pricing OR override with company.final_formula JSON
-   *   - Compute total_price
-   *   - Build a detailed breakdown JSON for transparency
-   *   - Insert a row into company_quotes
-   * - Return a vehicle + quotes response DTO for the frontend.
-   *
-   * If options.limit/offset are provided, only that slice of companies is used
-   * and totalCompanies is returned for pagination. If not provided, all
-   * companies (up to a hard cap) are used for backward-compatible flows.
+   * Quotes are calculated fresh from the calculator API on each request.
+   * Results are NOT persisted to the database since calculator API prices
+   * can change anytime. Caching is handled by the ShippingQuoteService
+   * via Redis with a short TTL.
    */
   async calculateQuotesForVehicle(
     vehicleId: number,
@@ -614,145 +606,14 @@ export class CompanyController {
       throw new NotFoundError('Vehicle');
     }
 
-    // First, try to reuse already persisted quotes for this vehicle to
-    // avoid unnecessary recalculation and external distance API calls.
-    let existingQuotes = await this.companyModel.getQuotesByVehicleId(vehicleId);
-    
-    // Check if we have quotes for all companies - if new companies were added,
-    // we need to recalculate to include them
-    const totalCompanyCount = await this.companyModel.countAll();
-    
-    if (Array.isArray(existingQuotes) && existingQuotes.length > 0) {
-      // If cached quotes don't cover all companies, invalidate cache
-      if (existingQuotes.length < totalCompanyCount) {
-        await this.companyModel.deleteQuotesByVehicleId(vehicleId);
-        existingQuotes = [];
-      }
-      
-      // If the vehicle was updated after the quotes were created, treat
-      // the cached quotes as stale and force a full recalculation.
-      const vehicleUpdatedAt = (vehicle as any).updated_at
-        ? new Date((vehicle as any).updated_at)
-        : null;
-
-      if (vehicleUpdatedAt instanceof Date && !Number.isNaN(vehicleUpdatedAt.getTime())) {
-        const newestQuoteCreatedAt = existingQuotes.reduce<Date | null>((acc, q) => {
-          const createdRaw: any = (q as any).created_at;
-          if (!createdRaw) return acc;
-          const created = new Date(createdRaw);
-          if (Number.isNaN(created.getTime())) return acc;
-          if (!acc || created > acc) return created;
-          return acc;
-        }, null);
-
-        if (newestQuoteCreatedAt && vehicleUpdatedAt > newestQuoteCreatedAt) {
-          await this.companyModel.deleteQuotesByVehicleId(vehicleId);
-          existingQuotes = [];
-        }
-      }
-
-      if (existingQuotes.length > 0) {
-      // Derive distance from the stored breakdown if available. This
-      // keeps the response consistent with the original calculation
-      // without recomputing distance.
-      let distanceMiles = 0;
-      const firstBreakdown: any = existingQuotes[0]?.breakdown;
-      if (firstBreakdown && typeof firstBreakdown.distance_miles === 'number') {
-        distanceMiles = firstBreakdown.distance_miles;
-      }
-
-      // Resolve company metadata for the quotes so the response shape
-      // matches freshly calculated quotes. Use a batched lookup to
-      // avoid N separate DB queries.
-      const uniqueCompanyIds = Array.from(
-        new Set(existingQuotes.map((q) => q.company_id)),
-      );
-      const companies = await this.companyModel.findByIds(uniqueCompanyIds);
-      const reviewCounts = await this.companyReviewModel.countByCompanyIds(uniqueCompanyIds);
-
-      const companyMetaById = new Map<number, { name: string; rating: number; reviewCount: number }>();
-      for (const company of companies) {
-        if (!company || typeof company.name !== 'string') continue;
-        const rating = typeof (company as any).rating === 'number' ? (company as any).rating : 0;
-        const reviewCount = reviewCounts[company.id] ?? 0;
-        companyMetaById.set(company.id, {
-          name: company.name,
-          rating,
-          reviewCount,
-        });
-      }
-
-      let quotes: CalculatedQuoteResponse[] = existingQuotes.map((q) => {
-        const meta = companyMetaById.get(q.company_id);
-        return {
-          company_id: q.company_id,
-          company_name: meta?.name ?? '',
-          total_price: q.total_price,
-          delivery_time_days: q.delivery_time_days,
-          breakdown: q.breakdown,
-          company_rating: meta?.rating ?? 0,
-          company_review_count: meta?.reviewCount ?? 0,
-        };
-      });
-
-      const normalizedCurrency = this.normalizeCurrencyCode(currency);
-      quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
-
-      // Sort by total price ascending so the client sees the cheapest
-      // offers first, consistent with the fresh-calculation path.
-      quotes.sort((a, b) => a.total_price - b.total_price);
-
-      // Apply minRating filter if provided
-      if (options?.minRating !== undefined && options.minRating > 0) {
-        quotes = quotes.filter((q) => (q.company_rating ?? 0) >= options.minRating!);
-      }
-
-      // Total is the count of quotes after filtering (for accurate pagination)
-      const totalCompanies = quotes.length;
-
-      // Apply optional pagination over the already stored quotes to
-      // mirror the semantics of the company pagination branch below.
-      if (options && (typeof options.limit === 'number' || typeof options.offset === 'number')) {
-        const rawLimit = options.limit;
-        const rawOffset = options.offset;
-
-        const safeLimit = Number.isFinite(rawLimit as number) && (rawLimit as number) > 0 && (rawLimit as number) <= 100
-          ? (rawLimit as number)
-          : 20;
-        const safeOffset = Number.isFinite(rawOffset as number) && (rawOffset as number) >= 0
-          ? (rawOffset as number)
-          : 0;
-
-        quotes = quotes.slice(safeOffset, safeOffset + safeLimit);
-      }
-
-      return {
-        vehicle_id: vehicle.id,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        mileage: (vehicle as any).mileage ?? null,
-        yard_name: vehicle.yard_name,
-        source: vehicle.source,
-        distance_miles: distanceMiles,
-        quotes,
-        totalCompanies,
-      };
-      }
-    }
-
-    // Always calculate quotes for ALL companies first, then paginate results.
-    // This ensures consistent pagination across requests.
+    // Always calculate quotes fresh from calculator API.
+    // No DB persistence - calculator prices can change anytime.
     const companies = await this.companyModel.findAll(1000, 0);
-    const totalCompanies = await this.companyModel.countAll();
 
     if (!companies.length) {
       throw new ValidationError('No companies configured for quote calculation');
     }
 
-    // Delegate numeric distance and price computation to the
-    // ShippingQuoteService so that pricing rules can evolve
-    // independently of HTTP and persistence concerns.
     const { distanceMiles, quotes: computedQuotes } =
       await this.shippingQuoteService.computeQuotesForVehicle(vehicle, companies);
 
@@ -765,59 +626,38 @@ export class CompanyController {
       companyMetaById.set(company.id, { rating, reviewCount });
     }
 
-    const quotes: CalculatedQuoteResponse[] = [];
-
-    for (const cq of computedQuotes) {
-      const quoteCreate: CompanyQuoteCreate = {
-        company_id: cq.companyId,
-        vehicle_id: vehicleId,
-        total_price: cq.totalPrice,
-        breakdown: cq.breakdown,
-        delivery_time_days: cq.deliveryTimeDays,
-      };
-
-      const created = await this.companyModel.createQuote(quoteCreate);
+    let quotes: CalculatedQuoteResponse[] = computedQuotes.map((cq) => {
       const meta = companyMetaById.get(cq.companyId);
-
-      quotes.push({
+      return {
         company_id: cq.companyId,
         company_name: cq.companyName,
-        total_price: created.total_price,
-        delivery_time_days: created.delivery_time_days,
-        breakdown: created.breakdown,
+        total_price: cq.totalPrice,
+        delivery_time_days: cq.deliveryTimeDays,
+        breakdown: cq.breakdown,
         company_rating: meta?.rating ?? 0,
         company_review_count: meta?.reviewCount ?? 0,
-      });
-    }
+      };
+    });
 
     const normalizedCurrency = this.normalizeCurrencyCode(currency);
-    let convertedQuotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+    quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
 
-    // Sort quotes by total_price ascending so the client sees the
-    // cheapest offers first.
-    convertedQuotes.sort((a, b) => a.total_price - b.total_price);
+    quotes.sort((a, b) => a.total_price - b.total_price);
 
-    // Apply minRating filter if provided
     if (options?.minRating !== undefined && options.minRating > 0) {
-      convertedQuotes = convertedQuotes.filter((q) => (q.company_rating ?? 0) >= options.minRating!);
+      quotes = quotes.filter((q) => (q.company_rating ?? 0) >= options.minRating!);
     }
 
-    // Total is the count of quotes after filtering (for accurate pagination)
-    const filteredTotal = convertedQuotes.length;
+    const totalCompanies = quotes.length;
 
-    // Apply optional pagination over the calculated quotes
     if (options && (typeof options.limit === 'number' || typeof options.offset === 'number')) {
-      const rawLimit = options.limit;
-      const rawOffset = options.offset;
-
-      const safeLimit = Number.isFinite(rawLimit as number) && (rawLimit as number) > 0 && (rawLimit as number) <= 100
-        ? (rawLimit as number)
+      const safeLimit = Number.isFinite(options.limit as number) && (options.limit as number) > 0 && (options.limit as number) <= 100
+        ? (options.limit as number)
         : 20;
-      const safeOffset = Number.isFinite(rawOffset as number) && (rawOffset as number) >= 0
-        ? (rawOffset as number)
+      const safeOffset = Number.isFinite(options.offset as number) && (options.offset as number) >= 0
+        ? (options.offset as number)
         : 0;
-
-      convertedQuotes = convertedQuotes.slice(safeOffset, safeOffset + safeLimit);
+      quotes = quotes.slice(safeOffset, safeOffset + safeLimit);
     }
 
     return {
@@ -829,18 +669,107 @@ export class CompanyController {
       yard_name: vehicle.yard_name,
       source: vehicle.source,
       distance_miles: distanceMiles,
-      quotes: convertedQuotes,
-      totalCompanies: filteredTotal,
+      quotes,
+      totalCompanies,
     };
   }
 
   /**
-   * Calculate quotes for a filtered, paginated list of vehicles without
+   * Calculate quotes for a single vehicle using pre-built calculator input.
+   * 
+   * This method accepts a normalized CalculatorRequestBody that has already
+   * been validated and normalized by CalculatorRequestBuilder.
+   * 
+   * Used by POST /vehicles/:vehicleId/calculate-quotes which accepts
+   * auction and usacity from the client and normalizes them before calling this.
+   */
+  async calculateQuotesForVehicleWithInput(
+    vehicleId: number,
+    calculatorInput: CalculatorRequestBody,
+    currency?: string,
+    options?: { limit?: number; offset?: number; minRating?: number },
+  ): Promise<VehicleQuotesResponse & { totalCompanies: number }> {
+    const vehicle: Vehicle | null = await this.vehicleModel.findById(vehicleId);
+    if (!vehicle) {
+      throw new NotFoundError('Vehicle');
+    }
+
+    // Load all companies
+    const companies = await this.companyModel.findAll(1000, 0);
+    if (!companies.length) {
+      throw new ValidationError('No companies configured for quote calculation');
+    }
+
+    // Calculate quotes using the pre-built calculator input
+    const { distanceMiles, quotes: computedQuotes } =
+      await this.shippingQuoteService.computeQuotesWithCalculatorInput(calculatorInput, companies);
+
+    // Build company metadata (ratings, review counts)
+    const companyIds = companies.map((c) => c.id);
+    const reviewCounts = await this.companyReviewModel.countByCompanyIds(companyIds);
+    const companyMetaById = new Map<number, { rating: number; reviewCount: number }>();
+    for (const company of companies) {
+      const rating = typeof (company as any).rating === 'number' ? (company as any).rating : 0;
+      const reviewCount = reviewCounts[company.id] ?? 0;
+      companyMetaById.set(company.id, { rating, reviewCount });
+    }
+
+    // Map computed quotes to response format
+    let quotes: CalculatedQuoteResponse[] = computedQuotes.map((cq) => {
+      const meta = companyMetaById.get(cq.companyId);
+      return {
+        company_id: cq.companyId,
+        company_name: cq.companyName,
+        total_price: cq.totalPrice,
+        delivery_time_days: cq.deliveryTimeDays,
+        breakdown: cq.breakdown,
+        company_rating: meta?.rating ?? 0,
+        company_review_count: meta?.reviewCount ?? 0,
+      };
+    });
+
+    // Currency conversion if needed
+    const normalizedCurrency = this.normalizeCurrencyCode(currency);
+    quotes = await this.maybeConvertQuoteTotals(quotes, normalizedCurrency);
+
+    // Sort by price (cheapest first)
+    quotes.sort((a, b) => a.total_price - b.total_price);
+
+    // Filter by minimum rating if specified
+    if (options?.minRating !== undefined && options.minRating > 0) {
+      quotes = quotes.filter((q) => (q.company_rating ?? 0) >= options.minRating!);
+    }
+
+    const totalCompanies = quotes.length;
+
+    // Apply pagination
+    if (options && (typeof options.limit === 'number' || typeof options.offset === 'number')) {
+      const safeLimit = Number.isFinite(options.limit as number) && (options.limit as number) > 0 && (options.limit as number) <= 100
+        ? (options.limit as number)
+        : 20;
+      const safeOffset = Number.isFinite(options.offset as number) && (options.offset as number) >= 0
+        ? (options.offset as number)
+        : 0;
+      quotes = quotes.slice(safeOffset, safeOffset + safeLimit);
+    }
+
+    return {
+      vehicle_id: vehicle.id,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      mileage: (vehicle as any).mileage ?? null,
+      yard_name: vehicle.yard_name,
+      source: vehicle.source,
+      distance_miles: distanceMiles,
+      quotes,
+      totalCompanies,
+    };
+  }
+
+  /**
+   * Search for vehicles matching filters and compute quotes without
    * persisting results to company_quotes.
-   *
-   * This is useful for search screens where the client wants to see
-   * multiple vehicle + quote options in a single call based on
-   * make/model/year filters.
    */
   async searchQuotesForVehicles(
     filters: {
@@ -1097,6 +1026,10 @@ export class CompanyController {
     };
   }
 
+  /**
+   * @deprecated Quotes are no longer persisted to DB. This method returns
+   * historical quotes only. Use calculateQuotesForVehicle for fresh quotes.
+   */
   async getQuotesByVehicle(vehicleId: number, currency?: string): Promise<CompanyQuote[]> {
     // Validate vehicle exists to avoid leaking orphaned records
     await this.ensureVehicleExists(vehicleId);
@@ -1134,6 +1067,10 @@ export class CompanyController {
     });
   }
 
+  /**
+   * @deprecated Quotes are no longer persisted to DB. This method returns
+   * historical quotes only.
+   */
   async getQuotesByCompany(companyId: number, currency?: string): Promise<CompanyQuote[]> {
     const company = await this.companyModel.findById(companyId);
     if (!company) {
@@ -1173,8 +1110,12 @@ export class CompanyController {
     });
   }
 
+  /**
+   * @deprecated Quotes are no longer persisted to DB since calculator API
+   * prices can change anytime. Use calculateQuotesForVehicle instead.
+   */
   async createQuoteAdmin(data: Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>): Promise<CompanyQuote> {
-    // Admin-only operation: both company_id and vehicle_id must be valid.
+    // Admin-only operation: compute quote on-the-fly without persisting.
     const company = await this.companyModel.findById(data.company_id);
     if (!company) {
       throw new NotFoundError('Company');
@@ -1185,24 +1126,27 @@ export class CompanyController {
       throw new NotFoundError('Vehicle');
     }
 
-    // Reuse the same pricing logic as automatic quote calculation.
+    // Compute quote using calculator API (not persisted)
     const { quotes: computedQuotes } = await this.shippingQuoteService.computeQuotesForVehicle(vehicle, [company]);
     const [cq] = computedQuotes;
     if (!cq) {
       throw new ValidationError('Unable to compute quote for the given company and vehicle');
     }
 
-    const quoteCreate: CompanyQuoteCreate = {
+    // Return as CompanyQuote shape without persisting
+    return {
+      id: 0, // Not persisted
       company_id: data.company_id,
       vehicle_id: data.vehicle_id,
       total_price: cq.totalPrice,
       breakdown: cq.breakdown,
       delivery_time_days: cq.deliveryTimeDays,
-    };
-
-    return this.companyModel.createQuote(quoteCreate);
+    } as CompanyQuote;
   }
 
+  /**
+   * @deprecated Quotes are no longer persisted to DB.
+   */
   async updateQuote(id: number, updates: CompanyQuoteUpdate): Promise<CompanyQuote> {
     const updated = await this.companyModel.updateQuote(id, updates);
     if (!updated) {
@@ -1211,6 +1155,9 @@ export class CompanyController {
     return updated;
   }
 
+  /**
+   * @deprecated Quotes are no longer persisted to DB.
+   */
   async deleteQuote(id: number): Promise<void> {
     const deleted = await this.companyModel.deleteQuote(id);
     if (!deleted) {

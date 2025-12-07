@@ -37,16 +37,34 @@ export function AuctionVehicleListItem({
   const { t } = useTranslation();
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
-  // Current bid price
+  // Last bid from API (preferred) or fallback to calc_price
+  const lastBid = item.last_bid;
   let currentBid: number | null = null;
-  if (item.calc_price != null) {
+  let bidTime: string | null = null;
+
+  if (lastBid && lastBid.bid != null) {
+    currentBid = lastBid.bid;
+    bidTime = lastBid.bid_time;
+  } else if (item.calc_price != null) {
     const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
     if (Number.isFinite(numericCalc)) currentBid = numericCalc;
   }
-  if (currentBid == null && item.retail_value != null) {
-    const numericRetail = typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value);
-    if (Number.isFinite(numericRetail)) currentBid = numericRetail;
-  }
+
+  // Format bid time for display
+  const formatBidTime = (isoTime: string | null): string => {
+    if (!isoTime) return '';
+    try {
+      const date = new Date(isoTime);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  };
 
   // Buy Now price
   let buyNowPrice: number | null = null;
@@ -109,6 +127,12 @@ export function AuctionVehicleListItem({
         <div className="text-muted-foreground mt-0.5 text-[11px]">
           {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
         </div>
+        {/* Yard name - always visible under lot */}
+        {item.yard_name && (
+          <div className="mt-0.5 text-[11px] text-muted-foreground truncate" title={item.yard_name}>
+            {item.yard_name}
+          </div>
+        )}
         
         {/* Action buttons */}
         <div className="flex items-center gap-1 mt-2">
@@ -144,36 +168,25 @@ export function AuctionVehicleListItem({
         </div>
       </div>
 
-      {/* Condition Column (flex) */}
+      {/* Document Column (renamed from Condition) */}
       <div className="flex-[1.2] min-w-[150px] p-2.5 border-l border-border">
         <div className="text-foreground font-medium text-[11px]">
-          {item.sale_title_type || t('auction.fields.clean_title')} ({item.state || 'N/A'})
-        </div>
-        <div className="text-muted-foreground mt-0.5 text-[11px]">
-          {item.damage_main_damages || t('auction.fields.minor_damage')}
-        </div>
-        <div className="text-muted-foreground mt-0.5 text-[11px]">
-          {item.has_keys_readable || t('auction.fields.keys_available')}
-        </div>
-      </div>
-
-      {/* Sale Info Column (flex) */}
-      <div className="flex-[1.2] min-w-[150px] p-2.5 border-l border-border">
-        <div className="text-primary font-medium flex items-center gap-1 text-[11px]">
-          {item.yard_name || item.city || 'N/A'}
-          <Icon icon="mdi:chevron-right" className="w-3 h-3" />
-        </div>
-        <div className="text-primary font-medium mt-0.5 text-[11px]">
-          {t('auction.fields.auction_time_placeholder')}
+          {item.document || 'N/A'}
         </div>
       </div>
 
       {/* Bids Column (fixed) */}
       <div className="w-[200px] flex-shrink-0 p-2.5 border-l border-border">
         <div className="text-muted-foreground text-[10px]">Current bid:</div>
-        <div className="text-base font-bold text-foreground mb-2">
+        <div className="text-base font-bold text-foreground">
           {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
         </div>
+        {bidTime && (
+          <div className="text-[9px] text-muted-foreground mb-1.5">
+            {formatBidTime(bidTime)}
+          </div>
+        )}
+        {!bidTime && <div className="mb-2" />}
         
         <Button
           size="sm"

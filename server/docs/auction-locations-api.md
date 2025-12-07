@@ -204,11 +204,16 @@ Calculates shipping quotes for all companies based on an auction branch address.
 
 ### How it works
 
-1. **Geocoding**: The address is geocoded using the Geoapify API to get latitude/longitude coordinates.
-2. **Distance Calculation**: The great-circle distance (haversine formula) is calculated from the auction branch to Poti, Georgia (destination port at 42.1537°N, 41.6714°E).
-3. **Caching**: Results are cached in the `auction_branch_distances` table to avoid repeated geocoding API calls.
-4. **Quote Calculation**: For each company, the shipping price is calculated using their pricing formula:
-   - `shippingPrice = base_price + (price_per_mile × distance) + customs_fee + service_fee + broker_fee`
+> **IMPORTANT:** All quote price calculations now use `POST /api/calculator` as the
+> single source of truth. See `docs/calculator-api.md` for full details.
+
+1. **Calculator API Call**: The address and source are sent to the Calculator API.
+2. **Distance Calculation**: The Calculator API determines the distance to the destination port.
+3. **Quote Calculation**: The Calculator API returns shipping prices for all companies.
+
+**Legacy approach (no longer used):**
+The old implementation used Geoapify for geocoding and manual formula calculation.
+This code is preserved in `src/services/legacyShippingQuoteService.ts` for reference only.
 
 ### Error Responses
 

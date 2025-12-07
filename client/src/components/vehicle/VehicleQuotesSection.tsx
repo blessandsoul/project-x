@@ -1,48 +1,42 @@
 /**
- * VehicleQuotesSection — Ultra-Minimal Importer Aggregator
+ * VehicleQuotesSection — Shipping Quotes Display
+ * 
+ * Displays shipping quotes from the server-side calculator API.
+ * All pricing is calculated server-side - no client-side calculations.
  * 
  * Design: Linear/Notion/Vercel 2025 — Clean, minimal, premium
- * Focus: Whitespace, typography, subtle interactions
  */
 
-import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { VehicleQuote } from '@/types/vehicles';
 
 interface VehicleQuotesSectionProps {
-  quotes: VehicleQuote[];
+  /** Quotes from the server API */
   filteredQuotes: VehicleQuote[];
+  /** Price statistics for highlighting best price */
   priceStats: { min: number; max: number; avg: number };
-  selectedCompanyIds: number[];
-  isCompareMode: boolean;
-  quotesLimit: number;
-  totalQuotes?: number;
-  isHighRatingOnly: boolean;
+  /** Error message to display */
   error?: string | null;
+  /** Whether quotes are being loaded */
   isLoading?: boolean;
-  onToggleHighRating: () => void;
-  onChangeLimit: (limit: number) => void;
-  onToggleCompareMode: () => void;
-  onToggleSelection: (companyId: number) => void;
+  /** Whether price calculation is available for this location */
+  priceAvailable?: boolean;
+  /** Message when price is not available */
+  priceUnavailableMessage?: string | null;
+  /** Handler for opening quote breakdown modal */
   onOpenBreakdown: (quote: VehicleQuote) => void;
+  /** Handler for opening lead/contact modal */
   onOpenLeadModal: () => void;
 }
-
-// Minimal metadata from company name
-const getCompanyMeta = (name: string) => {
-  const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-  return {
-    rating: (4.2 + (hash % 8) / 10).toFixed(1),
-    reviews: 50 + (hash % 350),
-  };
-};
 
 const VehicleQuotesSection = ({
   filteredQuotes,
   priceStats,
   error,
   isLoading = false,
+  priceAvailable = true,
+  priceUnavailableMessage,
   onOpenBreakdown,
   onOpenLeadModal,
 }: VehicleQuotesSectionProps) => {
@@ -76,6 +70,31 @@ const VehicleQuotesSection = ({
         <p className="text-sm text-slate-500">{error}</p>
         <Button variant="ghost" size="sm" className="mt-3 text-xs">
           Try again
+        </Button>
+      </section>
+    );
+  }
+
+  // Price not available state (city couldn't be matched)
+  if (!priceAvailable) {
+    return (
+      <section className="rounded-2xl border border-slate-200/60 bg-white p-8 text-center">
+        <div className="text-slate-400 mb-3">
+          <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        </div>
+        <p className="text-sm text-slate-600 font-medium mb-1">Price calculation unavailable</p>
+        <p className="text-xs text-slate-400 max-w-xs mx-auto">
+          {priceUnavailableMessage || 'Shipping quotes cannot be calculated for this location.'}
+        </p>
+        <Button 
+          onClick={onOpenLeadModal}
+          variant="outline" 
+          size="sm" 
+          className="mt-4 text-xs"
+        >
+          Request Custom Quote
         </Button>
       </section>
     );
@@ -117,7 +136,8 @@ const VehicleQuotesSection = ({
         {filteredQuotes.map((quote, index) => {
           const price = Number(quote.total_price) || 0;
           const isBest = bestPrice > 0 && price <= bestPrice * 1.01;
-          const meta = getCompanyMeta(quote.company_name);
+          // Use rating from API response (company_rating), fallback to N/A
+          const rating = quote.company_rating != null ? quote.company_rating.toFixed(1) : 'N/A';
           
           return (
             <button
@@ -153,9 +173,9 @@ const VehicleQuotesSection = ({
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500">
-                  <span>★ {meta.rating}</span>
+                  <span>★ {rating}</span>
                   <span>·</span>
-                  <span>{quote.delivery_time_days || '45-60'} days</span>
+                  <span>{quote.delivery_time_days ? `${quote.delivery_time_days} days` : '—'}</span>
                 </div>
               </div>
 
@@ -168,7 +188,7 @@ const VehicleQuotesSection = ({
                   ${price.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  total
+                  transportation price
                 </div>
               </div>
 

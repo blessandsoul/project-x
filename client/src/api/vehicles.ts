@@ -36,6 +36,12 @@ export interface VehicleQuotesResponse {
   source: string | null
   distance_miles: number
   quotes: VehicleQuote[]
+  /** Whether price calculation was successful (false if city couldn't be matched) */
+  price_available: boolean
+  /** Error message when price_available is false */
+  message?: string
+  /** City that couldn't be matched (when price_available is false) */
+  unmatched_city?: string
   total?: number
   limit?: number
   offset?: number
@@ -62,8 +68,22 @@ export interface VehicleSimilarResponse {
   priceRadius: number
 }
 
+/**
+ * Calculate shipping quotes for a vehicle using the server-side calculator API.
+ * 
+ * The server normalizes auction and usacity values before calling the external
+ * calculator API. All pricing logic is handled server-side.
+ * 
+ * @param vehicleId - Vehicle ID
+ * @param auction - Auction source (e.g., "copart", "iaai") - will be normalized server-side
+ * @param usacity - US city/yard name (e.g., "Permian Basin (TX)") - will be smart-matched server-side
+ * @param currency - Currency for prices (default: 'usd')
+ * @param options - Pagination and filter options
+ */
 export async function calculateVehicleQuotes(
   vehicleId: number,
+  auction: string,
+  usacity: string,
   currency: 'usd' | 'gel' = 'usd',
   options?: { limit?: number; offset?: number; minRating?: number },
 ): Promise<VehicleQuotesResponse> {
@@ -87,14 +107,15 @@ export async function calculateVehicleQuotes(
     ? `/vehicles/${vehicleId}/calculate-quotes?${query}`
     : `/vehicles/${vehicleId}/calculate-quotes`
 
-  // Backend implements this as POST /vehicles/:vehicleId/calculate-quotes with no body
-  // Fastify требует непустой body при content-type application/json,
-  // поэтому отправляем пустой объект как тело запроса.
-  const response = await apiPost<VehicleQuotesResponse>(path, {})
+  // POST with required body: { auction, usacity }
+  // Server normalizes these values and calls the external calculator API
+  const response = await apiPost<VehicleQuotesResponse>(path, {
+    auction,
+    usacity,
+  })
 
-  // single log showing the full response shape
   // eslint-disable-next-line no-console
-  console.log('[api] calculateVehicleQuotes:full-response', response)
+  console.log('[api] calculateVehicleQuotes:response', response)
 
   return response
 }

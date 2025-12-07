@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,6 +12,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 import {
   fetchMakesByTransportType,
@@ -80,6 +95,10 @@ export interface AuctionSidebarFiltersProps {
   buyNow?: boolean;
   /** Callback when buy now changes - triggers immediate data fetch */
   onBuyNowChange?: (buyNow: boolean) => void;
+  /** Callback when "Use Filters" button is clicked - triggers manual filter application */
+  onApplyFilters?: () => void;
+  /** Callback when "Clear Filters" button is clicked - resets all filters */
+  onResetFilters?: () => void;
 }
 
 // Copart-style collapsible section with animation
@@ -136,6 +155,331 @@ function FilterSection({
   );
 }
 
+// ============================================================================
+// Searchable Combobox Components
+// ============================================================================
+
+interface MakeComboboxProps {
+  makes: VehicleMake[];
+  selectedMakeId?: number;
+  onMakeChange: (value: string) => void;
+  isLoading: boolean;
+  placeholder: string;
+  loadingText: string;
+  searchPlaceholder: string;
+  noResultsText: string;
+}
+
+function MakeCombobox({
+  makes,
+  selectedMakeId,
+  onMakeChange,
+  isLoading,
+  placeholder,
+  loadingText,
+  searchPlaceholder,
+  noResultsText,
+}: MakeComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const selectedMake = makes.find((m) => m.makeId === selectedMakeId);
+  const displayValue = isLoading ? loadingText : (selectedMake?.name || placeholder);
+
+  // Filter makes based on search (case-insensitive, contains)
+  const filteredMakes = useMemo(() => {
+    if (!search.trim()) return makes;
+    const lowerSearch = search.toLowerCase();
+    return makes.filter((make) => make.name.toLowerCase().includes(lowerSearch));
+  }, [makes, search]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={isLoading}
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+        >
+          <span className={cn("truncate", !selectedMake && "text-muted-foreground")}>
+            {displayValue}
+          </span>
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={search}
+            onValueChange={setSearch}
+            className="h-8 text-[11px]"
+          />
+          <CommandList>
+            <CommandEmpty className="py-3 text-[11px]">{noResultsText}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value="all"
+                onSelect={() => {
+                  onMakeChange('all');
+                  setOpen(false);
+                  setSearch('');
+                }}
+                className="text-[11px] py-1.5"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-3 w-3",
+                    !selectedMakeId ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {placeholder}
+              </CommandItem>
+              {filteredMakes.map((make) => (
+                <CommandItem
+                  key={make.makeId}
+                  value={String(make.makeId)}
+                  onSelect={() => {
+                    onMakeChange(String(make.makeId));
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className="text-[11px] py-1.5"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-3 w-3",
+                      selectedMakeId === make.makeId ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {make.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+interface ModelComboboxProps {
+  models: VehicleModel[];
+  selectedModelId?: number;
+  onModelChange: (value: string) => void;
+  isLoading: boolean;
+  disabled: boolean;
+  placeholder: string;
+  loadingText: string;
+  searchPlaceholder: string;
+  noResultsText: string;
+}
+
+function ModelCombobox({
+  models,
+  selectedModelId,
+  onModelChange,
+  isLoading,
+  disabled,
+  placeholder,
+  loadingText,
+  searchPlaceholder,
+  noResultsText,
+}: ModelComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const selectedModel = models.find((m) => m.id === selectedModelId);
+  const displayValue = isLoading ? loadingText : (selectedModel?.modelName || placeholder);
+
+  // Filter models based on search (case-insensitive, contains)
+  const filteredModels = useMemo(() => {
+    if (!search.trim()) return models;
+    const lowerSearch = search.toLowerCase();
+    return models.filter((model) => model.modelName.toLowerCase().includes(lowerSearch));
+  }, [models, search]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled || isLoading}
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+        >
+          <span className={cn("truncate", !selectedModel && "text-muted-foreground")}>
+            {displayValue}
+          </span>
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={search}
+            onValueChange={setSearch}
+            className="h-8 text-[11px]"
+          />
+          <CommandList>
+            <CommandEmpty className="py-3 text-[11px]">{noResultsText}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value="all"
+                onSelect={() => {
+                  onModelChange('all');
+                  setOpen(false);
+                  setSearch('');
+                }}
+                className="text-[11px] py-1.5"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-3 w-3",
+                    !selectedModelId ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {placeholder}
+              </CommandItem>
+              {filteredModels.map((model) => (
+                <CommandItem
+                  key={model.id}
+                  value={String(model.id)}
+                  onSelect={() => {
+                    onModelChange(String(model.id));
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className="text-[11px] py-1.5"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-3 w-3",
+                      selectedModelId === model.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {model.modelName}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+interface LocationComboboxProps {
+  cities: string[];
+  selectedLocation?: string;
+  onLocationChange: (value: string) => void;
+  isLoading: boolean;
+  placeholder: string;
+  searchPlaceholder: string;
+  noResultsText: string;
+}
+
+function LocationCombobox({
+  cities,
+  selectedLocation,
+  onLocationChange,
+  isLoading,
+  placeholder,
+  searchPlaceholder,
+  noResultsText,
+}: LocationComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const displayValue = selectedLocation || placeholder;
+
+  // Filter cities based on search (case-insensitive, contains)
+  const filteredCities = useMemo(() => {
+    if (!search.trim()) return cities;
+    const lowerSearch = search.toLowerCase();
+    return cities.filter((city) => city.toLowerCase().includes(lowerSearch));
+  }, [cities, search]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={isLoading}
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+        >
+          <span className={cn("truncate", !selectedLocation && "text-muted-foreground")}>
+            {displayValue}
+          </span>
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={search}
+            onValueChange={setSearch}
+            className="h-8 text-[11px]"
+          />
+          <CommandList>
+            <CommandEmpty className="py-3 text-[11px]">{noResultsText}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value="all"
+                onSelect={() => {
+                  onLocationChange('all');
+                  setOpen(false);
+                  setSearch('');
+                }}
+                className="text-[11px] py-1.5"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-3 w-3",
+                    !selectedLocation ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {placeholder}
+              </CommandItem>
+              {filteredCities.map((city) => (
+                <CommandItem
+                  key={city}
+                  value={city}
+                  onSelect={() => {
+                    onLocationChange(city);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className="text-[11px] py-1.5"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-3 w-3",
+                      selectedLocation === city ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {city}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 /**
  * AuctionSidebarFilters - Sidebar filter component for auction listings
  * 
@@ -173,6 +517,8 @@ export function AuctionSidebarFilters({
   onSourceChange,
   buyNow,
   onBuyNowChange,
+  onApplyFilters,
+  onResetFilters,
 }: AuctionSidebarFiltersProps) {
   const { t } = useTranslation();
 
@@ -788,44 +1134,31 @@ export function AuctionSidebarFilters({
 
       {/* Make */}
       <FilterSection title={t('auction.filters.make')}>
-        <Select
-          value={selectedMakeId ? String(selectedMakeId) : 'all'}
-          onValueChange={handleMakeChange}
-          disabled={isLoadingMakes}
-        >
-          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
-            <SelectValue placeholder={isLoadingMakes ? t('common.loading') : t('auction.filters.any_make')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('auction.filters.any_make')}</SelectItem>
-            {makes.map((make) => (
-              <SelectItem key={make.makeId} value={String(make.makeId)}>
-                {make.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MakeCombobox
+          makes={makes}
+          selectedMakeId={selectedMakeId}
+          onMakeChange={handleMakeChange}
+          isLoading={isLoadingMakes}
+          placeholder={t('auction.filters.any_make')}
+          loadingText={t('common.loading')}
+          searchPlaceholder={t('common.search')}
+          noResultsText={t('common.no_results')}
+        />
       </FilterSection>
 
       {/* Model */}
       <FilterSection title={t('auction.filters.model')}>
-        <Select
-          value={selectedModelId ? String(selectedModelId) : 'all'}
-          onValueChange={handleModelChange}
-          disabled={!selectedMakeId || isLoadingModels}
-        >
-          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
-            <SelectValue placeholder={isLoadingModels ? t('common.loading') : t('auction.filters.any_model')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('auction.filters.any_model')}</SelectItem>
-            {models.map((model) => (
-              <SelectItem key={model.id} value={String(model.id)}>
-                {model.modelName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ModelCombobox
+          models={models}
+          selectedModelId={selectedModelId}
+          onModelChange={handleModelChange}
+          isLoading={isLoadingModels}
+          disabled={!selectedMakeId}
+          placeholder={t('auction.filters.any_model')}
+          loadingText={t('common.loading')}
+          searchPlaceholder={t('common.search')}
+          noResultsText={t('common.no_results')}
+        />
       </FilterSection>
 
       {/* Odometer */}
@@ -1039,21 +1372,15 @@ export function AuctionSidebarFilters({
 
       {/* Location */}
       <FilterSection title={t('auction.filters.location')} defaultOpen={false}>
-        <Select
-          value={location || 'all'}
-          onValueChange={(val) => onLocationChange?.(val === 'all' ? undefined : val)}
-          disabled={isLoadingCities}
-        >
-          <SelectTrigger className="h-7 w-full text-[10px] bg-white border-slate-300">
-            <SelectValue placeholder={t('auction.location.any')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('auction.location.any')}</SelectItem>
-            {cities.map((city) => (
-              <SelectItem key={city} value={city}>{city}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LocationCombobox
+          cities={cities}
+          selectedLocation={location}
+          onLocationChange={(val) => onLocationChange?.(val === 'all' ? undefined : val)}
+          isLoading={isLoadingCities}
+          placeholder={t('auction.location.any')}
+          searchPlaceholder={t('common.search')}
+          noResultsText={t('common.no_results')}
+        />
       </FilterSection>
 
       {/* Cylinders */}
@@ -1110,12 +1437,14 @@ export function AuctionSidebarFilters({
       <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
         <Button 
           className="w-full h-7 text-[10px] bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-bold"
+          onClick={() => onApplyFilters?.()}
         >
           {t('auction.filters.apply')}
         </Button>
         <Button 
           variant="outline" 
           className="w-full h-7 text-[10px] border-slate-300 text-slate-600 hover:bg-slate-100"
+          onClick={() => onResetFilters?.()}
         >
           {t('common.clear_all')}
         </Button>

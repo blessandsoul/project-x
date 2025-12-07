@@ -180,11 +180,11 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
     const [isUnlocked, setIsUnlocked] = useState(false)
     const [isLiking, setIsLiking] = useState(false)
     
-    const damagePrimary = vehicle?.damage_main_damages || "Front End"
-    const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
+    const damagePrimary = vehicle?.damage_main_damages || "HARDCODED"
+    const damageSecondary = vehicle?.damage_secondary_damages || "HARDCODED"
     const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
-    const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
-    const estValue = Number(vehicle?.est_retail_value) || 12500
+    const runAndDrive = vehicle?.run_and_drive || "HARDCODED"
+    const estValue = Number(vehicle?.est_retail_value) || 0
     
     const handleUnlock = () => {
         setIsLiking(true)
@@ -253,7 +253,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                         <div className="pl-2 sm:pl-3 border-l-2 border-blue-500/50">
                             <div className="text-[8px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle.ai_repair_estimate')}</div>
                             <div className="text-sm sm:text-xl font-bold text-foreground tracking-tight">
-                                $800 - $1.2k
+                                HARDCODED
                             </div>
                         </div>
                         <div className="bg-muted/20 rounded p-1.5 sm:p-2.5 flex justify-between items-center">
@@ -332,46 +332,51 @@ const QuoteBreakdownModal = ({
     if (!quote) return null
 
     // Helper to safely format numbers
-    const fmt = (val: number | undefined | null) => val ? `$${Number(val).toLocaleString()}` : '$0'
+    const fmt = (val: number | undefined | null) => val ? `$${Number(val).toLocaleString()}` : '—'
 
+    // New simplified breakdown from calculator API
+    // The API now returns transportation_total as the main price
+    const transportationTotal = quote.breakdown?.transportation_total ?? quote.total_price
+    const currency = quote.breakdown?.currency ?? 'USD'
+
+    // Build breakdown items - show transportation total as the main item
+    // Legacy fields are shown only if present (for backward compatibility)
     const breakdownItems = [
-        { 
-            icon: 'mdi:gavel', 
-            label: t('vehicle.auction_price'), 
-            value: quote.breakdown?.base_price,
-            color: 'text-amber-600',
-            bgColor: 'bg-amber-50'
-        },
         { 
             icon: 'mdi:truck-delivery', 
             label: t('vehicle.shipping_total'), 
-            value: quote.breakdown?.shipping_total,
+            value: transportationTotal,
             color: 'text-blue-600',
-            bgColor: 'bg-blue-50'
+            bgColor: 'bg-blue-50',
+            isMain: true,
         },
-        { 
+        // Legacy fields - only show if present in response
+        ...(quote.breakdown?.customs_fee != null ? [{
             icon: 'mdi:file-document-check', 
             label: t('vehicle.customs_clearance'), 
-            value: quote.breakdown?.customs_fee,
+            value: quote.breakdown.customs_fee,
             color: 'text-purple-600',
             bgColor: 'bg-purple-50'
-        },
-        { 
+        }] : []),
+        ...(quote.breakdown?.broker_fee != null ? [{
             icon: 'mdi:handshake', 
             label: t('vehicle.broker_fees'), 
-            value: quote.breakdown?.broker_fee,
+            value: quote.breakdown.broker_fee,
             color: 'text-emerald-600',
             bgColor: 'bg-emerald-50'
-        },
-        { 
+        }] : []),
+        ...(quote.breakdown?.insurance_fee != null ? [{
             icon: 'mdi:shield-check', 
             label: t('vehicle.insurance_optional'), 
-            value: quote.breakdown?.insurance_fee,
+            value: quote.breakdown.insurance_fee,
             color: 'text-slate-500',
             bgColor: 'bg-slate-50',
             isOptional: true
-        },
+        }] : []),
     ]
+
+    // Suppress unused variable warning
+    void currency
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -464,12 +469,6 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
           className="w-full aspect-[4/3] object-cover"
         />
         
-        {/* Watchlist button */}
-        <button className="absolute top-3 right-3 bg-background/95 rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-foreground/80 hover:bg-muted/80 shadow-sm">
-          <Icon icon="mdi:heart-outline" className="w-4 h-4" />
-          Watchlist
-        </button>
-
         {/* Navigation arrows */}
         <button 
           onClick={handlePrev}
@@ -482,18 +481,6 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
           className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
         >
           <Icon icon="mdi:chevron-right" className="w-5 h-5 text-foreground/80" />
-        </button>
-
-        {/* Play button in center */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-14 h-14 bg-background/70 rounded-full flex items-center justify-center shadow-sm">
-            <Icon icon="mdi:play" className="w-7 h-7 text-foreground ml-1" />
-          </div>
-        </div>
-
-        {/* View damage button */}
-        <button className="absolute bottom-3 left-3 bg-background text-foreground rounded-full px-3 py-1.5 text-[11px] font-medium hover:bg-muted/90 border border-border/60 shadow-sm">
-          View damage
         </button>
 
         {/* Photo counter */}
@@ -517,11 +504,6 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
             )}
           >
             <img src={photo.url} alt="" className="h-full w-full object-cover" />
-            {idx === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Icon icon="mdi:play" className="w-5 h-5 text-white" />
-              </div>
-            )}
           </button>
         ))}
       </div>
@@ -529,152 +511,11 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
   )
 }
 
-// Copart-style Vehicle Info - exactly like screenshot
-const CopartVehicleInfo = ({ vehicle }: { vehicle: any }) => {
-  const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
-
-  return (
-    <div className="space-y-6">
-      {/* Highlights Icons Section */}
-      <div className="bg-white p-4 rounded border border-slate-200 space-y-4">
-        <div className="grid gap-4">
-          {/* Engine Starts */}
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-50 rounded">
-              <Icon icon="mdi:engine" className="w-5 h-5 text-[#0047AB]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-900">Engine Starts</div>
-              <div className="text-[11px] text-slate-500">Copart verified that the engine starts.</div>
-            </div>
-          </div>
-
-          {/* Transmission */}
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-50 rounded">
-              <Icon icon="mdi:car-shift-pattern" className="w-5 h-5 text-[#0047AB]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-900">Transmission Engages</div>
-              <div className="text-[11px] text-slate-500">Copart verified that the transmission engages.</div>
-            </div>
-          </div>
-
-          {/* Drives */}
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-50 rounded">
-              <Icon icon="mdi:speedometer" className="w-5 h-5 text-[#0047AB]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-900">Drives over 30mph</div>
-              <div className="text-[11px] text-slate-500">This vehicle has been test driven at over 30mph.</div>
-            </div>
-          </div>
-
-          {/* Keys */}
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-50 rounded">
-              <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="w-5 h-5 text-[#0047AB]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-900">Has Key</div>
-              <div className="text-[11px] text-slate-500">
-                {hasKeys ? 'There is 1 key available for this lot.' : 'No keys available for this lot.'}
-              </div>
-            </div>
-          </div>
-
-          {/* AutoCheck */}
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-50 rounded">
-              <Icon icon="mdi:shield-check" className="w-5 h-5 text-[#0047AB]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-900">AutoCheck vehicle history</div>
-              <div className="text-[11px] text-slate-500">Get a full AutoCheck report now.</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-3 border-t border-slate-100">
-          <button className="text-[#0047AB] text-[11px] hover:underline">Order condition report</button>
-        </div>
-      </div>
-
-      {/* Details List - Clean layout like screenshot */}
-      <div className="bg-white p-4 rounded border border-slate-200">
-        <div className="space-y-3 text-[12px]">
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Title code:</span>
-            <span className="text-slate-700">{vehicle.sale_title_type || 'Certificate Of Title'}</span>
-          </div>
-          
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Odometer:</span>
-            <div className="flex items-center gap-1">
-              <span className="text-slate-700">{vehicle.mileage?.toLocaleString() || '0'} mi</span>
-              <span className="text-slate-500 italic">(Actual)</span>
-            </div>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Primary damage:</span>
-            <span className="text-slate-700">{vehicle.damage_main_damages || 'Normal Wear'}</span>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Estimated retail value:</span>
-            <span className="text-slate-700">${Number(vehicle.est_retail_value || vehicle.retail_value || 0).toLocaleString()} USD</span>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Cylinders:</span>
-            <span className="text-slate-700">{vehicle.cylinders || '4'}</span>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Color:</span>
-            <span className="text-slate-700 capitalize">{vehicle.color || 'Unknown'}</span>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Has Key:</span>
-            <span className="text-slate-700">{hasKeys ? 'Yes' : 'No'}</span>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Engine type:</span>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-700">{vehicle.engine_volume ? `${vehicle.engine_volume}L` : ''} {vehicle.cylinders ? `V${vehicle.cylinders}` : ''}</span>
-              <button className="flex items-center gap-1 text-[#0047AB] hover:underline">
-                <Icon icon="mdi:volume-high" className="w-3.5 h-3.5" />
-                Listen to engine
-              </button>
-            </div>
-          </div>
-
-          <div className="vehicle-spec-grid grid grid-cols-[140px_1fr] items-baseline">
-            <span className="font-bold text-slate-900">Transmission:</span>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-700">{vehicle.transmission || 'Automatic'}</span>
-            </div>
-          </div>
-          
-          <div className="pt-2">
-             <button className="flex items-center gap-1 text-[#0047AB] hover:underline">
-                <Icon icon="mdi:car-lift" className="w-3.5 h-3.5" />
-                View undercarriage
-              </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+// CopartVehicleInfo component removed - will be replaced with new implementation
 
 // VehicleGallery component kept for potential future use - now using CopartGallery
 
-// VehicleSpecs component kept for potential future use - now using CopartVehicleInfo
+// VehicleSpecs component kept for potential future use
 // QuoteRow component kept for potential future use - now using inline company cards
 
 const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
@@ -806,27 +647,20 @@ const VehicleDetailsPage = () => {
     photos, 
     quotes, 
     isLoading,
-    isLoadingMore: _isLoadingMore,
-    isRefreshingQuotes: _isRefreshingQuotes,
-    hasMoreQuotes: _hasMoreQuotes,
-    loadMoreQuotes: _loadMoreQuotes,
-    quotesLimit: _quotesLimit,
-    setQuotesLimit: setQuotesLimitInternal,
-    minRating,
-    setMinRating: setMinRatingInternal,
-    quotesTotal: _quotesTotal,
+    isRefreshingQuotes,
     error,
+    priceAvailable,
+    priceUnavailableMessage,
+    // Unused but kept for potential future use
+    minRating: _minRating,
   } = useVehicleDetails(id ? Number(id) : null, {
     initialLimit: initialParamsRef.current.limit,
     initialMinRating: initialParamsRef.current.rating,
   })
 
-  // Sync quotesLimit/minRating with URL could be added later if needed
-
   // State: Selection & Unlock
   const [isMultiSelectMode, _setIsMultiSelectMode] = useState(false)
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
-  const [isCompareMode, setIsCompareMode] = useState(false)
   const [hasUnlockedExtra, setHasUnlockedExtra] = useState(false)
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
@@ -849,6 +683,51 @@ const VehicleDetailsPage = () => {
 
   // State: Mobile CTA Visibility
   const [isCtaVisible, setIsCtaVisible] = useState(true)
+
+  // State: Engine View Modal
+  const [isEngineViewOpen, setIsEngineViewOpen] = useState(false)
+  const [engineVideoPreloaded, setEngineVideoPreloaded] = useState(false)
+
+  // State: Bids Modal
+  const [isBidsModalOpen, setIsBidsModalOpen] = useState(false)
+
+  // Get bids data - sorted by date descending (latest first)
+  const bids = useMemo(() => {
+    const vehicleBids = (vehicle as any)?.bids || []
+    return [...vehicleBids].sort((a: any, b: any) => {
+      if (!a.bid_time) return 1
+      if (!b.bid_time) return -1
+      return new Date(b.bid_time).getTime() - new Date(a.bid_time).getTime()
+    })
+  }, [vehicle])
+
+  const lastBid = bids[0] || null
+  const lastBidAmount = lastBid?.bid ?? 0
+  const lastBidDate = lastBid?.bid_time ? new Date(lastBid.bid_time).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : null
+
+  
+  // Preload engine video in background after page loads
+  useEffect(() => {
+    const engineViewUrl = (vehicle as any)?.engine_view
+    if (!engineViewUrl || engineVideoPreloaded) return
+
+    // Wait for page to be fully loaded, then start preloading video
+    const timeoutId = setTimeout(() => {
+      const video = document.createElement('video')
+      video.preload = 'auto'
+      video.src = engineViewUrl
+      video.load()
+      setEngineVideoPreloaded(true)
+    }, 2000) // 2 second delay after component mounts
+
+    return () => clearTimeout(timeoutId)
+  }, [vehicle, engineVideoPreloaded])
 
   useEffect(() => {
     let lastScrollY = window.scrollY || 0
@@ -888,16 +767,13 @@ const VehicleDetailsPage = () => {
 
     return result
   }, [quotes, filterVip, filterFast])
-  
-  // Derived: Is rating filter active
-  const isHighRatingOnly = minRating !== null && minRating >= 4.5
 
   const bestQuote = useMemo(() => {
     if (!quotes.length) return null
     return [...quotes].sort((a, b) => (Number(a.total_price) || 0) - (Number(b.total_price) || 0))[0]
   }, [quotes])
 
-  // Price Stats for Coloring
+  // Price Stats for Coloring (used by VehicleQuotesSection)
   const priceStats = useMemo(() => {
     if (!quotes.length) return { min: 0, max: 0, avg: 0 }
     const prices = quotes.map(q => Number(q.total_price) || 0).filter(p => p > 0)
@@ -909,14 +785,12 @@ const VehicleDetailsPage = () => {
     }
   }, [quotes])
 
-  void priceStats // Used for potential future price coloring
-
-  // Toggle Logic
+  // Toggle Logic for company selection (used by lead modal)
   const handleToggleSelection = (companyId: number) => {
     setSelectedCompanyIds(prev => {
       const isSelected = prev.includes(companyId)
       if (isSelected) {
-        return prev.filter(id => id !== companyId)
+        return prev.filter(cid => cid !== companyId)
       }
       
       // Limit Check
@@ -933,6 +807,9 @@ const VehicleDetailsPage = () => {
       return [...prev, companyId]
     })
   }
+  
+  // Suppress unused variable warnings - kept for potential future use
+  void handleToggleSelection
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1007,11 +884,6 @@ const VehicleDetailsPage = () => {
             year={vehicle.year}
             make={vehicle.make}
             model={vehicle.model}
-            lotId={vehicle.source_lot_id || vehicle.id}
-            vin={vehicle.vin}
-            locationCity={(vehicle as any).location_city}
-            locationState={(vehicle as any).location_state}
-            locationName={(vehicle as any).location_name}
           />
 
           <motion.div
@@ -1020,181 +892,247 @@ const VehicleDetailsPage = () => {
             animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
-            {/* Left Column - Gallery + quick condition */}
+            {/* Left Column - Gallery */}
             <div className="lg:col-span-4 space-y-4">
               <CopartGallery photos={photos} />
               
-              {/* Exterior Condition Section */}
-              <div className="bg-card p-4 rounded-2xl border border-border/70 shadow-sm">
-                <h3 className="font-semibold text-foreground mb-3 text-[13px] tracking-tight flex items-center gap-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">EX</span>
-                  <span>Exterior condition</span>
-                </h3>
-                <div className="space-y-3 text-[12px] text-muted-foreground">
-                  <div className="vehicle-condition-grid grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Primary damage</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{vehicle.damage_main_damages || 'Normal Wear'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Secondary damage</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{vehicle.damage_secondary_damages || 'None'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Body style</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[8rem]">{(vehicle as any).body_type || 'Sedan'}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Color</span>
-                        <span className="text-foreground/80 capitalize text-right truncate max-w-[8rem]">{vehicle.color || 'Unknown'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Doors</span>
-                        <span className="text-foreground/80">{(vehicle as any).doors || '4'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Interior color</span>
-                        <span className="text-foreground/80 capitalize text-right truncate max-w-[8rem]">{(vehicle as any).interior_color || 'Black'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Damage Details Section */}
-                  <div className="pt-3 border-t border-border/60">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Icon icon="mdi:alert-outline" className="w-4 h-4 text-amber-600" />
-                      <span className="font-medium text-[11px] text-foreground uppercase tracking-wide">Damage summary</span>
-                    </div>
-                    <div className="bg-muted rounded-xl p-3 space-y-2 text-[11px]">
-                      <div className="flex items-start gap-2">
-                        <Icon icon="mdi:alert" className="w-4 h-4 text-amber-600 mt-0.5" />
-                        <div className="flex-1">
-                          <div className="font-semibold text-foreground">Front End Damage</div>
-                          <div className="text-muted-foreground mt-1">
-                            Bumper, hood, and front fender show significant impact damage. Headlights and grille need replacement.
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Icon icon="mdi:car-door" className="w-4 h-4 text-amber-500 mt-0.5" />
-                        <div className="flex-1">
-                          <div className="font-semibold text-foreground">Side Damage</div>
-                          <div className="text-muted-foreground mt-1">
-                            Driver side door has minor scratches and dent. Passenger side appears clean.
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Icon icon="mdi:shield-check" className="w-4 h-4 text-primary mt-0.5" />
-                        <div className="flex-1">
-                          <div className="font-semibold text-foreground">Structural</div>
-                          <div className="text-muted-foreground mt-1">
-                            Frame appears straight. No visible structural damage detected.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-                    <button className="flex items-center gap-1 text-primary hover:underline text-[11px]">
-                      <Icon icon="mdi:image-search" className="w-3.5 h-3.5" />
-                      View all exterior photos
-                    </button>
-                    <span className="text-[10px] text-muted-foreground">Visual inspection only, not a full report.</span>
-                  </div>
+              {/* 360 View Buttons */}
+              {((vehicle as any).iaai_360_view || (vehicle as any).copart_360_interior_view) && (
+                <div className="flex gap-2">
+                  {(vehicle as any).iaai_360_view && (
+                    <a
+                      href={(vehicle as any).iaai_360_view}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                    >
+                      <Icon icon="mdi:rotate-3d-variant" className="w-5 h-5 text-[#0047AB]" />
+                      <span className="text-[12px] font-medium text-slate-700">360° Exterior</span>
+                    </a>
+                  )}
+                  {(vehicle as any).copart_360_interior_view && (
+                    <a
+                      href={(vehicle as any).copart_360_interior_view}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                    >
+                      <Icon icon="mdi:car-seat" className="w-5 h-5 text-[#0047AB]" />
+                      <span className="text-[12px] font-medium text-slate-700">360° Interior</span>
+                    </a>
+                  )}
                 </div>
-              </div>
-
-              {/* Full Vehicle Details Section */}
-              <div className="bg-card p-4 rounded-2xl border border-border/70 shadow-sm">
-                <h3 className="font-semibold text-foreground mb-3 text-[13px] tracking-tight flex items-center gap-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">ID</span>
-                  <span>Full vehicle details</span>
-                </h3>
-                <div className="space-y-3 text-[12px] text-muted-foreground">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">VIN</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.vin}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Year</span>
-                        <span className="text-foreground/80">{vehicle.year}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Make</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.make}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Model</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.model}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Trim</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).trim || 'Base'}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Fuel type</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).fuel_type || 'Gasoline'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Engine</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.engine_volume ? `${vehicle.engine_volume}L` : ''} {vehicle.cylinders ? `V${vehicle.cylinders}` : ''}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Transmission</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{vehicle.transmission || 'Automatic'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Drive type</span>
-                        <span className="text-foreground/80 text-right truncate max-w-[9rem]">{(vehicle as any).drive_type || 'FWD'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-medium text-foreground">Cylinders</span>
-                        <span className="text-foreground/80">{vehicle.cylinders || '4'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-                    <button className="flex items-center gap-1 text-primary hover:underline text-[11px]">
-                      <Icon icon="mdi:file-document" className="w-3.5 h-3.5" />
-                      Download full specification sheet
-                    </button>
-                    <span className="text-[10px] text-muted-foreground">PDF summary for offline review.</span>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Middle Column - Vehicle Details */}
             <div className="lg:col-span-4 space-y-5">
-              <CopartVehicleInfo vehicle={vehicle} />
+              {/* Vehicle Details Section */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
+                  <h2 className="text-[13px] font-semibold text-slate-900">Vehicle details</h2>
+                  <button className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-[11px]">
+                    <Icon icon="mdi:share-variant-outline" className="w-3.5 h-3.5" />
+                    <span>Share</span>
+                  </button>
+                </div>
+
+                {/* Details Rows */}
+                <div className="divide-y divide-slate-100">
+                  {/* Lot number */}
+                  {vehicle.source_lot_id && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Lot number:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.source_lot_id}</span>
+                    </div>
+                  )}
+
+                  {/* VIN */}
+                  {vehicle.vin && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">VIN:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.vin}</span>
+                    </div>
+                  )}
+
+                  {/* Title code */}
+                  {(vehicle as any).document && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Title code:</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).document}</span>
+                        <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Odometer - always show, display 0 if falsy */}
+                  <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                    <span className="text-[11px] text-slate-500">Odometer:</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle.mileage || 0).toLocaleString()} MI</span>
+                      <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                  </div>
+
+                  {/* Primary damage */}
+                  {vehicle.damage_main_damages && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Primary damage:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.damage_main_damages}</span>
+                    </div>
+                  )}
+
+                  {/* Estimated retail value */}
+                  {(vehicle as any).retail_value && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Estimated retail value:</span>
+                      <span className="text-[11px] font-medium text-slate-900">${Number((vehicle as any).retail_value).toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {/* Cylinders - always show, display 0 if falsy */}
+                  <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                    <span className="text-[11px] text-slate-500">Cylinders:</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.cylinders || 0}</span>
+                  </div>
+
+                  {/* Color */}
+                  {vehicle.color && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Color:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.color}</span>
+                    </div>
+                  )}
+
+                  {/* Engine type */}
+                  {(vehicle.engine_volume || vehicle.cylinders) && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Engine type:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-slate-900 uppercase">
+                          {vehicle.engine_volume && vehicle.cylinders
+                            ? `${vehicle.engine_volume}L ${vehicle.cylinders}`
+                            : vehicle.engine_volume
+                              ? `${vehicle.engine_volume}L`
+                              : vehicle.cylinders}
+                        </span>
+                        {(vehicle as any).engine_view && (
+                          <button
+                            onClick={() => setIsEngineViewOpen(true)}
+                            className="text-[11px] text-[#0047AB] hover:underline"
+                          >
+                            View engine
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transmission */}
+                  {vehicle.transmission && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Transmission:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.transmission}</span>
+                    </div>
+                  )}
+
+                  {/* Drive */}
+                  {(vehicle as any).drive && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Drive:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).drive}</span>
+                    </div>
+                  )}
+
+                  {/* Vehicle type */}
+                  <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                    <span className="text-[11px] text-slate-500">Vehicle type:</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">HARDCODED</span>
+                  </div>
+
+                  {/* Fuel */}
+                  {(vehicle as any).engine_fuel && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Fuel:</span>
+                      <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).engine_fuel}</span>
+                    </div>
+                  )}
+
+                  {/* Keys - always show Yes/No */}
+                  <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                    <span className="text-[11px] text-slate-500">Keys:</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).has_keys ? 'YES' : 'NO'}</span>
+                  </div>
+
+                  {/* Highlights - only show if run_and_drive is truthy */}
+                  {(vehicle as any).run_and_drive && (
+                    <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
+                      <span className="text-[11px] text-slate-500">Highlights:</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-slate-900">Run and Drive</span>
+                        <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Right Column - Price & Aggregator */}
-            <div className="lg:col-span-4 space-y-7">
+            <div className="lg:col-span-4 space-y-4">
+              {/* Watchlist + Last Bid Info Block */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-4">
+                  {/* Yard + Watchlist (stacked) */}
+                  <div className="flex flex-col gap-1">
+                    {(vehicle as any)?.yard_name && (
+                      <span className="text-[12px] font-semibold text-[#0047AB] uppercase pb-[5px]">
+                        {(vehicle as any).yard_name}
+                      </span>
+                    )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex items-center gap-2 text-[12px] font-semibold bg-amber-400 hover:bg-amber-500 text-slate-900 border border-amber-400 shadow-sm"
+                    >
+                      <Icon icon="mdi:heart-outline" className="w-4 h-4" />
+                      Add to watchlist
+                    </Button>
+                  </div>
+
+                  {/* Last Bid Info */}
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-slate-500">Last bid:</span>
+                      <span className="text-[13px] font-semibold text-slate-900">${lastBidAmount.toLocaleString()}</span>
+                    </div>
+                    {lastBidDate && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-500">Last bid date:</span>
+                        <span className="text-[11px] font-medium text-slate-700">{lastBidDate}</span>
+                      </div>
+                    )}
+                    {bids.length > 0 && (
+                      <button
+                        onClick={() => setIsBidsModalOpen(true)}
+                        className="text-[11px] text-[#0047AB] hover:underline mt-1"
+                      >
+                        View all bids ({bids.length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <VehicleQuotesSection
-                quotes={quotes}
                 filteredQuotes={filteredQuotes}
                 priceStats={priceStats}
-                selectedCompanyIds={selectedCompanyIds}
-                isCompareMode={isCompareMode}
-                quotesLimit={_quotesLimit}
-                totalQuotes={_quotesTotal}
-                isHighRatingOnly={isHighRatingOnly}
                 error={error}
-                onToggleHighRating={() => setMinRatingInternal(isHighRatingOnly ? null : 4.5)}
-                onChangeLimit={(limit) => setQuotesLimitInternal(limit)}
-                onToggleCompareMode={() => setIsCompareMode((prev) => !prev)}
-                onToggleSelection={handleToggleSelection}
+                isLoading={isRefreshingQuotes}
+                priceAvailable={priceAvailable}
+                priceUnavailableMessage={priceUnavailableMessage}
                 onOpenBreakdown={(quote) => setActiveBreakdownQuote(quote)}
                 onOpenLeadModal={() => setIsLeadModalOpen(true)}
               />
@@ -1208,6 +1146,106 @@ const VehicleDetailsPage = () => {
         </div>
       {/* Success Modal */}
       <SuccessModal isOpen={isSuccessModalOpen} onClose={() => setIsSuccessModalOpen(false)} count={selectedCompanyIds.length || 1} />
+
+      {/* Engine View Modal */}
+      {(vehicle as any).engine_view && (
+        <Dialog open={isEngineViewOpen} onOpenChange={setIsEngineViewOpen}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>Engine View</DialogTitle>
+              <DialogDescription>
+                {vehicle.year} {vehicle.make} {vehicle.model}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-4">
+              <video
+                src={(vehicle as any).engine_view}
+                controls
+                autoPlay
+                preload="auto"
+                playsInline
+                className="w-full rounded-lg bg-black"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Bids History Modal */}
+      <Dialog open={isBidsModalOpen} onOpenChange={setIsBidsModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bid History</DialogTitle>
+            <DialogDescription>
+              {vehicle.year} {vehicle.make} {vehicle.model} • {bids.length} bid{bids.length !== 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-y-auto">
+            {bids.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">
+                No bids recorded for this vehicle
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {bids.map((bid: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between py-3 px-1">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold",
+                        index === 0 
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-slate-100 text-slate-600"
+                      )}>
+                        {index === 0 ? (
+                          <Icon icon="mdi:trophy" className="w-4 h-4" />
+                        ) : (
+                          `#${index + 1}`
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-semibold text-slate-900">
+                          ${(bid.bid ?? 0).toLocaleString()}
+                        </div>
+                        {index === 0 && (
+                          <span className="text-[10px] text-green-600 font-medium uppercase">Latest Bid</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {bid.bid_time ? (
+                        <>
+                          <div className="text-[11px] text-slate-700">
+                            {new Date(bid.bid_time).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            {new Date(bid.bid_time).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">No date</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBidsModalOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile Sticky CTA */}
       <div className={cn(
