@@ -48,7 +48,7 @@ export function CopartHeroSection() {
               />
 
               {/* App Store Badges */}
-              <div className="flex flex-wrap items-center gap-3 py-2">
+              <div className="flex flex-wrap items-center justify-center gap-3 py-2">
                 <button className="inline-flex items-center gap-2 rounded-xl border border-slate-900/10 bg-slate-950 text-white px-3.5 py-2 text-xs shadow-sm shadow-slate-900/40 hover:bg-slate-900 hover:shadow-md transition-colors">
                   <Icon icon="mdi:apple" className="w-5 h-5" aria-hidden="true" />
                   <div className="text-left leading-tight rtl:text-right">
@@ -66,7 +66,7 @@ export function CopartHeroSection() {
               </div>
 
               {/* Feature Icons Row */}
-              <div className="flex flex-wrap items-center gap-4 py-2 text-[13px] text-slate-900/90 dark:text-slate-50/90">
+              <div className="flex flex-wrap items-center justify-center gap-4 py-2 text-[13px] text-slate-900/90 dark:text-slate-50/90">
                 <div className="inline-flex items-center gap-1.5">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm shadow-slate-900/30 dark:bg-slate-100 dark:text-slate-900">
                     <Icon icon="mdi:shield-check" className="w-4 h-4" aria-hidden="true" />
@@ -153,7 +153,7 @@ export function CopartHeroSection() {
       <div className="relative z-10 hidden md:block lg:hidden">
         <div className="w-full px-6 py-12">
           {/* TOP BLOCK - TEXT (full width, centered) */}
-          <div className="max-w-3xl mx-auto space-y-4 text-slate-900">
+          <div className="max-w-3xl mx-auto space-y-4 text-slate-900 text-center">
             {/* Headline */}
             <h1
               id="home-copart-hero-heading-tablet"
@@ -164,12 +164,12 @@ export function CopartHeroSection() {
 
             {/* Description */}
             <p 
-              className="text-base text-slate-800/90 max-w-2xl leading-relaxed"
+              className="text-base text-slate-800/90 max-w-2xl leading-relaxed mx-auto text-center"
               dangerouslySetInnerHTML={{ __html: t('home.copart_hero.subtitle') }}
             />
 
             {/* App Store Badges */}
-            <div className="flex flex-wrap items-center gap-3 py-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 py-2">
               <button className="inline-flex items-center gap-2 rounded-xl border border-slate-900/10 bg-slate-950 text-white px-3.5 py-2.5 text-xs shadow-sm shadow-slate-900/40 hover:bg-slate-900 hover:shadow-md transition-colors">
                 <Icon icon="mdi:apple" className="w-5 h-5" aria-hidden="true" />
                 <div className="text-left leading-tight">
@@ -187,7 +187,7 @@ export function CopartHeroSection() {
             </div>
 
             {/* Feature Icons Row */}
-            <div className="flex flex-wrap items-center gap-4 py-2 text-[13px] text-slate-900/90">
+            <div className="flex flex-wrap items-center justify-center gap-4 py-2 text-[13px] text-slate-900/90">
               <div className="inline-flex items-center gap-1.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
                   <Icon icon="mdi:shield-check" className="w-4 h-4" aria-hidden="true" />
@@ -209,7 +209,7 @@ export function CopartHeroSection() {
             </div>
 
             {/* CTA Button */}
-            <div className="pt-2">
+            <div className="pt-2 flex justify-center">
               <Button
                 size="lg"
                 className="rounded-xl text-base font-semibold px-8 py-5 bg-slate-900 hover:bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.45)]"
@@ -276,7 +276,7 @@ export function CopartHeroSection() {
       <div className="relative z-10 md:hidden">
         <div className="w-full px-5 py-8">
           {/* Content Container - centered with max width */}
-          <div className="max-w-[32rem] mx-auto space-y-4 text-slate-900">
+          <div className="max-w-[32rem] mx-auto space-y-4 text-slate-900 text-center">
             {/* Headline */}
             <h1
               id="home-copart-hero-heading-mobile"
@@ -311,19 +311,19 @@ export function CopartHeroSection() {
 
             {/* Feature Bullets - vertical list on xs, 2-col grid on sm */}
             <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0 pt-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 text-center">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
                   <Icon icon="mdi:shield-check" className="w-4 h-4" aria-hidden="true" />
                 </div>
                 <span className="text-sm font-medium">{t('home.copart_hero.buyer_protection')}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 text-center">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
                   <Icon icon="mdi:truck-delivery" className="w-4 h-4" aria-hidden="true" />
                 </div>
                 <span className="text-sm font-medium">{t('home.copart_hero.nationwide_delivery')}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 text-center">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
                   <Icon icon="mdi:file-document-check" className="w-4 h-4" aria-hidden="true" />
                 </div>

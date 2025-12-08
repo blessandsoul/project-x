@@ -8,13 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { EmptyState } from '@/components/company/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CatalogFilters } from '@/components/catalog/CatalogFilters';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
 import { CompanyComparisonModal } from '@/components/comparison/CompanyComparisonModal';
-import type { AuctionLocation } from '@/api/auction';
-import { fetchCopartLocations, fetchIaaiLocations, calculateShipping } from '@/api/auction';
+import { ShippingCalculator, type CalculatorResult } from '@/components/catalog/ShippingCalculator';
 
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
@@ -40,17 +38,10 @@ const CompanyCatalogPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<number[]>([]);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
 
-  const [auctionSource, setAuctionSource] = useState<'all' | 'copart' | 'iaai'>('all');
-  const [auctionBranches, setAuctionBranches] = useState<AuctionLocation[]>([]);
-  const [selectedAuctionBranch, setSelectedAuctionBranch] = useState<string>('');
-  const [shippingQuotes, setShippingQuotes] = useState<Map<number, number>>(new Map());
-  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
-  const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
-  const [selectedPort, setSelectedPort] = useState('poti_georgia');
-  const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
-  const branchSelectRef = useRef<HTMLButtonElement>(null);
-  const [desktopBranchOpen, setDesktopBranchOpen] = useState(false);
-  const [mobileBranchOpen, setMobileBranchOpen] = useState(false);
+  // Calculator state for showing prices in company rows
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [hasCalculation, setHasCalculation] = useState(false);
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -83,81 +74,6 @@ const CompanyCatalogPage = () => {
   const cityDraftRef = useRef<string>('');
   const priceDraftRef = useRef<[number, number]>([0, 0]);
 
-  useEffect(() => {
-    let isCancelled = false;
-
-    const loadBranches = async () => {
-      try {
-        if (auctionSource === 'copart') {
-          const items = await fetchCopartLocations();
-          if (!isCancelled) setAuctionBranches(items);
-        } else if (auctionSource === 'iaai') {
-          const items = await fetchIaaiLocations();
-          if (!isCancelled) setAuctionBranches(items);
-        } else {
-          setAuctionBranches([]);
-        }
-      } catch {
-        if (!isCancelled) setAuctionBranches([]);
-      }
-    };
-
-    void loadBranches();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [auctionSource]);
-
-  useEffect(() => {
-    setAuctionBranchSearch('');
-  }, [auctionSource, auctionBranches]);
-
-  // Calculate shipping quotes when auction branch is selected
-  useEffect(() => {
-    if (!selectedAuctionBranch || auctionSource === 'all') {
-      setShippingQuotes(new Map());
-      return;
-    }
-
-    // selectedAuctionBranch contains the address (used as SelectItem value)
-    const branchAddress = selectedAuctionBranch;
-    if (!branchAddress) {
-      setShippingQuotes(new Map());
-      return;
-    }
-
-    let isCancelled = false;
-    setIsLoadingShipping(true);
-
-    const loadShippingQuotes = async () => {
-      try {
-        const response = await calculateShipping(branchAddress, auctionSource as 'copart' | 'iaai', selectedPort);
-        if (!isCancelled) {
-          const quotesMap = new Map<number, number>();
-          for (const quote of response.quotes) {
-            quotesMap.set(quote.companyId, quote.shippingPrice);
-          }
-          setShippingQuotes(quotesMap);
-        }
-      } catch (error) {
-        console.error('Failed to calculate shipping:', error);
-        if (!isCancelled) {
-          setShippingQuotes(new Map());
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingShipping(false);
-        }
-      }
-    };
-
-    void loadShippingQuotes();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [selectedAuctionBranch, auctionSource, selectedPort]);
 
   const toggleComparison = (id: number) => {
     setSelectedCompanies(prev => {
@@ -174,14 +90,6 @@ const CompanyCatalogPage = () => {
     });
   };
 
-  const filteredAuctionBranches = auctionBranches.filter((branch: AuctionLocation) => {
-    if (!auctionBranchSearch.trim()) return true;
-    const term = auctionBranchSearch.toLowerCase();
-    return (
-      branch.name.toLowerCase().includes(term) ||
-      branch.address.toLowerCase().includes(term)
-    );
-  });
 
   const loadCompanies = useCallback(async (
     nextPage: number,
@@ -338,9 +246,32 @@ const CompanyCatalogPage = () => {
     [allCompanies],
   );
 
+  // Calculator event handlers
+  const handleCalculationComplete = useCallback((result: CalculatorResult) => {
+    // Extract transportation_total from nested data object or root level
+    const price = result.data?.transportation_total 
+      ?? result.transportation_total 
+      ?? result.shipping_cost 
+      ?? result.total_price 
+      ?? null;
+    setCalculatedPrice(price);
+    setHasCalculation(true);
+    setIsCalculatingPrice(false);
+  }, []);
+
+  const handleCalculationStart = useCallback(() => {
+    setIsCalculatingPrice(true);
+  }, []);
+
+  const handleCalculationClear = useCallback(() => {
+    setCalculatedPrice(null);
+    setHasCalculation(false);
+    setIsCalculatingPrice(false);
+  }, []);
+
   const resultsContent = useMemo(
     () => (
-      <div className="lg:col-span-3 space-y-6">
+      <>
         {/* Results Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
           <p className="text-sm font-medium text-slate-600">
@@ -409,9 +340,9 @@ const CompanyCatalogPage = () => {
                 isCompareMode={isCompareMode}
                 isSelected={selectedCompanies.includes(company.id)}
                 onToggleCompare={() => toggleComparison(company.id)}
-                hasAuctionBranch={!!selectedAuctionBranch && auctionSource !== 'all'}
-                isLoadingShipping={isLoadingShipping}
-                calculatedShippingPrice={shippingQuotes.get(company.id)}
+                hasAuctionBranch={hasCalculation}
+                isLoadingShipping={isCalculatingPrice}
+                calculatedShippingPrice={calculatedPrice ?? undefined}
               />
             ))}
           </div>
@@ -509,7 +440,7 @@ const CompanyCatalogPage = () => {
             </Button>
           </div>
         )}
-      </div>
+      </>
     ),
     [
       t,
@@ -525,10 +456,9 @@ const CompanyCatalogPage = () => {
       filters,
       loadCompanies,
       updateUrlFromFilters,
-      selectedAuctionBranch,
-      auctionSource,
-      shippingQuotes,
-      isLoadingShipping,
+      hasCalculation,
+      isCalculatingPrice,
+      calculatedPrice,
     ],
   );
 
@@ -548,209 +478,6 @@ const CompanyCatalogPage = () => {
                 </p>
               </div>
 
-              <div className="w-full lg:w-auto hidden lg:block">
-                <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
-                  <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                    {t('catalog.filters.auction', 'Auction shipping')}
-                  </span>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="sm:w-40">
-                      <Select
-                        value={auctionSource}
-                        onValueChange={(value: 'all' | 'copart' | 'iaai') => {
-                          setAuctionSource(value);
-                          setSelectedAuctionBranch('');
-                          if (value !== 'all') {
-                            setBranchNeedsAttention(true);
-                            setDesktopBranchOpen(true);
-                            setMobileBranchOpen(false);
-                          } else {
-                            setBranchNeedsAttention(false);
-                            setDesktopBranchOpen(false);
-                            setMobileBranchOpen(false);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
-                          <SelectItem value="copart">Copart</SelectItem>
-                          <SelectItem value="iaai">IAAI</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex-1 min-w-[180px]">
-                      <Select
-                        open={desktopBranchOpen}
-                        onOpenChange={setDesktopBranchOpen}
-                        value={selectedAuctionBranch ?? ''}
-                        onValueChange={(value) => {
-                          setSelectedAuctionBranch(value);
-                          setBranchNeedsAttention(false);
-                        }}
-                        disabled={auctionSource === 'all' || auctionBranches.length === 0}
-                      >
-                        <SelectTrigger
-                          ref={branchSelectRef}
-                          className={`bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
-                        >
-                          <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
-                        >
-                          <div className="p-2 border-b bg-white sticky top-0 z-10">
-                            <Input
-                              placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
-                              value={auctionBranchSearch}
-                              onChange={(e) => setAuctionBranchSearch(e.target.value)}
-                              className="h-8 text-xs bg-white"
-                            />
-                          </div>
-                          <div className="max-h-52 overflow-y-auto">
-                            {filteredAuctionBranches.map((branch) => (
-                              <SelectItem key={branch.address} value={branch.address}>
-                                {branch.name}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="sm:w-40">
-                      <Select
-                        value={selectedPort}
-                        onValueChange={(value) => {
-                          setSelectedPort(value);
-                        }}
-                      >
-                        <SelectTrigger className="bg-white border-slate-200 h-9 sm:h-10 w-full text-slate-900 hover:bg-slate-50">
-                          <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
-                          <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
-                          <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
-                          <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Auction / Shipping Selector */}
-      <div className="relative z-10 lg:hidden border-b border-slate-200 bg-white/80">
-        <div className="container mx-auto px-4 pt-3 pb-4">
-          <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl px-3 py-3 flex flex-col gap-2 shadow-sm">
-            <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-              {t('catalog.filters.auction', 'Auction shipping')}
-            </span>
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div className="sm:w-full">
-                  <Select
-                    value={auctionSource}
-                    onValueChange={(value: 'all' | 'copart' | 'iaai') => {
-                      setAuctionSource(value);
-                      setSelectedAuctionBranch('');
-                      if (value !== 'all') {
-                        setBranchNeedsAttention(true);
-                        if (typeof window !== 'undefined') {
-                          if (window.innerWidth >= 1024) {
-                            setDesktopBranchOpen(true);
-                            setMobileBranchOpen(false);
-                          } else {
-                            setMobileBranchOpen(true);
-                            setDesktopBranchOpen(false);
-                          }
-                        }
-                      } else {
-                        setBranchNeedsAttention(false);
-                        setDesktopBranchOpen(false);
-                        setMobileBranchOpen(false);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
-                      <SelectItem value="copart">Copart</SelectItem>
-                      <SelectItem value="iaai">IAAI</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex-1 min-w-[180px]">
-                  <Select
-                    open={mobileBranchOpen}
-                    onOpenChange={setMobileBranchOpen}
-                    value={selectedAuctionBranch ?? ''}
-                    onValueChange={(value) => {
-                      setSelectedAuctionBranch(value);
-                      setBranchNeedsAttention(false);
-                    }}
-                    disabled={auctionSource === 'all' || auctionBranches.length === 0}
-                  >
-                    <SelectTrigger
-                      ref={branchSelectRef}
-                      className={`bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50 disabled:opacity-50 ${branchNeedsAttention ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent' : ''}`}
-                    >
-                      <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
-                    </SelectTrigger>
-                    <SelectContent
-                      position="popper"
-                      className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
-                    >
-                      <div className="p-2 border-b bg-white sticky top-0 z-10">
-                        <Input
-                          placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
-                          value={auctionBranchSearch}
-                          onChange={(e) => setAuctionBranchSearch(e.target.value)}
-                          className="h-8 text-xs bg-white"
-                        />
-                      </div>
-                      <div className="max-h-52 overflow-y-auto">
-                        {filteredAuctionBranches.map((branch) => (
-                          <SelectItem key={branch.address} value={branch.address}>
-                            {branch.name}
-                          </SelectItem>
-                        ))}
-                      </div>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="sm:w-full">
-                  <Select
-                    value={selectedPort}
-                    onValueChange={(value) => {
-                      setSelectedPort(value);
-                    }}
-                  >
-                    <SelectTrigger className="bg-white border-slate-200 h-9 w-full text-slate-900 hover:bg-slate-50">
-                      <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
-                      <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
-                      <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
-                      <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -874,25 +601,21 @@ const CompanyCatalogPage = () => {
                 void loadCompanies(1, nextFilters);
                 updateUrlFromFilters(nextFilters, 1);
               }}
-              auctionSource={auctionSource}
-              onAuctionSourceChange={(value) => {
-                setAuctionSource(value);
-                setSelectedAuctionBranch('');
-              }}
-              auctionBranches={auctionBranches}
-              auctionBranchValue={selectedAuctionBranch}
-              onAuctionBranchChange={(value) => {
-                setSelectedAuctionBranch(value);
-              }}
-              portValue={selectedPort}
-              onPortChange={(value) => {
-                setSelectedPort(value);
-              }}
             />
           </aside>
 
           {/* Main Content */}
-          {resultsContent}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Shipping Calculator */}
+            <ShippingCalculator
+              onCalculationComplete={handleCalculationComplete}
+              onCalculationStart={handleCalculationStart}
+              onCalculationClear={handleCalculationClear}
+            />
+            
+            {/* Results from useMemo */}
+            {resultsContent}
+          </div>
         </div>
       </main>
       

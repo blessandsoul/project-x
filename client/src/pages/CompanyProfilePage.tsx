@@ -376,7 +376,7 @@ const CompanyProfilePage = () => {
 
         {/* Hero Content */}
         <div className="relative z-10">
-          <div className="container mx-auto px-4 pt-6 pb-8 lg:pt-8 lg:pb-10">
+          <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto pt-6 pb-8 lg:pt-8 lg:pb-10">
             {/* Back Button */}
             <Button
               variant="ghost"
@@ -454,34 +454,15 @@ const CompanyProfilePage = () => {
                       {company.description}
                     </p>
                   </div>
-
-                  {/* Price Range Card */}
-                  {company.priceRange && (
-                    <div className="w-full lg:w-auto bg-white border border-slate-200 p-5 rounded-xl shadow-sm lg:text-right">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t('company_profile.service_cost')}</p>
-                      <div
-                        className="text-2xl font-bold text-slate-900 mb-1"
-                        aria-label={`Estimated service cost from ${company.priceRange.min} to ${company.priceRange.max} USD`}
-                      >
-                        ${company.priceRange.min.toLocaleString()} - ${company.priceRange.max.toLocaleString()}
-                      </div>
-                      <p
-                        className="text-xs text-slate-500"
-                        aria-label="Approximate total service cost in Georgian lari"
-                      >
-                        ≈ {(company.priceRange.min * 2.7).toLocaleString()} GEL
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="flex flex-row flex-wrap justify-center lg:justify-start gap-3 w-full lg:w-auto">
                   <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
                     <Button
                       size="lg"
                       onClick={() => setIsContactOpen(true)}
-                      className="flex-1 sm:flex-none w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+                      className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                     >
                       <Icon icon="mdi:phone" className="me-2 h-5 w-5" />
                       {t('company_profile.contact_btn')}
@@ -565,11 +546,11 @@ const CompanyProfilePage = () => {
                       </form>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" size="lg" className="flex-1 sm:flex-none w-full sm:w-auto bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
+                  <Button variant="outline" size="lg" className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
                     <Icon icon="mdi:email" className="me-2 h-5 w-5" />
                     {t('company_profile.email_btn')}
                   </Button>
-                  <Button variant="outline" size="lg" className="flex-1 sm:flex-none w-full sm:w-auto bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
+                  <Button variant="outline" size="lg" className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
                     <Icon icon="mdi:web" className="me-2 h-5 w-5" />
                     {t('company_profile.website_btn')}
                   </Button>
@@ -582,7 +563,7 @@ const CompanyProfilePage = () => {
 
       {/* Main Content Section */}
       <main className="flex-1 relative z-10 bg-white/60 backdrop-blur-sm" role="main">
-        <div className="container mx-auto py-8 px-4 sm:px-6">
+        <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">

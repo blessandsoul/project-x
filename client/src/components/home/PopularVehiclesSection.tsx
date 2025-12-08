@@ -235,7 +235,7 @@ export function PopularVehiclesSection() {
           {cards.map((vehicle) => (
             <div
               key={vehicle.id}
-              className="flex-shrink-0 w-[240px] snap-start rounded-2xl overflow-hidden bg-card border border-border/60 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full"
+              className="popular-vehicle-card flex-shrink-0 w-[160px] min-[680px]:w-[240px] snap-start rounded-2xl overflow-hidden bg-card border border-border/60 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col"
               onClick={() => navigate(`/vehicle/${vehicle.id}`)}
             >
               {/* Image */}
@@ -248,56 +248,56 @@ export function PopularVehiclesSection() {
               </div>
 
               {/* Content */}
-              <div className="p-3 flex flex-col h-full space-y-2">
+              <div className="p-2 min-[680px]:p-3 flex flex-col flex-1 space-y-1 min-[680px]:space-y-2">
                 {/* Title */}
-                <h3 className="font-semibold text-sm text-foreground truncate">
+                <h3 className="font-semibold text-xs min-[680px]:text-sm text-foreground line-clamp-2 min-[680px]:truncate leading-tight">
                   {vehicle.year ? `${vehicle.year} ` : ''}{vehicle.make} {vehicle.model}
                 </h3>
                 
                 {/* Info Row */}
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1 min-[680px]:gap-2 text-[9px] min-[680px]:text-[11px] text-muted-foreground">
                   {typeof vehicle.mileage === 'number' ? (
                     <span>{vehicle.mileage.toLocaleString()} mi</span>
                   ) : (
                     <span>—</span>
                   )}
                   <span>•</span>
-                  <span>{vehicle.location}</span>
+                  <span className="truncate">{vehicle.location}</span>
                 </div>
 
                 {/* Price Row */}
-                <div className="pt-1 border-t border-border/40">
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                <div className="pt-1 border-t border-border/40 flex-1 flex flex-col justify-end">
+                  <div className="flex items-center justify-between text-[9px] min-[680px]:text-[11px] text-muted-foreground mb-0.5 min-[680px]:mb-1">
                     <span>{t('home.popular_vehicles.current_bid')}</span>
-                    <span>{t('home.popular_vehicles.buy_now')}</span>
+                    <span className="hidden min-[680px]:inline">{t('home.popular_vehicles.buy_now')}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-foreground">
+                    <span className="text-sm min-[680px]:text-base font-bold text-foreground">
                       {vehicle.currentBid != null ? `$${vehicle.currentBid.toLocaleString()}` : '—'}
                     </span>
-                    <span className="text-sm font-semibold text-green-600">
+                    <span className="text-xs min-[680px]:text-sm font-semibold text-green-600">
                       {vehicle.buyNow != null ? `$${vehicle.buyNow.toLocaleString()}` : '—'}
                     </span>
                   </div>
                 </div>
 
-                {/* Sale Date */}
-                <div className="text-[10px] text-muted-foreground/70">
+                {/* Sale Date - hidden on mobile */}
+                <div className="hidden min-[680px]:block text-[10px] text-muted-foreground/70">
                   {t('home.popular_vehicles.sale')}: {vehicle.saleDate}
                 </div>
 
-                {/* Action Buttons - compact/tag-like */}
-                <div className="flex flex-col sm:flex-row gap-1.5 pt-1 mt-auto">
+                {/* Action Buttons - single button on mobile, two on desktop */}
+                <div className="flex gap-1.5 pt-1 mt-auto">
                   <Button 
                     size="sm" 
-                    className="w-full sm:flex-1 h-6 sm:h-7 px-2 sm:px-3 text-[10px] sm:text-[11px] bg-[#0047AB] hover:bg-[#003d99] text-white font-semibold rounded-full"
+                    className="flex-1 h-7 px-2 text-[10px] min-[680px]:text-[11px] bg-[#0047AB] hover:bg-[#003d99] text-white font-semibold rounded-full"
                   >
                     {t('home.popular_vehicles.bid_now')}
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="w-full sm:flex-1 h-6 sm:h-7 px-2 sm:px-3 text-[10px] sm:text-[11px] border-green-500 text-green-600 hover:bg-green-50 font-semibold rounded-full"
+                    className="hidden min-[680px]:flex flex-1 h-7 px-2 text-[11px] border-green-500 text-green-600 hover:bg-green-50 font-semibold rounded-full"
                   >
                     {t('home.popular_vehicles.buy_now')}
                   </Button>

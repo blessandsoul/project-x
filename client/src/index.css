@@ -1125,3 +1125,15 @@
     display: none;
   }
 }
+
+/* Popular Vehicles Section - Equal Height Cards */
+.popular-vehicle-card {
+  /* Fixed height for desktop (680px+) */
+  @media (min-width: 680px) {
+    min-height: 340px;
+  }
+  /* Smaller fixed height for mobile */
+  @media (max-width: 679px) {
+    min-height: 240px;
+  }
+}

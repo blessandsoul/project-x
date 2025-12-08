@@ -24,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea'
 
 // Hooks & Utils
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
+import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
 import { createLeadFromQuotes } from '@/api/leads'
@@ -626,8 +628,11 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
 const VehicleDetailsPage = () => {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const shouldReduceMotion = useReducedMotion()
+  const { isAuthenticated } = useAuth()
+  const { isWatched, toggleWatch, isLoading: isWatchlistLoading } = useVehicleWatchlist()
 
   // Parse URL params for initial values - use ref to only read once on mount
   const initialParamsRef = useRef<{ limit: number; rating: number | null } | null>(null)
@@ -1095,10 +1100,28 @@ const VehicleDetailsPage = () => {
                     <Button
                       variant="default"
                       size="sm"
-                      className="flex items-center gap-2 text-[12px] font-semibold bg-amber-400 hover:bg-amber-500 text-slate-900 border border-amber-400 shadow-sm"
+                      disabled={isWatchlistLoading}
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/login')
+                          return
+                        }
+                        toggleWatch(vehicle.id)
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 text-[12px] font-semibold border shadow-sm min-w-[100px] justify-center transition-all",
+                        isWatched(vehicle.id)
+                          ? "bg-red-500 hover:bg-red-600 text-white border-red-500"
+                          : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
+                      )}
                     >
-                      <Icon icon="mdi:heart-outline" className="w-4 h-4" />
-                      Add to watchlist
+                      <Icon 
+                        icon={isWatched(vehicle.id) ? "mdi:heart" : "mdi:heart-outline"} 
+                        className={cn("w-4 h-4 transition-transform", isWatched(vehicle.id) && "scale-110")} 
+                      />
+                      <span className="truncate">
+                        {isWatched(vehicle.id) ? t('vehicle.watchlist.saved', 'Saved') : t('vehicle.watchlist.save', 'Save')}
+                      </span>
                     </Button>
                   </div>
 

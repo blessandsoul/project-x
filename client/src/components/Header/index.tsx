@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
           <div className="flex h-14 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <span className="font-logo-bebas text-xl md:text-2xl tracking-wide">
+              <span className="font-logo-bebas text-sm min-[330px]:text-base min-[390px]:text-xl md:text-2xl tracking-wide">
                 <span className="text-[#f5a623] font-bold">Trusted</span>{' '}
                 <span className="text-white font-normal">Importers</span>
               </span>
