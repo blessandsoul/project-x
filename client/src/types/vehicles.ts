@@ -168,6 +168,8 @@ export interface VehiclesSearchFilters {
   fuel?: string
   location?: string
   cylinders?: string
+  /** Exact date filter in YYYY-MM-DD format */
+  date?: string
   limit?: number
   offset?: number
   sort?: VehicleSortOption

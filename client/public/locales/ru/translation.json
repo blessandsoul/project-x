@@ -225,16 +225,16 @@
       }
     },
     "copart_hero": {
-      "title": "100% Онлайн Авто Аукционы",
-      "subtitle": "Более <strong>4 миллионов</strong> подержанных автомобилей, пикапов и внедорожников на продажу. Найдите лучшее предложение с прозрачными ценами и надежными партнерами.",
-      "download_appstore": "Скачать в",
+      "title": "100% Онлайн автоаукционы",
+      "subtitle": "Аукционы <strong>Copart</strong> и <strong>IAAI</strong>, цены компаний-импортеров — быстро, прозрачно и без лишних звонков",
+      "download_appstore": "Загрузить в",
       "appstore": "App Store",
       "get_on": "Доступно в",
       "google_play": "Google Play",
-      "buyer_protection": "Защита покупателя",
-      "nationwide_delivery": "Доставка по всей стране",
-      "vehicle_history": "История автомобиля",
-      "browse_inventory": "Смотреть каталог"
+      "buyer_protection": "Поиск аукционов Copart / IAAI в одном месте",
+      "nationwide_delivery": "Реальные цены на импорт",
+      "vehicle_history": "Расчёт стоимости автомобиля",
+      "browse_inventory": "Начать поиск"
     },
     "popular_vehicles": {
       "title": "Популярные",

@@ -105,6 +105,7 @@ type DraftFiltersInput = {
   cylinders?: string;
   location?: string;
   sourceFilter?: string;
+  dateFilter?: string;
 };
 
 const buildFiltersFromDraftState = (
@@ -149,6 +150,8 @@ const buildFiltersFromDraftState = (
     location: input.location ? input.location.toLowerCase().replace(/\s/g, '') : undefined,
     // cylinders filter: comma-separated, normalized to uppercase for API
     cylinders: input.cylinders ? input.cylinders.toUpperCase() : undefined,
+    // date filter: exact date in YYYY-MM-DD format
+    date: input.dateFilter || undefined,
     limit: input.limit,
     page: input.page,
   };
@@ -533,6 +536,7 @@ const AuctionListingsPage = () => {
   const [cylinders, setCylinders] = useState<string | undefined>(undefined);
   const [locationFilter, setLocationFilter] = useState<string | undefined>(undefined);
   const [sourceFilter, setSourceFilter] = useState<string | undefined>(undefined);
+  const [dateFilter, setDateFilter] = useState<string | undefined>(undefined);
   const [limit, setLimit] = useState(36);
   const [, setPage] = useState(1);
   const [buyNowOnly, setBuyNowOnly] = useState(false);
@@ -799,6 +803,10 @@ const AuctionListingsPage = () => {
       searchParams.set("buy_now", "true");
     }
 
+    if (filters.date) {
+      searchParams.set("date", filters.date);
+    }
+
     if (filters.sort) {
       searchParams.set("sort", filters.sort);
     }
@@ -856,6 +864,7 @@ const AuctionListingsPage = () => {
       driveFilter,
       location: locationFilter,
       sourceFilter,
+      dateFilter,
     });
 
     updateUrlFromFilters(filters, { replace: options?.replace ?? true });
@@ -1240,6 +1249,15 @@ const AuctionListingsPage = () => {
       return validValues.length > 0 ? validValues.join(",") : undefined;
     })();
 
+    // Date filter - exact date in YYYY-MM-DD format
+    const dateParam = params.get("date");
+    const nextDateFilter = (() => {
+      if (!dateParam) return undefined;
+      // Validate YYYY-MM-DD format
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) return undefined;
+      return dateParam;
+    })();
+
     // Year range – default is "no filter" [0, 0]
     const yearFromParam = params.get("year_from");
     const yearToParam = params.get("year_to");
@@ -1345,6 +1363,7 @@ const AuctionListingsPage = () => {
       cylinders: nextCylinders ? nextCylinders.toUpperCase() : undefined,
       location: nextLocation,
       sourceFilter: nextSourceFilter,
+      dateFilter: nextDateFilter,
     });
 
     // Set all state values
@@ -1361,6 +1380,7 @@ const AuctionListingsPage = () => {
     setCylinders(nextCylinders ? nextCylinders.toUpperCase() : undefined);
     setLocationFilter(nextLocation);
     setSourceFilter(nextSourceFilter);
+    setDateFilter(nextDateFilter);
     setYearRange(nextYearRange);
     setExactYear(nextExactYear);
     setMileageRange(nextMileageRange);
@@ -1961,6 +1981,48 @@ const AuctionListingsPage = () => {
       cylinders,
       location: locationFilter,
       sourceFilter: newSource,
+      dateFilter,
+    };
+
+    const nextFilters = buildFiltersFromDraftState(draft);
+    setPage(1);
+    setAppliedPage(1);
+    setAppliedFilters(nextFilters);
+    setExtraLoaded(null);
+
+    updateUrlFromFilters(nextFilters, { replace: false });
+  };
+
+  // Handler for date filter changes - triggers immediate data fetch
+  const handleDateChange = (newDate: string | undefined) => {
+    setDateFilter(newDate);
+
+    // Build and apply filters immediately
+    const draft: DraftFiltersInput = {
+      searchQuery,
+      exactYear,
+      mileageRange,
+      priceRange,
+      yearRange,
+      fuelType,
+      category,
+      drive,
+      limit,
+      page: 1,
+      searchKind,
+      auctionFilter,
+      buyNowOnly,
+      selectedMakeName: filterMakeName,
+      selectedModelName: filterModelName,
+      sort: sortBy,
+      titleType,
+      transmission,
+      fuel,
+      driveFilter,
+      cylinders,
+      location: locationFilter,
+      sourceFilter,
+      dateFilter: newDate,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -2001,6 +2063,7 @@ const AuctionListingsPage = () => {
       cylinders,
       location: locationFilter,
       sourceFilter,
+      dateFilter,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -2190,6 +2253,7 @@ const AuctionListingsPage = () => {
     setCylinders(undefined);
     setLocationFilter(undefined);
     setSourceFilter(undefined);
+    setDateFilter(undefined);
     setLimit(36);
     setPage(1);
     setBuyNowOnly(false);
@@ -2227,6 +2291,7 @@ const AuctionListingsPage = () => {
       cylinders: undefined,
       location: undefined,
       sourceFilter: undefined,
+      dateFilter: undefined,
     };
 
     const nextFilters = buildFiltersFromDraftState(draft);
@@ -2377,6 +2442,8 @@ const AuctionListingsPage = () => {
                 onSourceChange={handleSourceChange}
                 buyNow={buyNowOnly}
                 onBuyNowChange={handleBuyNowChange}
+                date={dateFilter}
+                onDateChange={handleDateChange}
                 onApplyFilters={applyFilters}
                 onResetFilters={resetFilters}
               />
@@ -2440,6 +2507,8 @@ const AuctionListingsPage = () => {
                     onSourceChange={handleSourceChange}
                     buyNow={buyNowOnly}
                     onBuyNowChange={handleBuyNowChange}
+                    date={dateFilter}
+                    onDateChange={handleDateChange}
                     onApplyFilters={applyFilters}
                     onResetFilters={resetFilters}
                   />

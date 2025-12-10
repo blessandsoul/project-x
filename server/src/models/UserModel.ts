@@ -107,6 +107,11 @@ export class UserModel extends BaseModel {
     return user;
   }
 
+  /**
+   * SQL Injection Prevention: Whitelist of allowed role values
+   */
+  private static readonly ALLOWED_ROLES = ['user', 'dealer', 'company', 'admin'] as const;
+
   async findAll(
     limit: number = 10,
     offset: number = 0,
@@ -121,30 +126,46 @@ export class UserModel extends BaseModel {
     const where: string[] = [];
     const params: any[] = [];
 
+    // Validate and clamp limit/offset to prevent abuse
+    const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 10;
+    const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+
     if (filters) {
-      if (filters.email && filters.email.trim().length > 0) {
+      // Email filter - sanitize and limit length
+      if (filters.email && typeof filters.email === 'string' && filters.email.trim().length > 0) {
         where.push('email LIKE ?');
-        params.push(`%${filters.email.trim()}%`);
+        params.push(`%${filters.email.trim().slice(0, 255)}%`);
       }
 
-      if (filters.username && filters.username.trim().length > 0) {
+      // Username filter - sanitize and limit length
+      if (filters.username && typeof filters.username === 'string' && filters.username.trim().length > 0) {
         where.push('username LIKE ?');
-        params.push(`%${filters.username.trim()}%`);
+        params.push(`%${filters.username.trim().slice(0, 255)}%`);
       }
 
+      // Role filter - WHITELIST VALIDATION (critical for SQL injection prevention)
       if (filters.role) {
+        if (!UserModel.ALLOWED_ROLES.includes(filters.role)) {
+          throw new ValidationError(`Invalid role value. Allowed: ${UserModel.ALLOWED_ROLES.join(', ')}`);
+        }
         where.push('role = ?');
         params.push(filters.role);
       }
 
+      // is_blocked filter - ensure boolean
       if (typeof filters.is_blocked === 'boolean') {
         where.push('is_blocked = ?');
         params.push(filters.is_blocked ? 1 : 0);
       }
 
-      if (typeof filters.company_id === 'number') {
+      // company_id filter - ensure positive integer
+      if (filters.company_id !== undefined && filters.company_id !== null) {
+        const companyIdNum = typeof filters.company_id === 'number' ? filters.company_id : parseInt(String(filters.company_id), 10);
+        if (!Number.isFinite(companyIdNum) || companyIdNum <= 0) {
+          throw new ValidationError('Invalid company_id: must be a positive integer');
+        }
         where.push('company_id = ?');
-        params.push(filters.company_id);
+        params.push(companyIdNum);
       }
     }
 
@@ -156,7 +177,7 @@ export class UserModel extends BaseModel {
     }
 
     sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    params.push(safeLimit, safeOffset);
 
     const rows = await this.executeQuery(sql, params);
 
@@ -271,29 +292,41 @@ export class UserModel extends BaseModel {
     const params: any[] = [];
 
     if (filters) {
-      if (filters.email && filters.email.trim().length > 0) {
+      // Email filter - sanitize and limit length
+      if (filters.email && typeof filters.email === 'string' && filters.email.trim().length > 0) {
         where.push('email LIKE ?');
-        params.push(`%${filters.email.trim()}%`);
+        params.push(`%${filters.email.trim().slice(0, 255)}%`);
       }
 
-      if (filters.username && filters.username.trim().length > 0) {
+      // Username filter - sanitize and limit length
+      if (filters.username && typeof filters.username === 'string' && filters.username.trim().length > 0) {
         where.push('username LIKE ?');
-        params.push(`%${filters.username.trim()}%`);
+        params.push(`%${filters.username.trim().slice(0, 255)}%`);
       }
 
+      // Role filter - WHITELIST VALIDATION (critical for SQL injection prevention)
       if (filters.role) {
+        if (!UserModel.ALLOWED_ROLES.includes(filters.role)) {
+          throw new ValidationError(`Invalid role value. Allowed: ${UserModel.ALLOWED_ROLES.join(', ')}`);
+        }
         where.push('role = ?');
         params.push(filters.role);
       }
 
+      // is_blocked filter - ensure boolean
       if (typeof filters.is_blocked === 'boolean') {
         where.push('is_blocked = ?');
         params.push(filters.is_blocked ? 1 : 0);
       }
 
-      if (typeof filters.company_id === 'number') {
+      // company_id filter - ensure positive integer
+      if (filters.company_id !== undefined && filters.company_id !== null) {
+        const companyIdNum = typeof filters.company_id === 'number' ? filters.company_id : parseInt(String(filters.company_id), 10);
+        if (!Number.isFinite(companyIdNum) || companyIdNum <= 0) {
+          throw new ValidationError('Invalid company_id: must be a positive integer');
+        }
         where.push('company_id = ?');
-        params.push(filters.company_id);
+        params.push(companyIdNum);
       }
     }
 

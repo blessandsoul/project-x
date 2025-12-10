@@ -13,10 +13,21 @@ const auctionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /auction/calculate-shipping
   // Calculate shipping quotes for all companies based on auction branch address
-  fastify.post<{
-    Body: { address: string; source: 'copart' | 'iaai' };
-  }>('/auction/calculate-shipping', async (request, reply) => {
-    const result = await controller.calculateShipping(request.body);
+  fastify.post('/auction/calculate-shipping', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['address', 'source'],
+        properties: {
+          address: { type: 'string', minLength: 1, maxLength: 500 },
+          source: { type: 'string', enum: ['copart', 'iaai'] },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as { address: string; source: 'copart' | 'iaai' };
+    const result = await controller.calculateShipping(body);
     return reply.send(result);
   });
 };

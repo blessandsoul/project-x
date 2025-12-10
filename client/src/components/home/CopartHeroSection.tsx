@@ -34,7 +34,7 @@ export function CopartHeroSection() {
         <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto pt-24 pb-14">
           <div className="grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] gap-10 items-start">
             {/* Left Column - Text & CTA */}
-            <div className="space-y-5 text-slate-900 dark:text-slate-50 max-w-xl">
+            <div className="space-y-5 text-slate-900 dark:text-slate-50 max-w-xl text-left">
               <h1
                 id="home-copart-hero-heading"
                 className="text-[40px] font-semibold leading-tight tracking-tight text-balance"
@@ -48,7 +48,7 @@ export function CopartHeroSection() {
               />
 
               {/* App Store Badges */}
-              <div className="flex flex-wrap items-center justify-center gap-3 py-2">
+              <div className="flex flex-wrap items-center justify-start gap-3 py-2">
                 <button className="inline-flex items-center gap-2 rounded-xl border border-slate-900/10 bg-slate-950 text-white px-3.5 py-2 text-xs shadow-sm shadow-slate-900/40 hover:bg-slate-900 hover:shadow-md transition-colors">
                   <Icon icon="mdi:apple" className="w-5 h-5" aria-hidden="true" />
                   <div className="text-left leading-tight rtl:text-right">
@@ -66,7 +66,7 @@ export function CopartHeroSection() {
               </div>
 
               {/* Feature Icons Row */}
-              <div className="flex flex-wrap items-center justify-center gap-4 py-2 text-[13px] text-slate-900/90 dark:text-slate-50/90">
+              <div className="flex flex-wrap items-center justify-start gap-4 py-2 text-[13px] text-slate-900/90 dark:text-slate-50/90">
                 <div className="inline-flex items-center gap-1.5">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm shadow-slate-900/30 dark:bg-slate-100 dark:text-slate-900">
                     <Icon icon="mdi:shield-check" className="w-4 h-4" aria-hidden="true" />
@@ -157,14 +157,14 @@ export function CopartHeroSection() {
             {/* Headline */}
             <h1
               id="home-copart-hero-heading-tablet"
-              className="text-3xl font-bold leading-snug tracking-tight"
+              className="text-3xl font-bold leading-snug tracking-tight text-center"
             >
               {t('home.copart_hero.title')}
             </h1>
 
             {/* Description */}
             <p 
-              className="text-base text-slate-800/90 max-w-2xl leading-relaxed mx-auto text-center"
+              className="text-base text-slate-800/90 max-w-2xl mx-auto leading-relaxed text-center"
               dangerouslySetInnerHTML={{ __html: t('home.copart_hero.subtitle') }}
             />
 

@@ -7,6 +7,12 @@ import {
   vehicleSearchQuerySchema,
   VehicleSearchFilters,
 } from '../schemas/vehicleSearchSchema.js';
+import {
+  idParamsSchema,
+  positiveIntegerSchema,
+  paginationLimitSchema,
+  paginationOffsetSchema,
+} from '../schemas/commonSchemas.js';
 
 /**
  * Vehicle Routes
@@ -163,6 +169,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       filters.soldTo = query.sold_to;
     }
 
+    // Exact date filter (sold_at_date = date)
+    if (query.date) {
+      filters.date = query.date;
+    }
+
     // Category filter (supports multiple codes: v,c)
     if (query.category && Array.isArray(query.category) && query.category.length > 0) {
       filters.categoryCodes = query.category;
@@ -262,13 +273,22 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // `limit` and `offset` as query parameters to page through results.
   // Only core summary fields are returned (id, make, model, year, yard_name, source).
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles', async (request, reply) => {
-    const { limit, offset } = request.query as { limit?: string; offset?: string };
+  fastify.get('/vehicles', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 1000, default: 100 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: limit and offset are validated by schema
+    const { limit = 100, offset = 0 } = request.query as { limit?: number; offset?: number };
 
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    const parsedOffset = offset ? parseInt(offset, 10) : 0;
-
-    const vehicles = await vehicleModel.findAll(parsedLimit, parsedOffset);
+    const vehicles = await vehicleModel.findAll(limit, offset);
     return reply.send(vehicles);
   });
 
@@ -279,22 +299,22 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // used for quote calculations and UI display. If the vehicle does not
   // exist, a 404 Not Found error is thrown.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const vehicle = await vehicleModel.findById(vehicleId);
+    const vehicle = await vehicleModel.findById(id);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
     }
 
     // Fetch all bids for this vehicle
-    const bidsMap = await vehicleModel.getBidsForVehicles([vehicleId]);
-    const bids = bidsMap.get(vehicleId) || [];
+    const bidsMap = await vehicleModel.getBidsForVehicles([id]);
+    const bids = bidsMap.get(id) || [];
 
     return reply.send({ ...vehicle, bids });
   });
@@ -308,56 +328,50 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // for "You may also like" style UI blocks and can be tuned in the
   // VehicleModel.findSimilarById implementation.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/similar', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const { limit, offset, year_range, price_radius } = request.query as {
-      limit?: string;
-      offset?: string;
-      year_range?: string;
-      price_radius?: string;
+  fastify.get('/vehicles/:id/similar', {
+    schema: {
+      params: idParamsSchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+          year_range: { type: 'integer', minimum: 1, maximum: 20, default: 2 },
+          price_radius: { type: 'number', minimum: 0.01, maximum: 1, default: 0.2 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
+    const { limit = 10, offset = 0, year_range = 2, price_radius = 0.2 } = request.query as {
+      limit?: number;
+      offset?: number;
+      year_range?: number;
+      price_radius?: number;
     };
 
-    const vehicleId = parseInt(id, 10);
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const exists = await vehicleModel.existsById(vehicleId);
+    const exists = await vehicleModel.existsById(id);
     if (!exists) {
       throw new NotFoundError('Vehicle');
     }
 
-    const parsedLimit = limit ? Number.parseInt(limit, 10) : 10;
-    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
-
-    const parsedOffset = offset ? Number.parseInt(offset, 10) : 0;
-    const safeOffset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
-
-    const parsedYearRange = year_range ? Number.parseInt(year_range, 10) : 2;
-    const safeYearRange = Number.isFinite(parsedYearRange) && parsedYearRange > 0
-      ? parsedYearRange
-      : 2;
-
-    const parsedPriceRadius = price_radius ? Number.parseFloat(price_radius) : 0.2;
-    const safePriceRadius = Number.isFinite(parsedPriceRadius) && parsedPriceRadius > 0
-      ? parsedPriceRadius
-      : 0.2;
-
-    const { items, total } = await vehicleModel.findSimilarById(vehicleId, {
-      limit: safeLimit,
-      offset: safeOffset,
-      yearRange: safeYearRange,
-      priceRadius: safePriceRadius,
+    const { items, total } = await vehicleModel.findSimilarById(id, {
+      limit,
+      offset,
+      yearRange: year_range,
+      priceRadius: price_radius,
     });
 
     return reply.send({
-      vehicleId,
+      vehicleId: id,
       items,
-      offset: safeOffset,
-      limit: safeLimit,
+      offset,
+      limit,
       total,
-      yearRange: safeYearRange,
-      priceRadius: safePriceRadius,
+      yearRange: year_range,
+      priceRadius: price_radius,
     });
   });
 
@@ -368,15 +382,15 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // This is useful when the UI needs to render the full gallery for a
   // selected vehicle without bloating the main vehicles list response.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/photos', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id/photos', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const photos = await vehicleModel.getPhotosByVehicleId(vehicleId);
+    const photos = await vehicleModel.getPhotosByVehicleId(id);
     return reply.send(photos);
   });
 
@@ -388,20 +402,20 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // This is useful for client UIs that want to render a detailed view
   // without making multiple separate HTTP calls.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/full', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id/full', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const vehicle = await vehicleModel.findById(vehicleId);
+    const vehicle = await vehicleModel.findById(id);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
     }
 
-    const photos = await vehicleModel.getPhotosByVehicleId(vehicleId);
+    const photos = await vehicleModel.getPhotosByVehicleId(id);
 
     return reply.send({
       vehicle,
@@ -417,15 +431,15 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // 404 Not Found error is thrown. On success, an empty 204 response
   // is returned.
   // ---------------------------------------------------------------------------
-  fastify.delete('/vehicles/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.delete('/vehicles/:id', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const deleted = await vehicleModel.deleteById(vehicleId);
+    const deleted = await vehicleModel.deleteById(id);
     if (!deleted) {
       throw new NotFoundError('Vehicle');
     }

@@ -36,6 +36,8 @@ interface AuctionFiltersDrawerProps {
   onSourceChange?: (source: string | undefined) => void;
   buyNow?: boolean;
   onBuyNowChange?: (buyNow: boolean) => void;
+  date?: string;
+  onDateChange?: (date: string | undefined) => void;
   onApplyFilters?: () => void;
   onResetFilters?: () => void;
 }
@@ -75,6 +77,8 @@ export function AuctionFiltersDrawer({
   onSourceChange,
   buyNow,
   onBuyNowChange,
+  date,
+  onDateChange,
   onApplyFilters,
   onResetFilters,
 }: AuctionFiltersDrawerProps) {
@@ -148,6 +152,8 @@ export function AuctionFiltersDrawer({
               onSourceChange={onSourceChange}
               buyNow={buyNow}
               onBuyNowChange={onBuyNowChange}
+              date={date}
+              onDateChange={onDateChange}
               onApplyFilters={onApplyFilters}
               onResetFilters={onResetFilters}
             />

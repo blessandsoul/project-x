@@ -1,6 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
 import { LeadController } from '../controllers/leadController.js';
 import { ValidationError, AuthenticationError } from '../types/errors.js';
+import {
+  leadIdParamsSchema,
+  leadCompanyIdParamsSchema,
+  positiveIntegerSchema,
+} from '../schemas/commonSchemas.js';
 
 const leadRoutes: FastifyPluginAsync = async (fastify) => {
   const leadController = new LeadController(fastify);
@@ -45,6 +50,7 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
             nullable: true,
           },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -109,6 +115,7 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
           },
           terms: { type: 'boolean' },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -162,30 +169,32 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.get('/user/leads/:leadId/offers', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: leadIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { leadId } = request.params as { leadId: string };
-    const id = parseInt(leadId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid lead id');
-    }
+    // SECURITY: leadId is already validated as positive integer by schema
+    const { leadId } = request.params as { leadId: number };
 
-    const result = await leadController.getUserLeadOffers(request.user.id, id);
+    const result = await leadController.getUserLeadOffers(request.user.id, leadId);
     return reply.send(result);
   });
 
   fastify.post('/user/leads/:leadId/select-offer', {
     preHandler: fastify.authenticate,
     schema: {
+      params: leadIdParamsSchema,
       body: {
         type: 'object',
         required: ['offerId'],
         properties: {
           offerId: { type: 'integer', minimum: 1 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -193,18 +202,11 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { leadId } = request.params as { leadId: string };
-    const id = parseInt(leadId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid lead id');
-    }
-
+    // SECURITY: leadId and offerId are already validated by schema
+    const { leadId } = request.params as { leadId: number };
     const { offerId } = request.body as { offerId: number };
-    if (!Number.isFinite(offerId) || offerId <= 0) {
-      throw new ValidationError('Invalid offer id');
-    }
 
-    const result = await leadController.selectOfferForUser(request.user.id, id, offerId);
+    const result = await leadController.selectOfferForUser(request.user.id, leadId, offerId);
     return reply.send({
       leadId: result.leadId,
       selectedOfferId: result.selectedOfferId,
@@ -228,24 +230,25 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.get('/company/leads/:leadCompanyId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: leadCompanyIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { leadCompanyId } = request.params as { leadCompanyId: string };
-    const id = parseInt(leadCompanyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid leadCompany id');
-    }
+    // SECURITY: leadCompanyId is already validated as positive integer by schema
+    const { leadCompanyId } = request.params as { leadCompanyId: number };
 
-    const result = await leadController.getCompanyLeadDetailForUser(request.user.id, id);
+    const result = await leadController.getCompanyLeadDetailForUser(request.user.id, leadCompanyId);
     return reply.send(result);
   });
 
   fastify.post('/company/leads/:leadCompanyId/offers', {
     preHandler: fastify.authenticate,
     schema: {
+      params: leadCompanyIdParamsSchema,
       body: {
         type: 'object',
         required: ['estimatedTotalUsd'],
@@ -256,6 +259,7 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
           estimatedDurationDays: { type: 'integer', minimum: 1 },
           comment: { type: 'string', minLength: 0, maxLength: 2000 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -263,11 +267,8 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { leadCompanyId } = request.params as { leadCompanyId: string };
-    const id = parseInt(leadCompanyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid leadCompany id');
-    }
+    // SECURITY: leadCompanyId is already validated as positive integer by schema
+    const { leadCompanyId } = request.params as { leadCompanyId: number };
 
     const body = request.body as {
       estimatedTotalUsd: number;
@@ -277,7 +278,7 @@ const leadRoutes: FastifyPluginAsync = async (fastify) => {
       comment?: string;
     };
 
-    const result = await leadController.submitOfferForCompanyLead(request.user.id, id, {
+    const result = await leadController.submitOfferForCompanyLead(request.user.id, leadCompanyId, {
       estimatedTotalUsd: body.estimatedTotalUsd,
       estimatedTotalUsdMax: body.estimatedTotalUsdMax ?? null,
       serviceFeeUsd: body.serviceFeeUsd ?? null,

@@ -148,6 +148,7 @@ export class VehicleModel extends BaseModel {
       soldFrom?: string;
       soldTo?: string;
       location?: string;
+      date?: string;
     },
     limit: number = 50,
     offset: number = 0,
@@ -314,6 +315,14 @@ export class VehicleModel extends BaseModel {
       params.push(filters.location.toLowerCase().replace(/\s/g, ''));
     }
 
+    // Exact date filter (sold_at_date = date)
+    // If sold_at_date is a DATE column, direct comparison works.
+    // If it's DATETIME, use DATE(sold_at_date) = ?
+    if (filters.date) {
+      conditions.push('DATE(sold_at_date) = ?');
+      params.push(filters.date);
+    }
+
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
@@ -410,6 +419,7 @@ export class VehicleModel extends BaseModel {
     soldTo?: string;
     sourceLotId?: string;
     location?: string;
+    date?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -566,6 +576,12 @@ export class VehicleModel extends BaseModel {
     if (filters.location) {
       conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
       params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+    }
+
+    // Exact date filter (sold_at_date = date)
+    if (filters.date) {
+      conditions.push('DATE(sold_at_date) = ?');
+      params.push(filters.date);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

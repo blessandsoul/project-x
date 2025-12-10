@@ -22,6 +22,15 @@ import {
   validateImageMime,
 } from '../services/ImageUploadService.js';
 import { CalculatorRequestBuilder } from '../services/CalculatorRequestBuilder.js';
+import {
+  idParamsSchema,
+  companyIdParamsSchema,
+  vehicleIdParamsSchema,
+  companyReviewParamsSchema,
+  positiveIntegerSchema,
+  paginationLimitSchema,
+  paginationOffsetSchema,
+} from '../schemas/commonSchemas.js';
 
 /**
  * Company, Social Links, and Quotes Routes
@@ -71,10 +80,34 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Search companies with filters and sorting (cheapest, top-rated, etc.).
    */
-  fastify.get('/companies/search', async (request, reply) => {
+  fastify.get('/companies/search', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+          min_rating: { type: 'number', minimum: 0, maximum: 5 },
+          min_base_price: { type: 'number', minimum: 0 },
+          max_base_price: { type: 'number', minimum: 0 },
+          max_total_fee: { type: 'number', minimum: 0 },
+          country: { type: 'string', maxLength: 100 },
+          city: { type: 'string', maxLength: 100 },
+          is_vip: { type: 'boolean' },
+          onboarding_free: { type: 'boolean' },
+          search: { type: 'string', maxLength: 100 },
+          name: { type: 'string', maxLength: 100 },
+          order_by: { type: 'string', enum: ['rating', 'cheapest', 'name', 'newest'] },
+          order_direction: { type: 'string', enum: ['asc', 'desc'] },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: All query params are validated by schema - types guaranteed
     const {
-      limit,
-      offset,
+      limit = 10,
+      offset = 0,
       min_rating,
       min_base_price,
       max_base_price,
@@ -88,20 +121,20 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       order_by,
       order_direction,
     } = request.query as {
-      limit?: string;
-      offset?: string;
-      min_rating?: string;
-      min_base_price?: string;
-      max_base_price?: string;
-      max_total_fee?: string;
+      limit?: number;
+      offset?: number;
+      min_rating?: number;
+      min_base_price?: number;
+      max_base_price?: number;
+      max_total_fee?: number;
       country?: string;
       city?: string;
-      is_vip?: string;
-      onboarding_free?: string;
+      is_vip?: boolean;
+      onboarding_free?: boolean;
       search?: string;
       name?: string;
-      order_by?: string;
-      order_direction?: string;
+      order_by?: 'rating' | 'cheapest' | 'name' | 'newest';
+      order_direction?: 'asc' | 'desc';
     };
 
     const effectiveSearch = typeof search === 'string' && search.trim().length > 0
@@ -120,45 +153,25 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
-    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
-
-    let typedOrderBy: 'rating' | 'cheapest' | 'name' | 'newest' | undefined;
-    if (order_by === 'rating' || order_by === 'cheapest' || order_by === 'name' || order_by === 'newest') {
-      typedOrderBy = order_by;
-    } else {
-      typedOrderBy = undefined;
-    }
-
-    let typedOrderDirection: 'asc' | 'desc' | undefined;
-    if (order_direction === 'asc' || order_direction === 'desc') {
-      typedOrderDirection = order_direction;
-    } else {
-      typedOrderDirection = undefined;
-    }
-
     const { limit: safeLimit, offset: safeOffset } = parsePagination(
-      {
-        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
-      },
+      { limit, offset },
       { limit: 10, maxLimit: 100 },
     );
 
     const params = {
       limit: safeLimit,
       offset: safeOffset,
-      minRating: typeof min_rating === 'string' ? Number(min_rating) : undefined,
-      minBasePrice: typeof min_base_price === 'string' ? Number(min_base_price) : undefined,
-      maxBasePrice: typeof max_base_price === 'string' ? Number(max_base_price) : undefined,
-      maxTotalFee: typeof max_total_fee === 'string' ? Number(max_total_fee) : undefined,
+      minRating: min_rating,
+      minBasePrice: min_base_price,
+      maxBasePrice: max_base_price,
+      maxTotalFee: max_total_fee,
       country: country && country.trim().length > 0 ? country : undefined,
       city: city && city.trim().length > 0 ? city : undefined,
-      isVip: typeof is_vip === 'string' ? is_vip === 'true' : undefined,
-      isOnboardingFree: typeof onboarding_free === 'string' ? onboarding_free === 'true' : undefined,
+      isVip: is_vip,
+      isOnboardingFree: onboarding_free,
       search: effectiveSearch && effectiveSearch.trim().length > 0 ? effectiveSearch.trim() : undefined,
-      orderBy: typedOrderBy,
-      orderDirection: typedOrderDirection,
+      orderBy: order_by,
+      orderDirection: order_direction,
     };
 
     // Cache company search results
@@ -181,14 +194,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * and quotes. This makes it easy for clients to see all data that
    * hangs off a company in one call.
    */
-  fastify.get('/companies/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const companyId = parseInt(id, 10);
-    if (!Number.isFinite(companyId) || companyId <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-
-    const company = await controller.getCompanyById(companyId);
+  fastify.get('/companies/:id', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
+    const company = await controller.getCompanyById(id);
     return reply.send(company);
   });
 
@@ -222,6 +235,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             pattern: '^\\+?[0-9\\- ()]{7,20}$',
           },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -242,6 +256,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put('/companies/:id', {
     preHandler: fastify.authenticate,
     schema: {
+      params: idParamsSchema,
       body: {
         type: 'object',
         properties: {
@@ -259,14 +274,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             pattern: '^\\+?[0-9\\- ()]{7,20}$',
           },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const companyId = parseInt(id, 10);
-    if (!Number.isFinite(companyId) || companyId <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
     if (!request.user) {
       throw new AuthorizationError('Authentication required to update company');
@@ -276,14 +289,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const isCompanyOwner =
       request.user.role === 'company' &&
       typeof request.user.company_id === 'number' &&
-      request.user.company_id === companyId;
+      request.user.company_id === id;
 
     if (!isAdmin && !isCompanyOwner) {
       throw new AuthorizationError('Not authorized to update this company');
     }
 
     const updates = request.body as CompanyUpdate;
-    const updated = await controller.updateCompany(companyId, updates);
+    const updated = await controller.updateCompany(id, updates);
     return reply.send(updated);
   });
 
@@ -296,12 +309,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.delete('/companies/:id', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: idParamsSchema,
+    },
   }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const companyId = parseInt(id, 10);
-    if (!Number.isFinite(companyId) || companyId <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
     if (!request.user) {
       throw new AuthorizationError('Authentication required to delete company');
@@ -311,13 +324,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const isCompanyOwner =
       request.user.role === 'company' &&
       typeof request.user.company_id === 'number' &&
-      request.user.company_id === companyId;
+      request.user.company_id === id;
 
     if (!isAdmin && !isCompanyOwner) {
       throw new AuthorizationError('Not authorized to delete this company');
     }
 
-    await controller.deleteCompany(companyId);
+    await controller.deleteCompany(id);
     return reply.code(204).send();
   });
 
@@ -333,12 +346,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post('/companies/:id/logo', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: idParamsSchema,
+    },
   }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const companyId = parseInt(id, 10);
-    if (!Number.isFinite(companyId) || companyId <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
     if (!request.user) {
       throw new AuthorizationError('Authentication required to upload company logos');
@@ -348,7 +361,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const isCompanyOwner =
       request.user.role === 'company' &&
       typeof request.user.company_id === 'number' &&
-      request.user.company_id === companyId;
+      request.user.company_id === id;
 
     if (!isAdmin && !isCompanyOwner) {
       throw new AuthorizationError('Not authorized to upload logo for this company');
@@ -366,7 +379,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError('Logo must be an image file');
     }
 
-    const company = await controller.getCompanyById(companyId);
+    const company = await controller.getCompanyById(id);
     const slugOrName = (company.slug && company.slug.trim().length > 0)
       ? company.slug
       : company.name;
@@ -391,14 +404,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * only exist if a company has related social profiles. The company_id
    * must be valid; otherwise a 404 Not Found is returned.
    */
-  fastify.get('/companies/:companyId/social-links', async (request, reply) => {
-    const { companyId } = request.params as { companyId: string };
-    const id = parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-
-    const links = await controller.getSocialLinks(id);
+  fastify.get('/companies/:companyId/social-links', {
+    schema: {
+      params: companyIdParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
+    const links = await controller.getSocialLinks(companyId);
     return reply.send(links);
   });
 
@@ -412,6 +425,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/companies/:companyId/social-links', {
     preHandler: fastify.authenticate,
     schema: {
+      params: companyIdParamsSchema,
       body: {
         type: 'object',
         required: ['url'],
@@ -424,14 +438,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             pattern: '^https?://',
           },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { companyId } = request.params as { companyId: string };
-    const id = parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
 
     if (!request.user) {
       throw new AuthorizationError('Authentication required to modify company social links');
@@ -441,14 +453,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const isCompanyOwner =
       request.user.role === 'company' &&
       typeof request.user.company_id === 'number' &&
-      request.user.company_id === id;
+      request.user.company_id === companyId;
 
     if (!isAdmin && !isCompanyOwner) {
       throw new AuthorizationError('Not authorized to modify social links for this company');
     }
 
     const body = request.body as { url: string };
-    const created = await controller.createSocialLink(id, body.url);
+    const created = await controller.createSocialLink(companyId, body.url);
     return reply.code(201).send(created);
   });
 
@@ -461,6 +473,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put('/social-links/:id', {
     preHandler: fastify.authenticate,
     schema: {
+      params: idParamsSchema,
       body: {
         type: 'object',
         properties: {
@@ -472,17 +485,14 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             pattern: '^https?://',
           },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const linkId = parseInt(id, 10);
-    if (!Number.isFinite(linkId) || linkId <= 0) {
-      throw new ValidationError('Invalid social link id');
-    }
-
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
     const updates = request.body as CompanySocialLinkUpdate;
-    const updated = await controller.updateSocialLink(linkId, updates);
+    const updated = await controller.updateSocialLink(id, updates);
     return reply.send(updated);
   });
 
@@ -493,14 +503,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.delete('/social-links/:id', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: idParamsSchema,
+    },
   }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const linkId = parseInt(id, 10);
-    if (!Number.isFinite(linkId) || linkId <= 0) {
-      throw new ValidationError('Invalid social link id');
-    }
-
-    await controller.deleteSocialLink(linkId);
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
+    await controller.deleteSocialLink(id);
     return reply.code(204).send();
   });
 
@@ -513,28 +522,30 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Fetch all reviews for a company. Public endpoint.
    */
-  fastify.get('/companies/:companyId/reviews', async (request, reply) => {
-    const { companyId } = request.params as { companyId: string };
-    const { limit, offset } = request.query as { limit?: string; offset?: string };
-
-    const id = parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-
-    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
-    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+  fastify.get('/companies/:companyId/reviews', {
+    schema: {
+      params: companyIdParamsSchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
+    const { limit = 10, offset = 0 } = request.query as { limit?: number; offset?: number };
 
     const { limit: safeLimit, offset: safeOffset } = parsePagination(
-      {
-        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
-      },
+      { limit, offset },
       { limit: 10, maxLimit: 50 },
     );
 
     const { items, total, limit: effectiveLimit, offset: effectiveOffset } =
-      await controller.getCompanyReviewsPaginated(id, safeLimit, safeOffset);
+      await controller.getCompanyReviewsPaginated(companyId, safeLimit, safeOffset);
 
     return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
@@ -548,6 +559,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/companies/:companyId/reviews', {
     preHandler: fastify.authenticate,
     schema: {
+      params: companyIdParamsSchema,
       body: {
         type: 'object',
         required: ['rating'],
@@ -555,14 +567,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           rating: { type: 'number', minimum: 1, maximum: 5 },
           comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { companyId } = request.params as { companyId: string };
-    const id = parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
 
     const currentUser = request.user as { id: number; role?: string } | undefined;
 
@@ -574,7 +584,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const keyHeader = request.headers['idempotency-key'];
 
     if (!keyHeader || typeof keyHeader !== 'string') {
-      const created = await controller.createCompanyReview(id, currentUser.id, body);
+      const created = await controller.createCompanyReview(companyId, currentUser.id, body);
       return reply.code(201).send(created);
     }
 
@@ -587,7 +597,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       },
       request.body,
       async () => {
-        const created = await controller.createCompanyReview(id, currentUser.id, body);
+        const created = await controller.createCompanyReview(companyId, currentUser.id, body);
         return { statusCode: 201, body: created };
       },
     );
@@ -604,32 +614,26 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put('/companies/:companyId/reviews/:reviewId', {
     preHandler: fastify.authenticate,
     schema: {
+      params: companyReviewParamsSchema,
       body: {
         type: 'object',
         properties: {
           rating: { type: 'number', minimum: 1, maximum: 5 },
           comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { companyId, reviewId } = request.params as { companyId: string; reviewId: string };
-    const company = parseInt(companyId, 10);
-    const review = parseInt(reviewId, 10);
-
-    if (!Number.isFinite(company) || company <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-    if (!Number.isFinite(review) || review <= 0) {
-      throw new ValidationError('Invalid review id');
-    }
+    // SECURITY: companyId and reviewId are already validated as positive integers by schema
+    const { companyId, reviewId } = request.params as { companyId: number; reviewId: number };
 
     if (!request.user || typeof request.user.id !== 'number') {
       throw new ValidationError('Authenticated user is required to update reviews');
     }
 
     const updates = request.body as { rating?: number; comment?: string | null };
-    const updated = await controller.updateCompanyReview(company, review, request.user.id, updates);
+    const updated = await controller.updateCompanyReview(companyId, reviewId, request.user.id, updates);
     return reply.send(updated);
   });
 
@@ -641,23 +645,18 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.delete('/companies/:companyId/reviews/:reviewId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: companyReviewParamsSchema,
+    },
   }, async (request, reply) => {
-    const { companyId, reviewId } = request.params as { companyId: string; reviewId: string };
-    const company = parseInt(companyId, 10);
-    const review = parseInt(reviewId, 10);
-
-    if (!Number.isFinite(company) || company <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-    if (!Number.isFinite(review) || review <= 0) {
-      throw new ValidationError('Invalid review id');
-    }
+    // SECURITY: companyId and reviewId are already validated as positive integers by schema
+    const { companyId, reviewId } = request.params as { companyId: number; reviewId: number };
 
     if (!request.user || typeof request.user.id !== 'number') {
       throw new ValidationError('Authenticated user is required to delete reviews');
     }
 
-    await controller.deleteCompanyReview(company, review, request.user.id);
+    await controller.deleteCompanyReview(companyId, reviewId, request.user.id);
     return reply.code(204).send();
   });
 
@@ -687,13 +686,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post('/vehicles/:vehicleId/calculate-quotes', {
     schema: {
-      params: {
-        type: 'object',
-        required: ['vehicleId'],
-        properties: {
-          vehicleId: { type: 'integer', minimum: 1 },
-        },
-      },
+      params: vehicleIdParamsSchema,
       body: {
         type: 'object',
         required: ['auction', 'usacity'],
@@ -701,34 +694,32 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           auction: { type: 'string', minLength: 1, maxLength: 50 },
           usacity: { type: 'string', minLength: 1, maxLength: 100 },
         },
+        additionalProperties: false,
       },
       querystring: {
         type: 'object',
         properties: {
-          limit: { type: 'integer', minimum: 1, maximum: 50 },
-          offset: { type: 'integer', minimum: 0 },
+          limit: { type: 'integer', minimum: 1, maximum: 50, default: 5 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
           minRating: { type: 'number', minimum: 0, maximum: 5 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { vehicleId } = request.params as { vehicleId: string };
+    // SECURITY: vehicleId is already validated as positive integer by schema
+    const { vehicleId } = request.params as { vehicleId: number };
     const { auction, usacity } = request.body as { auction: string; usacity: string };
-    const { limit, offset, currency, minRating } = request.query as { 
+    const { limit = 5, offset = 0, currency, minRating } = request.query as { 
       limit?: number; 
       offset?: number; 
       currency?: string; 
       minRating?: number;
     };
-    
-    const id = parseInt(vehicleId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
 
     request.log.info(
-      { vehicleId: id, auction, usacity, currency },
+      { vehicleId, auction, usacity, currency },
       'Calculating quotes for vehicle'
     );
 
@@ -742,13 +733,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     // If city/auction couldn't be matched, return a response indicating price unavailable
     if (!buildResult.success || !buildResult.request) {
       request.log.warn(
-        { vehicleId: id, auction, usacity, error: buildResult.error },
+        { vehicleId, auction, usacity, error: buildResult.error },
         'Could not build calculator request - price calculation unavailable'
       );
       
       // Return a response indicating price couldn't be calculated (not an error)
       return reply.code(200).send({
-        vehicle_id: id,
+        vehicle_id: vehicleId,
         price_available: false,
         message: buildResult.error || 'Price calculation is not available for this location.',
         unmatched_city: buildResult.unmatchedCity,
@@ -783,7 +774,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 5 ? minRating : undefined;
     const cacheKey = buildCacheKey(
       'quotes:calculate', 
-      id, 
+      vehicleId, 
       calculatorInput.auction,
       calculatorInput.usacity || 'none',
       currency || 'USD', 
@@ -796,7 +787,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       fastify,
       cacheKey,
       CACHE_TTL.CALCULATION, // 10 minutes
-      () => controller.calculateQuotesForVehicleWithInput(id, calculatorInput, currency, {
+      () => controller.calculateQuotesForVehicleWithInput(vehicleId, calculatorInput, currency, {
         limit: safeLimit,
         offset: safeOffset,
         ...(safeMinRating !== undefined && { minRating: safeMinRating }),
@@ -833,42 +824,31 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/vehicles/:vehicleId/cheapest-quotes', {
     schema: {
-      params: {
-        type: 'object',
-        required: ['vehicleId'],
-        properties: {
-          vehicleId: { type: 'integer', minimum: 1 },
-        },
-      },
+      params: vehicleIdParamsSchema,
       querystring: {
         type: 'object',
         properties: {
-          limit: { type: 'integer', minimum: 1, maximum: 20 },
+          limit: { type: 'integer', minimum: 1, maximum: 20, default: 3 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { vehicleId } = request.params as { vehicleId: string };
-    const { limit, currency } = request.query as { limit?: string; currency?: string };
-    const id = parseInt(vehicleId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const parsedLimit = limit ? parseInt(limit, 10) : 3;
-    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 3;
+    // SECURITY: vehicleId is already validated as positive integer by schema
+    const { vehicleId } = request.params as { vehicleId: number };
+    const { limit = 3, currency } = request.query as { limit?: number; currency?: string };
 
     // Cache cheapest quotes - same vehicle + currency = same result
-    const cacheKey = buildCacheKey('quotes:cheapest', id, currency || 'USD', safeLimit);
+    const cacheKey = buildCacheKey('quotes:cheapest', vehicleId, currency || 'USD', limit);
     const fullResult = await withCache(
       fastify,
       cacheKey,
       CACHE_TTL.CALCULATION, // 10 minutes
-      () => controller.calculateQuotesForVehicle(id, currency),
+      () => controller.calculateQuotesForVehicle(vehicleId, currency),
     );
 
-    const quotes = fullResult.quotes.slice(0, safeLimit);
+    const quotes = fullResult.quotes.slice(0, limit);
     return reply.send({ ...fullResult, quotes });
   });
 
@@ -911,6 +891,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           offset: { type: 'integer', minimum: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -1031,6 +1012,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           quotes_per_vehicle: { type: 'integer', minimum: 1, maximum: 20 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -1062,29 +1044,21 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/vehicles/:vehicleId/quotes', {
     schema: {
-      params: {
-        type: 'object',
-        required: ['vehicleId'],
-        properties: {
-          vehicleId: { type: 'integer', minimum: 1 },
-        },
-      },
+      params: vehicleIdParamsSchema,
       querystring: {
         type: 'object',
         properties: {
           currency: { type: 'string', minLength: 3, maxLength: 3 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    const { vehicleId } = request.params as { vehicleId: string };
+    // SECURITY: vehicleId is already validated as positive integer by schema
+    const { vehicleId } = request.params as { vehicleId: number };
     const { currency } = request.query as { currency?: string };
-    const id = parseInt(vehicleId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
 
-    const quotes = await controller.getQuotesByVehicle(id, currency);
+    const quotes = await controller.getQuotesByVehicle(vehicleId, currency);
     return reply.send(quotes);
   });
 
@@ -1094,27 +1068,31 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * Fetch all quotes for a specific company across all vehicles.
    * Useful for admin or reporting views filtered by company.
    */
-  fastify.get('/companies/:companyId/quotes', async (request, reply) => {
-    const { companyId } = request.params as { companyId: string };
-    const { currency, limit, offset } = request.query as { currency?: string; limit?: string; offset?: string };
-    const id = parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
-
-    const parsedLimit = typeof limit === 'string' ? parseInt(limit, 10) : NaN;
-    const parsedOffset = typeof offset === 'string' ? parseInt(offset, 10) : NaN;
+  fastify.get('/companies/:companyId/quotes', {
+    schema: {
+      params: companyIdParamsSchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          currency: { type: 'string', minLength: 3, maxLength: 3 },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
+    const { currency, limit = 20, offset = 0 } = request.query as { currency?: string; limit?: number; offset?: number };
 
     const { limit: safeLimit, offset: safeOffset } = parsePagination(
-      {
-        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-        offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
-      },
+      { limit, offset },
       { limit: 20, maxLimit: 100 },
     );
 
     const { items, total, limit: effectiveLimit, offset: effectiveOffset } =
-      await controller.getCompanyQuotesPaginated(id, safeLimit, safeOffset, currency);
+      await controller.getCompanyQuotesPaginated(companyId, safeLimit, safeOffset, currency);
 
     return reply.send(buildPaginatedResult(items, total, effectiveLimit, effectiveOffset));
   });
@@ -1139,6 +1117,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           // All monetary fields (base_price, price_per_mile, fees, total_price)
           // are derived by backend pricing logic; admin does not provide them here.
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -1181,11 +1160,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put('/quotes/:id', {
     preHandler: fastify.authenticate,
     schema: {
+      params: idParamsSchema,
       body: {
         type: 'object',
         properties: {
           delivery_time_days: { type: ['integer', 'null'], minimum: 0 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -1193,14 +1174,11 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthorizationError('Admin role required to update quotes');
     }
 
-    const { id } = request.params as { id: string };
-    const quoteId = parseInt(id, 10);
-    if (!Number.isFinite(quoteId) || quoteId <= 0) {
-      throw new ValidationError('Invalid quote id');
-    }
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
     const updates = request.body as CompanyQuoteUpdate;
-    const updated = await controller.updateQuote(quoteId, updates);
+    const updated = await controller.updateQuote(id, updates);
     return reply.send(updated);
   });
 
@@ -1212,17 +1190,17 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.delete('/quotes/:id', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: idParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user || request.user.role !== 'admin') {
       throw new AuthorizationError('Admin role required to delete quotes');
     }
-    const { id } = request.params as { id: string };
-    const quoteId = parseInt(id, 10);
-    if (!Number.isFinite(quoteId) || quoteId <= 0) {
-      throw new ValidationError('Invalid quote id');
-    }
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    await controller.deleteQuote(quoteId);
+    await controller.deleteQuote(id);
     return reply.code(204).send();
   });
 };

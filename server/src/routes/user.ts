@@ -9,6 +9,12 @@ import {
   getUserAvatarUrls,
   validateImageMime,
 } from '../services/ImageUploadService.js';
+import {
+  idParamsSchema,
+  companyIdParamsSchema,
+  positiveIntegerSchema,
+  paginationLimitSchema,
+} from '../schemas/commonSchemas.js';
 
 const loginRateLimitMax = process.env.RATE_LIMIT_USER_LOGIN_MAX
   ? parseInt(process.env.RATE_LIMIT_USER_LOGIN_MAX, 10)
@@ -71,6 +77,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           serviceFee: { type: 'number', minimum: 0, description: 'Optional service fee that can be set later in dashboard.' },
           brokerFee: { type: 'number', minimum: 0, description: 'Optional broker fee that can be set later in dashboard.' },
         },
+        additionalProperties: false,
       },
     },
     config: {
@@ -101,9 +108,10 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         required: ['identifier', 'password'],
         properties: {
-          identifier: { type: 'string', description: 'Email or username' },
-          password: { type: 'string' },
+          identifier: { type: 'string', minLength: 1, maxLength: 255, description: 'Email or username' },
+          password: { type: 'string', minLength: 1, maxLength: 255 },
         },
+        additionalProperties: false,
       },
     },
     config: {
@@ -161,6 +169,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           username: { type: 'string', minLength: 3, maxLength: 50 },
           password: { type: 'string', minLength: 6 },
         },
+        additionalProperties: false,
       },
     },
   }, async (request, reply) => {
@@ -291,18 +300,18 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.post('/user/favorites/:companyId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: companyIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { companyId } = request.params as { companyId: string };
-    const id = Number.parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
 
-    const newlyAdded = await userCompanyActivityModel.addFavoriteCompany(request.user.id, id);
+    const newlyAdded = await userCompanyActivityModel.addFavoriteCompany(request.user.id, companyId);
 
     if (newlyAdded) {
       return reply.code(201).send({ success: true, status: 'created' });
@@ -313,51 +322,65 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.delete('/user/favorites/:companyId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: companyIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { companyId } = request.params as { companyId: string };
-    const id = Number.parseInt(companyId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid company id');
-    }
+    // SECURITY: companyId is already validated as positive integer by schema
+    const { companyId } = request.params as { companyId: number };
 
-    await userCompanyActivityModel.removeFavoriteCompany(request.user.id, id);
+    await userCompanyActivityModel.removeFavoriteCompany(request.user.id, companyId);
     return reply.code(204).send();
   });
 
   fastify.get('/user/recent-companies', {
     preHandler: fastify.authenticate,
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+        },
+        additionalProperties: false,
+      },
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { limit } = request.query as { limit?: string };
-    const rawLimit = limit ? Number.parseInt(limit, 10) : 20;
-    const safeLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+    // SECURITY: limit is validated by schema
+    const { limit = 20 } = request.query as { limit?: number };
 
-    const items = await userCompanyActivityModel.listRecentCompanies(request.user.id, safeLimit);
+    const items = await userCompanyActivityModel.listRecentCompanies(request.user.id, limit);
     return reply.send({ items });
   });
 
   fastify.post('/user/recent-companies', {
     preHandler: fastify.authenticate,
+    schema: {
+      body: {
+        type: 'object',
+        required: ['company_id'],
+        properties: {
+          company_id: { type: 'integer', minimum: 1 },
+        },
+        additionalProperties: false,
+      },
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const body = request.body as { company_id?: number } | undefined;
-    const companyId = body && typeof body.company_id === 'number' ? body.company_id : NaN;
+    // SECURITY: company_id is validated by schema
+    const { company_id } = request.body as { company_id: number };
 
-    if (!Number.isFinite(companyId) || companyId <= 0) {
-      throw new ValidationError('Invalid company_id');
-    }
-
-    await userCompanyActivityModel.addRecentCompany(request.user.id, companyId);
+    await userCompanyActivityModel.addRecentCompany(request.user.id, company_id);
     return reply.code(201).send({ success: true });
   });
 
@@ -384,6 +407,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	          is_blocked: { type: 'boolean' },
 	          company_id: { type: 'integer', minimum: 1 },
 	        },
+	        additionalProperties: false,
 	      },
 	    },
 	  }, async (request, reply) => {
@@ -395,10 +419,48 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	      offset?: number;
 	      email?: string;
 	      username?: string;
-	      role?: 'user' | 'dealer' | 'company' | 'admin';
+	      role?: string;
 	      is_blocked?: boolean;
 	      company_id?: number;
 	    };
+
+	    // ========================================================================
+	    // SQL Injection Prevention: Explicit server-side validation
+	    // Even though Fastify schema validation should catch these, we add
+	    // defense-in-depth validation to prevent any bypass attempts.
+	    // ========================================================================
+
+	    // Whitelist validation for role parameter
+	    const ALLOWED_ROLES = ['user', 'dealer', 'company', 'admin'] as const;
+	    type AllowedRole = typeof ALLOWED_ROLES[number];
+	    let validatedRole: AllowedRole | undefined;
+	    if (role !== undefined && role !== null && role !== '') {
+	      if (!ALLOWED_ROLES.includes(role as AllowedRole)) {
+	        throw new ValidationError(`Invalid role value. Allowed: ${ALLOWED_ROLES.join(', ')}`);
+	      }
+	      validatedRole = role as AllowedRole;
+	    }
+
+	    // Validate and clamp limit
+	    let safeLimit = typeof limit === 'number' ? limit : parseInt(String(limit), 10);
+	    if (!Number.isFinite(safeLimit) || safeLimit <= 0) safeLimit = 10;
+	    if (safeLimit > 100) safeLimit = 100;
+
+	    // Validate and clamp offset
+	    let safeOffset = typeof offset === 'number' ? offset : parseInt(String(offset), 10);
+	    if (!Number.isFinite(safeOffset) || safeOffset < 0) safeOffset = 0;
+
+	    // Validate company_id is a positive integer
+	    let safeCompanyId: number | undefined;
+	    if (company_id !== undefined && company_id !== null) {
+	      const companyIdNum = typeof company_id === 'number' ? company_id : parseInt(String(company_id), 10);
+	      if (!Number.isFinite(companyIdNum) || companyIdNum <= 0) {
+	        throw new ValidationError('Invalid company_id: must be a positive integer');
+	      }
+	      safeCompanyId = companyIdNum;
+	    }
+
+	    // Build filters object with validated values only
 	    const filters: {
 	      email?: string;
 	      username?: string;
@@ -406,18 +468,31 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	      is_blocked?: boolean;
 	      company_id?: number;
 	    } = {};
-	    if (email) filters.email = email;
-	    if (username) filters.username = username;
-	    if (role) filters.role = role;
-	    if (typeof is_blocked === 'boolean') filters.is_blocked = is_blocked;
-	    if (typeof company_id === 'number') filters.company_id = company_id;
-	    const items = await userController.getAllUsers(limit, offset, filters);
+
+	    // String filters - trim and validate length
+	    if (email && typeof email === 'string' && email.trim().length > 0) {
+	      filters.email = email.trim().slice(0, 255);
+	    }
+	    if (username && typeof username === 'string' && username.trim().length > 0) {
+	      filters.username = username.trim().slice(0, 255);
+	    }
+	    if (validatedRole) {
+	      filters.role = validatedRole;
+	    }
+	    if (typeof is_blocked === 'boolean') {
+	      filters.is_blocked = is_blocked;
+	    }
+	    if (safeCompanyId !== undefined) {
+	      filters.company_id = safeCompanyId;
+	    }
+
+	    const items = await userController.getAllUsers(safeLimit, safeOffset, filters);
 	    const total = await userController.getUserCountWithFilters(filters);
 	    reply.send({
 	      items,
 	      meta: {
-	        limit,
-	        offset,
+	        limit: safeLimit,
+	        offset: safeOffset,
 	        count: items.length,
 	        total,
 	      },
@@ -431,16 +506,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	   */
 	  fastify.get('/admin/users/:id', {
 	    preHandler: fastify.authenticate,
+	    schema: {
+	      params: idParamsSchema,
+	    },
 	  }, async (request, reply) => {
 	    if (!request.user || request.user.role !== 'admin') {
 	      throw new AuthorizationError('Admin role required to access this resource');
 	    }
-	    const { id } = request.params as { id: string };
-	    const userId = parseInt(id, 10);
-	    if (!Number.isFinite(userId) || userId <= 0) {
-	      throw new ValidationError('Invalid user id');
-	    }
-	    const user = await userController.getUserByIdAdmin(userId);
+	    // SECURITY: id is already validated as positive integer by schema
+	    const { id } = request.params as { id: number };
+	    const user = await userController.getUserByIdAdmin(id);
 	    reply.send(user);
 	  });
 
@@ -452,6 +527,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	  fastify.patch('/admin/users/:id', {
 	    preHandler: fastify.authenticate,
 	    schema: {
+	      params: idParamsSchema,
 	      body: {
 	        type: 'object',
 	        properties: {
@@ -461,27 +537,61 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	          onboarding_ends_at: { type: ['string', 'null'], format: 'date-time' },
 	          is_blocked: { type: 'boolean' },
 	        },
+	        additionalProperties: false,
 	      },
 	    },
 	  }, async (request, reply) => {
 	    if (!request.user || request.user.role !== 'admin') {
 	      throw new AuthorizationError('Admin role required to update users');
 	    }
-	    const { id } = request.params as { id: string };
-	    const userId = parseInt(id, 10);
-	    if (!Number.isFinite(userId) || userId <= 0) {
-	      throw new ValidationError('Invalid user id');
-	    }
+	    // SECURITY: id is already validated as positive integer by schema
+	    const { id } = request.params as { id: number };
 	    const body = request.body as Partial<UserUpdate> & { is_blocked?: boolean };
+
+	    // ========================================================================
+	    // SQL Injection Prevention: Explicit server-side validation
+	    // ========================================================================
+
+	    // Whitelist validation for role parameter
+	    const ALLOWED_ROLES = ['user', 'dealer', 'company', 'admin'] as const;
+	    type AllowedRole = typeof ALLOWED_ROLES[number];
+
 	    const updates: UserUpdate = {};
-	    if (body.role) updates.role = body.role;
-	    if ('dealer_slug' in body) updates.dealer_slug = body.dealer_slug ?? null;
-	    if ('company_id' in body) updates.company_id = body.company_id ?? null;
+
+	    if (body.role !== undefined && body.role !== null) {
+	      if (!ALLOWED_ROLES.includes(body.role as AllowedRole)) {
+	        throw new ValidationError(`Invalid role value. Allowed: ${ALLOWED_ROLES.join(', ')}`);
+	      }
+	      updates.role = body.role as AllowedRole;
+	    }
+
+	    // Validate dealer_slug is a string or null
+	    if ('dealer_slug' in body) {
+	      if (body.dealer_slug !== null && typeof body.dealer_slug !== 'string') {
+	        throw new ValidationError('dealer_slug must be a string or null');
+	      }
+	      updates.dealer_slug = body.dealer_slug ?? null;
+	    }
+
+	    // Validate company_id is a positive integer or null
+	    if ('company_id' in body) {
+	      if (body.company_id !== null) {
+	        const companyIdNum = typeof body.company_id === 'number' ? body.company_id : parseInt(String(body.company_id), 10);
+	        if (!Number.isFinite(companyIdNum) || companyIdNum <= 0) {
+	          throw new ValidationError('company_id must be a positive integer or null');
+	        }
+	        updates.company_id = companyIdNum;
+	      } else {
+	        updates.company_id = null;
+	      }
+	    }
+
 	    if ('onboarding_ends_at' in body) {
 	      updates.onboarding_ends_at = body.onboarding_ends_at ? new Date(body.onboarding_ends_at as any) : null;
 	    }
 	    if (typeof body.is_blocked === 'boolean') updates.is_blocked = body.is_blocked;
-	    const updated = await userController.updateUserAdmin(userId, updates as any);
+
+	    const updated = await userController.updateUserAdmin(id, updates as any);
 	    reply.send(updated);
 	  });
 
@@ -492,16 +602,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 	   */
 	  fastify.delete('/admin/users/:id', {
 	    preHandler: fastify.authenticate,
+	    schema: {
+	      params: idParamsSchema,
+	    },
 	  }, async (request, reply) => {
 	    if (!request.user || request.user.role !== 'admin') {
 	      throw new AuthorizationError('Admin role required to delete users');
 	    }
-	    const { id } = request.params as { id: string };
-	    const userId = parseInt(id, 10);
-	    if (!Number.isFinite(userId) || userId <= 0) {
-	      throw new ValidationError('Invalid user id');
-	    }
-	    await userController.deleteUser(userId);
+	    // SECURITY: id is already validated as positive integer by schema
+	    const { id } = request.params as { id: number };
+	    await userController.deleteUser(id);
 	    reply.code(204).send();
 	  });
 

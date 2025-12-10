@@ -90,6 +90,245 @@ fastify.addHook('onRequest', async (request, reply) => {
   (request as any).startTime = Date.now();
 });
 
+// ---------------------------------------------------------------------------
+// SECURITY: SQL Injection Prevention - Reject malicious input patterns
+// ---------------------------------------------------------------------------
+// This hook runs BEFORE schema validation to catch SQL injection attempts
+// that might bypass type coercion (e.g., "10 AND 1=1 --" coerced to 10)
+//
+// Strategy:
+// 1. For parameters that should be numeric (id, limit, offset, etc.),
+//    reject any value that contains non-numeric characters after the number
+// 2. For all parameters, reject obvious SQL injection patterns
+// ---------------------------------------------------------------------------
+
+// Parameters that should be strictly numeric (integers)
+const NUMERIC_PARAMS = new Set([
+  'id', 'companyId', 'vehicleId', 'leadId', 'leadCompanyId', 'reviewId',
+  'company_id', 'vehicle_id', 'lead_id', 'user_id',
+  'limit', 'offset', 'page',
+  'year', 'year_from', 'year_to',
+  'odometer_from', 'odometer_to',
+  'mileage_from', 'mileage_to',
+]);
+
+// Parameters that should be strictly numeric (floats allowed)
+const NUMERIC_FLOAT_PARAMS = new Set([
+  'min_rating', 'max_rating', 'minRating', 'maxRating',
+  'min_base_price', 'max_base_price',
+  'max_total_fee',
+  'broker_fee', 'base_price', 'price_per_mile', 'customs_fee', 'service_fee',
+  'price_from', 'price_to',
+]);
+
+// Parameters that should only contain specific allowed values (enums)
+const ENUM_PARAMS: Record<string, Set<string>> = {
+  order_by: new Set(['rating', 'cheapest', 'name', 'newest']),
+  order_direction: new Set(['asc', 'desc']),
+  sort: new Set(['price_asc', 'price_desc', 'year_desc', 'year_asc', 'mileage_asc', 'mileage_desc', 'sold_date_desc', 'sold_date_asc', 'best_value']),
+  role: new Set(['user', 'dealer', 'company', 'admin']),
+  source: new Set(['copart', 'iaai']),
+};
+
+// Parameters that should be boolean (true/false only)
+const BOOLEAN_PARAMS = new Set([
+  'is_vip', 'onboarding_free', 'is_blocked', 'buy_now',
+]);
+
+// String parameters that should be validated for SQL injection
+// These are comma-separated enum values or free-text search fields
+const STRING_PARAMS_TO_CHECK = new Set([
+  'search', 'city', 'country', 'name', 'location',
+  'make', 'model',
+  'title_type', 'transmission', 'fuel', 'drive', 'cylinders', 'category',
+  'email', 'username',
+]);
+
+// SQL injection patterns for string parameters
+// These are more targeted to avoid false positives on legitimate data
+const SQL_INJECTION_PATTERNS = [
+  /'\s*(OR|AND)\s*'?\d*\s*=\s*'?\d*/i,  // ' OR '1'='1, ' AND 1=1
+  /"\s*(OR|AND)\s*"?\d*\s*=\s*"?\d*/i,  // " OR "1"="1
+  /\d+\s+(AND|OR)\s+\d+\s*=\s*\d+/i,    // 10 AND 1=1
+  /\s+(AND|OR)\s+\d+\s*=\s*\d+/i,       // value AND 1=1, value OR 1=1
+  /--\s*$/,                              // SQL comment at end
+  /--\s+$/,                              // SQL comment with space at end
+  /;\s*(DROP|DELETE|UPDATE|INSERT|SELECT|TRUNCATE|ALTER|CREATE|EXEC)/i, // Chained SQL
+  /\bUNION\s+(ALL\s+)?SELECT\b/i,       // UNION SELECT
+  /\bSLEEP\s*\(/i,                       // SLEEP()
+  /\bBENCHMARK\s*\(/i,                   // BENCHMARK()
+  /\bWAITFOR\s+DELAY\b/i,               // WAITFOR DELAY
+  /\bINTO\s+(OUT|DUMP)FILE\b/i,         // INTO OUTFILE/DUMPFILE
+  /\bLOAD_FILE\s*\(/i,                  // LOAD_FILE()
+];
+
+/**
+ * Check if a value that should be numeric contains SQL injection
+ * Rejects: "10 AND 1=1", "10--", "10;DROP", etc.
+ * Accepts: "10", "-5", "3.14"
+ */
+function isInvalidNumericValue(value: string, allowFloat: boolean): boolean {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (trimmed === '') return true; // Empty is invalid for numeric
+  
+  // Check if it's a valid number
+  if (allowFloat) {
+    // Allow integers and floats: 10, -5, 3.14, -2.5
+    return !/^-?\d+(\.\d+)?$/.test(trimmed);
+  } else {
+    // Allow only integers: 10, -5
+    return !/^-?\d+$/.test(trimmed);
+  }
+}
+
+/**
+ * Check if a string value contains SQL injection patterns
+ */
+function containsSqlInjection(value: string): boolean {
+  if (typeof value !== 'string') return false;
+  return SQL_INJECTION_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+fastify.addHook('preValidation', async (request, reply) => {
+  // Check query parameters
+  const query = request.query as Record<string, unknown>;
+  if (query && typeof query === 'object') {
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value !== 'string') continue;
+      
+      // Check numeric parameters for non-numeric content
+      if (NUMERIC_PARAMS.has(key) && isInvalidNumericValue(value, false)) {
+        fastify.log.warn({
+          method: request.method,
+          url: request.url,
+          param: key,
+          value: value.slice(0, 100),
+        }, 'Invalid numeric value in query parameter');
+        
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: `Invalid value for parameter: ${key}. Expected integer.`,
+        });
+      }
+      
+      // Check float parameters for non-numeric content
+      if (NUMERIC_FLOAT_PARAMS.has(key) && isInvalidNumericValue(value, true)) {
+        fastify.log.warn({
+          method: request.method,
+          url: request.url,
+          param: key,
+          value: value.slice(0, 100),
+        }, 'Invalid numeric value in query parameter');
+        
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: `Invalid value for parameter: ${key}. Expected number.`,
+        });
+      }
+      
+      // Check enum parameters for valid values
+      if (ENUM_PARAMS[key]) {
+        const allowedValues = ENUM_PARAMS[key];
+        if (!allowedValues.has(value.toLowerCase())) {
+          fastify.log.warn({
+            method: request.method,
+            url: request.url,
+            param: key,
+            value: value.slice(0, 100),
+          }, 'Invalid enum value in query parameter');
+          
+          return reply.status(400).send({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: `Invalid value for parameter: ${key}. Allowed values: ${Array.from(allowedValues).join(', ')}`,
+          });
+        }
+      }
+      
+      // Check boolean parameters for valid values
+      if (BOOLEAN_PARAMS.has(key)) {
+        const lower = value.toLowerCase();
+        if (lower !== 'true' && lower !== 'false') {
+          fastify.log.warn({
+            method: request.method,
+            url: request.url,
+            param: key,
+            value: value.slice(0, 100),
+          }, 'Invalid boolean value in query parameter');
+          
+          return reply.status(400).send({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: `Invalid value for parameter: ${key}. Expected true or false.`,
+          });
+        }
+      }
+      
+      // Check string parameters for SQL injection patterns
+      if (STRING_PARAMS_TO_CHECK.has(key) && containsSqlInjection(value)) {
+        fastify.log.warn({
+          method: request.method,
+          url: request.url,
+          param: key,
+          value: value.slice(0, 100),
+        }, 'SQL injection attempt detected in query parameter');
+        
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: `Invalid value for parameter: ${key}`,
+        });
+      }
+      
+      // For any other parameter, check for obvious SQL injection patterns
+      if (containsSqlInjection(value)) {
+        fastify.log.warn({
+          method: request.method,
+          url: request.url,
+          param: key,
+          value: value.slice(0, 100),
+        }, 'SQL injection attempt detected in query parameter');
+        
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: `Invalid value for parameter: ${key}`,
+        });
+      }
+    }
+  }
+
+  // Check path parameters (these should always be numeric IDs)
+  const params = request.params as Record<string, unknown>;
+  if (params && typeof params === 'object') {
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value !== 'string') continue;
+      
+      // Skip catch-all route parameters (e.g., '*' for 404 handlers)
+      if (key === '*') continue;
+      
+      // All path params in this app should be numeric IDs
+      if (isInvalidNumericValue(value, false)) {
+        fastify.log.warn({
+          method: request.method,
+          url: request.url,
+          param: key,
+          value: value.slice(0, 100),
+        }, 'Invalid numeric value in path parameter');
+        
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: `Invalid value for parameter: ${key}. Expected integer.`,
+        });
+      }
+    }
+  }
+});
+
 // Log slow requests (> 1 second) for performance monitoring
 const SLOW_REQUEST_THRESHOLD_MS = 1000;
 fastify.addHook('onResponse', async (request, reply) => {

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Icon } from '@iconify/react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
-import LanguageSwitcher from './LanguageSwitcher';
+import LanguageSwitcher, { LANGUAGES } from './LanguageSwitcher';
 import UserMenu from './UserMenu';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +37,7 @@ interface HeaderProps {
  */
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user: authUser, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -77,6 +77,15 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/auction-listings?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleLanguageChange = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+    try {
+      localStorage.setItem('i18nextLng', langCode);
+    } catch (e) {
+      console.error('Failed to save language preference', e);
     }
   };
 
@@ -125,7 +134,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
 
               {/* Auth Buttons */}
               {effectiveMenuUser ? (
-                <UserMenu user={effectiveMenuUser} onLogout={logout} />
+                <UserMenu user={effectiveMenuUser} onLogout={logout} theme="dark" />
               ) : (
                 <div className="flex items-center gap-2">
                   <Button
@@ -193,6 +202,33 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                     ))}
                     
                     <div className="border-t border-white/10 mt-4 pt-4 px-4 space-y-2">
+                      {/* Language Selector */}
+                      <div className="space-y-1">
+                        <h4 className="text-[11px] font-semibold text-white/70 uppercase tracking-wider px-1">
+                          {t('header.language') || 'Language'}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {LANGUAGES.map((lang) => (
+                            <Button
+                              key={lang.code}
+                              variant={i18n.language === lang.code ? 'default' : 'outline'}
+                              size="sm"
+                              className={cn(
+                                'w-full justify-start h-9 text-xs border-white/20 text-white',
+                                i18n.language === lang.code
+                                  ? 'bg-[#f5a623] text-[#1a2744]'
+                                  : 'bg-white/5 hover:bg-white/10'
+                              )}
+                              onClick={() => handleLanguageChange(lang.code)}
+                            >
+                              <Icon icon={lang.icon} className="mr-2 h-4 w-4 rounded-full" />
+                              <span className="truncate">{lang.label}</span>
+                              {i18n.language === lang.code && <Icon icon="mdi:check" className="ml-auto h-4 w-4" />}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Active listings CTA */}
                       <SheetClose asChild>
                         <Button

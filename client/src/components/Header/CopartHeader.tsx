@@ -205,14 +205,14 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3 shrink-0">
-           <div className="hidden md:block">
+        <div className={cn("flex items-center gap-3 shrink-0", isHeroVariant ? "text-white" : "text-slate-900")}>
+           <div className="hidden lg:block">
               <LanguageSwitcher />
            </div>
 
            {effectiveMenuUser ? (
               <div className="hidden md:block">
-                <UserMenu user={effectiveMenuUser} onLogout={logout} />
+                <UserMenu user={effectiveMenuUser} onLogout={logout} theme={isHeroVariant ? 'dark' : 'light'} />
               </div>
             ) : (
               <Button

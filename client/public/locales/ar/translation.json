@@ -225,16 +225,16 @@
       }
     },
     "copart_hero": {
-      "title": "مزادات السيارات 100% أونلاين",
-      "subtitle": "أكثر من <strong>4 ملايين</strong> سيارة مستعملة وشاحنة و SUV للبيع. اعثر على أفضل صفقة بأسعار شفافة وشركاء موثوقين.",
-      "download_appstore": "تحميل من",
+      "title": "مزادات السيارات عبر الإنترنت 100%",
+      "subtitle": "مزادات <strong>Copart</strong> و<strong>IAAI</strong>، أسعار شركات الاستيراد — بسرعة، بشفافية وبدون مكالمات غير ضرورية",
+      "download_appstore": "حمّل من",
       "appstore": "App Store",
       "get_on": "احصل عليه من",
       "google_play": "Google Play",
-      "buyer_protection": "حماية المشتري",
-      "nationwide_delivery": "توصيل لجميع أنحاء البلاد",
-      "vehicle_history": "تاريخ السيارة",
-      "browse_inventory": "تصفح المخزون"
+      "buyer_protection": "البحث عن مزادات Copart / IAAI في مكان واحد",
+      "nationwide_delivery": "أسعار الاستيراد الحقيقية",
+      "vehicle_history": "حساب تكلفة السيارة",
+      "browse_inventory": "ابدأ البحث"
     },
     "popular_vehicles": {
       "title": "السيارات",

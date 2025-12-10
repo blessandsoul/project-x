@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
@@ -24,7 +25,9 @@ interface UserMenuUser {
 interface UserMenuProps {
   user: UserMenuUser;
   onLogout?: () => void;
+  theme?: 'light' | 'dark';
 }
+
 
 const userMenuNavigationItems = [
   { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
@@ -40,7 +43,7 @@ const getInitials = (name: string): string => {
   return `${first}${second}`.toUpperCase();
 };
 
-const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
+const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
   const { t } = useTranslation();
   const initials = getInitials(user.name);
   const navigate = useNavigate();
@@ -51,7 +54,11 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
         <Button
           variant="ghost"
           size="sm"
-          className="flex items-center gap-2 px-2 py-1 hover:bg-muted transition-colors data-[state=open]:bg-muted data-[state=open]:shadow-sm"
+          className={
+            theme === 'dark'
+              ? 'flex items-center gap-2 px-2 py-1 text-white hover:text-white hover:bg-white/10 transition-colors data-[state=open]:bg-white/10 data-[state=open]:shadow-sm'
+              : 'flex items-center gap-2 px-2 py-1 hover:bg-muted transition-colors data-[state=open]:bg-muted data-[state=open]:shadow-sm'
+          }
         >
           <Avatar className="h-7 w-7 rounded-full">
             <AvatarImage src={user.avatar} alt={t('header.avatar_alt')} />
@@ -59,12 +66,21 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout }) => {
               {initials}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden max-w-[120px] truncate text-xs font-medium md:inline-block">
+          <span
+            className={cn(
+              'hidden max-w-[120px] truncate text-xs font-medium md:inline-block',
+              theme === 'dark' ? 'text-white' : 'text-current'
+            )}
+          >
             {user.name}
           </span>
           <Icon
             icon="mdi:chevron-down"
-            className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180"
+            className={
+              theme === 'dark'
+                ? 'h-4 w-4 text-white/80 transition-transform duration-200 data-[state=open]:rotate-180'
+                : 'h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180'
+            }
           />
         </Button>
       </DropdownMenuTrigger>

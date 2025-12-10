@@ -28,44 +28,29 @@ const vehicleMakesRoutes: FastifyPluginAsync = async (fastify) => {
    *   ]
    * }
    */
-  fastify.get('/api/vehicle-makes', async (request, reply) => {
-    const { type } = request.query as { type?: string };
+  fastify.get('/api/vehicle-makes', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string', enum: ['car', 'motorcycle', 'CAR', 'MOTORCYCLE', 'Car', 'Motorcycle'] },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: type is already validated by schema
+    const { type } = request.query as { type: string };
+    const normalizedType = type.toLowerCase() as 'car' | 'motorcycle';
 
-    // Validate type parameter
-    if (!type) {
-      return reply.status(400).send({
-        success: false,
-        error: 'Missing required query parameter: type',
-        message: 'The "type" parameter is required and must be either "car" or "motorcycle"',
-      });
-    }
-
-    const normalizedType = type.toLowerCase();
-
-    if (normalizedType !== 'car' && normalizedType !== 'motorcycle') {
-      return reply.status(400).send({
-        success: false,
-        error: 'Invalid type parameter',
-        message: 'The "type" parameter must be either "car" or "motorcycle"',
-      });
-    }
-
-    try {
-      const makes = await controller.getMakesByType(normalizedType as 'car' | 'motorcycle');
-      
-      return reply.send({
-        success: true,
-        count: makes.length,
-        data: makes,
-      });
-    } catch (error) {
-      fastify.log.error({ error }, 'Error fetching vehicle makes');
-      return reply.status(500).send({
-        success: false,
-        error: 'Internal server error',
-        message: 'Failed to fetch vehicle makes',
-      });
-    }
+    const makes = await controller.getMakesByType(normalizedType);
+    
+    return reply.send({
+      success: true,
+      count: makes.length,
+      data: makes,
+    });
   });
 };
 

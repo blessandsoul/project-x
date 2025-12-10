@@ -4,13 +4,6 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -26,6 +19,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { FilterSection } from '@/components/filters/FiltersSidebarLayout';
 
 import {
   fetchMakesByTransportType,
@@ -95,65 +89,17 @@ export interface AuctionSidebarFiltersProps {
   buyNow?: boolean;
   /** Callback when buy now changes - triggers immediate data fetch */
   onBuyNowChange?: (buyNow: boolean) => void;
+  /** Current date filter - YYYY-MM-DD format or undefined for all */
+  date?: string;
+  /** Callback when date changes - triggers immediate data fetch */
+  onDateChange?: (date: string | undefined) => void;
   /** Callback when "Use Filters" button is clicked - triggers manual filter application */
   onApplyFilters?: () => void;
   /** Callback when "Clear Filters" button is clicked - resets all filters */
   onResetFilters?: () => void;
 }
 
-// Copart-style collapsible section with animation
-function FilterSection({ 
-  title, 
-  children, 
-  defaultOpen = true 
-}: { 
-  title: string; 
-  children: React.ReactNode; 
-  defaultOpen?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | undefined>(defaultOpen ? undefined : 0);
-
-  useEffect(() => {
-    if (isOpen) {
-      const contentEl = contentRef.current;
-      if (contentEl) {
-        setHeight(contentEl.scrollHeight);
-        // After animation, set to auto for dynamic content
-        const timer = setTimeout(() => setHeight(undefined), 200);
-        return () => clearTimeout(timer);
-      }
-    } else {
-      setHeight(0);
-    }
-  }, [isOpen]);
-  
-  return (
-    <div className="border-b border-slate-200">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-50 hover:bg-slate-100 transition-colors"
-      >
-        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
-          {title}
-        </span>
-        <Icon 
-          icon="mdi:chevron-down" 
-          className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      <div 
-        className="overflow-hidden transition-all duration-200 ease-in-out"
-        style={{ height: height === undefined ? 'auto' : height }}
-      >
-        <div ref={contentRef} className="px-2 py-2 bg-white">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
+// FilterSection is now imported from @/components/filters/FiltersSidebarLayout
 
 // ============================================================================
 // Searchable Combobox Components
@@ -201,7 +147,7 @@ function MakeCombobox({
           role="combobox"
           aria-expanded={open}
           disabled={isLoading}
-          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2 rounded-none"
         >
           <span className={cn("truncate", !selectedMake && "text-muted-foreground")}>
             {displayValue}
@@ -309,7 +255,7 @@ function ModelCombobox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled || isLoading}
-          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2 rounded-none"
         >
           <span className={cn("truncate", !selectedModel && "text-muted-foreground")}>
             {displayValue}
@@ -412,7 +358,7 @@ function LocationCombobox({
           role="combobox"
           aria-expanded={open}
           disabled={isLoading}
-          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2"
+          className="h-7 w-full justify-between text-[10px] bg-white border-slate-300 font-normal px-2 rounded-none"
         >
           <span className={cn("truncate", !selectedLocation && "text-muted-foreground")}>
             {displayValue}
@@ -517,6 +463,8 @@ export function AuctionSidebarFilters({
   onSourceChange,
   buyNow,
   onBuyNowChange,
+  date,
+  onDateChange,
   onApplyFilters,
   onResetFilters,
 }: AuctionSidebarFiltersProps) {
@@ -1114,7 +1062,7 @@ export function AuctionSidebarFilters({
             onChange={(e) => handleYearInputChange(e.target.value, setLocalYearFrom)}
             onBlur={handleYearBlur}
             onKeyDown={handleYearKeyDown}
-            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
           />
           <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
           <Input
@@ -1127,7 +1075,7 @@ export function AuctionSidebarFilters({
             onChange={(e) => handleYearInputChange(e.target.value, setLocalYearTo)}
             onBlur={handleYearBlur}
             onKeyDown={handleYearKeyDown}
-            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
           />
         </div>
       </FilterSection>
@@ -1172,7 +1120,7 @@ export function AuctionSidebarFilters({
             onChange={(e) => handleOdometerInputChange(e.target.value, setLocalOdometerFrom)}
             onBlur={handleOdometerBlur}
             onKeyDown={handleOdometerKeyDown}
-            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
           />
           <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
           <Input
@@ -1183,7 +1131,7 @@ export function AuctionSidebarFilters({
             onChange={(e) => handleOdometerInputChange(e.target.value, setLocalOdometerTo)}
             onBlur={handleOdometerBlur}
             onKeyDown={handleOdometerKeyDown}
-            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+            className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
           />
         </div>
       </FilterSection>
@@ -1201,7 +1149,7 @@ export function AuctionSidebarFilters({
               onChange={(e) => handlePriceInputChange(e.target.value, setLocalPriceFrom)}
               onBlur={handlePriceBlur}
               onKeyDown={handlePriceKeyDown}
-              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300"
+              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300 rounded-none"
             />
           </div>
           <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
@@ -1215,7 +1163,7 @@ export function AuctionSidebarFilters({
               onChange={(e) => handlePriceInputChange(e.target.value, setLocalPriceTo)}
               onBlur={handlePriceBlur}
               onKeyDown={handlePriceKeyDown}
-              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300"
+              className="h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300 rounded-none"
             />
           </div>
         </div>
@@ -1319,53 +1267,53 @@ export function AuctionSidebarFilters({
         </div>
       </FilterSection>
 
-      {/* Damage */}
-      <FilterSection title={t('auction.filters.damage')} defaultOpen={false}>
-        <div className="space-y-1">
-          {[
-            { value: 'all', label: t('auction.filters.all') },
-            { value: 'front', label: t('auction.filters.front_end') },
-            { value: 'rear', label: t('auction.filters.rear_end') },
-            { value: 'side', label: t('auction.filters.side') },
-            { value: 'minor', label: t('auction.filters.minor_dents_scratches') },
-            { value: 'normal', label: t('auction.filters.normal_wear') },
-          ].map((damage) => (
-            <label key={damage.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
-              <Checkbox
-                checked={false}
-                className="h-3.5 w-3.5 rounded-sm"
-              />
-              <span className="text-[11px] text-slate-700">{damage.label}</span>
-            </label>
-          ))}
-        </div>
-      </FilterSection>
-
       {/* Sale Date */}
       <FilterSection title={t('auction.filters.sale_date')} defaultOpen={false}>
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <Input
               type="date"
-              readOnly
-              className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1"
+              value={date || ''}
+              onChange={(e) => onDateChange?.(e.target.value || undefined)}
+              className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
             />
+            {date && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600"
+                onClick={() => onDateChange?.(undefined)}
+                title={t('common.clear')}
+              >
+                <Icon icon="mdi:close" className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
           <div className="space-y-1">
             {[
-              { value: 'today', label: t('auction.sale_date.today') },
-              { value: 'tomorrow', label: t('auction.sale_date.tomorrow') },
-              { value: 'this_week', label: t('auction.sale_date.this_week') },
-              { value: 'next_week', label: t('auction.sale_date.next_week') },
-            ].map((date) => (
-              <label key={date.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
-                <Checkbox
-                  checked={false}
-                  className="h-3.5 w-3.5 rounded-sm"
-                />
-                <span className="text-[11px] text-slate-700">{date.label}</span>
-              </label>
-            ))}
+              { value: 'today', label: t('auction.sale_date.today'), getDate: () => new Date() },
+              { value: 'tomorrow', label: t('auction.sale_date.tomorrow'), getDate: () => { const d = new Date(); d.setDate(d.getDate() + 1); return d; } },
+            ].map((preset) => {
+              const presetDate = preset.getDate();
+              const presetDateStr = presetDate.toISOString().split('T')[0];
+              const isSelected = date === presetDateStr;
+              return (
+                <label key={preset.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onDateChange?.(presetDateStr);
+                      } else {
+                        onDateChange?.(undefined);
+                      }
+                    }}
+                    className="h-3.5 w-3.5 rounded-sm"
+                  />
+                  <span className="text-[11px] text-slate-700">{preset.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       </FilterSection>

@@ -229,6 +229,19 @@ All query parameters are validated with Zod before processing. Invalid values re
 
 > **Note:** Combines DB columns `sold_at_date` and `sold_at_time` for filtering.
 
+#### Exact Date Filter
+
+- `date` (optional, string) – filter vehicles by exact sale date.
+- **Format:** Strict `YYYY-MM-DD` (e.g., `2025-11-13`)
+- Example: `date=2025-11-13`
+- Returns only vehicles where `sold_at_date` equals the given date.
+- Validation:
+  - Must match regex `^\d{4}-\d{2}-\d{2}$`
+  - Must be a valid calendar date (e.g., `2025-02-31` is rejected)
+  - Invalid values return `400 Bad Request` with a clear error message
+
+> **Note:** This filter is useful for finding vehicles sold on a specific day. It uses `DATE(sold_at_date) = ?` for comparison, handling both DATE and DATETIME column types.
+
 #### Pagination & Sorting
 
 - `page` (optional, number, default: 1) – page number, must be ≥ 1.
@@ -370,6 +383,9 @@ GET /vehicles/search?cylinders=4,6,8&sort=price_asc
 
 # Filter by sale date range
 GET /vehicles/search?sold_from=2024-01-01&sold_to=2024-06-30
+
+# Filter by exact date (vehicles sold on a specific day)
+GET /vehicles/search?date=2025-11-13
 
 # Combined filters with pagination
 GET /vehicles/search?make=toyota&fuel=hybrid&page=2&limit=50

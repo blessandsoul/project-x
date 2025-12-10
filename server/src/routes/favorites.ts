@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, AuthenticationError } from '../types/errors.js';
+import { vehicleIdParamsSchema } from '../schemas/commonSchemas.js';
 
 const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
   const favoriteModel = new FavoriteModel(fastify);
@@ -8,45 +9,51 @@ const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
   // List current user's favorite vehicles
   fastify.get('/favorites/vehicles', {
     preHandler: fastify.authenticate,
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'integer', minimum: 1, default: 1 },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+        },
+        additionalProperties: false,
+      },
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { page, limit } = request.query as { page?: string; limit?: string };
-    const rawLimit = limit ? Number.parseInt(limit, 10) : 20;
-    const safeLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
-
-    const pageParam = page ? Number.parseInt(page, 10) : 1;
-    const safePage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-    const offset = (safePage - 1) * safeLimit;
+    // SECURITY: page and limit are validated by schema
+    const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
+    const offset = (page - 1) * limit;
 
     const total = await favoriteModel.countFavorites(request.user.id);
     if (total === 0) {
-      return reply.send({ items: [], total: 0, limit: safeLimit, page: 1, totalPages: 1 });
+      return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
 
-    const items = await favoriteModel.listFavorites(request.user.id, safeLimit, offset);
-    const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+    const items = await favoriteModel.listFavorites(request.user.id, limit, offset);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
-    return reply.send({ items, total, limit: safeLimit, page: safePage, totalPages });
+    return reply.send({ items, total, limit, page, totalPages });
   });
 
   // Add a vehicle to favorites
   fastify.post('/favorites/vehicles/:vehicleId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: vehicleIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { vehicleId } = request.params as { vehicleId: string };
-    const id = Number.parseInt(vehicleId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
+    // SECURITY: vehicleId is already validated as positive integer by schema
+    const { vehicleId } = request.params as { vehicleId: number };
 
-    const newlyAdded = await favoriteModel.addFavorite(request.user.id, id);
+    const newlyAdded = await favoriteModel.addFavorite(request.user.id, vehicleId);
 
     if (newlyAdded) {
       return reply.code(201).send({ success: true, status: 'created' });
@@ -58,18 +65,18 @@ const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
   // Remove a vehicle from favorites
   fastify.delete('/favorites/vehicles/:vehicleId', {
     preHandler: fastify.authenticate,
+    schema: {
+      params: vehicleIdParamsSchema,
+    },
   }, async (request, reply) => {
     if (!request.user) {
       throw new AuthenticationError('Unauthorized');
     }
 
-    const { vehicleId } = request.params as { vehicleId: string };
-    const id = Number.parseInt(vehicleId, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
+    // SECURITY: vehicleId is already validated as positive integer by schema
+    const { vehicleId } = request.params as { vehicleId: number };
 
-    await favoriteModel.removeFavorite(request.user.id, id);
+    await favoriteModel.removeFavorite(request.user.id, vehicleId);
     return reply.code(204).send();
   });
 };

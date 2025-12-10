@@ -30,66 +30,30 @@ const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
    *   ]
    * }
    */
-  fastify.get('/api/vehicle-models', async (request, reply) => {
-    const { type, makeId } = request.query as { type?: string; makeId?: string };
+  fastify.get('/api/vehicle-models', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['type', 'makeId'],
+        properties: {
+          type: { type: 'string', enum: ['car', 'motorcycle', 'CAR', 'MOTORCYCLE', 'Car', 'Motorcycle'] },
+          makeId: { type: 'integer', minimum: 1 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: type and makeId are already validated by schema
+    const { type, makeId } = request.query as { type: string; makeId: number };
+    const normalizedType = type.toLowerCase() as 'car' | 'motorcycle';
 
-    // Validate type parameter
-    if (!type) {
-      return reply.status(400).send({
-        success: false,
-        error: 'Missing required query parameter: type',
-        message: 'The "type" parameter is required and must be either "car" or "motorcycle"',
-      });
-    }
+    const models = await controller.getModelsByTypeAndMake(normalizedType, makeId);
 
-    const normalizedType = type.toLowerCase();
-
-    if (normalizedType !== 'car' && normalizedType !== 'motorcycle') {
-      return reply.status(400).send({
-        success: false,
-        error: 'Invalid type parameter',
-        message: 'The "type" parameter must be either "car" or "motorcycle"',
-      });
-    }
-
-    // Validate makeId parameter
-    if (!makeId) {
-      return reply.status(400).send({
-        success: false,
-        error: 'Missing required query parameter: makeId',
-        message: 'The "makeId" parameter is required and must be a numeric value',
-      });
-    }
-
-    const parsedMakeId = parseInt(makeId, 10);
-
-    if (isNaN(parsedMakeId) || parsedMakeId <= 0) {
-      return reply.status(400).send({
-        success: false,
-        error: 'Invalid makeId parameter',
-        message: 'The "makeId" parameter must be a positive numeric value',
-      });
-    }
-
-    try {
-      const models = await controller.getModelsByTypeAndMake(
-        normalizedType as 'car' | 'motorcycle',
-        parsedMakeId
-      );
-
-      return reply.send({
-        success: true,
-        count: models.length,
-        data: models,
-      });
-    } catch (error) {
-      fastify.log.error({ error }, 'Error fetching vehicle models');
-      return reply.status(500).send({
-        success: false,
-        error: 'Internal server error',
-        message: 'Failed to fetch vehicle models',
-      });
-    }
+    return reply.send({
+      success: true,
+      count: models.length,
+      data: models,
+    });
   });
 };
 

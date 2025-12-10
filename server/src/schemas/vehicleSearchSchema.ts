@@ -63,6 +63,39 @@ const dateOrDatetime = z
   );
 
 // ---------------------------------------------------------------------------
+// Helper: Strict date validation (YYYY-MM-DD only, must be a real date)
+// ---------------------------------------------------------------------------
+
+const strictDateOnly = z
+  .string()
+  .optional()
+  .refine(
+    (val) => {
+      if (!val) return true;
+      // Must match YYYY-MM-DD format
+      return /^\d{4}-\d{2}-\d{2}$/.test(val);
+    },
+    { message: 'Invalid date format. Use YYYY-MM-DD (e.g., 2025-11-13)' },
+  )
+  .refine(
+    (val) => {
+      if (!val) return true;
+      // Parse and validate it's a real date (not 2025-02-31, etc.)
+      const parts = val.split('-').map(Number);
+      const year = parts[0] ?? 0;
+      const month = parts[1] ?? 0;
+      const day = parts[2] ?? 0;
+      const date = new Date(year, month - 1, day);
+      return (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+      );
+    },
+    { message: 'Invalid date. The date does not exist (e.g., 2025-02-31 is not valid)' },
+  );
+
+// ---------------------------------------------------------------------------
 // Vehicle Search Query Schema
 // ---------------------------------------------------------------------------
 
@@ -223,6 +256,9 @@ export const vehicleSearchQuerySchema = z.object({
   sold_from: dateOrDatetime,
   sold_to: dateOrDatetime,
 
+  // Exact date filter (strict YYYY-MM-DD format, filters sold_at_date = date)
+  date: strictDateOnly,
+
   // Pagination
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(250).optional().default(20),
@@ -275,4 +311,5 @@ export interface VehicleSearchFilters {
   soldFrom?: string;
   soldTo?: string;
   location?: string;
+  date?: string;
 }
