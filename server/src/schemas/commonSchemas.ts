@@ -105,32 +105,6 @@ export const vehicleIdParamsSchema = {
 } as const;
 
 /**
- * Schema for routes with :leadId parameter
- * Example: /user/leads/:leadId/offers
- */
-export const leadIdParamsSchema = {
-  type: 'object',
-  required: ['leadId'],
-  properties: {
-    leadId: positiveIntegerSchema,
-  },
-  additionalProperties: false,
-} as const;
-
-/**
- * Schema for routes with :leadCompanyId parameter
- * Example: /company/leads/:leadCompanyId
- */
-export const leadCompanyIdParamsSchema = {
-  type: 'object',
-  required: ['leadCompanyId'],
-  properties: {
-    leadCompanyId: positiveIntegerSchema,
-  },
-  additionalProperties: false,
-} as const;
-
-/**
  * Schema for routes with :reviewId parameter
  * Example: /companies/:companyId/reviews/:reviewId
  */

@@ -45,6 +45,7 @@ export class CompanyModel extends BaseModel {
   async create(companyData: CompanyCreate): Promise<Company> {
     const {
       name,
+      owner_user_id = null,
       slug,
       base_price = 0,
       price_per_mile = 0,
@@ -82,8 +83,9 @@ export class CompanyModel extends BaseModel {
       (broker_fee ?? 0);
 
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, cheapest_score, final_formula, description, country, city, state, services, phone_number, contact_email, website, established_year, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
+        owner_user_id,
         name,
         computedSlug,
         base_price,
@@ -95,7 +97,14 @@ export class CompanyModel extends BaseModel {
         cheapestScore,
         final_formula ? JSON.stringify(final_formula) : null,
         description,
+        country,
+        city,
+        state,
+        services ? JSON.stringify(services) : null,
         phone_number,
+        contact_email,
+        website,
+        established_year,
       ],
     );
 
@@ -109,7 +118,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -125,7 +134,7 @@ export class CompanyModel extends BaseModel {
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset],
     );
 
@@ -154,7 +163,7 @@ export class CompanyModel extends BaseModel {
     const placeholders = uniqueIds.map(() => '?').join(', ');
 
     const rows = await this.executeQuery(
-      `SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
+      `SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
       uniqueIds,
     );
 
@@ -303,6 +312,14 @@ export class CompanyModel extends BaseModel {
       [companyId],
     );
     return rows as CompanySocialLink[];
+  }
+
+  async getSocialLinkById(id: number): Promise<CompanySocialLink | null> {
+    const rows = await this.executeQuery(
+      'SELECT id, company_id, url FROM company_social_links WHERE id = ?',
+      [id],
+    );
+    return rows.length ? (rows[0] as CompanySocialLink) : null;
   }
 
   async createSocialLink(data: CompanySocialLinkCreate): Promise<CompanySocialLink> {
@@ -588,7 +605,7 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.owner_user_id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count
@@ -607,12 +624,19 @@ export class CompanyModel extends BaseModel {
     return { items: rows as Company[], total };
   }
 
-  async findGeneralLeadCompanyIds(): Promise<number[]> {
+  async findByOwnerUserId(ownerUserId: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id FROM companies WHERE receives_general_leads = 1',
-      [],
+      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
+      [ownerUserId],
     );
 
-    return rows.map((row: { id: number }) => row.id);
+    if (!rows || rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0];
+    row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+    row.services = safeJsonParse(row.services, 'services', row.id);
+    return row as Company;
   }
 }

@@ -22,12 +22,6 @@ const MEMBERSHIP_PLANS = [
   },
 ];
 
-const REGISTER_TYPE_BY_PLAN: Record<string, string> = {
-  guest: 'user',
-  basic: 'dealer',
-  premier: 'company',
-};
-
 export function MembershipSection() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -71,14 +65,13 @@ export function MembershipSection() {
             const features = getFeatures(plan.id);
             const price = t(`home.membership.plans.${plan.id}.price`);
             const hasBadge = 'badge' in plan && plan.badge === 'promo';
-            const registerType = REGISTER_TYPE_BY_PLAN[plan.id] ?? 'user';
-            
+                        
             return (
               <button
                 key={plan.id}
                 type="button"
                 onClick={() => {
-                  navigate(`/register?type=${registerType}`);
+                  navigate('/register');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="relative flex flex-col justify-between rounded-2xl border border-border/70 bg-card/90 p-6 md:p-7 shadow-[0_16px_48px_rgba(15,23,42,0.16)] backdrop-blur-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(15,23,42,0.22)] text-left focus:outline-none focus:ring-2 focus:ring-primary/60 focus:ring-offset-2 focus:ring-offset-background"
@@ -119,7 +112,7 @@ export function MembershipSection() {
           <Button
             className="px-8 h-10 md:h-11 rounded-full font-semibold bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744]"
             onClick={() => {
-              navigate('/register?type=user');
+              navigate('/register');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           >

@@ -1020,7 +1020,7 @@ export function AuctionSidebarFilters({
       </FilterSection>
 
       {/* Document Type / Title Type */}
-      <FilterSection title="დოკუმენტის ტიპი">
+      <FilterSection title={t('auction.filters.title_type')}>
         <div className="space-y-1">
           <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
             <Checkbox
@@ -1332,7 +1332,7 @@ export function AuctionSidebarFilters({
       </FilterSection>
 
       {/* Cylinders */}
-      <FilterSection title="Cylinders" defaultOpen={false}>
+      <FilterSection title={t('auction.filters.cylinders')} defaultOpen={false}>
         <div className="grid grid-cols-2 gap-1">
           {allowedCylinders.map((cyl) => (
             <label
@@ -1370,7 +1370,7 @@ export function AuctionSidebarFilters({
       </FilterSection>
 
       {/* Buy Now Only */}
-      <FilterSection title="Buy It Now">
+      <FilterSection title={t('auction.filters.buy_now')}>
         <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
           <Checkbox
             checked={buyNow ?? false}

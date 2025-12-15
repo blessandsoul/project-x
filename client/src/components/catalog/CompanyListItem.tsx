@@ -2,10 +2,9 @@ import { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
-import { motion } from 'framer-motion';
 import { Image } from '@/components/ui/image';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import type { Company } from '@/types/api';
 import { cn } from '@/lib/utils';
 
@@ -19,9 +18,11 @@ interface CompanyListItemProps {
   hasAuctionBranch?: boolean;
   /** Whether shipping prices are currently being loaded */
   isLoadingShipping?: boolean;
+  /** View mode: 'grid' for compact cards, 'list' for full-width horizontal layout */
+  viewMode?: 'grid' | 'list';
 }
 
-export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false, isLoadingShipping = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
+export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false, isLoadingShipping = false, viewMode = 'grid' }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -33,223 +34,271 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
     }).format(amount);
   };
 
-  // --- Mock Logic for Visuals (Since API is read-only for now) ---
-
-
-
-  // 3. Mock Online Status (Randomized for demo, heavily weighted to 'online' for high rated)
+  // Online Status based on rating
   const isOnline = useMemo(() => company.rating > 4.5, [company.rating]);
 
-  // 4. Trust Score Visuals
-  const trustScoreColor = (company.trustScore ?? 0) >= 90 ? 'text-green-500' : (company.trustScore ?? 0) >= 70 ? 'text-blue-500' : 'text-amber-500';
+  const handleViewDetails = () => {
+    navigate(`/company/${company.id}`);
+  };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      whileHover={{ y: -1 }}
-      className={cn("w-full", className)}
-    >
-      {/* Semantic Article */}
-      <article 
-        className="group relative flex flex-col sm:flex-row bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-slate-50 transition-all duration-200 overflow-hidden cursor-pointer"
-        onClick={() => {
-          if (isCompareMode) {
-            onToggleCompare?.(!isSelected);
-          } else {
-            navigate(`/company/${company.id}`);
-          }
-        }}
+  // ===== LIST VIEW: Horizontal full-width layout =====
+  if (viewMode === 'list') {
+    return (
+      <div 
+        className={cn(
+          "relative flex items-center rounded-md border border-slate-200 bg-white shadow-sm px-5 py-3",
+          "transition-all duration-200 hover:shadow-md hover:border-slate-300",
+          isSelected && "bg-blue-50/50 border-blue-300 ring-1 ring-blue-200",
+          className
+        )}
       >
-        {/* Compare Checkbox (Floating/Absolute on Desktop to save space) */}
+        {/* Compare checkbox */}
         {isCompareMode && (
-          <div className="absolute top-3 left-3 z-20" onClick={(e) => e.stopPropagation()}>
-             <TooltipProvider>
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                   <div className="bg-black/40 backdrop-blur-sm rounded-md p-0.5">
-                     <Checkbox 
-                        checked={isSelected}
-                        onCheckedChange={(v) => onToggleCompare?.(!!v)}
-                        className="h-4 w-4 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                     />
-                   </div>
-                 </TooltipTrigger>
-                 <TooltipContent side="right"><p>{t('catalog.card.add_to_compare')}</p></TooltipContent>
-               </Tooltip>
-             </TooltipProvider>
+          <div className="mr-4 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onToggleCompare?.(checked === true)}
+              className="h-4 w-4 bg-white"
+            />
           </div>
         )}
 
-        {/* Mobile Wrapper for Logo + Info */}
-        <div className="flex flex-row w-full sm:contents">
-          {/* Left: Logo & Partners */}
-          <div className="flex sm:flex-col items-center sm:items-center sm:justify-center gap-3 p-3 sm:w-28 sm:bg-slate-50 sm:border-r border-slate-200/80 shrink-0">
-            <div className="relative h-12 w-12 sm:h-16 sm:w-16 group-hover:scale-105 transition-transform">
-              <Image 
-                src={company.logo ?? ''} 
-                alt={`${company.name} logo`} 
-                className="h-full w-full object-cover rounded-full shadow-sm" 
-              />
-              {/* Online Indicator */}
-              {isOnline && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                       <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm animate-pulse" />
-                    </TooltipTrigger>
-                    <TooltipContent><p>{t('catalog.card.online_now')}</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-            
-            {/* Official Partners (Mock Visuals) */}
+        {/* Logo */}
+        <button
+          type="button"
+          className="h-12 w-12 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+          onClick={handleViewDetails}
+        >
+          <Image 
+            src={company.logo ?? ''} 
+            alt={`${company.name} logo`} 
+            className="h-full w-full object-cover"
+          />
+        </button>
+
+        {/* Company Name + City */}
+        <div className="flex flex-col justify-center min-w-0 ml-3 w-[160px] flex-shrink-0">
+          <button onClick={handleViewDetails} className="text-left">
+            <h3 className="text-[13px] font-semibold text-primary hover:underline leading-tight line-clamp-1">
+              {company.name}
+            </h3>
+          </button>
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+            <Icon icon="mdi:map-marker" className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{company.location?.city || t('catalog.card.default_city', 'Tbilisi')}</span>
             {company.vipStatus && (
-               <div className="hidden sm:flex flex-col items-center gap-0.5 mt-1 opacity-80 grayscale group-hover:grayscale-0 transition-all">
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{t('common.official')}</span>
-                  <div className="flex gap-1">
-                     <Icon icon="mdi:shield-check" className="h-3 w-3 text-blue-400" />
-                     <Icon icon="mdi:gavel" className="h-3 w-3 text-red-400" />
-                  </div>
-               </div>
+              <span className="inline-flex items-center gap-0.5 ml-1 text-[8px] font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded">
+                <Icon icon="mdi:crown" className="w-2 h-2" />
+                {t('catalog.card.vip', 'VIP')}
+              </span>
             )}
-          </div>
-
-          {/* Middle: Main Info */}
-          <div className="flex-1 flex flex-col justify-center p-3 pl-0 sm:pl-5 space-y-2 min-w-0">
-             {/* Header Row */}
-             <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-slate-900 text-lg leading-none group-hover:text-primary transition-colors">
-                  {company.name}
-                </h3>
-                
-                {/* Trust Score Circle (Gamification) */}
-                {company.trustScore && (
-                   <TooltipProvider>
-                     <Tooltip>
-                       <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 cursor-help">
-                             <div className="relative h-5 w-5">
-                                <svg className="h-full w-full -rotate-90" viewBox="0 0 24 24">
-                                   <circle className="text-slate-100" strokeWidth="3" stroke="currentColor" fill="transparent" r="10" cx="12" cy="12" />
-                                   <circle 
-                                      className={trustScoreColor} 
-                                      strokeWidth="3" 
-                                      strokeDasharray={62.8}
-                                      strokeDashoffset={62.8 - (62.8 * company.trustScore) / 100}
-                                      strokeLinecap="round" 
-                                      stroke="currentColor" 
-                                      fill="transparent" 
-                                      r="10" cx="12" cy="12" 
-                                   />
-                                </svg>
-                             </div>
-                             <span className={cn("text-xs font-bold", trustScoreColor)}>{company.trustScore}</span>
-                          </div>
-                       </TooltipTrigger>
-                       <TooltipContent side="top"><p>Trust Score: High Reliability</p></TooltipContent>
-                     </Tooltip>
-                   </TooltipProvider>
-                )}
-
-             </div>
-
-             {/* Compact Metadata */}
-             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
-                <div className="flex items-center gap-1 text-slate-600">
-                   <Icon icon="mdi:map-marker" className="h-3.5 w-3.5 text-slate-400" />
-                   {company.location?.city || 'Tbilisi'}
-                </div>
-                <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1 text-slate-600">
-                   <Icon icon="mdi:clock-outline" className="h-3.5 w-3.5 text-slate-400" />
-                   45-60 {t('common.days')}
-                </div>
-                <span className="text-white/20">|</span>
-                <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-100 px-1.5 rounded-full">
-                   <Icon icon="mdi:star" className="h-3 w-3" />
-                   {company.rating}
-                   <span className="text-slate-500 font-normal ml-0.5">({company.reviewCount})</span>
-                </div>
-             </div>
-
           </div>
         </div>
 
-        {/* Right: Price & CTA (only shown when an auction branch is selected) */}
-        {hasAuctionBranch && (
-          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 p-2 sm:p-3 sm:w-44 bg-slate-50 sm:border-l border-t sm:border-t-0 border-slate-200/80">
-             <div className="flex flex-col sm:items-end">
-                {isLoadingShipping ? (
-                  // Loading state
-                  <>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      {t('catalog.card.shipping_cost', 'Shipping Cost')}
-                    </span>
-                    <div className="flex items-center gap-2 py-1">
-                      <Icon icon="mdi:loading" className="h-5 w-5 text-primary animate-spin" />
-                      <span className="text-sm text-slate-600 font-medium">
-                        {t('common.calculating', 'Calculating...')}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  // Show price or contact
-                  <>
-                    <TooltipProvider>
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 cursor-help">
-                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-dashed border-slate-300">{t('catalog.card.shipping_cost', 'Shipping Cost')}</span>
-                             <Icon icon="mdi:help-circle-outline" className="h-3 w-3 text-slate-400" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[200px] text-xs">
-                          {t('catalog.card.shipping_tooltip', 'Estimated shipping from selected auction branch to Poti, Georgia.')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <div className="flex items-baseline gap-1">
-                       <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                         {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 
-                           ? formatCurrency(calculatedShippingPrice) 
-                           : t('catalog.card.contact', 'Contact')}
-                       </span>
-                    </div>
-                    {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 ? (
-                      <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-0.5">
-                        <Icon icon="mdi:map-marker-check" className="h-3 w-3" />
-                        {t('catalog.card.location_based', 'Location-based')}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 font-medium">
-                        {t('catalog.card.for_pricing', 'for pricing')}
-                      </span>
-                    )}
-                  </>
-                )}
-             </div>
+        {/* Delivery Time */}
+        <div className="w-[100px] flex-shrink-0 text-center border-l border-slate-200 px-3">
+          <div className="text-[9px] text-muted-foreground uppercase tracking-wide">{t('catalog.card.delivery_time', 'Delivery')}</div>
+          <div className="font-semibold text-[12px] text-foreground mt-0.5">45-60 {t('common.days')}</div>
+        </div>
 
-             {/* Mobile Comparison Toggle (Only visible if Compare Mode active) */}
-             {isCompareMode && (
-               <div 
-                 className="sm:hidden flex items-center justify-center gap-2 text-xs text-slate-600 py-1 cursor-pointer"
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   onToggleCompare?.(!isSelected);
-                 }}
-               >
-                 <Checkbox checked={isSelected} className="h-3.5 w-3.5 border-slate-300" />
-                 <span>{t('catalog.results.compare')}</span>
-               </div>
-             )}
+        {/* Rating */}
+        <div className="w-[90px] flex-shrink-0 text-center border-l border-slate-200 px-3">
+          <div className="text-[9px] text-muted-foreground uppercase tracking-wide">{t('catalog.card.rating_label', 'Rating')}</div>
+          <div className="flex items-center justify-center gap-1 mt-0.5">
+            <Icon icon="mdi:star" className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-semibold text-[12px] text-foreground">{company.rating}</span>
+            <span className="text-[10px] text-muted-foreground">({company.reviewCount})</span>
+          </div>
+        </div>
+
+        {/* Shipping Price (if available) */}
+        {hasAuctionBranch && (
+          <div className="w-[100px] flex-shrink-0 text-center border-l border-slate-200 px-3">
+            <div className="text-[9px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">{t('catalog.card.shipping_cost', 'Shipping')}</div>
+            {isLoadingShipping ? (
+              <Icon icon="mdi:loading" className="h-4 w-4 text-primary animate-spin mt-0.5 mx-auto" />
+            ) : (
+              <div className="font-semibold text-[12px] text-foreground mt-0.5">
+                {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 
+                  ? formatCurrency(calculatedShippingPrice) 
+                  : t('catalog.card.contact', 'Contact')}
+              </div>
+            )}
           </div>
         )}
-      </article>
-    </motion.div>
+
+        {/* Spacer */}
+        <div className="flex-1 min-w-[20px]" />
+
+        {/* Online Status - right aligned */}
+        <div className="flex-shrink-0 flex items-center gap-1.5 px-4">
+          <span className={cn(
+            "h-2 w-2 rounded-full flex-shrink-0",
+            isOnline ? "bg-green-500" : "bg-slate-300"
+          )} />
+          <span className={cn(
+            "text-[11px] whitespace-nowrap",
+            isOnline ? "text-green-600 font-medium" : "text-muted-foreground"
+          )}>
+            {isOnline ? t('catalog.card.online_now') : t('catalog.card.offline', 'Offline')}
+          </span>
+        </div>
+
+        {/* Action Buttons - stacked vertically */}
+        <div className="flex flex-col gap-1.5 pl-4 border-l border-slate-200 flex-shrink-0">
+          <Button
+            size="sm"
+            className="w-[100px] h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold"
+            onClick={handleViewDetails}
+          >
+            {t('catalog.card.send_request', 'გაგზავნა')}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-[100px] h-7 text-[11px] border-slate-300 text-slate-700 hover:bg-slate-50"
+            onClick={handleViewDetails}
+          >
+            {t('catalog.card.get_quote', 'Get Quote')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== GRID VIEW: Compact vertical card layout (default) =====
+  return (
+    <div 
+      className={cn(
+        // Compact card layout
+        "relative flex flex-col rounded-md border border-slate-200 bg-white shadow-sm px-4 py-3 space-y-3",
+        "transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5",
+        isSelected && "bg-blue-50/50 border-blue-300 ring-1 ring-blue-200",
+        className
+      )}
+    >
+      {/* Compare checkbox - absolute positioned */}
+      {isCompareMode && (
+        <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onToggleCompare?.(checked === true)}
+            className="h-4 w-4 bg-white"
+          />
+        </div>
+      )}
+
+      {/* TOP: Logo + Name + City in one row */}
+      <div className="flex items-center gap-3">
+        {/* Logo */}
+        <button
+          type="button"
+          className="h-12 w-12 xl:h-14 xl:w-14 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+          onClick={handleViewDetails}
+        >
+          <Image 
+            src={company.logo ?? ''} 
+            alt={`${company.name} logo`} 
+            className="h-full w-full object-cover"
+          />
+        </button>
+
+        {/* Name + City stacked tight */}
+        <div className="flex flex-col min-w-0 flex-1">
+          <button onClick={handleViewDetails} className="text-left">
+            <h3 className="text-sm font-semibold text-primary hover:underline leading-tight line-clamp-1">
+              {company.name}
+            </h3>
+          </button>
+          <div className="flex items-center gap-1 text-[10px] xl:text-[11px] text-muted-foreground">
+            <Icon icon="mdi:map-marker" className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{company.location?.city || t('catalog.card.default_city', 'Tbilisi')}</span>
+            {/* VIP Badge inline */}
+            {company.vipStatus && (
+              <span className="inline-flex items-center gap-0.5 ml-1 text-[8px] font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded">
+                <Icon icon="mdi:crown" className="w-2 h-2" />
+                {t('catalog.card.vip', 'VIP')}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* MIDDLE: Delivery + Rating + Shipping in compact block */}
+      <div className="flex items-center justify-between text-[10px] xl:text-[11px]">
+        {/* Left: Delivery + Rating stacked */}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1">
+            <span className="uppercase text-[9px] xl:text-[10px] text-muted-foreground">
+              {t('catalog.card.delivery_time', 'Delivery')}:
+            </span>
+            <span className="font-semibold text-[11px] xl:text-[12px] text-foreground">
+              45-60 {t('common.days')}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Icon icon="mdi:star" className="h-3 w-3 text-amber-500" />
+            <span className="font-semibold text-[11px] xl:text-[12px] text-foreground">{company.rating}</span>
+            <span className="text-muted-foreground">
+              ({company.reviewCount})
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Shipping Price (if available) */}
+        {hasAuctionBranch && (
+          <div className="text-right">
+            <div className="text-[9px] xl:text-[10px] text-muted-foreground uppercase">
+              {t('catalog.card.shipping_cost', 'Shipping')}
+            </div>
+            {isLoadingShipping ? (
+              <div className="flex items-center gap-1 justify-end">
+                <Icon icon="mdi:loading" className="h-3 w-3 text-primary animate-spin" />
+              </div>
+            ) : (
+              <div className="font-semibold text-[11px] xl:text-[12px] text-foreground">
+                {calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 
+                  ? formatCurrency(calculatedShippingPrice) 
+                  : t('catalog.card.contact', 'Contact')}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM: Status + Buttons in one row */}
+      <div className="flex items-center gap-2">
+        {/* Online Status */}
+        <div className="flex items-center gap-1 text-[10px] xl:text-[11px] text-muted-foreground">
+          <span className={cn(
+            "h-2 w-2 rounded-full flex-shrink-0",
+            isOnline ? "bg-green-500" : "bg-slate-300"
+          )} />
+          <span className={isOnline ? "text-green-600" : ""}>
+            {isOnline ? t('catalog.card.online_now') : t('catalog.card.offline', 'Offline')}
+          </span>
+        </div>
+
+        {/* Action Buttons - horizontal, compact */}
+        <div className="ml-auto flex gap-1.5">
+          <Button
+            size="sm"
+            className="px-2.5 h-7 text-[10px] xl:text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold"
+            onClick={handleViewDetails}
+          >
+            {t('catalog.card.send_request', 'გაგზავნა')}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="px-2.5 h-7 text-[10px] xl:text-[11px] border-slate-300 text-slate-700 hover:bg-slate-50"
+            onClick={handleViewDetails}
+          >
+            {t('catalog.card.get_quote', 'Get Quote')}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 });
 

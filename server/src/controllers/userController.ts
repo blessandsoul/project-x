@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { FastifyInstance } from 'fastify';
-import { User, UserCreate, UserUpdate, UserLogin, AuthResponse } from '../types/user.js';
+import { User, UserCreate, UserUpdate, AuthUser } from '../types/user.js';
 import { UserModel } from '../models/UserModel.js';
 import { CompanyModel } from '../models/CompanyModel.js';
 import { ValidationError, AuthenticationError, NotFoundError, ConflictError } from '../types/errors.js';
@@ -64,48 +64,19 @@ export class UserController {
   }
 
   /**
-   * Register a new user account
+   * Register a new user account (Option B: 2-step onboarding)
    *
-   * Performs validation to ensure email and username uniqueness,
-   * hashes the password, creates the user record, and returns
-   * authentication credentials.
+   * Creates a user with role='user' only. Company creation happens
+   * later via POST /companies/onboard.
    *
-   * @param userData - User registration data
-   * @returns Authentication response with JWT token and user info
+   * @param userData - User registration data (email, username, password only)
+   * @returns User info (no token - user must login via /auth/login)
    * @throws Error if email or username already exists
    */
   async register(
-    userData: UserCreate & {
-      /**
-       * @deprecated Use `name` for company name instead. Kept for backward compatibility.
-       */
-      companyName?: string;
-      /**
-       * Public-facing company name used when role = "company".
-       */
-      name?: string;
-      companyPhone?: string;
-      basePrice?: number;
-      pricePerMile?: number;
-      customsFee?: number;
-      serviceFee?: number;
-      brokerFee?: number;
-    },
-  ): Promise<AuthResponse> {
-    const {
-      email,
-      username,
-      password,
-      role,
-      companyName,
-      name,
-      companyPhone,
-      basePrice,
-      pricePerMile,
-      customsFee,
-      serviceFee,
-      brokerFee,
-    } = userData;
+    userData: Pick<UserCreate, 'email' | 'username' | 'password'>,
+  ): Promise<{ user: AuthUser }> {
+    const { email, username, password } = userData;
 
     // Check if user already exists
     const emailExists = await this.userModel.emailExists(email);
@@ -122,131 +93,27 @@ export class UserController {
     // Hash password
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    // Determine role (public registration is allowed only for 'user' or 'company')
-    let finalRole: UserCreate['role'] = 'user';
-    if (role) {
-      if (role !== 'user' && role !== 'company') {
-        throw new ValidationError('Invalid role for public registration');
-      }
-      finalRole = role;
-    }
-
-    let finalCompanyId: number | null = null;
-    if (finalRole === 'company') {
-      // Prefer `name` for company name, fall back to legacy `companyName` if provided
-      const rawCompanyName = (typeof name === 'string' && name.trim().length > 0)
-        ? name
-        : companyName;
-
-      // Validate required company fields
-      if (!rawCompanyName || typeof rawCompanyName !== 'string' || rawCompanyName.trim().length === 0) {
-        throw new ValidationError('name is required when role = "company"');
-      }
-
-      const createdCompany = await this.companyModel.create({
-        name: rawCompanyName.trim(),
-        ...(typeof basePrice === 'number' ? { base_price: basePrice } : {}),
-        ...(typeof pricePerMile === 'number' ? { price_per_mile: pricePerMile } : {}),
-        ...(typeof customsFee === 'number' ? { customs_fee: customsFee } : {}),
-        ...(typeof serviceFee === 'number' ? { service_fee: serviceFee } : {}),
-        ...(typeof brokerFee === 'number' ? { broker_fee: brokerFee } : {}),
-        final_formula: null,
-        description: null,
-        phone_number: companyPhone ?? null,
-      });
-
-      finalCompanyId = createdCompany.id;
-    }
-
-    // Create user
+    // Create user with role='user' (company creation via /companies/onboard)
     const user = await this.userModel.create({
       email,
       username,
       password: passwordHash,
-      role: finalRole,
-      company_id: finalCompanyId,
+      role: 'user',
+      company_id: null,
     });
 
-    // Generate token
-    const token = this.fastify.generateToken({
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-    });
-
-    const logoMeta = await this.computeCompanyLogoUrls(user.company_id ?? null);
+    // No token generation - user must login via /auth/login to get HttpOnly cookies
     const avatarMeta = await this.computeUserAvatarUrls(user.username);
 
     return {
-      token,
       user: {
         id: user.id,
         email: user.email,
         username: user.username,
         role: user.role,
         company_id: user.company_id,
-        company_logo_url: logoMeta.company_logo_url,
-        original_company_logo_url: logoMeta.original_company_logo_url,
-        avatar_url: avatarMeta.avatar_url,
-        original_avatar_url: avatarMeta.original_avatar_url,
-      },
-    };
-  }
-
-  /**
-   * Authenticate user login
-   *
-   * Accepts either email or username as identifier, verifies credentials
-   * against stored password hash, and returns authentication token
-   * if successful.
-   *
-   * @param credentials - Login credentials (identifier and password)
-   * @returns Authentication response with JWT token and user info
-   * @throws Error if credentials are invalid
-   */
-  async login(credentials: UserLogin): Promise<AuthResponse> {
-    const { identifier, password } = credentials;
-
-    // Find user by identifier (email or username)
-    const user = await this.userModel.findByIdentifier(identifier);
-    if (!user) {
-      throw new AuthenticationError('Invalid credentials');
-    }
-
-    // Check if user is blocked BEFORE verifying password
-    // This prevents blocked users from even attempting login
-    if (user.is_blocked) {
-      throw new AuthenticationError('Account is blocked');
-    }
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
-    if (!isValidPassword) {
-      throw new AuthenticationError('Invalid credentials');
-    }
-
-    // Generate token (include role for authorization checks)
-    const token = this.fastify.generateToken({
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-    });
-
-    const logoMeta = await this.computeCompanyLogoUrls(user.company_id ?? null);
-    const avatarMeta = await this.computeUserAvatarUrls(user.username);
-
-    return {
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        role: user.role,
-        company_id: user.company_id,
-        company_logo_url: logoMeta.company_logo_url,
-        original_company_logo_url: logoMeta.original_company_logo_url,
+        company_logo_url: null,
+        original_company_logo_url: null,
         avatar_url: avatarMeta.avatar_url,
         original_avatar_url: avatarMeta.original_avatar_url,
       },
@@ -278,58 +145,6 @@ export class UserController {
       avatar_url: avatarMeta.avatar_url,
       original_avatar_url: avatarMeta.original_avatar_url,
     };
-  }
-
-  /**
-   * Update user profile information
-   *
-   * Allows users to modify their email, username, and password.
-   * Validates uniqueness constraints and hashes new passwords.
-   * Only updates fields that are provided in the updates object.
-   *
-   * @param userId - User ID to update
-   * @param updates - Partial user data to update
-   * @returns Updated user profile data
-   * @throws Error if email/username conflicts or user not found
-   */
-  async updateProfile(userId: number, updates: UserUpdate): Promise<User> {
-    const { email, username, password } = updates;
-
-    // Check if email/username are already taken by other users
-    if (email) {
-      const emailExists = await this.userModel.emailExists(email, userId);
-      if (emailExists) {
-        throw new ConflictError('Email already taken');
-      }
-    }
-
-    if (username) {
-      const usernameExists = await this.userModel.usernameExists(username, userId);
-      if (usernameExists) {
-        throw new ConflictError('Username already taken');
-      }
-    }
-
-    // Hash password if provided
-    let passwordHash = password;
-    if (password) {
-      passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-    }
-
-    const updateData: UserUpdate = {};
-    if (email) updateData.email = email;
-    if (username) updateData.username = username;
-    if (passwordHash) updateData.password = passwordHash;
-
-    const updatedUser = await this.userModel.update(userId, updateData);
-    if (!updatedUser) {
-      throw new Error('User not found');
-    }
-
-    // Invalidate auth cache so next request gets fresh data
-    await invalidateUserCache(this.fastify, userId);
-
-    return updatedUser;
   }
 
   /**

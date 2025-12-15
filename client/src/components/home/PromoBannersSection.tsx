@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
@@ -32,7 +31,6 @@ const PROMO_BANNERS = [
 ];
 
 export function PromoBannersSection() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
 
   return (
@@ -51,24 +49,24 @@ export function PromoBannersSection() {
             <div
               key={banner.id}
               className={`${banner.bgColor} rounded-2xl p-4 relative overflow-hidden cursor-pointer group hover:shadow-lg transition-shadow min-h-[140px]`}
-              onClick={() => navigate('/auction-listings')}
             >
               {/* Text */}
               <div className={banner.textDark ? 'text-[#1a2744]' : 'text-white'}>
-                <h3 className="text-lg font-bold leading-tight">
-                  {t(`home.promo_banners.${banner.id}.title`)}<br />
-                  <span className={banner.textDark ? 'text-[#1a2744]/80' : 'text-[#f5a623]'}>
-                    {t(`home.promo_banners.${banner.id}.subtitle`)}
-                  </span>
+                <h3 className="text-base font-bold leading-snug mb-1">
+                  {t(`home.promo_banners.${banner.id}.title`)}
                 </h3>
+                <p className={`text-xs leading-relaxed ${banner.textDark ? 'text-[#1a2744]/70' : 'text-white/70'}`}>
+                  {t(`home.promo_banners.${banner.id}.description`)}
+                </p>
               </div>
 
               {/* Thematic icon instead of photo */}
-              <div className="absolute bottom-2 right-2 rtl:left-2 rtl:right-auto opacity-30">
+              <div className="absolute bottom-2 right-2 rtl:left-2 rtl:right-auto">
                 <Icon
                   icon={banner.icon}
-                  className="w-10 h-10 md:w-12 md:h-12"
+                  className={`h-8 w-8 ${banner.textDark ? 'text-[#8a5a00]/85' : 'text-white/35'}`}
                   aria-hidden="true"
+                  focusable="false"
                 />
               </div>
             </div>

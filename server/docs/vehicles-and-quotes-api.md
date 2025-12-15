@@ -583,7 +583,7 @@ List the authenticated user's favorite vehicles with pagination.
 
 **Method:** `GET`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Query params:**
 
@@ -613,7 +613,7 @@ List the authenticated user's favorite vehicles with pagination.
 
 **Error responses:**
 
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 
@@ -625,7 +625,7 @@ Add a vehicle to the user's favorites.
 
 **Method:** `POST`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Path params:**
 
@@ -642,7 +642,7 @@ Add a vehicle to the user's favorites.
 **Error responses:**
 
 - `400 Bad Request` – invalid vehicle ID.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 
@@ -654,7 +654,7 @@ Remove a vehicle from the user's favorites.
 
 **Method:** `DELETE`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Path params:**
 
@@ -665,7 +665,7 @@ Remove a vehicle from the user's favorites.
 **Error responses:**
 
 - `400 Bad Request` – invalid vehicle ID.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 

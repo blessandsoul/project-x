@@ -396,7 +396,7 @@ Upload or replace a company's logo image. The logo is processed and stored on di
 
 **Method:** `POST`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Authorization:** Admin or company owner only
 
@@ -429,7 +429,7 @@ Upload or replace a company's logo image. The logo is processed and stored on di
 **Error responses:**
 
 - `400 Bad Request` – no file provided or not an image.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – not authorized to upload logo for this company.
 - `404 Not Found` – company does not exist.
 

@@ -1,8 +1,12 @@
 # Admin API
 
-This document describes admin-focused endpoints intended primarily for internal tools or admin panels. All endpoints in this document **require authentication** via `Authorization: Bearer <token>` **and** the authenticated user must have `role = 'admin'`. These routes should be protected on the frontend so they are not exposed in normal user-facing flows.
+This document describes admin-focused endpoints intended primarily for internal tools or admin panels. All endpoints in this document **require authentication** via **HttpOnly cookies** (cookie-only auth), and the authenticated user must have `role = 'admin'`. These routes should be protected on the frontend so they are not exposed in normal user-facing flows.
 
 > Role model: The `users.role` column is an enum of `['user', 'dealer', 'company', 'admin']`. Currently, only `user` and `admin` are used for access control. Admin endpoints described here are restricted to `role = 'admin'`; all other roles are treated as non-admin.
+
+> **Auth note:** Header-based authentication is not supported. Requests using `Authorization: Bearer ...` or `x-access-token` will return `401 Unauthorized`.
+
+> **CSRF note:** Any unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) requires the `x-csrf-token` header to match the `csrf_token` cookie.
 
 ---
 
@@ -20,7 +24,7 @@ Create a quote manually. The client provides both `company_id` and `vehicle_id` 
 
 **Authentication & authorization:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 - Requires authenticated user to have `role = 'admin'`
 
 **Request body (JSON):**
@@ -48,7 +52,7 @@ The backend will look up the company and vehicle, derive distance from the vehic
 **Error responses:**
 
 - `400 Bad Request` – validation failure (missing required fields, wrong types).
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `404 Not Found` – referenced company or vehicle does not exist.
 
 ---
@@ -63,7 +67,7 @@ Update an existing quote. Intended for admin corrections. Normal user flows shou
 
 **Authentication:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 
 **Path params:**
 
@@ -101,7 +105,7 @@ All fields are optional. Only provided fields are updated.
 **Error responses:**
 
 - `400 Bad Request` – invalid `id` or body types.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `404 Not Found` – quote with the given `id` does not exist.
 
 ---
@@ -116,7 +120,7 @@ Delete a quote. Admin-focused operation; should not be exposed in general user i
 
 **Authentication:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 
 **Path params:**
 
@@ -135,7 +139,7 @@ Delete a quote. Admin-focused operation; should not be exposed in general user i
 **Error responses:**
 
 - `400 Bad Request` – invalid `id`.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `404 Not Found` – quote with the given `id` does not exist.
 
 ---
@@ -154,7 +158,7 @@ Retrieve a paginated list of users for admin, with optional search/filter parame
 
 **Authentication & authorization:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 - Requires authenticated user to have `role = 'admin'`
 
 **Query params (optional):**
@@ -211,7 +215,7 @@ Retrieve a paginated list of users for admin, with optional search/filter parame
 
 **Error responses:**
 
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – authenticated but not `role = 'admin'`.
 
 ---
@@ -226,7 +230,7 @@ Admin: Get full information about a specific user by ID.
 
 **Authentication & authorization:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 - Requires authenticated user to have `role = 'admin'`
 
 **Path params:**
@@ -246,7 +250,7 @@ Admin: Get full information about a specific user by ID.
 **Error responses:**
 
 - `400 Bad Request` – invalid `id`.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – authenticated but not `role = 'admin'`.
 - `404 Not Found` – user not found.
 
@@ -262,7 +266,7 @@ Admin: Update selected fields on a user: role, dealer/company links, onboarding 
 
 **Authentication & authorization:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 - Requires authenticated user to have `role = 'admin'`
 
 **Path params:**
@@ -301,7 +305,7 @@ All fields optional; only provided fields are updated. To block a user, set `is_
 **Error responses:**
 
 - `400 Bad Request` – invalid `id` or body types.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – authenticated but not `role = 'admin'`.
 - `404 Not Found` – user not found.
 
@@ -317,7 +321,7 @@ Admin: Permanently delete a user account by ID.
 
 **Authentication & authorization:**
 
-- Requires `Authorization: Bearer <token>`
+- Requires HttpOnly cookie auth (`access_token`)
 - Requires authenticated user to have `role = 'admin'`
 
 **Path params:**
@@ -337,7 +341,7 @@ Admin: Permanently delete a user account by ID.
 **Error responses:**
 
 - `400 Bad Request` – invalid `id`.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – authenticated but not `role = 'admin'`.
 - `404 Not Found` – user not found.
 

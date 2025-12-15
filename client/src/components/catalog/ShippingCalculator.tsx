@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -11,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiGet, apiPost } from '@/lib/apiClient';
 
@@ -233,142 +231,155 @@ export const ShippingCalculator = ({
   const isFormValid = city && destinationPort && vehicleType && vehicleCategory;
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon icon="mdi:calculator-variant" className="h-5 w-5 text-primary" />
-          {t('calculator.title', 'Shipping Calculator')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* City Select */}
-        <div className="space-y-2">
-          <Label htmlFor="calc-city" className="text-sm font-medium">
-            {t('calculator.city', 'City')} <span className="text-destructive">*</span>
-          </Label>
-          {isLoadingCities ? (
-            <Skeleton className="h-10 w-full" />
-          ) : (
-            <Select value={city} onValueChange={setCity}>
-              <SelectTrigger id="calc-city" className="w-full">
-                <SelectValue placeholder={t('calculator.select_city', 'Select city...')} />
+    <div className={`rounded-md border border-slate-200 bg-white shadow-sm px-5 py-4 ${className ?? ''}`}>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Icon icon="mdi:calculator-variant" className="h-4 w-4 text-primary" />
+          <h2 className="text-base font-semibold text-primary">
+            {t('calculator.title', 'Shipping Calculator')}
+          </h2>
+        </div>
+        <p className="hidden md:block text-xs text-muted-foreground">
+          {t('calculator.helper_text', 'Price appears in the company list below.')}
+        </p>
+      </div>
+
+      {/* Form - 2 columns on desktop */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* City Select */}
+          <div>
+            <Label htmlFor="calc-city" className="text-xs font-medium text-muted-foreground mb-1 block">
+              {t('calculator.city', 'City')} <span className="text-destructive">*</span>
+            </Label>
+            {isLoadingCities ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <Select value={city} onValueChange={setCity}>
+                <SelectTrigger id="calc-city" className="w-full h-9 text-sm">
+                  <SelectValue placeholder={t('calculator.select_city', 'Select city...')} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {cities.map((cityName) => (
+                    <SelectItem key={cityName} value={cityName} className="text-sm">
+                      {cityName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Destination Port Select */}
+          <div>
+            <Label htmlFor="calc-port" className="text-xs font-medium text-muted-foreground mb-1 block">
+              {t('calculator.destination_port', 'Destination Port')} <span className="text-destructive">*</span>
+            </Label>
+            {isLoadingPorts ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <Select value={destinationPort} onValueChange={setDestinationPort}>
+                <SelectTrigger id="calc-port" className="w-full h-9 text-sm">
+                  <SelectValue placeholder={t('calculator.select_port', 'Select port...')} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {ports.map((portName) => (
+                    <SelectItem key={portName} value={portName} className="text-sm">
+                      {t(`calculator.ports.${portName}`, portName)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Vehicle Type Select */}
+          <div>
+            <Label htmlFor="calc-vehicle-type" className="text-xs font-medium text-muted-foreground mb-1 block">
+              {t('calculator.vehicle_type', 'Vehicle Type')} <span className="text-destructive">*</span>
+            </Label>
+            <Select value={vehicleType} onValueChange={(v) => setVehicleType(v as VehicleType)}>
+              <SelectTrigger id="calc-vehicle-type" className="w-full h-9 text-sm">
+                <SelectValue placeholder={t('calculator.select_vehicle_type', 'Select type...')} />
               </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {cities.map((cityName) => (
-                  <SelectItem key={cityName} value={cityName}>
-                    {cityName}
+              <SelectContent>
+                {VEHICLE_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-sm">
+                    {t(`calculator.vehicle_types.${type.value}`, type.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
-        </div>
+          </div>
 
-        {/* Destination Port Select */}
-        <div className="space-y-2">
-          <Label htmlFor="calc-port" className="text-sm font-medium">
-            {t('calculator.destination_port', 'Destination Port')}{' '}
-            <span className="text-destructive">*</span>
-          </Label>
-          {isLoadingPorts ? (
-            <Skeleton className="h-10 w-full" />
-          ) : (
-            <Select value={destinationPort} onValueChange={setDestinationPort}>
-              <SelectTrigger id="calc-port" className="w-full">
-                <SelectValue placeholder={t('calculator.select_port', 'Select port...')} />
+          {/* Vehicle Category Select */}
+          <div>
+            <Label htmlFor="calc-vehicle-category" className="text-xs font-medium text-muted-foreground mb-1 block">
+              {t('calculator.vehicle_category', 'Vehicle Category')} <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={vehicleCategory}
+              onValueChange={(v) => setVehicleCategory(v as VehicleCategory)}
+            >
+              <SelectTrigger id="calc-vehicle-category" className="w-full h-9 text-sm">
+                <SelectValue
+                  placeholder={t('calculator.select_vehicle_category', 'Select category...')}
+                />
               </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {ports.map((portName) => (
-                  <SelectItem key={portName} value={portName}>
-                    {portName}
+              <SelectContent>
+                {VEHICLE_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value} className="text-sm">
+                    {t(`calculator.vehicle_categories.${cat.value}`, cat.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
+          </div>
         </div>
 
-        {/* Vehicle Type Select */}
-        <div className="space-y-2">
-          <Label htmlFor="calc-vehicle-type" className="text-sm font-medium">
-            {t('calculator.vehicle_type', 'Vehicle Type')}{' '}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Select value={vehicleType} onValueChange={(v) => setVehicleType(v as VehicleType)}>
-            <SelectTrigger id="calc-vehicle-type" className="w-full">
-              <SelectValue placeholder={t('calculator.select_vehicle_type', 'Select type...')} />
-            </SelectTrigger>
-            <SelectContent>
-              {VEHICLE_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {t(`calculator.vehicle_types.${type.value}`, type.label)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Button row */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <p className="md:hidden text-xs text-muted-foreground">
+            {t('calculator.helper_text', 'Price appears in the company list below.')}
+          </p>
 
-        {/* Vehicle Category Select */}
-        <div className="space-y-2">
-          <Label htmlFor="calc-vehicle-category" className="text-sm font-medium">
-            {t('calculator.vehicle_category', 'Vehicle Category')}{' '}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={vehicleCategory}
-            onValueChange={(v) => setVehicleCategory(v as VehicleCategory)}
+          <Button
+            onClick={handleCalculate}
+            disabled={!isFormValid || isCalculating}
+            className="w-full md:w-auto md:min-w-[180px] flex items-center justify-center gap-2 bg-[#101B3D] hover:bg-[#0c142f]"
           >
-            <SelectTrigger id="calc-vehicle-category" className="w-full">
-              <SelectValue
-                placeholder={t('calculator.select_vehicle_category', 'Select category...')}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {VEHICLE_CATEGORIES.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
-                  {t(`calculator.vehicle_categories.${cat.value}`, cat.label)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {isCalculating ? (
+              <>
+                <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                <span>{t('calculator.calculating', 'Calculating...')}</span>
+              </>
+            ) : (
+              <>
+                <Icon icon="mdi:calculator" className="h-4 w-4" />
+                <span>{t('calculator.calculate', 'Calculate')}</span>
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Error Alert */}
+        {/* Error Alert - compact inline */}
         {error && (
-          <Alert variant="destructive">
-            <Icon icon="mdi:alert-circle" className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Calculate Button */}
-        <Button
-          onClick={handleCalculate}
-          disabled={!isFormValid || isCalculating}
-          className="w-full"
-        >
-          {isCalculating ? (
-            <>
-              <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
-              {t('calculator.calculating', 'Calculating...')}
-            </>
-          ) : (
-            <>
-              <Icon icon="mdi:calculator" className="mr-2 h-4 w-4" />
-              {t('calculator.calculate', 'Calculate')}
-            </>
-          )}
-        </Button>
-
-        {/* Success indicator - price shown in company rows */}
-        {result && (
-          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
-            <Icon icon="mdi:check-circle" className="h-4 w-4" />
-            <span>{t('calculator.price_shown_in_list', 'Price displayed in company list below')}</span>
+          <div className="flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+            <Icon icon="mdi:alert-circle" className="h-4 w-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Success indicator - compact inline */}
+        {result && (
+          <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            <Icon icon="mdi:check-circle" className="h-4 w-4 flex-shrink-0" />
+            <span>{t('calculator.price_shown_in_list', 'Price is displayed in the company list below.')}</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

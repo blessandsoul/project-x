@@ -96,6 +96,12 @@ const errorHandlerPlugin = fp(async (fastify) => {
    * 5. All other errors → 500 with masked message
    */
   fastify.setErrorHandler((error: Error | FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+    // If a response was already sent (e.g. by auth/preValidation), never try to send again.
+    // This can happen under scanners/proxies that trigger edge cases or aborts.
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
+
     let statusCode = 500;
     let errorCode = 'INTERNAL_ERROR';
     let message = 'Internal server error';

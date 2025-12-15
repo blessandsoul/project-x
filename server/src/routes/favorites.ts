@@ -1,14 +1,32 @@
 import { FastifyPluginAsync } from 'fastify';
 import { FavoriteModel } from '../models/FavoriteModel.js';
-import { ValidationError, AuthenticationError } from '../types/errors.js';
+import { AuthenticationError } from '../types/errors.js';
 import { vehicleIdParamsSchema } from '../schemas/commonSchemas.js';
 
+/**
+ * Favorite Vehicles Routes
+ *
+ * Endpoints for managing user's favorite vehicles.
+ * Auth: Cookie-based (HttpOnly access token)
+ * CSRF: Required for unsafe methods (POST, DELETE)
+ *
+ * Endpoints:
+ * - GET /favorites/vehicles - List favorites (paginated)
+ * - POST /favorites/vehicles/:vehicleId - Add to favorites
+ * - DELETE /favorites/vehicles/:vehicleId - Remove from favorites
+ */
 const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
   const favoriteModel = new FavoriteModel(fastify);
 
-  // List current user's favorite vehicles
+  /**
+   * GET /favorites/vehicles
+   *
+   * List current user's favorite vehicles with pagination.
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Not required (safe GET method)
+   */
   fastify.get('/favorites/vehicles', {
-    preHandler: fastify.authenticate,
+    preHandler: fastify.authenticateCookie,
     schema: {
       querystring: {
         type: 'object',
@@ -39,9 +57,15 @@ const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ items, total, limit, page, totalPages });
   });
 
-  // Add a vehicle to favorites
+  /**
+   * POST /favorites/vehicles/:vehicleId
+   *
+   * Add a vehicle to favorites.
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   */
   fastify.post('/favorites/vehicles/:vehicleId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: vehicleIdParamsSchema,
     },
@@ -62,9 +86,15 @@ const favoritesRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.code(200).send({ success: true, status: 'already_exists' });
   });
 
-  // Remove a vehicle from favorites
+  /**
+   * DELETE /favorites/vehicles/:vehicleId
+   *
+   * Remove a vehicle from favorites.
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   */
   fastify.delete('/favorites/vehicles/:vehicleId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: vehicleIdParamsSchema,
     },

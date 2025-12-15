@@ -141,14 +141,14 @@ export const CatalogFilters = ({
       </FilterSection>
 
       {/* City */}
-      <FilterSection title={t('catalog.filters.city_placeholder')}>
+      <FilterSection title={t('catalog.filters.city', 'City')}>
         <FilterInput
           value={localCity}
           onChange={(value) => {
             setLocalCity(value);
             onCityChange?.(value);
           }}
-          placeholder="თბილისი, ბათუმი..."
+          placeholder={t('catalog.filters.city_placeholder', 'City')}
           icon="mdi:map-marker"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

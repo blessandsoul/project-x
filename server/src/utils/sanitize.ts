@@ -94,3 +94,63 @@ export function validateEnum<T extends string>(
   const normalized = input.toLowerCase().trim() as T;
   return allowed.includes(normalized) ? normalized : defaultValue;
 }
+
+/**
+ * Strict URL validation for social links and other user-provided URLs.
+ *
+ * Security checks:
+ * 1. Must be a valid absolute URL (parseable by URL constructor)
+ * 2. Protocol must be http: or https: (no javascript:, data:, file:, blob:)
+ * 3. No embedded credentials (username:password in URL)
+ * 4. No whitespace
+ * 5. Max length enforced
+ *
+ * @param url - User-provided URL string
+ * @param maxLength - Maximum allowed length (default: 500)
+ * @returns Normalized URL string
+ * @throws Error if URL is invalid or fails security checks
+ */
+export function validateAndNormalizeSocialUrl(url: string, maxLength = 500): string {
+  if (!url || typeof url !== 'string') {
+    throw new Error('URL is required');
+  }
+
+  // Trim whitespace
+  const trimmed = url.trim();
+
+  if (trimmed.length === 0) {
+    throw new Error('URL is required');
+  }
+
+  // Check for whitespace in URL (after trimming ends)
+  if (/\s/.test(trimmed)) {
+    throw new Error('URL must not contain whitespace');
+  }
+
+  // Check max length
+  if (trimmed.length > maxLength) {
+    throw new Error(`URL must not exceed ${maxLength} characters`);
+  }
+
+  // Parse URL - this validates it's a well-formed URL
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error('Invalid URL format');
+  }
+
+  // Check protocol (only http/https allowed)
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    throw new Error('URL must use http or https protocol');
+  }
+
+  // Check for embedded credentials (security risk)
+  if (parsed.username || parsed.password) {
+    throw new Error('URL must not contain embedded credentials');
+  }
+
+  // Return the normalized URL (href includes trailing slash normalization, etc.)
+  return parsed.href;
+}

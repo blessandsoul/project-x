@@ -202,9 +202,6 @@ export function PopularVehiclesSection() {
             >
               {t('home.popular_vehicles.title')} <span className="text-[#f5a623]">{t('home.popular_vehicles.title_highlight')}</span>
             </h2>
-            <p className="hidden text-sm text-muted-foreground md:block">
-              {t('home.popular_vehicles.subtitle')}
-            </p>
           </div>
           <div className="hidden items-center gap-2 md:flex">
             <button

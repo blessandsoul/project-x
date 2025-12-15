@@ -18,6 +18,9 @@ import cron from 'node-cron';
 import { databasePlugin } from './config/database.js';
 import { redisPlugin } from './config/redis.js';
 import { authPlugin } from './middleware/auth.js';
+import { authCookiePlugin } from './middleware/authCookie.js';
+import { csrfPlugin } from './middleware/csrf.js';
+import { requireAdminPlugin } from './middleware/requireAdmin.js';
 import { errorHandlerPlugin } from './middleware/errorHandler.js';
 import { healthRoutes } from './routes/health.js';
 import { userRoutes } from './routes/user.js';
@@ -26,14 +29,14 @@ import { companyRoutes } from './routes/company.js';
 import { auctionRoutes } from './routes/auction.js';
 import { vehicleRoutes } from './routes/vehicle.js';
 import { favoritesRoutes } from './routes/favorites.js';
-import { leadRoutes } from './routes/lead.js';
-import { dashboardRoutes } from './routes/dashboard.js';
 import { citiesRoutes } from './routes/cities.js';
 import { portsRoutes } from './routes/ports.js';
 import { auctionsRoutes } from './routes/auctions.js';
 import { calculatorRoutes } from './routes/calculator.js';
 import { vehicleMakesRoutes } from './routes/vehicle-makes.js';
 import { vehicleModelsRoutes } from './routes/vehicle-models.js';
+import { authRoutes } from './routes/auth.js';
+import { accountRoutes } from './routes/account.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
 import { CitiesService } from './services/CitiesService.js';
@@ -54,6 +57,7 @@ import { AuctionsService } from './services/AuctionsService.js';
  */
 const isProd = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProd ? 'info' : 'debug');
+const trustProxy = process.env.TRUST_PROXY === 'true' || isProd;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +82,8 @@ const fastify = Fastify({
   bodyLimit: 5 * 1024 * 1024, // 5 MiB
   // Generate unique request IDs for tracing
   genReqId: () => uuidv4(),
+  // Trust proxy headers when behind Nginx/Cloudflare (required for correct IP detection)
+  trustProxy,
 }).withTypeProvider<ZodTypeProvider>();
 
 // ---------------------------------------------------------------------------
@@ -104,8 +110,8 @@ fastify.addHook('onRequest', async (request, reply) => {
 
 // Parameters that should be strictly numeric (integers)
 const NUMERIC_PARAMS = new Set([
-  'id', 'companyId', 'vehicleId', 'leadId', 'leadCompanyId', 'reviewId',
-  'company_id', 'vehicle_id', 'lead_id', 'user_id',
+  'id', 'companyId', 'vehicleId', 'reviewId',
+  'company_id', 'vehicle_id', 'user_id',
   'limit', 'offset', 'page',
   'year', 'year_from', 'year_to',
   'odometer_from', 'odometer_to',
@@ -188,6 +194,14 @@ function isInvalidNumericValue(value: string, allowFloat: boolean): boolean {
 function containsSqlInjection(value: string): boolean {
   if (typeof value !== 'string') return false;
   return SQL_INJECTION_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+/**
+ * Validate UUID (v1-v5) string format.
+ */
+function isValidUuid(value: string): boolean {
+  if (typeof value !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 fastify.addHook('preValidation', async (request, reply) => {
@@ -309,6 +323,26 @@ fastify.addHook('preValidation', async (request, reply) => {
       
       // Skip catch-all route parameters (e.g., '*' for 404 handlers)
       if (key === '*') continue;
+
+      // Allow UUID-based params for specific routes
+      if (key === 'sessionId') {
+        if (!isValidUuid(value)) {
+          fastify.log.warn({
+            method: request.method,
+            url: request.url,
+            param: key,
+            value: value.slice(0, 100),
+          }, 'Invalid UUID value in path parameter');
+
+          return reply.status(400).send({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: `Invalid value for parameter: ${key}. Expected UUID.`,
+          });
+        }
+
+        continue;
+      }
       
       // All path params in this app should be numeric IDs
       if (isInvalidNumericValue(value, false)) {
@@ -358,6 +392,15 @@ const allowedOrigins = rawCorsOrigins
 
 const allowCorsCredentials = process.env.CORS_ALLOW_CREDENTIALS === 'true';
 
+// SECURITY: Warn if production is running without explicit CORS origins
+if (isProd && allowedOrigins.length === 0) {
+  console.warn(
+    '\n⚠️  SECURITY WARNING: CORS_ALLOWED_ORIGINS is not configured in production!\n' +
+    '   Browser requests with Origin headers will be DENIED.\n' +
+    '   Set CORS_ALLOWED_ORIGINS=https://yourdomain.com to allow your frontend.\n'
+  );
+}
+
 const globalRateLimitMax = process.env.RATE_LIMIT_MAX
   ? parseInt(process.env.RATE_LIMIT_MAX, 10)
   : 100;
@@ -404,7 +447,6 @@ if (!isProd) {
         { name: 'Users', description: 'User authentication and profile management' },
         { name: 'Companies', description: 'Company management and search' },
         { name: 'Vehicles', description: 'Vehicle catalog and VIN decoding' },
-        { name: 'Leads', description: 'Lead management for quotes' },
         { name: 'Favorites', description: 'User favorites management' },
         { name: 'Dashboard', description: 'Dashboard statistics' },
       ],
@@ -433,24 +475,36 @@ await fastify.register(helmet, {
 await fastify.register(cors, {
   // Allow only explicitly configured origins in production; allow all in development
   origin: (origin, cb) => {
-    // Allow non-browser clients (no Origin header)
+    // Allow non-browser clients (no Origin header) - Postman/curl always work
     if (!origin) {
       cb(null, true);
       return;
     }
 
-    if (allowedOrigins.length === 0) {
-      // Fallback: allow any origin only when explicit origins are not configured
-      cb(null, true);
+    // If explicit origins are configured, check against allowlist
+    if (allowedOrigins.length > 0) {
+      if (allowedOrigins.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error('Origin not allowed by CORS'), false);
       return;
     }
 
-    if (allowedOrigins.includes(origin)) {
-      cb(null, true);
+    // No explicit origins configured
+    if (isProd) {
+      // PRODUCTION: Deny browser requests if CORS_ALLOWED_ORIGINS not set
+      // This prevents accidental exposure if deployed without proper config
+      fastify.log.warn({
+        event: 'cors_denied_no_config',
+        origin,
+      }, 'CORS denied: CORS_ALLOWED_ORIGINS not configured in production');
+      cb(new Error('Origin not allowed by CORS'), false);
       return;
     }
 
-    cb(new Error('Origin not allowed by CORS'), false);
+    // DEVELOPMENT: Allow any origin for developer convenience
+    cb(null, true);
   },
   credentials: allowCorsCredentials,
   // Explicitly allow all HTTP methods we use from the SPA, including DELETE and PUT
@@ -462,7 +516,7 @@ await fastify.register(fastifySensible);
 
 await fastify.register(fastifyMultipart, {
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MiB max per file
+    fileSize: 2 * 1024 * 1024, // 2 MiB max per file (avatar limit)
     files: 1,
   },
 });
@@ -470,6 +524,28 @@ await fastify.register(fastifyMultipart, {
 await fastify.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'uploads'),
   prefix: '/uploads/',
+  // Enable CORS and CORP headers for static assets (images, etc.)
+  // This is needed because @fastify/static bypasses Helmet and CORS plugins
+  setHeaders: (res, _path) => {
+    // CRITICAL: Cross-Origin-Resource-Policy must be set for static assets
+    // Without this, browsers block cross-origin image loads even with CORS headers
+    // Helmet sets this globally but @fastify/static bypasses it
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    
+    // CORS: Allow cross-origin requests from any origin for public images
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // Remove CSP for static assets - images don't need CSP protection
+    // and Helmet's default CSP (img-src 'self') blocks cross-origin embedding
+    (res as any).removeHeader('Content-Security-Policy');
+    
+    // Cache static assets for 1 day in production, no cache in dev
+    if (isProd) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 });
 
 await fastify.register(rateLimit, {
@@ -480,18 +556,21 @@ await fastify.register(rateLimit, {
 await fastify.register(databasePlugin);
 await fastify.register(redisPlugin);
 await fastify.register(authPlugin);
+await fastify.register(authCookiePlugin);
+await fastify.register(csrfPlugin);
+await fastify.register(requireAdminPlugin);
 await fastify.register(errorHandlerPlugin);
 
 // Register routes
 await fastify.register(healthRoutes);
+await fastify.register(authRoutes); // Secure cookie-based auth routes
+await fastify.register(accountRoutes); // Account management (cookie auth + CSRF)
 await fastify.register(userRoutes);
 await fastify.register(vinRoutes);
 await fastify.register(companyRoutes);
 await fastify.register(auctionRoutes);
 await fastify.register(vehicleRoutes);
 await fastify.register(favoritesRoutes);
-await fastify.register(leadRoutes);
-await fastify.register(dashboardRoutes);
 await fastify.register(citiesRoutes);
 await fastify.register(portsRoutes);
 await fastify.register(auctionsRoutes);

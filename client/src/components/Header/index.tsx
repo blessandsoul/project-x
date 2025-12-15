@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Icon } from '@iconify/react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
+import { Skeleton } from '@/components/ui/skeleton';
 import LanguageSwitcher, { LANGUAGES } from './LanguageSwitcher';
 import UserMenu from './UserMenu';
 import { cn } from '@/lib/utils';
@@ -38,7 +39,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, logout, isInitialized } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   let storedUser: User | null = null;
@@ -133,7 +134,13 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
               </div>
 
               {/* Auth Buttons */}
-              {effectiveMenuUser ? (
+              {!isInitialized ? (
+                /* Skeleton placeholder while auth is initializing */
+                <div className="hidden sm:flex items-center gap-2">
+                  <Skeleton className="h-7 w-7 rounded-full bg-white/20" />
+                  <Skeleton className="h-4 w-20 rounded bg-white/20" />
+                </div>
+              ) : effectiveMenuUser ? (
                 <UserMenu user={effectiveMenuUser} onLogout={logout} theme="dark" />
               ) : (
                 <div className="flex items-center gap-2">
@@ -148,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   <Button
                     size="sm"
                     onClick={() => navigate('/login')}
-                    className="hidden sm:flex h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-white rounded-md text-sm font-medium"
+                    className="hidden sm:flex h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] rounded-md text-sm font-medium"
                   >
                     {t('navigation.sign_in')}
                   </Button>
@@ -240,25 +247,32 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                       </SheetClose>
 
                       {/* Register / Login buttons, same golden style */}
-                      <div className="flex flex-col gap-2">
-                        <SheetClose asChild>
-                          <Button
-                            onClick={() => navigate('/register')}
-                            className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
-                          >
-                            {t('navigation.register')}
-                          </Button>
-                        </SheetClose>
+                      {!isInitialized ? (
+                        <div className="flex flex-col gap-2">
+                          <Skeleton className="h-10 w-full rounded bg-white/20" />
+                          <Skeleton className="h-10 w-full rounded bg-white/20" />
+                        </div>
+                      ) : !effectiveMenuUser && (
+                        <div className="flex flex-col gap-2">
+                          <SheetClose asChild>
+                            <Button
+                              onClick={() => navigate('/register')}
+                              className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
+                            >
+                              {t('navigation.register')}
+                            </Button>
+                          </SheetClose>
 
-                        <SheetClose asChild>
-                          <Button
-                            onClick={() => navigate('/login')}
-                            className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
-                          >
-                            {t('navigation.sign_in')}
-                          </Button>
-                        </SheetClose>
-                      </div>
+                          <SheetClose asChild>
+                            <Button
+                              onClick={() => navigate('/login')}
+                              className="w-full bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] font-semibold"
+                            >
+                              {t('navigation.sign_in')}
+                            </Button>
+                          </SheetClose>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </SheetContent>
@@ -296,13 +310,6 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
               ))}
             </nav>
 
-            {/* Active Auction Listings Button */}
-            <Button
-              onClick={() => navigate('/auction-listings')}
-              className="hidden lg:flex h-7 px-4 bg-[#f5a623] hover:bg-[#e09520] text-[#1a2744] text-sm font-semibold rounded-sm"
-            >
-              {t('auction.header.active_listings_cta')}
-            </Button>
           </div>
         </div>
       </div>

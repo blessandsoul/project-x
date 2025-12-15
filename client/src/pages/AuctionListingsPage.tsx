@@ -210,6 +210,9 @@ const createColumns = (
   onViewDetails: (item: BackendItem) => void,
   isWatched: (id: number) => boolean,
   t: any,
+  localeList: string[],
+  isGeorgian: boolean,
+  monthShortKa: string[],
   isLargeScreen: boolean,
 ): ColumnDef<BackendItem>[] => [
   // Checkbox column
@@ -272,7 +275,7 @@ const createColumns = (
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       return (
-        <div className="max-w-[140px]">
+        <div className="max-w-[140px] pl-2">
           <button onClick={() => onViewDetails(item)} className="text-left">
             <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase whitespace-normal break-words">
               {item.year} {item.make} {item.model}
@@ -309,7 +312,7 @@ const createColumns = (
   // Vehicle Info column
   {
     id: 'vehicle_info',
-    header: 'ინფორმაცია',
+    header: t('auction.columns.vehicle_info'),
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       const retailValue = item.retail_value
@@ -334,7 +337,7 @@ const createColumns = (
   // Document column (renamed from Condition)
   {
     id: 'document',
-    header: 'დოკუმენტი',
+    header: t('auction.columns.document'),
     cell: ({ row }: { row: Row<BackendItem> }) => {
       const item = row.original;
       
@@ -348,11 +351,13 @@ const createColumns = (
           const isUpcoming = auctionDate > now;
           
           // Format date: "Nov 12, 2025"
-          const dateStr = auctionDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
+          const dateStr = isGeorgian
+            ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
+            : new Intl.DateTimeFormat(localeList, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              }).format(auctionDate);
           
           // Format time from sold_at_time if available, otherwise from the date
           let timeStr = '';
@@ -364,11 +369,11 @@ const createColumns = (
             const hour12 = hour % 12 || 12;
             timeStr = `${hour12}:${minutes} ${ampm}`;
           } else {
-            timeStr = auctionDate.toLocaleTimeString('en-US', {
+            timeStr = new Intl.DateTimeFormat(localeList, {
               hour: 'numeric',
               minute: '2-digit',
               hour12: true,
-            });
+            }).format(auctionDate);
           }
           
           return { date: dateStr, time: timeStr, isUpcoming };
@@ -381,7 +386,7 @@ const createColumns = (
       
       return (
         <div className="max-w-[180px] whitespace-normal break-words">
-          <div className="text-muted-foreground text-[10px] mb-0.5">Sale Document</div>
+          <div className="text-muted-foreground text-[10px] mb-0.5">{t('auction.document_label')}</div>
           <div className="text-foreground font-medium text-[11px]">{item.document || 'N/A'}</div>
           
           {/* Auction Start Date - Eye-catching display */}
@@ -395,7 +400,7 @@ const createColumns = (
                 <span className={`text-[9px] font-semibold uppercase tracking-wide ${
                   auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
                 }`}>
-                  {auctionInfo.isUpcoming ? 'Auction Starts' : 'Auction Start Date'}
+                  {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
                 </span>
               </div>
               <div className={`text-[12px] font-bold ${
@@ -440,12 +445,20 @@ const createColumns = (
         if (!isoTime) return '';
         try {
           const date = new Date(isoTime);
-          return date.toLocaleDateString('en-US', {
+          if (isGeorgian) {
+            const month = monthShortKa[date.getMonth()];
+            const day = date.getDate();
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${month} ${day}, ${year}, ${hours}:${minutes}`;
+          }
+          return new Intl.DateTimeFormat(localeList, {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-          });
+          }).format(date);
         } catch {
           return '';
         }
@@ -465,7 +478,7 @@ const createColumns = (
 
       return (
         <div className="flex flex-col">
-          <div className="text-muted-foreground text-[10px]">Current bid:</div>
+          <div className="text-muted-foreground text-[10px]">{t('auction.fields.current_bid')}</div>
           <div className="text-base font-bold text-foreground">
             {formatMoney(currentBidValue)} <span className="text-xs font-normal text-muted-foreground">USD</span>
           </div>
@@ -515,7 +528,15 @@ const createColumns = (
 ];
 
 const AuctionListingsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const localeList = [
+    i18n.language === 'ka' ? 'ka-GE' : i18n.language || 'en',
+    'ka',
+    'ka-GE',
+    'en',
+  ];
+  const isGeorgian = i18n.language?.startsWith('ka');
+  const monthShortKa = ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'];
   const navigate = useNavigate();
   const location = useLocation();
   const [auctionFilter, setAuctionFilter] = useState<AuctionHouse>("all");
@@ -662,8 +683,11 @@ const AuctionListingsPage = () => {
     },
     (id: number) => isWatched(id),
     t,
+    localeList,
+    isGeorgian,
+    monthShortKa,
     isLargeScreen,
-  ), [showCompareCheckboxes, selectedVehicleIds, isAuthenticated, toggleWatch, navigate, isWatched, t, isLargeScreen]);
+  ), [showCompareCheckboxes, selectedVehicleIds, isAuthenticated, toggleWatch, navigate, isWatched, t, localeList, isGeorgian, monthShortKa, isLargeScreen]);
 
   const table = useReactTable({
     data: displayedItems,
@@ -1507,45 +1531,6 @@ const AuctionListingsPage = () => {
       return;
     }
   }, [appliedFilters, isBackendLoading, backendError, backendData]);
-
-  const handleLoadMore = async () => {
-    if (!appliedFilters || !backendData) return;
-
-    const baseLimit = appliedFilters.limit;
-    const currentPage = appliedPage;
-    const nextPage = extraLoaded ? extraLoaded.endPage + 1 : currentPage + 1;
-
-    const maxPage =
-      backendData.totalPages ??
-      Math.max(1, Math.ceil(backendData.total / baseLimit));
-    if (nextPage > maxPage) return;
-
-    try {
-      const result = await searchVehicles({
-        ...appliedFilters,
-        page: nextPage,
-      });
-      const nextItems = (result.items ?? []) as BackendItem[];
-
-      if (!extraLoaded) {
-        const combined = [...(backendData?.items ?? []), ...nextItems];
-        setExtraLoaded({
-          startPage: currentPage,
-          endPage: nextPage,
-          items: combined,
-        });
-      } else {
-        const combined = [...extraLoaded.items, ...nextItems];
-        setExtraLoaded({
-          startPage: extraLoaded.startPage,
-          endPage: nextPage,
-          items: combined,
-        });
-      }
-    } catch (error) {
-      console.error('[AuctionListingsPage] Failed to load more vehicles', error);
-    }
-  };
 
   // Handler for category filter changes - triggers immediate data fetch
   const handleCategoryChange = (newCategory: CategoryFilter) => {
@@ -2893,22 +2878,12 @@ const AuctionListingsPage = () => {
                       </motion.div>
                     </AnimatePresence>
 
-                    {/* Pagination & Load More */}
+                    {/* Pagination */}
                     <div className="flex flex-col items-center gap-4 pt-4 border-t">
                       <span className="text-sm text-muted-foreground">
                         {t("common.page")} {appliedPage} /{" "}
                         {backendData!.totalPages ?? Math.ceil(backendData!.total / limit)}
                       </span>
-
-                      {canLoadMore && (
-                        <Button
-                          onClick={handleLoadMore}
-                          className="w-full max-w-xs"
-                          variant="secondary"
-                        >
-                          {t("auction.load_more")}
-                        </Button>
-                      )}
 
                       <div className="flex gap-2">
                         <Button

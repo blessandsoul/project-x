@@ -8,9 +8,11 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    lng: 'ka', // Force Georgian as default language
     fallbackLng: 'ka',
     supportedLngs: ['ka', 'en', 'ru', 'ar'],
+    load: 'languageOnly',
+    nonExplicitSupportedLngs: true,
+    cleanCode: true,
     debug: import.meta.env.DEV,
     
     interpolation: {
@@ -26,8 +28,17 @@ i18n
       // Only check localStorage, ignore browser language
       order: ['localStorage'],
       caches: ['localStorage'],
+      convertDetectedLanguage: (lng: string) => {
+        if (lng === 'ge') return 'ka';
+        return lng;
+      },
     },
   });
+
+// Normalize legacy/incorrect Georgian code
+if (i18n.language === 'ge') {
+  i18n.changeLanguage('ka');
+}
 
 // Handle RTL for Arabic
 i18n.on('languageChanged', (lng) => {

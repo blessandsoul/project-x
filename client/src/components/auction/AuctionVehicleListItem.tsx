@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { formatDateTime } from '@/lib/formatDate';
 
 interface AuctionVehicleListItemProps {
   item: VehicleSearchItem;
@@ -34,7 +35,7 @@ export function AuctionVehicleListItem({
   onToggleWatch,
   isWatched = false,
 }: AuctionVehicleListItemProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
   // Last bid from API (preferred) or fallback to calc_price
@@ -54,8 +55,7 @@ export function AuctionVehicleListItem({
   const formatBidTime = (isoTime: string | null): string => {
     if (!isoTime) return '';
     try {
-      const date = new Date(isoTime);
-      return date.toLocaleDateString('en-US', {
+      return formatDateTime(isoTime, i18n.language, {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',

@@ -72,7 +72,15 @@ export function AuctionVehicleCard({
   onToggleWatch,
   isWatched = false,
 }: AuctionVehicleCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isGeorgian = i18n.language?.startsWith('ka');
+  const localeList = [
+    'ka',
+    'ka-GE',
+    i18n.language || 'en',
+    'en',
+  ];
+  const monthShortKa = ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'];
   const isMobile = useMobileDetect();
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
@@ -95,12 +103,20 @@ export function AuctionVehicleCard({
     if (!isoTime) return '';
     try {
       const date = new Date(isoTime);
-      return date.toLocaleDateString('en-US', {
+      if (isGeorgian) {
+        const month = monthShortKa[date.getMonth()];
+        const day = date.getDate();
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${month} ${day}, ${year}, ${hours}:${minutes}`;
+      }
+      return new Intl.DateTimeFormat(localeList, {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      });
+      }).format(date);
     } catch {
       return '';
     }
@@ -138,11 +154,13 @@ export function AuctionVehicleCard({
         const now = new Date();
         const isUpcoming = auctionDate > now;
 
-        const dateStr = auctionDate.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        });
+        const dateStr = isGeorgian
+          ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
+          : new Intl.DateTimeFormat(localeList, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }).format(auctionDate);
 
         let timeStr = '';
         if (item.sold_at_time) {
@@ -152,11 +170,11 @@ export function AuctionVehicleCard({
           const hour12 = hour % 12 || 12;
           timeStr = `${hour12}:${minutes} ${ampm}`;
         } else {
-          timeStr = auctionDate.toLocaleTimeString('en-US', {
+          timeStr = new Intl.DateTimeFormat(localeList, {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
-          });
+          }).format(auctionDate);
         }
 
         return { date: dateStr, time: timeStr, isUpcoming };
@@ -179,7 +197,7 @@ export function AuctionVehicleCard({
               {item.year} {item.make} {item.model}
             </h3>
             <p className="text-[13px] text-slate-600 mt-0.5">
-              Lot #{item.source_lot_id || item.id}
+              {t('auction.lot')} {item.source_lot_id || item.id}
             </p>
           </div>
 
@@ -217,7 +235,7 @@ export function AuctionVehicleCard({
             <div className="auction-card-info w-1/2 flex flex-col justify-start p-3 gap-1 bg-slate-100">
               {/* Odometer section */}
               <div className="mb-1">
-                <p className="text-[13px] font-bold text-slate-800">Odometer</p>
+                <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.odometer')}</p>
                 <p className="text-[13px] text-slate-600">{odometerDisplay}</p>
               </div>
 
@@ -235,7 +253,7 @@ export function AuctionVehicleCard({
               {/* Buy Now section - plain text like Copart, only if exists */}
               {hasBuyNow && buyNowPriceLabel && (
                 <div>
-                  <p className="text-[13px] font-bold text-slate-800">{t('auction.buy_now_short')}:</p>
+                  <p className="text-[13px] font-bold text-slate-800">{t('auction.buy_now_label')}:</p>
                   <p className="text-[15px] font-bold text-slate-900">
                     {buyNowPriceLabel} <span className="text-[12px] font-normal text-slate-500">USD</span>
                   </p>
@@ -253,7 +271,7 @@ export function AuctionVehicleCard({
                     <span className={`text-[11px] font-semibold uppercase tracking-wide ${
                       auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
                     }`}>
-                      {auctionInfo.isUpcoming ? 'Auction Starts' : 'Auction Start Date'}
+                      {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
                     </span>
                   </div>
                   <div className={`text-[13px] font-bold ${
@@ -280,7 +298,7 @@ export function AuctionVehicleCard({
               onClick={onViewDetails}
             >
               <Icon icon="mdi:plus-circle-outline" className="w-4 h-4" />
-              Details
+              {t('common.details')}
             </button>
 
             {/* WATCH button - White background, blue text */}
@@ -298,7 +316,7 @@ export function AuctionVehicleCard({
               }}
             >
               <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
-              Watch
+              {t('auction.actions.watch')}
             </button>
 
             {/* BID NOW button - Blue, always visible on mobile */}
@@ -307,7 +325,7 @@ export function AuctionVehicleCard({
               className="flex items-center justify-center gap-1.5 h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-[13px] transition-colors border-l border-slate-200"
               onClick={onViewDetails}
             >
-              Bid now
+              {t('auction.actions.bid_now')}
             </button>
           </div>
         </div>
@@ -383,7 +401,7 @@ export function AuctionVehicleCard({
 
           {/* Lot # */}
           <div className="text-[10px] text-slate-500 mb-1.5">
-            Lot# {item.source_lot_id || item.id}
+            {t('auction.lot')} {item.source_lot_id || item.id}
           </div>
 
           {/* Badges */}
@@ -391,13 +409,13 @@ export function AuctionVehicleCard({
             {hasCleanTitle && (
               <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
                 <Icon icon="mdi:check-circle" className="w-2.5 h-2.5" />
-                Clean Title
+                {t('auction.badges.clean_title')}
               </span>
             )}
             {isRunDrive && (
               <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
                 <Icon icon="mdi:car" className="w-2.5 h-2.5" />
-                Run & Drive
+                {t('auction.badges.run_drive')}
               </span>
             )}
           </div>
@@ -406,18 +424,18 @@ export function AuctionVehicleCard({
           <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-2">
             <span className="flex items-center gap-0.5">
               <Icon icon="mdi:speedometer" className="w-3 h-3" />
-              {item.mileage ? `${(item.mileage / 1000).toFixed(0)}k mi` : 'N/A'}
+              {item.mileage ? `${(item.mileage / 1000).toFixed(0)}k ${t('common.miles_short')}` : 'N/A'}
             </span>
             <span className="flex items-center gap-0.5">
               <Icon icon="mdi:gas-station" className="w-3 h-3" />
-              {item.fuel_type || 'Gas'}
+              {item.fuel_type || t('common.fuel_gas')}
             </span>
           </div>
 
           {/* Price & Buttons */}
           <div className="mt-auto space-y-2">
             <div>
-              <div className="text-[9px] text-slate-400 uppercase">Current Bid</div>
+              <div className="text-[9px] text-slate-400 uppercase">{t('auction.fields.current_bid')}</div>
               <div className="text-[16px] font-semibold text-slate-900">
                 {formatMoney(displayPrice)} <span className="text-[9px] font-normal text-slate-400">USD</span>
               </div>
@@ -428,7 +446,7 @@ export function AuctionVehicleCard({
               )}
               {hasBuyNow && buyNowPriceLabel && (
                 <div className="text-[10px] text-green-600 font-semibold">
-                  Buy Now: {buyNowPriceLabel}
+                  {t('auction.buy_now_label')}: {buyNowPriceLabel}
                 </div>
               )}
             </div>
@@ -439,7 +457,7 @@ export function AuctionVehicleCard({
                 className="w-full h-7 text-[11px] rounded-full bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-semibold"
                 onClick={onViewDetails}
               >
-                Bid Now
+                {t('auction.actions.bid_now')}
               </Button>
               {hasBuyNow ? (
                 <Button
@@ -447,7 +465,7 @@ export function AuctionVehicleCard({
                   className="w-full h-7 text-[11px] rounded-full bg-[#28a745] hover:bg-[#218838] text-white font-semibold"
                   onClick={onViewDetails}
                 >
-                  Buy Now
+                  {t('auction.actions.buy_it_now')}
                 </Button>
               ) : (
                 <Button
@@ -456,7 +474,7 @@ export function AuctionVehicleCard({
                   className="w-full h-7 text-[11px] rounded-full border-slate-300 text-slate-600 font-medium hover:bg-slate-50"
                   onClick={onViewDetails}
                 >
-                  Details
+                  {t('common.details')}
                 </Button>
               )}
             </div>

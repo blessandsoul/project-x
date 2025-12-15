@@ -10,6 +10,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { VehicleQuote } from '@/types/vehicles';
+import { useTranslation } from 'react-i18next';
 
 interface VehicleQuotesSectionProps {
   /** Quotes from the server API */
@@ -40,8 +41,23 @@ const VehicleQuotesSection = ({
   onOpenBreakdown,
   onOpenLeadModal,
 }: VehicleQuotesSectionProps) => {
+  const { t, i18n } = useTranslation();
   
   const bestPrice = priceStats.min;
+
+  const formatUsd = (value: number): string => {
+    try {
+      const locale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+      const intlLocale = locale === 'ge' ? 'ka' : locale;
+      return new Intl.NumberFormat(intlLocale, {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+    }
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -69,7 +85,7 @@ const VehicleQuotesSection = ({
       <section className="rounded-2xl border border-slate-200/60 bg-white p-8 text-center">
         <p className="text-sm text-slate-500">{error}</p>
         <Button variant="ghost" size="sm" className="mt-3 text-xs">
-          Try again
+          {t('vehicle.quotes_section.try_again', 'Try again')}
         </Button>
       </section>
     );
@@ -84,9 +100,11 @@ const VehicleQuotesSection = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
         </div>
-        <p className="text-sm text-slate-600 font-medium mb-1">Price calculation unavailable</p>
+        <p className="text-sm text-slate-600 font-medium mb-1">
+          {t('vehicle.quotes_section.unavailable_title', 'Price calculation unavailable')}
+        </p>
         <p className="text-xs text-slate-400 max-w-xs mx-auto">
-          {priceUnavailableMessage || 'Shipping quotes cannot be calculated for this location.'}
+          {priceUnavailableMessage || t('vehicle.quotes_section.unavailable_description', 'Shipping quotes cannot be calculated for this location.')}
         </p>
         <Button 
           onClick={onOpenLeadModal}
@@ -94,7 +112,7 @@ const VehicleQuotesSection = ({
           size="sm" 
           className="mt-4 text-xs"
         >
-          Request Custom Quote
+          {t('vehicle.quotes_section.request_custom_quote', 'Request Custom Quote')}
         </Button>
       </section>
     );
@@ -104,7 +122,7 @@ const VehicleQuotesSection = ({
   if (filteredQuotes.length === 0) {
     return (
       <section className="rounded-2xl border border-slate-200/60 bg-white p-8 text-center">
-        <p className="text-sm text-slate-500">No offers available yet</p>
+        <p className="text-sm text-slate-500">{t('vehicle.quotes_section.empty', 'No offers available yet')}</p>
       </section>
     );
   }
@@ -112,21 +130,21 @@ const VehicleQuotesSection = ({
   return (
     <section 
       className="vehicle-quotes-section rounded-2xl border border-slate-200/60 bg-white overflow-hidden"
-      aria-label="Import quotes"
+      aria-label={t('vehicle.quotes_section.aria_label', 'Import quotes')}
     >
       {/* Minimal header */}
       <header className="px-5 py-4 border-b border-slate-100">
         <div className="vehicle-quotes-header flex items-center justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-slate-900">
-              Shipping Quotes
+              {t('vehicle.quotes_section.title', 'Shipping Quotes')}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {filteredQuotes.length} verified importers
+              {t('vehicle.quotes_section.verified_importers', '{{count}} verified importers', { count: filteredQuotes.length })}
             </p>
           </div>
           <span className="text-xs text-slate-400">
-            Prices include all fees
+            {t('vehicle.quotes_section.prices_include_all_fees', 'Prices include all fees')}
           </span>
         </div>
       </header>
@@ -137,7 +155,7 @@ const VehicleQuotesSection = ({
           const price = Number(quote.total_price) || 0;
           const isBest = bestPrice > 0 && price <= bestPrice * 1.01;
           // Use rating from API response (company_rating), fallback to N/A
-          const rating = quote.company_rating != null ? quote.company_rating.toFixed(1) : 'N/A';
+          const rating = quote.company_rating != null ? quote.company_rating.toFixed(1) : t('vehicle.quotes_section.rating_na', 'N/A');
           
           return (
             <button
@@ -168,14 +186,18 @@ const VehicleQuotesSection = ({
                   </span>
                   {isBest && index === 0 && (
                     <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                      Best
+                      {t('vehicle.quotes_section.best', 'Best')}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500">
                   <span>★ {rating}</span>
                   <span>·</span>
-                  <span>{quote.delivery_time_days ? `${quote.delivery_time_days} days` : '—'}</span>
+                  <span>
+                    {quote.delivery_time_days
+                      ? t('vehicle.quotes_section.delivery_days', '{{count}} days', { count: quote.delivery_time_days })
+                      : t('vehicle.quotes_section.delivery_unknown', '—')}
+                  </span>
                 </div>
               </div>
 
@@ -185,10 +207,10 @@ const VehicleQuotesSection = ({
                   'text-base font-semibold tabular-nums',
                   isBest && index === 0 ? 'text-emerald-600' : 'text-slate-900'
                 )}>
-                  ${price.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                  {formatUsd(price)}
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  transportation price
+                  {t('vehicle.quotes_section.transportation_price', 'transportation price')}
                 </div>
               </div>
 
@@ -212,10 +234,10 @@ const VehicleQuotesSection = ({
           onClick={onOpenLeadModal}
           className="w-full h-11 rounded-xl text-sm font-medium"
         >
-          Request Custom Quote
+          {t('vehicle.quotes_section.request_custom_quote', 'Request Custom Quote')}
         </Button>
         <p className="text-center text-[11px] text-slate-400 mt-2.5">
-          Free · No commitment · Reply within 24h
+          {t('vehicle.quotes_section.footer_note', 'Free · No commitment · Reply within 24h')}
         </p>
       </footer>
     </section>

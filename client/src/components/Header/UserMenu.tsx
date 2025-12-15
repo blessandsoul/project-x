@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserMenuUser {
   id: string;
@@ -45,6 +46,7 @@ const getInitials = (name: string): string => {
 
 const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
   const { t } = useTranslation();
+  const { companyId } = useAuth();
   const initials = getInitials(user.name);
   const navigate = useNavigate();
 
@@ -120,6 +122,17 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
             <Icon icon="mdi:account-circle" className="me-2 h-4 w-4" />
             <span>{t('header.profile')}</span>
           </DropdownMenuItem>
+          {companyId && (
+            <DropdownMenuItem
+              onSelect={event => {
+                event.preventDefault();
+                navigate('/company/settings');
+              }}
+            >
+              <Icon icon="mdi:domain" className="me-2 h-4 w-4" />
+              <span>{t('header.company_settings')}</span>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={event => {

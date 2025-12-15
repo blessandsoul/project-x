@@ -240,6 +240,14 @@ export class CompanyController {
     return this.companyModel.getSocialLinksByCompanyId(companyId);
   }
 
+  async getSocialLinkById(id: number): Promise<CompanySocialLink> {
+    const link = await this.companyModel.getSocialLinkById(id);
+    if (!link) {
+      throw new NotFoundError('Social link');
+    }
+    return link;
+  }
+
   async createSocialLink(companyId: number, url: string): Promise<CompanySocialLink> {
     // Validate parent company exists (FK constraint in code, not just DB)
     const company = await this.companyModel.findById(companyId);

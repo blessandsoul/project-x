@@ -1,67 +1,12 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
-import { searchVehicles } from '@/api/vehicles';
-import type { SearchVehiclesResponse, VehicleSearchItem } from '@/types/vehicles';
-
-type SimpleVehicleCard = {
-  id: number | string;
-  title: string;
-  image: string;
-};
 
 export function WhatIsCopartSection() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [vehicles, setVehicles] = useState<SimpleVehicleCard[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadRandomVehicles = async () => {
-      try {
-        // Fetch a small pool and then pick 3 random
-        const res: SearchVehiclesResponse = await searchVehicles({ limit: 12 });
-        const items = (res.items ?? []) as VehicleSearchItem[];
-
-        if (!isMounted || items.length === 0) return;
-
-        const shuffled = [...items].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, 3).map((item, index) => {
-          const id = item.vehicle_id ?? item.id ?? index;
-          const year = typeof item.year === 'number' ? item.year : undefined;
-          const make = item.make ?? '';
-          const model = item.model ?? '';
-          const titleParts = [year, make, model].filter(Boolean);
-
-          const image =
-            item.primary_photo_url ||
-            item.primary_thumb_url ||
-            '/cars/1.webp';
-
-          return {
-            id,
-            title: titleParts.join(' '),
-            image,
-          };
-        });
-
-        setVehicles(picked);
-      } catch {
-        if (!isMounted) return;
-        // graceful fallback: no vehicles
-        setVehicles([]);
-      }
-    };
-
-    void loadRandomVehicles();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   return (
     <motion.section
@@ -95,31 +40,42 @@ export function WhatIsCopartSection() {
             </Button>
           </div>
 
-          {/* Right: Random Vehicles from Auctions */}
-          <div>
-            <p className="text-xs text-white/60 uppercase tracking-wider font-semibold mb-3">
-              {t('home.what_is_copart.browse_categories')}
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {vehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  className="relative rounded-xl overflow-hidden cursor-pointer group aspect-[4/3] border border-white/10 bg-black/20"
-                  onClick={() => navigate(`/vehicle/${vehicle.id}`)}
-                >
-                  <img
-                    src={vehicle.image}
-                    alt={vehicle.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute bottom-2 left-2 right-2 rtl:left-auto rtl:right-2">
-                    <h3 className="text-xs font-semibold text-white line-clamp-2">
-                      {vehicle.title || t('common.cars')}
-                    </h3>
-                  </div>
-                </div>
-              ))}
+          {/* Right: 4-Icon Feature Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Feature 1: Easy Search */}
+            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+              <Icon icon="mdi:magnify" className="h-8 w-8 mb-2 text-[#f5a623]" aria-hidden="true" />
+              <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.search_title')}</h4>
+              <p className="text-xs opacity-70 text-center mt-1">
+                {t('home.what_is_copart.features.search_desc')}
+              </p>
+            </div>
+
+            {/* Feature 2: Compare */}
+            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+              <Icon icon="mdi:scale-balance" className="h-8 w-8 mb-2 text-[#f5a623]" aria-hidden="true" />
+              <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.compare_title')}</h4>
+              <p className="text-xs opacity-70 text-center mt-1">
+                {t('home.what_is_copart.features.compare_desc')}
+              </p>
+            </div>
+
+            {/* Feature 3: Full Calculation */}
+            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+              <Icon icon="mdi:calculator-variant" className="h-8 w-8 mb-2 text-[#f5a623]" aria-hidden="true" />
+              <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.calculate_title')}</h4>
+              <p className="text-xs opacity-70 text-center mt-1">
+                {t('home.what_is_copart.features.calculate_desc')}
+              </p>
+            </div>
+
+            {/* Feature 4: Trusted Reviews */}
+            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+              <Icon icon="mdi:star-outline" className="h-8 w-8 mb-2 text-[#f5a623]" aria-hidden="true" />
+              <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.reviews_title')}</h4>
+              <p className="text-xs opacity-70 text-center mt-1">
+                {t('home.what_is_copart.features.reviews_desc')}
+              </p>
             </div>
           </div>
         </div>

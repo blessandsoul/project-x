@@ -1,4 +1,4 @@
-import axios, { type AxiosError } from 'axios'
+import axios from 'axios'
 import { API_BASE_URL, apiAuthorizedMutation, apiAuthorizedGet } from '@/lib/apiClient'
 import type { Company } from '@/types/api'
 
@@ -233,15 +233,14 @@ export async function uploadCompanyLogoFromApi(
   const formData = new FormData()
   formData.append('file', file)
 
-  const token = window.localStorage.getItem('projectx_auth_token')
-
+  // Use axios with withCredentials for cookie-based auth (no localStorage token)
   const response = await axios.post<{ logoUrl: string; originalLogoUrl: string }>(
     `${API_BASE_URL}/companies/${companyId}/logo`,
     formData,
     {
+      withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     },
   )
@@ -518,15 +517,6 @@ export type UpdateCompanyReviewPayload = {
   comment?: string | null
 }
 
-export type LeadFromQuotesPayload = {
-  vehicleId: number
-  selectedCompanyIds: number[]
-  name: string
-  contact: string
-  message: string
-  priority: 'price'
-}
-
 export async function createCompanyReviewFromApi(payload: CreateCompanyReviewPayload): Promise<ApiCompanyReview> {
   const requestBody: { rating: number; comment?: string | null } = {
     rating: payload.rating,
@@ -548,37 +538,6 @@ export async function createCompanyReviewFromApi(payload: CreateCompanyReviewPay
   })
 
   return response
-}
-
-export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Promise<void> {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/leads/from-quotes`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    console.log('[CompaniesAPI] Successfully created lead from quotes', {
-      status: response.status,
-    })
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError
-
-      console.error('[CompaniesAPI] Failed to create lead from quotes', {
-        status: axiosError.response?.status,
-        statusText: axiosError.response?.statusText,
-        data: axiosError.response?.data,
-        message: axiosError.message,
-      })
-    } else {
-      console.error('[CompaniesAPI] Failed to create lead from quotes', {
-        error,
-      })
-    }
-
-    throw error
-  }
 }
 
 export async function updateCompanyReviewFromApi(
@@ -623,4 +582,14 @@ export async function deleteCompanyReviewFromApi(
     companyId,
     reviewId,
   })
+}
+
+export async function deleteCompanyFromApi(companyId: string | number): Promise<void> {
+  await apiAuthorizedMutation<unknown>(
+    'DELETE',
+    `/companies/${companyId}`,
+    undefined as any,
+  )
+
+  console.log('[CompaniesAPI] Successfully deleted company', { companyId })
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/lib/formatDate';
 import ColorThief from 'colorthief';
 // Header and Footer are provided by MainLayout
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -21,7 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchCompanyReviewsFromApi, createCompanyReviewFromApi, updateCompanyReviewFromApi, deleteCompanyReviewFromApi, type ApiCompanyReview } from '@/services/companiesApi';
 
 const CompanyProfilePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -832,7 +833,7 @@ const CompanyProfilePage = () => {
                                     </div>
                                   )}
                                   <span className="text-xs text-slate-500 whitespace-nowrap">
-                                    {new Date(review.created_at).toLocaleDateString()}
+                                    {formatDate(review.created_at, i18n.language)}
                                   </span>
                                 </div>
                               </div>

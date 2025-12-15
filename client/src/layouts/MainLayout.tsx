@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 // CopartHeader.tsx is the old Copart-style variant (deprecated)
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { navigationItems, footerLinks } from '@/config/navigation';
+import { navigationItems } from '@/config/navigation';
 
 /**
  * MainLayout - Universal layout wrapper for all pages
@@ -51,7 +51,7 @@ const MainLayout = ({
 
       {/* Footer - Always at bottom */}
       {!hideFooter && (
-        <Footer footerLinks={footerLinks} />
+        <Footer onNavigate={handleNavigate} />
       )}
     </div>
   );

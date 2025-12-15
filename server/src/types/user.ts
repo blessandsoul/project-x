@@ -9,6 +9,7 @@ export interface User {
   company_id: number | null;
   onboarding_ends_at: Date | null;
   is_blocked: boolean;
+  deactivated_at: Date | null;
   password_hash: string;
   created_at: Date;
   updated_at: Date;
@@ -37,11 +38,7 @@ export interface UserUpdate {
   company_id?: number | null;
   onboarding_ends_at?: Date | null;
   is_blocked?: boolean;
-}
-
-export interface UserLogin {
-  identifier: string; // Can be either email or username
-  password: string;
+  deactivated_at?: Date | null;
 }
 
 export interface AuthUser {
@@ -63,11 +60,6 @@ export interface JWTPayload {
   role?: UserRole;
   iat?: number;
   exp?: number;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: AuthUser;
 }
 
 declare module 'fastify' {

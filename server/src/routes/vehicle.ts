@@ -197,20 +197,17 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     // Sort
     const sort = query.sort;
 
-    // If an Authorization header is present, attempt to authenticate so
-    // we can optionally attach is_favorite flags. If authentication
-    // fails, we treat the request as anonymous (don't block the search).
-    const authHeader = (request.headers as any).authorization;
-    if (authHeader) {
-      try {
-        await (fastify as any).authenticate(request, reply);
-      } catch (authError) {
-        if (reply.sent) {
-          return;
-        }
-        fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
-        (request as any).user = undefined;
-      }
+    // Attempt optional cookie-based authentication to attach is_favorite flags.
+    // If authentication fails, we treat the request as anonymous (don't block the search).
+    try {
+      await fastify.authenticateCookieOptional(request, reply);
+    } catch (authError) {
+      fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
+      (request as any).user = undefined;
+    }
+    // If authenticate already sent a response (e.g., 401), stop here
+    if (reply.sent) {
+      return;
     }
 
     // Cache key based on filters (excluding user-specific data like favorites)
@@ -233,6 +230,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { items, total } = cachedResult;
     if (total === 0) {
+      if (reply.sent || request.raw.aborted) {
+        return;
+      }
       return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
 
@@ -263,6 +263,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
     return reply.send({ items: itemsWithBids, total, limit, page, totalPages });
   });
 
@@ -307,6 +310,10 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     // SECURITY: id is already validated as positive integer by schema
     const { id } = request.params as { id: number };
 
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
+
     const vehicle = await vehicleModel.findById(id);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
@@ -316,6 +323,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     const bidsMap = await vehicleModel.getBidsForVehicles([id]);
     const bids = bidsMap.get(id) || [];
 
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
     return reply.send({ ...vehicle, bids });
   });
 
@@ -430,8 +440,13 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // admin / maintenance use cases. If the vehicle does not exist, a
   // 404 Not Found error is thrown. On success, an empty 204 response
   // is returned.
+  //
+  // Auth: Cookie-based (HttpOnly access token)
+  // CSRF: Required (X-CSRF-Token header)
+  // Authorization: Admin only (via requireAdmin middleware)
   // ---------------------------------------------------------------------------
   fastify.delete('/vehicles/:id', {
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
     },

@@ -7,7 +7,11 @@ import {
   CompanyQuoteCreate,
   CompanyQuoteUpdate,
 } from '../types/company.js';
-import { ValidationError, AuthorizationError } from '../types/errors.js';
+import { ValidationError, AuthorizationError, NotFoundError, ConflictError } from '../types/errors.js';
+import { CompanyModel } from '../models/CompanyModel.js';
+import { UserModel } from '../models/UserModel.js';
+import { invalidateUserCache } from '../utils/cache.js';
+import { validateAndNormalizeSocialUrl } from '../utils/sanitize.js';
 import { parsePagination, buildPaginatedResult } from '../utils/pagination.js';
 import { withIdempotency } from '../utils/idempotency.js';
 import {
@@ -18,8 +22,9 @@ import {
   CACHE_TTL,
 } from '../utils/cache.js';
 import {
-  uploadCompanyLogo,
-  validateImageMime,
+  uploadCompanyLogoSecure,
+  deleteCompanyLogo,
+  getCompanyLogoUrls,
 } from '../services/ImageUploadService.js';
 import { CalculatorRequestBuilder } from '../services/CalculatorRequestBuilder.js';
 import {
@@ -52,6 +57,225 @@ import {
  */
 const companyRoutes: FastifyPluginAsync = async (fastify) => {
   const controller = new CompanyController(fastify);
+  const companyModel = new CompanyModel(fastify);
+  const userModel = new UserModel(fastify);
+
+  // ---------------------------------------------------------------------------
+  // Company Onboarding (Option B: 2-step registration)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /companies/onboard
+   *
+   * Create a company for the authenticated user (2-step onboarding).
+   * 
+   * Prerequisites:
+   * - User must be authenticated (cookie auth)
+   * - User must NOT already have a company (company_id IS NULL)
+   * 
+   * After success:
+   * - Creates company with owner_user_id = user.id
+   * - Updates user.role = 'company'
+   * - Updates user.company_id = company.id
+   * 
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Rate limit: 3 requests per hour per user
+   */
+  fastify.post('/companies/onboard', {
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          // Required
+          name: { type: 'string', minLength: 1, maxLength: 255 },
+          // Contact info (optional)
+          companyPhone: { type: 'string', minLength: 3, maxLength: 50 },
+          contactEmail: { type: 'string', format: 'email', maxLength: 255 },
+          website: { type: 'string', maxLength: 255 },
+          // Location (optional)
+          country: { type: 'string', maxLength: 100 },
+          city: { type: 'string', maxLength: 100 },
+          state: { type: 'string', maxLength: 100 },
+          // Company details (optional)
+          description: { type: 'string', maxLength: 5000 },
+          establishedYear: { type: 'integer', minimum: 1900, maximum: 2100 },
+          services: { type: 'array', items: { type: 'string', maxLength: 100 }, maxItems: 20 },
+          // Pricing (optional, defaults to 0 or null)
+          basePrice: { type: 'number', minimum: 0 },
+          pricePerMile: { type: 'number', minimum: 0 },
+          customsFee: { type: 'number', minimum: 0 },
+          serviceFee: { type: 'number', minimum: 0 },
+          brokerFee: { type: 'number', minimum: 0 },
+        },
+        additionalProperties: false,
+      },
+    },
+    config: {
+      rateLimit: {
+        max: 3,
+        timeWindow: '1 hour',
+      },
+    },
+  }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser || typeof currentUser.id !== 'number') {
+      throw new AuthorizationError('Authentication required');
+    }
+
+    // Fetch fresh user data to check is_blocked and current company_id
+    const freshUser = await userModel.findById(currentUser.id);
+    if (!freshUser) {
+      throw new AuthorizationError('User not found');
+    }
+
+    // Check if user is blocked
+    if (freshUser.is_blocked) {
+      throw new AuthorizationError('Account is blocked');
+    }
+
+    // Check if user already has a company (belt)
+    if (freshUser.company_id !== null && freshUser.company_id !== undefined) {
+      throw new ConflictError('User already has a company');
+    }
+
+    // Double-check: verify no company exists with this owner_user_id (suspenders)
+    const existingCompany = await companyModel.findByOwnerUserId(currentUser.id);
+    if (existingCompany) {
+      throw new ConflictError('User already owns a company');
+    }
+
+    const {
+      name,
+      companyPhone,
+      contactEmail,
+      website,
+      country,
+      city,
+      state,
+      description,
+      establishedYear,
+      services,
+      basePrice,
+      pricePerMile,
+      customsFee,
+      serviceFee,
+      brokerFee,
+    } = request.body as {
+      name: string;
+      companyPhone?: string;
+      contactEmail?: string;
+      website?: string;
+      country?: string;
+      city?: string;
+      state?: string;
+      description?: string;
+      establishedYear?: number;
+      services?: string[];
+      basePrice?: number;
+      pricePerMile?: number;
+      customsFee?: number;
+      serviceFee?: number;
+      brokerFee?: number;
+    };
+
+    // Trim and validate name
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      throw new ValidationError('Company name cannot be empty');
+    }
+
+    // Use transaction for atomicity
+    const connection = await (fastify as any).mysql.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+
+      // Create company with owner_user_id
+      const createdCompany = await companyModel.create({
+        name: trimmedName,
+        owner_user_id: currentUser.id,
+        phone_number: companyPhone?.trim() ?? null,
+        contact_email: contactEmail?.trim() ?? null,
+        website: website?.trim() ?? null,
+        country: country?.trim() ?? null,
+        city: city?.trim() ?? null,
+        state: state?.trim() ?? null,
+        description: description?.trim() ?? null,
+        established_year: typeof establishedYear === 'number' ? establishedYear : null,
+        services: Array.isArray(services) ? services : null,
+        base_price: typeof basePrice === 'number' ? basePrice : 0,
+        price_per_mile: typeof pricePerMile === 'number' ? pricePerMile : 0,
+        customs_fee: typeof customsFee === 'number' ? customsFee : 0,
+        service_fee: typeof serviceFee === 'number' ? serviceFee : 0,
+        broker_fee: typeof brokerFee === 'number' ? brokerFee : 0,
+      });
+
+      // Update user: set role='company' and company_id
+      await userModel.update(currentUser.id, {
+        role: 'company',
+        company_id: createdCompany.id,
+      });
+
+      await connection.commit();
+
+      // Invalidate user cache so next /auth/me returns updated role
+      await invalidateUserCache(fastify, currentUser.id);
+
+      // Fetch updated user
+      const updatedUser = await userModel.findById(currentUser.id);
+
+      fastify.log.info({
+        userId: currentUser.id,
+        companyId: createdCompany.id,
+      }, 'Company onboarded successfully');
+
+      return reply.code(201).send({
+        company: {
+          id: createdCompany.id,
+          name: createdCompany.name,
+          slug: createdCompany.slug,
+          phone_number: createdCompany.phone_number,
+          contact_email: createdCompany.contact_email,
+          website: createdCompany.website,
+          country: createdCompany.country,
+          city: createdCompany.city,
+          state: createdCompany.state,
+          description: createdCompany.description,
+          established_year: createdCompany.established_year,
+          base_price: createdCompany.base_price,
+          price_per_mile: createdCompany.price_per_mile,
+          customs_fee: createdCompany.customs_fee,
+          service_fee: createdCompany.service_fee,
+          broker_fee: createdCompany.broker_fee,
+          rating: createdCompany.rating,
+          is_vip: createdCompany.is_vip,
+          created_at: createdCompany.created_at,
+        },
+        user: updatedUser ? {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          company_id: updatedUser.company_id,
+        } : null,
+      });
+    } catch (error: any) {
+      await connection.rollback();
+      
+      // Handle MySQL duplicate key error (race condition on UNIQUE owner_user_id)
+      if (error?.code === 'ER_DUP_ENTRY' || error?.errno === 1062) {
+        throw new ConflictError('User already owns a company');
+      }
+      
+      throw error;
+    } finally {
+      connection.release();
+    }
+  });
 
   // ---------------------------------------------------------------------------
   // Companies: CRUD for core company entities
@@ -213,9 +437,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Body requires pricing fields so that quotes can be calculated
    * later using backend logic.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin only (via requireAdmin middleware)
    */
   fastify.post('/companies', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
     schema: {
       body: {
         type: 'object',
@@ -239,9 +467,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
-      throw new AuthorizationError('Admin role required to create quotes');
-    }
+    // Admin check handled by requireAdmin middleware
     const payload = request.body as CompanyCreate;
     const created = await controller.createCompany(payload);
     return reply.code(201).send(created);
@@ -252,27 +478,37 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Update an existing company. Only the provided fields are updated.
    * If the company does not exist, a 404 Not Found is returned.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
    */
   fastify.put('/companies/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
       body: {
         type: 'object',
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 255 },
+          // Contact info
+          phone_number: { type: ['string', 'null'], maxLength: 50 },
+          contact_email: { type: ['string', 'null'], format: 'email', maxLength: 255 },
+          website: { type: ['string', 'null'], maxLength: 255 },
+          // Location
+          country: { type: ['string', 'null'], maxLength: 100 },
+          city: { type: ['string', 'null'], maxLength: 100 },
+          state: { type: ['string', 'null'], maxLength: 100 },
+          // Company details
+          description: { type: ['string', 'null'], maxLength: 5000 },
+          established_year: { type: ['integer', 'null'], minimum: 1900, maximum: 2100 },
+          services: { type: ['array', 'null'], items: { type: 'string', maxLength: 100 }, maxItems: 20 },
+          // Pricing
           base_price: { type: 'number', minimum: 0 },
           price_per_mile: { type: 'number', minimum: 0 },
           customs_fee: { type: 'number', minimum: 0 },
           service_fee: { type: 'number', minimum: 0 },
           broker_fee: { type: 'number', minimum: 0 },
           final_formula: { type: ['object', 'null'] },
-          description: { type: ['string', 'null'], maxLength: 2000 },
-          phone_number: {
-            type: ['string', 'null'],
-            maxLength: 20,
-            pattern: '^\\+?[0-9\\- ()]{7,20}$',
-          },
         },
         additionalProperties: false,
       },
@@ -306,9 +542,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * Delete a company. The underlying CompanyModel is responsible for
    * cascading deletes to company_social_links and company_quotes so
    * that no orphaned records remain.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
    */
   fastify.delete('/companies/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
     },
@@ -343,9 +582,18 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Upload or replace a company logo. Uses ImageUploadService for
    * consistent image processing across the application.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   *
+   * Security:
+   * - Max file size: 2 MB
+   * - Allowed types: JPEG, PNG, WEBP only
+   * - Magic byte verification (prevents polyglots)
+   * - Image sanitization via sharp (strips metadata, re-encodes)
    */
   fastify.post('/companies/:id/logo', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
     },
@@ -367,16 +615,75 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthorizationError('Not authorized to upload logo for this company');
     }
 
+    // Get file from multipart request
     const file = await (request as any).file();
     if (!file) {
       throw new ValidationError('Logo file is required');
     }
 
-    const mime = file.mimetype as string | undefined;
+    // Get company for slug/name (used in storage path)
+    const company = await controller.getCompanyById(id);
+    const slugOrName = (company.slug && company.slug.trim().length > 0)
+      ? company.slug
+      : company.name;
+
+    // Read file buffer and declared MIME (not trusted)
+    const buffer = await file.toBuffer();
+    const declaredMime = file.mimetype as string | undefined;
+
+    // SECURITY: Use secure upload with full validation pipeline
+    // - Size limit check
+    // - Magic byte verification
+    // - Image sanitization via sharp
+    // - Path traversal prevention
+    let result;
     try {
-      validateImageMime(mime);
-    } catch {
-      throw new ValidationError('Logo must be an image file');
+      result = await uploadCompanyLogoSecure(buffer, declaredMime, slugOrName);
+    } catch (err) {
+      // Convert validation errors to ValidationError for consistent error response
+      const message = err instanceof Error ? err.message : 'Invalid image file';
+      throw new ValidationError(message);
+    }
+
+    return reply.code(201).send({
+      logoUrl: result.url,
+      originalLogoUrl: result.url, // Both point to sanitized version for security
+    });
+  });
+
+  /**
+   * PUT /companies/:id/logo
+   *
+   * Alias for POST /companies/:id/logo (idempotent update semantics).
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   */
+  fastify.put('/companies/:id/logo', {
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: number };
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to upload company logos');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === id;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to upload logo for this company');
+    }
+
+    const file = await (request as any).file();
+    if (!file) {
+      throw new ValidationError('Logo file is required');
     }
 
     const company = await controller.getCompanyById(id);
@@ -385,12 +692,87 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       : company.name;
 
     const buffer = await file.toBuffer();
-    const result = await uploadCompanyLogo(buffer, mime!, slugOrName);
+    const declaredMime = file.mimetype as string | undefined;
 
-    return reply.code(201).send({
+    let result;
+    try {
+      result = await uploadCompanyLogoSecure(buffer, declaredMime, slugOrName);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid image file';
+      throw new ValidationError(message);
+    }
+
+    return reply.code(200).send({
       logoUrl: result.url,
-      originalLogoUrl: result.originalUrl,
+      originalLogoUrl: result.url,
     });
+  });
+
+  /**
+   * GET /companies/:id/logo
+   *
+   * Get URLs for the company's logo.
+   *
+   * Auth: Not required (public)
+   */
+  fastify.get('/companies/:id/logo', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: number };
+
+    const company = await controller.getCompanyById(id);
+    const slugOrName = (company.slug && company.slug.trim().length > 0)
+      ? company.slug
+      : company.name;
+
+    const urls = await getCompanyLogoUrls(slugOrName);
+
+    return reply.send({
+      logoUrl: urls.url,
+      originalLogoUrl: urls.url, // Both point to sanitized version
+    });
+  });
+
+  /**
+   * DELETE /companies/:id/logo
+   *
+   * Delete the company's logo files.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   */
+  fastify.delete('/companies/:id/logo', {
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: number };
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to delete company logos');
+    }
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === id;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to delete logo for this company');
+    }
+
+    const company = await controller.getCompanyById(id);
+    const slugOrName = (company.slug && company.slug.trim().length > 0)
+      ? company.slug
+      : company.name;
+
+    await deleteCompanyLogo(slugOrName);
+
+    return reply.code(204).send();
   });
 
   // ---------------------------------------------------------------------------
@@ -421,9 +803,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * Create a new social link for a company. Social links are never
    * auto-created when a company is created; they must be explicitly
    * added when needed.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin OR company owner
    */
   fastify.post('/companies/:companyId/social-links', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: companyIdParamsSchema,
       body: {
@@ -434,8 +820,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             type: 'string',
             minLength: 5,
             maxLength: 500,
-            format: 'uri',
-            pattern: '^https?://',
           },
         },
         additionalProperties: false,
@@ -460,18 +844,32 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const body = request.body as { url: string };
-    const created = await controller.createSocialLink(companyId, body.url);
+
+    // SECURITY: Strict URL validation (protocol, no credentials, etc.)
+    let validatedUrl: string;
+    try {
+      validatedUrl = validateAndNormalizeSocialUrl(body.url);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid URL';
+      throw new ValidationError(message);
+    }
+
+    const created = await controller.createSocialLink(companyId, validatedUrl);
     return reply.code(201).send(created);
   });
 
   /**
    * PUT /social-links/:id
    *
-   * Update an existing social link. This route is independent of the
-   * company path and operates directly on the social link id.
+   * Update an existing social link. This route operates directly on
+   * the social link id and requires admin or owner authorization.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin OR owner of the company that owns this link
    */
   fastify.put('/social-links/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
       body: {
@@ -481,8 +879,6 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             type: 'string',
             minLength: 5,
             maxLength: 500,
-            format: 'uri',
-            pattern: '^https?://',
           },
         },
         additionalProperties: false,
@@ -491,7 +887,37 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, reply) => {
     // SECURITY: id is already validated as positive integer by schema
     const { id } = request.params as { id: number };
-    const updates = request.body as CompanySocialLinkUpdate;
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to modify social links');
+    }
+
+    // Load social link to check ownership
+    const socialLink = await controller.getSocialLinkById(id);
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === socialLink.company_id;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to modify this social link');
+    }
+
+    const body = request.body as { url?: string };
+    const updates: CompanySocialLinkUpdate = {};
+
+    // SECURITY: Strict URL validation if URL is being updated
+    if (body.url !== undefined) {
+      try {
+        updates.url = validateAndNormalizeSocialUrl(body.url);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Invalid URL';
+        throw new ValidationError(message);
+      }
+    }
+
     const updated = await controller.updateSocialLink(id, updates);
     return reply.send(updated);
   });
@@ -500,15 +926,37 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * DELETE /social-links/:id
    *
    * Delete a social link. This does not affect the parent company.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin OR owner of the company that owns this link
    */
   fastify.delete('/social-links/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
     },
   }, async (request, reply) => {
     // SECURITY: id is already validated as positive integer by schema
     const { id } = request.params as { id: number };
+
+    if (!request.user) {
+      throw new AuthorizationError('Authentication required to delete social links');
+    }
+
+    // Load social link to check ownership
+    const socialLink = await controller.getSocialLinkById(id);
+
+    const isAdmin = request.user.role === 'admin';
+    const isCompanyOwner =
+      request.user.role === 'company' &&
+      typeof request.user.company_id === 'number' &&
+      request.user.company_id === socialLink.company_id;
+
+    if (!isAdmin && !isCompanyOwner) {
+      throw new AuthorizationError('Not authorized to delete this social link');
+    }
+
     await controller.deleteSocialLink(id);
     return reply.code(204).send();
   });
@@ -555,9 +1003,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Create a new review for a company. Requires authentication. The
    * review is always associated with the authenticated user.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
    */
   fastify.post('/companies/:companyId/reviews', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: companyIdParamsSchema,
       body: {
@@ -610,9 +1061,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Update an existing review. Only the owner of the review can update
    * it. Requires authentication.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
    */
   fastify.put('/companies/:companyId/reviews/:reviewId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: companyReviewParamsSchema,
       body: {
@@ -642,9 +1096,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Delete an existing review. Only the owner of the review can delete
    * it. Requires authentication.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
    */
   fastify.delete('/companies/:companyId/reviews/:reviewId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
     schema: {
       params: companyReviewParamsSchema,
     },
@@ -1104,9 +1561,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * the client provides both company_id and vehicle_id (typically via
    * dropdowns in an admin panel). This should not be used in general
    * user-facing flows where IDs are not visible.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin only (via requireAdmin middleware)
    */
   fastify.post('/quotes', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
     schema: {
       body: {
         type: 'object',
@@ -1121,10 +1582,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
-      throw new AuthorizationError('Admin role required to create quotes');
-    }
-
+    // Admin check handled by requireAdmin middleware
     const payload = request.body as Pick<CompanyQuoteCreate, 'company_id' | 'vehicle_id'>;
     const keyHeader = request.headers['idempotency-key'];
 
@@ -1137,7 +1595,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       fastify,
       {
         key: keyHeader,
-        userId: request.user.id,
+        userId: request.user!.id, // Safe: requireAdmin middleware guarantees request.user exists
         route: 'POST /quotes',
       },
       request.body,
@@ -1156,9 +1614,13 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * Update an existing quote. This is primarily intended for admin
    * use (e.g. correcting a quote). Normal user flows should not
    * directly manipulate quote records.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin only (via requireAdmin middleware)
    */
   fastify.put('/quotes/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
       body: {
@@ -1170,10 +1632,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
-      throw new AuthorizationError('Admin role required to update quotes');
-    }
-
+    // Admin check handled by requireAdmin middleware
     // SECURITY: id is already validated as positive integer by schema
     const { id } = request.params as { id: number };
 
@@ -1187,16 +1646,18 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    *
    * Delete a quote. This is another admin-focused operation and should
    * not generally be exposed in public user interfaces.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   * Authorization: Admin only (via requireAdmin middleware)
    */
   fastify.delete('/quotes/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
     schema: {
       params: idParamsSchema,
     },
   }, async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
-      throw new AuthorizationError('Admin role required to delete quotes');
-    }
+    // Admin check handled by requireAdmin middleware
     // SECURITY: id is already validated as positive integer by schema
     const { id } = request.params as { id: number };
 

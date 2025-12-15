@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { PageLoader } from '@/components/ui/page-loader'
-import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
+import { RequireAuth, RequireGuest, RequireNoCompany } from '@/app/RequireAuth'
 import MainLayout from '@/layouts/MainLayout'
 
 // Lazy load ALL pages for better performance (Code Splitting)
@@ -18,6 +18,9 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const VehicleDetailsPage = lazy(() => import('./pages/VehicleDetailsPage'))
 const FavoriteVehiclesPage = lazy(() => import('./pages/FavoriteVehiclesPage'))
+const SessionsPage = lazy(() => import('./pages/SessionsPage'))
+const CompanyOnboardPage = lazy(() => import('./pages/company/CompanyOnboardPage'))
+const CompanySettingsPage = lazy(() => import('./pages/CompanySettingsPage'))
 
 function ScrollToTop() {
   const location = useLocation()
@@ -137,6 +140,32 @@ function AppRoutes() {
                 </RequireAuth>
               }
             />
+            <Route
+              path="/sessions"
+              element={
+                <RequireAuth>
+                  <LazyRoute><SessionsPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+
+            {/* Company Onboarding (2-step: user must be auth'd but NOT have a company) */}
+            <Route
+              path="/company/onboard"
+              element={
+                <RequireNoCompany>
+                  <LazyRoute><CompanyOnboardPage /></LazyRoute>
+                </RequireNoCompany>
+              }
+            />
+            <Route
+              path="/company/settings"
+              element={
+                <RequireAuth>
+                  <LazyRoute><CompanySettingsPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
 
             {/* Onboarding Routes */}
             <Route
@@ -178,7 +207,30 @@ function AppRoutes() {
   )
 }
 
+function useSanitizeUrlToken() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const url = new URL(window.location.href)
+    const sensitiveParams = ['token', 'auth', 'key', 'secret', 'password', 'code']
+    let hasRemovedParams = false
+
+    for (const param of sensitiveParams) {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param)
+        hasRemovedParams = true
+      }
+    }
+
+    if (hasRemovedParams) {
+      window.history.replaceState({}, document.title, url.pathname + url.search + url.hash)
+    }
+  }, [])
+}
+
 function App() {
+  useSanitizeUrlToken()
+
   return (
     <Router>
       <AppRoutes />

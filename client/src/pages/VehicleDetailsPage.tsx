@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
+import { formatDateTime } from '@/lib/formatDate'
 import confetti from 'canvas-confetti'
 import { motion, useReducedMotion } from 'framer-motion'
 
@@ -28,7 +29,6 @@ import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
-import { createLeadFromQuotes } from '@/api/leads'
 import { fetchSimilarVehicles } from '@/api/vehicles'
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 import VehicleHeaderBar from '@/components/vehicle/VehicleHeaderBar'
@@ -626,7 +626,7 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
 // --- Main Page Component ---
 
 const VehicleDetailsPage = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -700,21 +700,23 @@ const VehicleDetailsPage = () => {
   const bids = useMemo(() => {
     const vehicleBids = (vehicle as any)?.bids || []
     return [...vehicleBids].sort((a: any, b: any) => {
-      if (!a.bid_time) return 1
-      if (!b.bid_time) return -1
-      return new Date(b.bid_time).getTime() - new Date(a.bid_time).getTime()
+      const aTime = a?.bid_time ? new Date(a.bid_time).getTime() : 0
+      const bTime = b?.bid_time ? new Date(b.bid_time).getTime() : 0
+
+      // Newest (largest timestamp) should appear first; items without time go last
+      if (!aTime && !bTime) return 0
+      if (!aTime) return 1
+      if (!bTime) return -1
+      return bTime - aTime
     })
   }, [vehicle])
 
   const lastBid = bids[0] || null
   const lastBidAmount = lastBid?.bid ?? 0
-  const lastBidDate = lastBid?.bid_time ? new Date(lastBid.bid_time).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }) : null
+  const lastBidDate = useMemo(() => {
+    if (!lastBid?.bid_time) return null
+    return formatDateTime(lastBid.bid_time, i18n.language)
+  }, [i18n.language, lastBid?.bid_time])
 
   
   // Preload engine video in background after page loads
@@ -831,18 +833,10 @@ const VehicleDetailsPage = () => {
 
     setIsSubmitting(true)
     try {
-       await createLeadFromQuotes({
-         vehicleId: Number(id),
-         selectedCompanyIds,
-         name: formName,
-         contact: formPhone,
-         message: `Interested in this vehicle. Please contact me via ${contactMethod}.`,
-         priority: 'price',
-         preferredContactChannel: contactMethod as any
-       })
+       // Lead feature removed - show message
+       alert('This feature has been removed. Please contact companies directly.')
        setIsLeadModalOpen(false)
        if (!isMultiSelectMode) setSelectedCompanyIds([])
-       alert(`Request sent successfully to ${selectedCompanyIds.length} companies!`)
     } catch (err) {
       console.error(err)
       alert("Failed to send request. Please try again.")
@@ -936,10 +930,10 @@ const VehicleDetailsPage = () => {
               <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
-                  <h2 className="text-[13px] font-semibold text-slate-900">Vehicle details</h2>
+                  <h2 className="text-[13px] font-semibold text-slate-900">{t('vehicle.details.title', 'Vehicle details')}</h2>
                   <button className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-[11px]">
                     <Icon icon="mdi:share-variant-outline" className="w-3.5 h-3.5" />
-                    <span>Share</span>
+                    <span>{t('vehicle.details.share', 'Share')}</span>
                   </button>
                 </div>
 
@@ -948,7 +942,7 @@ const VehicleDetailsPage = () => {
                   {/* Lot number */}
                   {vehicle.source_lot_id && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Lot number:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.lot_number', 'Lot number:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.source_lot_id}</span>
                     </div>
                   )}
@@ -956,7 +950,7 @@ const VehicleDetailsPage = () => {
                   {/* VIN */}
                   {vehicle.vin && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">VIN:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.vin', 'VIN:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.vin}</span>
                     </div>
                   )}
@@ -964,7 +958,7 @@ const VehicleDetailsPage = () => {
                   {/* Title code */}
                   {(vehicle as any).document && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Title code:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.title_code', 'Title code:')}</span>
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).document}</span>
                         <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
@@ -974,7 +968,7 @@ const VehicleDetailsPage = () => {
 
                   {/* Odometer - always show, display 0 if falsy */}
                   <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                    <span className="text-[11px] text-slate-500">Odometer:</span>
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.odometer', 'Odometer:')}</span>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle.mileage || 0).toLocaleString()} MI</span>
                       <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
@@ -984,7 +978,7 @@ const VehicleDetailsPage = () => {
                   {/* Primary damage */}
                   {vehicle.damage_main_damages && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Primary damage:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.primary_damage', 'Primary damage:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.damage_main_damages}</span>
                     </div>
                   )}
@@ -992,21 +986,21 @@ const VehicleDetailsPage = () => {
                   {/* Estimated retail value */}
                   {(vehicle as any).retail_value && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Estimated retail value:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.estimated_retail_value', 'Estimated retail value:')}</span>
                       <span className="text-[11px] font-medium text-slate-900">${Number((vehicle as any).retail_value).toLocaleString()}</span>
                     </div>
                   )}
 
                   {/* Cylinders - always show, display 0 if falsy */}
                   <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                    <span className="text-[11px] text-slate-500">Cylinders:</span>
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.cylinders', 'Cylinders:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.cylinders || 0}</span>
                   </div>
 
                   {/* Color */}
                   {vehicle.color && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Color:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.color', 'Color:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.color}</span>
                     </div>
                   )}
@@ -1014,7 +1008,7 @@ const VehicleDetailsPage = () => {
                   {/* Engine type */}
                   {(vehicle.engine_volume || vehicle.cylinders) && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Engine type:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.engine_type', 'Engine type:')}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-medium text-slate-900 uppercase">
                           {vehicle.engine_volume && vehicle.cylinders
@@ -1028,7 +1022,7 @@ const VehicleDetailsPage = () => {
                             onClick={() => setIsEngineViewOpen(true)}
                             className="text-[11px] text-[#0047AB] hover:underline"
                           >
-                            View engine
+                            {t('vehicle.details.view_engine', 'View engine')}
                           </button>
                         )}
                       </div>
@@ -1038,7 +1032,7 @@ const VehicleDetailsPage = () => {
                   {/* Transmission */}
                   {vehicle.transmission && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Transmission:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.transmission', 'Transmission:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.transmission}</span>
                     </div>
                   )}
@@ -1046,37 +1040,37 @@ const VehicleDetailsPage = () => {
                   {/* Drive */}
                   {(vehicle as any).drive && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Drive:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.drive', 'Drive:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).drive}</span>
                     </div>
                   )}
 
                   {/* Vehicle type */}
                   <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                    <span className="text-[11px] text-slate-500">Vehicle type:</span>
-                    <span className="text-[11px] font-medium text-slate-900 uppercase">HARDCODED</span>
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.vehicle_type', 'Vehicle type:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">{t('vehicle.details.vehicle_type_value', 'HARDCODED')}</span>
                   </div>
 
                   {/* Fuel */}
                   {(vehicle as any).engine_fuel && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Fuel:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.fuel', 'Fuel:')}</span>
                       <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).engine_fuel}</span>
                     </div>
                   )}
 
                   {/* Keys - always show Yes/No */}
                   <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                    <span className="text-[11px] text-slate-500">Keys:</span>
-                    <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).has_keys ? 'YES' : 'NO'}</span>
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.keys', 'Keys:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).has_keys ? t('vehicle.details.yes', 'YES') : t('vehicle.details.no', 'NO')}</span>
                   </div>
 
                   {/* Highlights - only show if run_and_drive is truthy */}
                   {(vehicle as any).run_and_drive && (
                     <div className="grid grid-cols-[130px_1fr] px-4 py-1.5">
-                      <span className="text-[11px] text-slate-500">Highlights:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.details.highlights', 'Highlights:')}</span>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium text-slate-900">Run and Drive</span>
+                        <span className="text-[11px] font-medium text-slate-900">{t('vehicle.details.run_and_drive', 'Run and Drive')}</span>
                         <Icon icon="mdi:information-outline" className="w-3.5 h-3.5 text-slate-400" />
                       </div>
                     </div>
@@ -1128,12 +1122,12 @@ const VehicleDetailsPage = () => {
                   {/* Last Bid Info */}
                   <div className="flex flex-col items-end gap-0.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-slate-500">Last bid:</span>
+                      <span className="text-[11px] text-slate-500">{t('vehicle.bids.last_bid', 'Last bid:')}</span>
                       <span className="text-[13px] font-semibold text-slate-900">${lastBidAmount.toLocaleString()}</span>
                     </div>
                     {lastBidDate && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-slate-500">Last bid date:</span>
+                        <span className="text-[11px] text-slate-500">{t('vehicle.bids.last_bid_date', 'Last bid date:')}</span>
                         <span className="text-[11px] font-medium text-slate-700">{lastBidDate}</span>
                       </div>
                     )}
@@ -1142,7 +1136,7 @@ const VehicleDetailsPage = () => {
                         onClick={() => setIsBidsModalOpen(true)}
                         className="text-[11px] text-[#0047AB] hover:underline mt-1"
                       >
-                        View all bids ({bids.length})
+                        {t('vehicle.bids.view_all', 'View all bids ({{count}})', { count: bids.length })}
                       </button>
                     )}
                   </div>
@@ -1200,15 +1194,15 @@ const VehicleDetailsPage = () => {
       <Dialog open={isBidsModalOpen} onOpenChange={setIsBidsModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Bid History</DialogTitle>
+            <DialogTitle>{t('vehicle.bid_history.title', 'Bid History')}</DialogTitle>
             <DialogDescription>
-              {vehicle.year} {vehicle.make} {vehicle.model} • {bids.length} bid{bids.length !== 1 ? 's' : ''}
+              {vehicle.year} {vehicle.make} {vehicle.model} • {t('vehicle.bid_history.bids_count', '{{count}} bid', { count: bids.length })}{bids.length !== 1 ? 's' : ''}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
             {bids.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-sm">
-                No bids recorded for this vehicle
+                {t('vehicle.bid_history.no_bids', 'No bids recorded for this vehicle')}
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -1221,18 +1215,14 @@ const VehicleDetailsPage = () => {
                           ? "bg-green-100 text-green-700" 
                           : "bg-slate-100 text-slate-600"
                       )}>
-                        {index === 0 ? (
-                          <Icon icon="mdi:trophy" className="w-4 h-4" />
-                        ) : (
-                          `#${index + 1}`
-                        )}
+                        {`#${index + 1}`}
                       </div>
                       <div>
                         <div className="text-[13px] font-semibold text-slate-900">
                           ${(bid.bid ?? 0).toLocaleString()}
                         </div>
                         {index === 0 && (
-                          <span className="text-[10px] text-green-600 font-medium uppercase">Latest Bid</span>
+                          <span className="text-[10px] text-green-600 font-medium uppercase">{t('vehicle.bid_history.latest_bid', 'Latest Bid')}</span>
                         )}
                       </div>
                     </div>
@@ -1240,21 +1230,14 @@ const VehicleDetailsPage = () => {
                       {bid.bid_time ? (
                         <>
                           <div className="text-[11px] text-slate-700">
-                            {new Date(bid.bid_time).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                            {formatDateTime(bid.bid_time, i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </div>
                           <div className="text-[10px] text-slate-500">
-                            {new Date(bid.bid_time).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatDateTime(bid.bid_time, i18n.language, { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </>
                       ) : (
-                        <span className="text-[11px] text-slate-400">No date</span>
+                        <span className="text-[11px] text-slate-400">{t('vehicle.bid_history.no_date', 'No date')}</span>
                       )}
                     </div>
                   </div>
@@ -1264,7 +1247,7 @@ const VehicleDetailsPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsBidsModalOpen(false)}>
-              Close
+              {t('common.close', 'Close')}
             </Button>
           </DialogFooter>
         </DialogContent>

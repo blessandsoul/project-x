@@ -7,7 +7,179 @@ import sharp from 'sharp';
  *
  * Centralized service for handling image uploads (avatars, logos, etc.)
  * Provides consistent image processing, resizing, and URL generation.
+ *
+ * Security features:
+ * - Magic byte validation (not just MIME header)
+ * - Strict allowlist of image types
+ * - Image sanitization via sharp (re-encode, strip metadata)
+ * - Size limits enforced
+ * - Path traversal prevention
  */
+
+// =============================================================================
+// Security: File validation constants
+// =============================================================================
+
+/** Maximum avatar file size in bytes (2 MB) */
+export const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+
+/** Maximum image dimensions for avatars */
+export const MAX_AVATAR_DIMENSIONS = { width: 512, height: 512 };
+
+/** Allowed MIME types for avatar uploads */
+export const ALLOWED_AVATAR_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+/** Magic byte signatures for allowed image types */
+const IMAGE_SIGNATURES: Array<{ mime: string; signature: number[]; offset?: number }> = [
+  // JPEG: FF D8 FF
+  { mime: 'image/jpeg', signature: [0xff, 0xd8, 0xff] },
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  { mime: 'image/png', signature: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+  // WEBP: RIFF....WEBP (bytes 0-3 = RIFF, bytes 8-11 = WEBP)
+  { mime: 'image/webp', signature: [0x52, 0x49, 0x46, 0x46] }, // RIFF header
+];
+
+/** WEBP secondary signature at offset 8 */
+const WEBP_SIGNATURE = [0x57, 0x45, 0x42, 0x50]; // "WEBP"
+
+export interface ValidatedImage {
+  buffer: Buffer;
+  mime: 'image/jpeg' | 'image/png' | 'image/webp';
+  ext: 'jpg' | 'png' | 'webp';
+}
+
+/**
+ * Validate file magic bytes against known image signatures
+ * Returns the detected MIME type or null if not a valid image
+ */
+export function detectImageTypeFromBuffer(buffer: Buffer): string | null {
+  if (buffer.length < 12) {
+    return null;
+  }
+
+  for (const { mime, signature, offset = 0 } of IMAGE_SIGNATURES) {
+    let matches = true;
+    for (let i = 0; i < signature.length; i++) {
+      if (buffer[offset + i] !== signature[i]) {
+        matches = false;
+        break;
+      }
+    }
+
+    if (matches) {
+      // Special case for WEBP: also check bytes 8-11
+      if (mime === 'image/webp') {
+        let webpMatches = true;
+        for (let i = 0; i < WEBP_SIGNATURE.length; i++) {
+          if (buffer[8 + i] !== WEBP_SIGNATURE[i]) {
+            webpMatches = false;
+            break;
+          }
+        }
+        if (!webpMatches) {
+          continue; // Not actually WEBP, might be other RIFF format
+        }
+      }
+      return mime;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Validate and sanitize an avatar upload
+ *
+ * Security checks:
+ * 1. Size limit (2 MB)
+ * 2. MIME type allowlist
+ * 3. Magic byte verification (prevents polyglots)
+ * 4. Re-encode via sharp (strips metadata, ensures valid image)
+ *
+ * @param buffer - Raw uploaded file buffer
+ * @param declaredMime - MIME type declared by client (not trusted)
+ * @returns Sanitized image buffer with verified type
+ * @throws Error if validation fails
+ */
+export async function validateAndSanitizeAvatarUpload(
+  buffer: Buffer,
+  declaredMime: string | undefined,
+): Promise<ValidatedImage> {
+  // 1. Check size limit
+  if (buffer.length > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error(`File too large. Maximum size is ${MAX_AVATAR_SIZE_BYTES / 1024 / 1024} MB`);
+  }
+
+  if (buffer.length === 0) {
+    throw new Error('File is empty');
+  }
+
+  // 2. Detect actual type from magic bytes (don't trust declared MIME)
+  const detectedMime = detectImageTypeFromBuffer(buffer);
+
+  if (!detectedMime) {
+    throw new Error('Invalid image file. Could not detect image type from file signature');
+  }
+
+  // 3. Check against allowlist
+  if (!ALLOWED_AVATAR_MIMES.has(detectedMime)) {
+    throw new Error(`Image type not allowed. Allowed types: JPEG, PNG, WEBP`);
+  }
+
+  // 4. Sanitize via sharp: decode and re-encode to strip metadata and ensure valid image
+  let sanitizedBuffer: Buffer;
+  let outputMime: 'image/jpeg' | 'image/png' | 'image/webp';
+  let outputExt: 'jpg' | 'png' | 'webp';
+
+  try {
+    // Load image with sharp - this will fail if the file is not a valid image
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+
+    // Validate dimensions are reasonable
+    if (!metadata.width || !metadata.height) {
+      throw new Error('Could not read image dimensions');
+    }
+
+    // Resize if larger than max dimensions, maintaining aspect ratio
+    let pipeline = image.resize(MAX_AVATAR_DIMENSIONS.width, MAX_AVATAR_DIMENSIONS.height, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
+    // Re-encode to the detected format (strips metadata)
+    if (detectedMime === 'image/jpeg') {
+      pipeline = pipeline.jpeg({ quality: 90 });
+      outputMime = 'image/jpeg';
+      outputExt = 'jpg';
+    } else if (detectedMime === 'image/webp') {
+      pipeline = pipeline.webp({ quality: 90 });
+      outputMime = 'image/webp';
+      outputExt = 'webp';
+    } else {
+      // PNG
+      pipeline = pipeline.png({ compressionLevel: 9 });
+      outputMime = 'image/png';
+      outputExt = 'png';
+    }
+
+    sanitizedBuffer = await pipeline.toBuffer();
+  } catch (err) {
+    // Sharp failed to process - file is corrupted or not a real image
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    throw new Error(`Invalid image file: ${message}`);
+  }
+
+  return {
+    buffer: sanitizedBuffer,
+    mime: outputMime,
+    ext: outputExt,
+  };
+}
 
 export interface ImageUploadConfig {
   /** Base directory under uploads/ (e.g., 'users', 'companies') */
@@ -272,7 +444,8 @@ export async function getCompanyLogoUrls(slugOrName: string | null | undefined):
 }
 
 /**
- * Upload user avatar
+ * Upload user avatar (legacy - trusts caller for validation)
+ * @deprecated Use uploadUserAvatarSecure instead
  */
 export async function uploadUserAvatar(
   buffer: Buffer,
@@ -284,7 +457,34 @@ export async function uploadUserAvatar(
 }
 
 /**
- * Upload company logo
+ * Upload user avatar with full security validation
+ *
+ * This is the secure version that:
+ * 1. Validates file size
+ * 2. Validates magic bytes (not just MIME header)
+ * 3. Re-encodes via sharp to strip metadata and ensure valid image
+ * 4. Uses sanitized username for path safety
+ *
+ * @param rawBuffer - Raw uploaded file buffer (will be validated and sanitized)
+ * @param declaredMime - MIME type declared by client (not trusted)
+ * @param username - Username for storage path (will be sanitized)
+ * @returns Upload result with URLs
+ */
+export async function uploadUserAvatarSecure(
+  rawBuffer: Buffer,
+  declaredMime: string | undefined,
+  username: string,
+): Promise<UploadResult> {
+  // Validate and sanitize the image
+  const validated = await validateAndSanitizeAvatarUpload(rawBuffer, declaredMime);
+
+  // Use sanitized buffer for storage
+  return processAndSaveImage(validated.buffer, validated.mime, getUserAvatarConfig(username));
+}
+
+/**
+ * Upload company logo (legacy - trusts caller for validation)
+ * @deprecated Use uploadCompanyLogoSecure instead
  */
 export async function uploadCompanyLogo(
   buffer: Buffer,
@@ -293,6 +493,32 @@ export async function uploadCompanyLogo(
 ): Promise<UploadResult> {
   validateImageMime(mime);
   return processAndSaveImage(buffer, mime, getCompanyLogoConfig(slugOrName));
+}
+
+/**
+ * Upload company logo with full security validation
+ *
+ * This is the secure version that:
+ * 1. Validates file size (2 MB limit)
+ * 2. Validates magic bytes (not just MIME header)
+ * 3. Re-encodes via sharp to strip metadata and ensure valid image
+ * 4. Uses sanitized slug/name for path safety
+ *
+ * @param rawBuffer - Raw uploaded file buffer (will be validated and sanitized)
+ * @param declaredMime - MIME type declared by client (not trusted)
+ * @param slugOrName - Company slug or name for storage path (will be sanitized)
+ * @returns Upload result with URLs
+ */
+export async function uploadCompanyLogoSecure(
+  rawBuffer: Buffer,
+  declaredMime: string | undefined,
+  slugOrName: string,
+): Promise<UploadResult> {
+  // Validate and sanitize the image (same pipeline as avatar)
+  const validated = await validateAndSanitizeAvatarUpload(rawBuffer, declaredMime);
+
+  // Use sanitized buffer for storage
+  return processAndSaveImage(validated.buffer, validated.mime, getCompanyLogoConfig(slugOrName));
 }
 
 /**

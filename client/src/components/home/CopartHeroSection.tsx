@@ -108,38 +108,43 @@ export function CopartHeroSection() {
                 className="pointer-events-none select-none absolute bottom-[-88px] xl:bottom-[-72px] right-0 xl:right-[-24px] 2xl:right-[-40px] lg:w-[500px] xl:w-[520px] 2xl:w-[580px] h-auto opacity-95"
               />
 
-              <div className="relative z-10 grid grid-cols-2 gap-4 w-full max-w-md">
-                {/* Auction / Bidding */}
+              <div className="relative z-10 grid grid-cols-2 gap-4 w-full max-w-[700px]">
+                {/* Transparent prices */}
                 <div className="col-span-1 row-span-2 rounded-2xl bg-slate-900 text-white shadow-[0_18px_55px_rgba(15,23,42,0.45)] ring-1 ring-black/10 flex flex-col items-center justify-center p-6">
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#f5a623] text-slate-900 shadow-lg mb-4">
-                    <Icon icon="mdi:gavel" className="w-10 h-10" aria-hidden="true" />
+                    <Icon icon="mdi:cash-multiple" className="w-10 h-10" aria-hidden="true" />
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">Copart / IAAI</p>
-                  <p className="text-sm font-medium text-center">
-                    {t('auction.price_comparison')}
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">
+                    {t('home.copart_hero.transparent_prices_title')}
+                  </p>
+                  <p className="text-sm font-medium text-center max-w-[480px] mx-auto leading-relaxed">
+                    {t('home.copart_hero.transparent_prices_desc')}
                   </p>
                 </div>
 
-                {/* Logistics / Delivery */}
+                {/* Compare prices in one place */}
                 <div className="rounded-2xl bg-white/95 text-slate-900 shadow-[0_16px_40px_rgba(15,23,42,0.32)] ring-1 ring-black/5 flex flex-col items-center justify-center p-5">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md mb-3">
-                    <Icon icon="mdi:truck-fast" className="w-8 h-8" aria-hidden="true" />
+                    <Icon icon="mdi:view-grid-plus" className="w-8 h-8" aria-hidden="true" />
                   </div>
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-0.5">
-                    {t('auction.shipping')}
+                    {t('home.copart_hero.all_prices_title')}
                   </p>
-                  <p className="text-xs text-center text-slate-700">
-                    {t('auction.compare.total_to_georgia')}
+                  <p className="text-xs text-center text-slate-700 max-w-[240px] mx-auto">
+                    {t('home.copart_hero.all_prices_desc')}
                   </p>
                 </div>
 
-                {/* Verified Importers / Documents */}
+                {/* Real reviews */}
                 <div className="rounded-2xl bg-white/90 text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.28)] ring-1 ring-black/5 flex flex-col items-center justify-center p-5">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md mb-3">
-                    <Icon icon="mdi:file-certificate-outline" className="w-8 h-8" aria-hidden="true" />
+                    <Icon icon="mdi:comment-quote-outline" className="w-8 h-8" aria-hidden="true" />
                   </div>
                   <p className="text-xs text-center text-slate-700 font-semibold">
-                    {t('home.copart_hero.verified_importers')}
+                    {t('home.copart_hero.real_reviews_title')}
+                  </p>
+                  <p className="text-[11px] text-center text-slate-600 mt-1 leading-snug max-w-[240px] mx-auto">
+                    {t('home.copart_hero.real_reviews_desc')}
                   </p>
                 </div>
               </div>
@@ -223,38 +228,43 @@ export function CopartHeroSection() {
           {/* BOTTOM BLOCK - VISUALS (cards + cars image) */}
           <div className="max-w-3xl mx-auto mt-10">
             {/* Cards Grid - 2x2 composition */}
-            <div className="grid grid-cols-[1fr_1fr] gap-4 max-w-md mx-auto">
-              {/* Auction / Bidding - tall left card */}
+            <div className="grid grid-cols-[1fr_1fr] gap-4 max-w-[700px] mx-auto">
+              {/* Transparent prices - tall left card */}
               <div className="row-span-2 rounded-2xl bg-slate-900 text-white shadow-[0_18px_55px_rgba(15,23,42,0.45)] ring-1 ring-black/10 flex flex-col items-center justify-center p-5">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5a623] text-slate-900 shadow-lg mb-3">
-                  <Icon icon="mdi:gavel" className="w-8 h-8" aria-hidden="true" />
+                  <Icon icon="mdi:cash-multiple" className="w-8 h-8" aria-hidden="true" />
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">Copart / IAAI</p>
-                <p className="text-sm font-medium text-center">
-                  {t('auction.price_comparison')}
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">
+                  {t('home.copart_hero.transparent_prices_title')}
+                </p>
+                <p className="text-sm font-medium text-center max-w-[480px] mx-auto leading-relaxed">
+                  {t('home.copart_hero.transparent_prices_desc')}
                 </p>
               </div>
 
-              {/* Logistics / Delivery */}
+              {/* Compare prices in one place */}
               <div className="rounded-2xl bg-white/95 text-slate-900 shadow-[0_16px_40px_rgba(15,23,42,0.32)] ring-1 ring-black/5 flex flex-col items-center justify-center p-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md mb-2">
-                  <Icon icon="mdi:truck-fast" className="w-6 h-6" aria-hidden="true" />
+                  <Icon icon="mdi:view-grid-plus" className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-0.5">
-                  {t('auction.shipping')}
+                  {t('home.copart_hero.all_prices_title')}
                 </p>
-                <p className="text-xs text-center text-slate-700">
-                  {t('auction.compare.total_to_georgia')}
+                <p className="text-xs text-center text-slate-700 max-w-[240px] mx-auto">
+                  {t('home.copart_hero.all_prices_desc')}
                 </p>
               </div>
 
-              {/* Verified Importers / Documents */}
+              {/* Real reviews */}
               <div className="rounded-2xl bg-white/90 text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.28)] ring-1 ring-black/5 flex flex-col items-center justify-center p-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md mb-2">
-                  <Icon icon="mdi:file-certificate-outline" className="w-6 h-6" aria-hidden="true" />
+                  <Icon icon="mdi:comment-quote-outline" className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <p className="text-xs text-center text-slate-700 font-semibold">
-                  {t('home.copart_hero.verified_importers')}
+                  {t('home.copart_hero.real_reviews_title')}
+                </p>
+                <p className="text-[11px] text-center text-slate-600 mt-1 leading-snug max-w-[240px] mx-auto">
+                  {t('home.copart_hero.real_reviews_desc')}
                 </p>
               </div>
             </div>

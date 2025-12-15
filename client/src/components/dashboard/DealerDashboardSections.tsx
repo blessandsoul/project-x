@@ -47,7 +47,7 @@ function useAnimatedValue(target: number, durationMs = 600): number {
 }
 
 type DealerDashboardSectionsProps = {
-  dealerLeadsStats: {
+  dealerStats: {
     todayNew: number
     weekNew: number
     inProgress: number
@@ -64,7 +64,7 @@ type DealerDashboardSectionsProps = {
     clientName: string
     status: string
   }>
-  dealerLeadReminders: Array<{
+  dealerReminders: Array<{
     id: string
     text: string
   }>
@@ -91,7 +91,7 @@ type DealerDashboardSectionsProps = {
   }
   dealerTasksToday: string[]
   dealerComparisonStats: {
-    leadsDeltaPercent: number
+    deltasPercent: number
     conversionDeltaPercent: number
     marginDeltaPercent: number
   }
@@ -99,10 +99,10 @@ type DealerDashboardSectionsProps = {
 }
 
 export function DealerDashboardSections({
-  dealerLeadsStats,
+  dealerStats,
   dealerFunnelStats,
   dealerRequests,
-  dealerLeadReminders,
+  dealerReminders,
   dealerTopPromoted,
   dealerReviewsSummary,
   dealerTrafficStats,
@@ -111,10 +111,10 @@ export function DealerDashboardSections({
   getSectionMotionProps,
 }: DealerDashboardSectionsProps) {
   const { t } = useTranslation()
-  const animatedTodayNew = useAnimatedValue(dealerLeadsStats.todayNew)
-  const animatedWeekNew = useAnimatedValue(dealerLeadsStats.weekNew)
-  const animatedInProgress = useAnimatedValue(dealerLeadsStats.inProgress)
-  const animatedClosed = useAnimatedValue(dealerLeadsStats.closed)
+  const animatedTodayNew = useAnimatedValue(dealerStats.todayNew)
+  const animatedWeekNew = useAnimatedValue(dealerStats.weekNew)
+  const animatedInProgress = useAnimatedValue(dealerStats.inProgress)
+  const animatedClosed = useAnimatedValue(dealerStats.closed)
 
   const animatedProfileViews = useAnimatedValue(dealerFunnelStats.profileViews)
   const animatedRequests = useAnimatedValue(dealerFunnelStats.requests)
@@ -125,7 +125,7 @@ export function DealerDashboardSections({
   const animatedTrafficCatalog = useAnimatedValue(dealerTrafficStats.fromCatalog)
   const animatedTrafficOffers = useAnimatedValue(dealerTrafficStats.fromOffers)
 
-  const animatedLeadsDelta = useAnimatedValue(dealerComparisonStats.leadsDeltaPercent)
+  const animatedDelta = useAnimatedValue(dealerComparisonStats.deltasPercent)
   const animatedConversionDelta = useAnimatedValue(dealerComparisonStats.conversionDeltaPercent)
   const animatedMarginDelta = useAnimatedValue(dealerComparisonStats.marginDeltaPercent)
 
@@ -209,9 +209,9 @@ export function DealerDashboardSections({
                  </CardHeader>
                  <CardContent className="p-4 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase mb-1">{t('dashboard.dealer.comparison.leads_count')}</p>
-                      <p className={`text-lg font-bold ${animatedLeadsDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {animatedLeadsDelta > 0 ? '+' : ''}{animatedLeadsDelta}%
+                      <p className="text-[10px] text-muted-foreground uppercase mb-1">{t('dashboard.dealer.comparison.stats')}</p>
+                      <p className={`text-lg font-bold ${animatedDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {animatedDelta > 0 ? '+' : ''}{animatedDelta}%
                       </p>
                     </div>
                     <div>
@@ -316,7 +316,7 @@ export function DealerDashboardSections({
                            <span>{task}</span>
                         </li>
                      ))}
-                     {dealerLeadReminders.map(reminder => (
+                     {dealerReminders.map((reminder: { id: string; text: string }) => (
                         <li key={reminder.id} className="p-3 flex items-start gap-2 text-sm bg-amber-50/50 hover:bg-amber-100/50 text-amber-900">
                            <Icon icon="mdi:alert-outline" className="h-4 w-4 text-amber-600 mt-0.5" />
                            <span>{reminder.text}</span>

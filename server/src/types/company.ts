@@ -1,5 +1,6 @@
 export interface Company {
   id: number;
+  owner_user_id: number | null;
   name: string;
   slug: string;
   base_price: number;
@@ -28,6 +29,7 @@ export interface Company {
 
 export interface CompanyCreate {
   name: string;
+  owner_user_id?: number | null;
   slug?: string; // if omitted, will be auto-generated from name
   base_price?: number;
   price_per_mile?: number;

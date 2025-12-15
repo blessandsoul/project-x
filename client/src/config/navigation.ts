@@ -1,9 +1,9 @@
 
 export const navigationItems = [
-  { id: 'home', label: 'navigation.home', href: '/' },
-  { id: 'catalog', label: 'navigation.catalog', href: '/catalog' }, // "Who carries"
-  { id: 'auctionListings', label: 'navigation.auctionListings', href: '/auction-listings' }, // "Find car"
-  { id: 'carfax', label: 'navigation.carfax', href: '/vin' } // "Check car"
+  { id: 'home', label: 'navigation.home', href: '/' },                // მთავარი
+  { id: 'logistics', label: 'navigation.logistics', href: '/auction-listings' }, // ლოჯისტიკა
+  { id: 'carfax', label: 'navigation.carfax', href: '/vin' },         // Carfax
+  { id: 'catalog', label: 'navigation.catalog', href: '/catalog' },   // კომპანიები
 ];
 
 export const footerLinks = [

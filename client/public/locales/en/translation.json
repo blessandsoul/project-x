@@ -1,6 +1,7 @@
 {
   "common": {
     "user": "User",
+    "back": "Back",
     "verified": "Verified",
     "view_all": "View All",
     "loading": "Loading...",
@@ -70,9 +71,13 @@
   },
   "navigation": {
     "home": "Home",
-    "catalog": "Catalog",
-    "auctionListings": "Auctions",
-    "carfax": "VIN Check",
+    "logistics": "Logistics",
+    "catalog": "Companies",
+    "auctionListings": "Logistics",
+    "vinCheck": "VIN Check",
+    "register": "Register",
+    "sign_in": "Sign In",
+    "carfax": "Carfax",
     "dashboard": "Dashboard"
   },
   "auth": {
@@ -144,11 +149,49 @@
       "profile_load": "Failed to load profile. Please sign in again."
     }
   },
+  "calculator": {
+    "title": "Shipping Calculator",
+    "helper_text": "Price appears in the company list below.",
+    "city": "City",
+    "select_city": "Select city...",
+    "destination_port": "Destination Port",
+    "select_port": "Select port...",
+    "vehicle_type": "Vehicle Type",
+    "select_vehicle_type": "Select type...",
+    "vehicle_types": {
+      "standard": "Standard",
+      "heavy": "Heavy"
+    },
+    "vehicle_category": "Vehicle Category",
+    "select_vehicle_category": "Select category...",
+    "vehicle_categories": {
+      "Sedan": "Sedan",
+      "Bike": "Bike",
+      "Small SUV": "Small SUV",
+      "Big SUV": "Big SUV",
+      "Pickup": "Pickup",
+      "Van": "Van",
+      "Big Van": "Big Van"
+    },
+    "calculate": "Calculate",
+    "calculating": "Calculating...",
+    "price_shown_in_list": "Price is displayed in the company list below.",
+    "errors": {
+      "city_required": "Please select a city",
+      "city_too_long": "City name is too long (max 30 characters)",
+      "port_required": "Please select a destination port",
+      "port_too_long": "Port name is too long (max 30 characters)",
+      "vehicle_type_required": "Please select a vehicle type",
+      "vehicle_category_required": "Please select a vehicle category",
+      "calculation_failed": "Calculation failed. Please try again."
+    }
+  },
   "header": {
     "sign_in": "Sign In",
     "register": "Register",
     "menu": "Menu",
     "profile": "Profile",
+    "company_settings": "Company Settings",
     "sign_out": "Sign Out",
     "language": "Language",
     "open_profile_menu": "Open profile menu",
@@ -306,15 +349,21 @@
     },
     "copart_hero": {
       "title": "100% Online Auto Auctions",
-      "subtitle": "<strong>Copart</strong> and <strong>IAAI</strong> auctions, importer company prices - Fast, Transparent and without unnecessary calls",
-      "download_appstore": "Download on the",
+      "subtitle": "<strong>Copart</strong> and <strong>IAAI</strong> auctions, importer company prices — fast, transparent, and without unnecessary calls.",
+      "real_reviews_title": "Real reviews",
+      "real_reviews_desc": "Read real customer experiences and ratings.",
+      "transparent_prices_title": "Transparent prices",
+      "transparent_prices_desc": "No hidden fees. See exactly what you pay.",
+      "all_prices_title": "All prices in one place",
+      "all_prices_desc": "See every company's price in one place and choose the best for you.",
+      "browse_inventory": "Browse active listings",
+      "download_appstore": "Download on",
       "appstore": "App Store",
       "get_on": "Get it on",
       "google_play": "Google Play",
       "buyer_protection": "Copart / IAAI auctions search in one place",
       "nationwide_delivery": "Real import prices",
-      "vehicle_history": "Vehicle price calculation",
-      "browse_inventory": "Start searching"
+      "vehicle_history": "Vehicle price calculation"
     },
     "popular_vehicles": {
       "title": "Popular",
@@ -370,8 +419,8 @@
       }
     },
     "vehicle_catalog": {
-      "title": "Copart Auto Auction - Used & Repairable Cars for Sale",
-      "subtitle": "Quickly browse by popular makes, models, body types, or trending searches.",
+      "title": "Copart / IAAI - Live Auctions",
+      "subtitle": "Find any vehicle type you're interested in.",
       "tabs": {
         "makes": "Makes",
         "models": "Models",
@@ -380,41 +429,51 @@
       },
       "see_more": "See More",
       "promo": {
-        "title_line1": "THOUSANDS",
-        "title_line2": "OF",
-        "title_line3": "VEHICLES",
-        "badge": "NO LICENSE REQUIRED",
+        "title_line1": "Copart & IAAI",
+        "title_line2": "",
+        "title_line3": "in one place",
+        "badge": "Huge selection",
         "button": "View Now"
       }
     },
     "what_is_copart": {
-      "title": "What is Copart?",
-      "description1": "Copart is a global leader in online vehicle auctions, offering over 4 million vehicles annually. Whether you're looking for a daily driver, a project car, or a wholesale opportunity, Copart provides access to salvage and clean title vehicles from insurance companies, dealerships, and fleet operators.",
-      "description2": "With 200+ locations across the United States and international shipping options, Copart makes it easy to find, bid on, and purchase vehicles from anywhere in the world.",
+      "title": "What is TrustedImporters.Ge?",
+      "description1": "This is a platform where trusted auto importers and American auctions are brought together in one place. We let you easily compare company prices, terms, and real customer feedback.",
+      "description2": "TrustedImporters.Ge simplifies the entire import process — you see the total cost right on the platform and directly connect with the company you prefer.",
       "learn_more": "Learn More",
-      "browse_categories": "Browse Categories",
+      "browse_categories": "Vehicles",
       "categories": {
         "wholesale": "Wholesale Vehicles",
         "trucks": "Trucks",
         "motorcycles": "Motorcycles"
+      },
+      "features": {
+        "search_title": "Easy Search",
+        "search_desc": "Find companies in one place.",
+        "compare_title": "Compare",
+        "compare_desc": "Match prices and terms.",
+        "calculate_title": "Full Calculation",
+        "calculate_desc": "See the total cost upfront.",
+        "reviews_title": "Trusted Reviews",
+        "reviews_desc": "Real customer reviews."
       }
     },
     "promo_banners": {
       "bid_anytime": {
-        "title": "BID ANYTIME",
-        "subtitle": "ANYWHERE"
+        "title": "Thousands of Lots on One Platform",
+        "description": "The largest selection from Copart and IAAI auctions."
       },
       "daily_sales": {
-        "title": "DAILY",
-        "subtitle": "SALES"
+        "title": "Accurate & Transparent Pricing",
+        "description": "See the total cost — without any hidden fees."
       },
       "no_license": {
-        "title": "NO LICENSE",
-        "subtitle": "NEEDED"
+        "title": "Everything in One Place",
+        "description": "No need to search dozens of companies — all offers together."
       },
       "bid_wins": {
-        "title": "BID &",
-        "subtitle": "WIN"
+        "title": "Trusted Companies & Ratings",
+        "description": "Real customer reviews will help you make the right choice."
       },
       "follow_us": "Follow Us"
     }
@@ -468,7 +527,8 @@
       "search_placeholder": "Search companies...",
       "country": "Country",
       "country_placeholder": "Georgia, USA...",
-      "city_placeholder": "City",
+      "city": "City",
+      "city_placeholder": "City, e.g. Tbilisi",
       "rating": "Rating",
       "rating_all": "All Ratings",
       "price": "Price Range",
@@ -488,7 +548,16 @@
       "online_now": "Online now",
       "service_fee": "Service Fee",
       "up_to": "up to",
-      "view_profile": "View Profile"
+      "view_profile": "View Profile",
+      "default_city": "Tbilisi",
+      "vip": "VIP",
+      "delivery_time": "Delivery",
+      "rating_label": "Rating",
+      "shipping_cost": "Shipping",
+      "contact": "Contact",
+      "offline": "Offline",
+      "send_request": "Send",
+      "get_quote": "Get Quote"
     },
     "comparison": {
       "cancel": "Cancel",
@@ -502,6 +571,9 @@
     "real_results": "Results",
     "loading_data": "Loading data...",
     "showing_results": "Showing {{count}} of {{total}} results",
+    "showing_prefix": "Showing",
+    "showing_middle": "of",
+    "showing_suffix": "vehicles",
     "price_comparison": "Price Comparison",
     "no_results": "No results found",
     "try_resetting": "Try changing or resetting filters",
@@ -517,22 +589,72 @@
     "customs": "Customs",
     "total_estimate": "Total Estimate",
     "retail_value": "Retail Value",
+    "buy_now_label": "Buy Now",
+    "fields": {
+      "odometer": "Odometer",
+      "estimated_retail_value": "Estimated Retail Value",
+      "current_bid": "Current Bid"
+    },
+    "badges": {
+      "clean_title": "Clean Title",
+      "run_drive": "Run & Drive"
+    },
+    "actions": {
+      "watch": "Watch",
+      "bid_now": "Bid Now",
+      "buy_it_now": "Buy It Now"
+    },
+    "columns": {
+      "image": "Photo",
+      "lot_info": "Lot",
+      "vehicle_info": "Info",
+      "document": "Document",
+      "bids": "Bids"
+    },
+    "document_label": "Sale Document",
+    "auction_starts": "Auction Starts",
+    "auction_start_date": "Auction Start Date",
+    "lot": "Lot #",
     "load_more": "Load More",
     "watch_auth_title": "Save vehicle to watchlist",
     "watch_auth_description": "To save vehicles to your watch list, please sign in or create an account.",
     "filters": {
       "title": "Filters",
+      "refine": "Refine Search",
+      "apply": "Apply Filters",
       "auction": "Auction",
       "fuel": "Fuel",
-      "buy_now_only": "Buy Now Only",
       "make": "Make",
       "model": "Model",
+      "any_make": "Any Make",
+      "any_model": "Any Model",
       "category": "Category",
       "year": "Year",
       "price": "Price",
       "mileage": "Mileage",
+      "odometer": "Odometer",
+      "price_bid": "Price / Bid",
       "title_type": "Title",
       "transmission": "Transmission",
+      "automatic": "Automatic",
+      "manual": "Manual",
+      "fuel_type": "Fuel Type",
+      "gasoline": "Gasoline",
+      "diesel": "Diesel",
+      "hybrid": "Hybrid",
+      "electric": "Electric",
+      "flexible_fuel": "Flexible Fuel",
+      "drive": "Drive",
+      "front_wheel": "Front wheel drive",
+      "rear_wheel": "Rear wheel drive",
+      "all_wheel": "All wheel drive",
+      "sale_date": "Sale Date",
+      "source": "Auction",
+      "buy_now": "Buy It Now",
+      "buy_now_only": "Buy Now Only",
+      "all_vehicles": "All Vehicles",
+      "automobiles": "Automobiles",
+      "motorcycles": "Motorcycles",
       "cylinders": "Cylinders",
       "location": "Location"
     },
@@ -554,6 +676,15 @@
     "join_live_auction": "Live Auction",
     "view_vehicle_details": "View vehicle details",
     "more_filters": "More Filters",
+    "sale_date": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "this_week": "This Week",
+      "next_week": "Next Week"
+    },
+    "location": {
+      "any": "Any Location"
+    },
     "tabs": {
       "saved_vehicles": "Saved Vehicles",
       "auctions": "Auctions",
@@ -668,6 +799,10 @@
     "no_photos": "No Photos Available",
     "share_link": "Share Link",
     "save_vehicle": "Save Vehicle",
+    "watchlist": {
+      "save": "Save",
+      "saved": "Saved"
+    },
     "remove_favorites": "Remove from Favorites",
     "condition_report": "Condition Report",
     "ai_analysis": "AI Analysis",
@@ -706,6 +841,59 @@
       "fuel": "Fuel",
       "vin": "VIN",
       "copy_vin": "Copy VIN"
+    },
+    "details": {
+      "title": "Vehicle details",
+      "share": "Share",
+      "lot_number": "Lot number:",
+      "vin": "VIN:",
+      "title_code": "Title code:",
+      "odometer": "Odometer:",
+      "primary_damage": "Primary damage:",
+      "estimated_retail_value": "Estimated retail value:",
+      "cylinders": "Cylinders:",
+      "color": "Color:",
+      "engine_type": "Engine type:",
+      "view_engine": "View engine",
+      "transmission": "Transmission:",
+      "drive": "Drive:",
+      "vehicle_type": "Vehicle type:",
+      "vehicle_type_value": "N/A",
+      "fuel": "Fuel:",
+      "keys": "Keys:",
+      "yes": "YES",
+      "no": "NO",
+      "highlights": "Highlights:",
+      "run_and_drive": "Run and Drive"
+    },
+    "bids": {
+      "last_bid": "Last bid:",
+      "last_bid_date": "Last bid date:",
+      "view_all": "View all bids ({{count}})"
+    },
+    "bid_history": {
+      "title": "Bid History",
+      "bids_count": "{{count}} bid",
+      "no_bids": "No bids recorded for this vehicle",
+      "latest_bid": "Latest Bid",
+      "no_date": "No date"
+    },
+    "quotes_section": {
+      "aria_label": "Import quotes",
+      "title": "Shipping Quotes",
+      "verified_importers": "{{count}} verified importers",
+      "prices_include_all_fees": "Prices include all fees",
+      "transportation_price": "transportation price",
+      "best": "Best",
+      "rating_na": "N/A",
+      "delivery_days": "{{count}} days",
+      "delivery_unknown": "—",
+      "try_again": "Try again",
+      "unavailable_title": "Price calculation unavailable",
+      "unavailable_description": "Shipping quotes cannot be calculated for this location.",
+      "request_custom_quote": "Request Custom Quote",
+      "empty": "No offers available yet",
+      "footer_note": "Free · No commitment · Reply within 24h"
     },
     "carfax": {
       "title": "Get Full Vehicle History",
@@ -1027,6 +1215,72 @@
     "responds": "Responds",
     "expert": "Expert"
   },
+  "company_profile": {
+    "back": "Back",
+    "favorites": {
+      "add": "Add to favorites",
+      "remove": "Remove from favorites"
+    },
+    "founded": "Established",
+    "service_cost": "Service cost",
+    "reviews_count": "Reviews",
+    "contact_btn": "Call",
+    "email_btn": "Email",
+    "website_btn": "Website",
+    "contact": {
+      "title": "Contact company",
+      "description": "Send a message to {{name}}",
+      "name": "Your name",
+      "email": "Your email",
+      "message": "Message",
+      "submit": "Send"
+    },
+    "services": {
+      "title": "Services"
+    },
+    "cars": {
+      "title": "Cars in stock",
+      "mileage": "Mileage"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "write": "Write a review",
+      "your_rating": "Your rating",
+      "comment_label": "Comment",
+      "comment_placeholder": "Share your experience...",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "empty": "No reviews yet",
+      "prev": "Previous",
+      "next": "Next",
+      "delete_confirm": "Are you sure you want to delete this review?"
+    },
+    "contact_info": {
+      "title": "Contact information"
+    },
+    "stats": {
+      "title": "Company statistics",
+      "rating": "Rating",
+      "reviews": "Reviews",
+      "founded": "Established",
+      "services": "Services"
+    },
+    "cta": {
+      "title": "Ready to order?",
+      "description": "Contact the company directly to get an accurate quote.",
+      "button": "Send request"
+    },
+    "not_found": {
+      "title": "Company not found",
+      "description": "The company you are looking for does not exist or has been removed.",
+      "back_to_catalog": "Back to catalog"
+    },
+    "error": {
+      "reviews_load": "Failed to load reviews",
+      "review_length": "Review must be at least 10 characters",
+      "review_submit": "Failed to submit review"
+    }
+  },
   "sidebar": {
     "company_name": "Acme Inc.",
     "quick_create": "Quick Create",
@@ -1045,5 +1299,49 @@
     "search": "Search",
     "open": "Open",
     "share": "Share"
+  },
+  "company_settings": {
+    "title": "Company Settings",
+    "description": "Manage your company profile and pricing information",
+    "logo": "Company Logo",
+    "name": "Company Name",
+    "name_placeholder": "Enter company name",
+    "established_year": "Established Year",
+    "contact_email": "Contact Email",
+    "phone": "Phone Number",
+    "country": "Country",
+    "country_placeholder": "e.g. Georgia",
+    "city": "City",
+    "city_placeholder": "e.g. Tbilisi",
+    "website": "Website",
+    "description_label": "Description",
+    "description_placeholder": "Tell customers about your company...",
+    "pricing": "Pricing",
+    "base_price": "Base Price",
+    "price_per_mile": "Price per Mile",
+    "customs_fee": "Customs Fee",
+    "service_fee": "Service Fee",
+    "broker_fee": "Broker Fee",
+    "services": "Services",
+    "social_links": "Social Links",
+    "add_social_link": "Add Social Link",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "success": "Company settings saved successfully",
+    "delete_company": "Delete Company",
+    "delete_confirm_title": "Delete Company?",
+    "delete_confirm_description": "This action cannot be undone. All company data, including reviews and quotes, will be permanently deleted.",
+    "delete_confirm": "Yes, Delete Company",
+    "deleting": "Deleting...",
+    "delete_success": "Company deleted successfully",
+    "no_company": "No Company Found",
+    "no_company_description": "You don't have a company yet. Create one to start receiving leads.",
+    "create_company": "Create Company",
+    "error": {
+      "load": "Failed to load company data",
+      "save": "Failed to save company settings",
+      "delete": "Failed to delete company",
+      "delete_link": "Failed to delete social link"
+    }
   }
 }

@@ -31,12 +31,15 @@ const CompanyCatalogPage = () => {
     setPage(1);
   };
 
-  const pageSize = 10; // List view standard
+  const pageSize = 12; // List view standard
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<number[]>([]);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+  
+  // View mode: 'grid' (3 cols) or 'list' (1 col)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Calculator state for showing prices in company rows
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
@@ -272,67 +275,115 @@ const CompanyCatalogPage = () => {
   const resultsContent = useMemo(
     () => (
       <>
-        {/* Results Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
-          <p className="text-sm font-medium text-slate-600">
+        {/* Results Header - Copart style */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-3 border border-slate-200">
+          <p className="text-[12px] font-medium text-slate-600">
             {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
           </p>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto sm:justify-end">
             <Toggle 
               pressed={isCompareMode} 
               onPressedChange={setIsCompareMode}
               variant="outline"
               aria-label="Toggle compare mode"
-              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200 flex-1 sm:flex-none"
+              className="gap-1.5 h-7 text-[11px] data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200"
             >
-              <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
-              <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
+              <Icon icon="mdi:compare-horizontal" className="h-3.5 w-3.5" />
+              <span className="font-medium">{t('catalog.results.compare')}</span>
             </Toggle>
 
-            <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
-            <Select
-              value={filters.orderBy}
-              onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
-                if (value === filters.orderBy) return;
-                const nextFilters: CatalogFiltersState = { ...filters, orderBy: value };
-                setFilters(nextFilters);
-                setPage(1);
-                void loadCompanies(1, nextFilters);
-                updateUrlFromFilters(nextFilters, 1);
-              }}
-            >
-              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white border-slate-200 shadow-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating">{t('catalog.sort.rating')}</SelectItem>
-                <SelectItem value="cheapest">{t('catalog.sort.cheapest')}</SelectItem>
-                <SelectItem value="newest">{t('catalog.sort.newest')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 sm:gap-3 sm:ml-auto">
+              <span className="text-[11px] text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
+              <Select
+                value={filters.orderBy}
+                onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
+                  if (value === filters.orderBy) return;
+                  const nextFilters: CatalogFiltersState = { ...filters, orderBy: value };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+              >
+                <SelectTrigger className="w-auto min-w-[120px] sm:w-[160px] h-7 text-[11px] bg-white border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rating" className="text-[11px]">{t('catalog.sort.rating')}</SelectItem>
+                  <SelectItem value="cheapest" className="text-[11px]">{t('catalog.sort.cheapest')}</SelectItem>
+                  <SelectItem value="newest" className="text-[11px]">{t('catalog.sort.newest')}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* View Mode Toggle - right next to sort */}
+              <div className="hidden md:flex items-center border border-slate-200 rounded overflow-hidden">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "p-1.5",
+                    viewMode === 'grid' 
+                      ? 'bg-[#0047AB] text-white' 
+                      : 'bg-white text-slate-600 hover:bg-slate-100'
+                  )}
+                  title={t('catalog.view_grid', 'Grid view')}
+                >
+                  <Icon icon="mdi:view-grid" className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "p-1.5",
+                    viewMode === 'list' 
+                      ? 'bg-[#0047AB] text-white' 
+                      : 'bg-white text-slate-600 hover:bg-slate-100'
+                  )}
+                  title={t('catalog.view_list', 'List view')}
+                >
+                  <Icon icon="mdi:view-list" className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* List Results */}
+        {/* List Results - grid or list view based on viewMode */}
         {isLoading ? (
-          <div className="space-y-4">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="h-32 rounded-xl border border-slate-100 bg-white p-4 flex gap-4 items-center">
-                <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="h-4 w-1/4" />
+          <div className={cn(
+            "grid gap-3 xl:gap-4",
+            viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
+          )}>
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="rounded-md border border-slate-200 bg-white shadow-sm px-4 py-3 space-y-3">
+                {/* Compact card skeleton */}
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-12 w-12 xl:h-14 xl:w-14 rounded-2xl shrink-0" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
                 </div>
-                <div className="w-32 space-y-2 hidden md:block">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
+                <div className="flex justify-between">
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-12" />
+                  <div className="ml-auto flex gap-1.5">
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="h-7 w-16" />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : totalResults > 0 ? (
-          <div className="flex flex-col space-y-4">
+          <div className={cn(
+            "grid gap-3 xl:gap-4",
+            viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
+          )}>
             {paginatedCompanies.map((company) => (
               <CompanyListItem 
                 key={company.id} 
@@ -343,6 +394,7 @@ const CompanyCatalogPage = () => {
                 hasAuctionBranch={hasCalculation}
                 isLoadingShipping={isCalculatingPrice}
                 calculatedShippingPrice={calculatedPrice ?? undefined}
+                viewMode={viewMode}
               />
             ))}
           </div>
@@ -355,15 +407,15 @@ const CompanyCatalogPage = () => {
           />
         )}
 
-        {/* Pagination */}
+        {/* Pagination - Copart style */}
         {!isLoading && totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-12">
+          <div className="flex justify-center items-center gap-1 mt-6">
             {/* Prev */}
             <Button 
               id="catalog-prev-page"
               type="button"
               variant="outline" 
-              size="icon"
+              size="sm"
               onClick={() => {
                 if (page <= 1) return;
                 const nextPage = page - 1;
@@ -375,17 +427,17 @@ const CompanyCatalogPage = () => {
               disabled={page <= 1}
               aria-disabled={page <= 1}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
                 page <= 1
-                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
-                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+                  ? 'border-slate-200 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50'
               )}
             >
-              <Icon icon="mdi:chevron-left" className="h-5 w-5" />
+              <Icon icon="mdi:chevron-left" className="h-4 w-4" />
             </Button>
             
             {/* Page numbers */}
-            <div className="flex items-center gap-1 px-2">
+            <div className="flex items-center gap-0.5">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
                 const isActive = p === currentPage;
                 return (
@@ -401,10 +453,10 @@ const CompanyCatalogPage = () => {
                     }}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'h-10 w-10 rounded-full text-sm font-medium transition-all border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                      'h-7 min-w-[28px] px-2 text-[11px] font-medium transition-all border flex items-center justify-center',
                       isActive
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-110 pointer-events-none'
-                        : 'bg-slate-100 border-transparent text-slate-800 hover:bg-slate-200 hover:text-slate-900'
+                        ? 'bg-[#0047AB] border-[#0047AB] text-white'
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     )}
                   >
                     {p}
@@ -418,7 +470,7 @@ const CompanyCatalogPage = () => {
               id="catalog-next-page"
               type="button"
               variant="outline" 
-              size="icon"
+              size="sm"
               onClick={() => {
                 if (page >= totalPages) return;
                 const nextPage = page + 1;
@@ -430,13 +482,13 @@ const CompanyCatalogPage = () => {
               disabled={page >= totalPages}
               aria-disabled={page >= totalPages}
               className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50',
+                'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
                 page >= totalPages
-                  ? 'border border-dashed border-slate-300 text-slate-400 bg-transparent cursor-not-allowed'
-                  : 'border border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+                  ? 'border-slate-200 text-slate-400 bg-transparent cursor-not-allowed'
+                  : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50'
               )}
             >
-              <Icon icon="mdi:chevron-right" className="h-5 w-5" />
+              <Icon icon="mdi:chevron-right" className="h-4 w-4" />
             </Button>
           </div>
         )}
@@ -463,30 +515,23 @@ const CompanyCatalogPage = () => {
   );
 
   return (
-    <div className="flex-1 flex flex-col font-sans min-h-screen bg-transparent">
-      <div className="flex-1 flex flex-col">
-        {/* Header Section */}
-        <div className="border-b border-slate-200 bg-white/80">
-          <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="max-w-4xl">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-                  {t('catalog.title')}
-                </h1>
-                <p className="text-lg text-slate-600 max-w-2xl">
-                  {t('catalog.subtitle')}
-                </p>
-              </div>
-
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Page Header - Copart style */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="w-full max-w-[1400px] mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold text-slate-900">
+            {t('catalog.title')}
+          </h1>
+          <p className="text-sm text-slate-600 mt-1">
+            {t('catalog.subtitle')}
+          </p>
         </div>
       </div>
 
-      <main className="relative z-10 flex-1 w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8">
-        <div className="grid lg:grid-cols-4 gap-8 items-start">
-          {/* Sidebar Filters */}
-          <aside className="lg:col-span-1 lg:sticky lg:top-24 z-30">
+      <main className="w-full max-w-[1400px] mx-auto px-4 py-4">
+        <div className="flex gap-4">
+          {/* Sidebar Filters - Fixed width like auction-listings */}
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 sticky top-4">
             <CatalogFilters
               initialSearch={filters.search}
               initialCountry={filters.country}
@@ -604,8 +649,105 @@ const CompanyCatalogPage = () => {
             />
           </aside>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* Main Content - Flex grow */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {/* Mobile Filter Button */}
+            <div className="lg:hidden">
+              <CatalogFilters
+                initialSearch={filters.search}
+                initialCountry={filters.country}
+                initialCity={filters.city}
+                initialMinRating={filters.minRating}
+                initialPriceRange={[filters.minBasePrice ?? 0, filters.maxBasePrice ?? 0]}
+                initialIsVip={filters.isVip}
+                onSearchChange={(value) => {
+                  searchDraftRef.current = value;
+                }}
+                onCountryChange={(value) => {
+                  countryDraftRef.current = value;
+                }}
+                onCityChange={(value) => {
+                  cityDraftRef.current = value;
+                }}
+                onPriceRangeChange={(value) => {
+                  priceDraftRef.current = value;
+                }}
+                onApplyFilters={() => {
+                  const effectiveSearch = searchDraftRef.current.trim();
+                  const effectiveCountry = countryDraftRef.current.trim();
+                  const effectiveCity = cityDraftRef.current.trim();
+                  const effectivePrice = priceDraftRef.current;
+                  const nextMinPrice = effectivePrice[0] > 0 ? effectivePrice[0] : undefined;
+                  const nextMaxPrice = effectivePrice[1] > 0 ? effectivePrice[1] : undefined;
+                  const hasChanges =
+                    effectiveSearch !== filters.search ||
+                    effectiveCountry !== filters.country ||
+                    effectiveCity !== filters.city ||
+                    nextMinPrice !== filters.minBasePrice ||
+                    nextMaxPrice !== filters.maxBasePrice;
+                  if (!hasChanges) return;
+                  const nextFilters: CatalogFiltersState = {
+                    ...filters,
+                    search: effectiveSearch,
+                    country: effectiveCountry,
+                    city: effectiveCity,
+                    minBasePrice: nextMinPrice,
+                    maxBasePrice: nextMaxPrice,
+                  };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onResetFilters={() => {
+                  const isAlreadyDefault =
+                    filters.search === '' &&
+                    filters.country === '' &&
+                    filters.city === '' &&
+                    filters.minRating === undefined &&
+                    filters.minBasePrice === undefined &&
+                    filters.maxBasePrice === undefined &&
+                    filters.isVip === false &&
+                    filters.orderBy === 'newest';
+                  if (isAlreadyDefault) return;
+                  searchDraftRef.current = '';
+                  countryDraftRef.current = '';
+                  cityDraftRef.current = '';
+                  priceDraftRef.current = [0, 0];
+                  setFilters(defaultFilters);
+                  setPage(1);
+                  void loadCompanies(1, defaultFilters);
+                  updateUrlFromFilters(defaultFilters, 1);
+                }}
+                onSearchSubmit={(value) => {
+                  const trimmed = value.trim();
+                  searchDraftRef.current = trimmed;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: trimmed };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onMinRatingChange={(value) => {
+                  const normalized = value > 0 ? value : undefined;
+                  const effectiveSearch = searchDraftRef.current ?? filters.search;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: effectiveSearch, minRating: normalized };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onVipChange={(value) => {
+                  const effectiveSearch = searchDraftRef.current ?? filters.search;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: effectiveSearch, isVip: value };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+              />
+            </div>
+
             {/* Shipping Calculator */}
             <ShippingCalculator
               onCalculationComplete={handleCalculationComplete}
@@ -619,33 +761,33 @@ const CompanyCatalogPage = () => {
         </div>
       </main>
       
-      {/* Comparison Modal Floating Trigger */}
+      {/* Comparison Modal Floating Trigger - Copart style */}
       {selectedCompanies.length > 0 && (
-         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
+         <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 items-end">
             <Button 
-               variant="secondary"
+               variant="outline"
                size="sm"
                onClick={() => {
                  setSelectedCompanies([]);
                  setIsCompareMode(false);
                }}
-               className="shadow-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 h-8 rounded-full px-4"
+               className="shadow-md bg-white hover:bg-slate-50 text-slate-600 border-slate-300 h-7 text-[11px] px-3"
             >
-               <Icon icon="mdi:close" className="h-4 w-4 mr-1" />
+               <Icon icon="mdi:close" className="h-3.5 w-3.5 mr-1" />
                {t('catalog.comparison.cancel')}
             </Button>
             
             <Button 
                onClick={() => setIsComparisonModalOpen(true)} 
-               className="bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 rounded-full px-6 h-14 flex items-center gap-3 transition-all hover:scale-105"
+               className="bg-[#0047AB] hover:bg-[#003d91] text-white shadow-lg px-4 h-10 flex items-center gap-2 transition-all text-[12px] font-semibold"
             >
                <div className="relative">
-                 <Icon icon="mdi:compare-horizontal" className="h-6 w-6" />
-                 <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+                 <Icon icon="mdi:compare-horizontal" className="h-5 w-5" />
+                 <span className="absolute -top-1.5 -right-1.5 bg-[#f5a623] text-[#1a2744] text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                    {selectedCompanies.length}
                  </span>
                </div>
-               <span className="font-bold text-lg tracking-tight">{t('catalog.comparison.compare_now')}</span>
+               <span>{t('catalog.comparison.compare_now')}</span>
             </Button>
          </div>
       )}

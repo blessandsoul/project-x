@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/lib/formatDate'
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -140,6 +142,7 @@ const chartConfig = {
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
+  const { i18n } = useTranslation()
   const [timeRange, setTimeRange] = React.useState("30d")
 
   React.useEffect(() => {
@@ -251,8 +254,7 @@ export function ChartAreaInteractive() {
               tickMargin={8}
               minTickGap={32}
               tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
+                return formatDate(value, i18n.language, {
                   month: "short",
                   day: "numeric",
                 })
@@ -263,7 +265,7 @@ export function ChartAreaInteractive() {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    return formatDate(value, i18n.language, {
                       month: "short",
                       day: "numeric",
                     })
