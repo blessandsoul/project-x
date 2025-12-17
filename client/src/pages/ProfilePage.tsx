@@ -18,6 +18,7 @@ const ProfilePage = () => {
   const [username, setUsername] = useState(user?.name ?? '')
   const [password, setPassword] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -39,6 +40,11 @@ const ProfilePage = () => {
       if (avatarFile) {
         setIsUploadingAvatar(true)
         await uploadAvatar(avatarFile)
+        // Clean up preview URL after successful upload
+        if (avatarPreviewUrl) {
+          URL.revokeObjectURL(avatarPreviewUrl)
+          setAvatarPreviewUrl(null)
+        }
         setAvatarFile(null)
       }
 
@@ -66,6 +72,9 @@ const ProfilePage = () => {
     setError('')
     setSuccess('')
     setAvatarFile(file)
+    // Create immediate preview URL
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarPreviewUrl(previewUrl)
   }
 
   const handleDeleteAccount = async () => {
@@ -153,9 +162,9 @@ const ProfilePage = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>
             <div className="flex flex-col items-center gap-3">
-              {user?.avatar && (
+              {(avatarPreviewUrl || user?.avatar) && (
                 <img
-                  src={user.avatar}
+                  src={avatarPreviewUrl || user?.avatar || ''}
                   alt={t('header.avatar_alt')}
                   className="h-16 w-16 rounded-full object-cover border"
                 />

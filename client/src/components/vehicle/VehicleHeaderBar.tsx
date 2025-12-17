@@ -23,14 +23,14 @@ const VehicleHeaderBar = ({
           variant="ghost"
           size="sm"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 px-0 h-auto text-[#0047AB] text-[13px] font-medium hover:underline"
+          className="flex items-center gap-1 px-0 h-auto text-primary text-[13px] font-medium hover:underline"
         >
           <Icon icon="mdi:arrow-left" className="w-4 h-4" />
           Back to results
         </Button>
       </div>
       <div className="vehicle-header-title-row">
-        <h1 className="vehicle-header-title text-2xl sm:text-3xl font-bold text-[#0047AB] uppercase">
+        <h1 className="vehicle-header-title text-2xl sm:text-3xl font-bold text-primary uppercase">
           {year} {make} {model}
         </h1>
       </div>

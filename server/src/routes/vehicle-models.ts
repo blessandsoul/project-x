@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { VehicleModelsController } from '../controllers/vehicleModelsController.js';
+import { withVersionedCache, CACHE_TTL } from '../utils/cache.js';
 
 /**
  * Vehicle Models Routes
@@ -8,6 +9,7 @@ import { VehicleModelsController } from '../controllers/vehicleModelsController.
  * GET /api/vehicle-models?type=motorcycle&makeId=845
  *
  * Returns models filtered by vehicle type and make.
+ * Cached for 1 hour (rarely changes).
  */
 const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
   const controller = new VehicleModelsController(fastify);
@@ -47,13 +49,22 @@ const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
     const { type, makeId } = request.query as { type: string; makeId: number };
     const normalizedType = type.toLowerCase() as 'car' | 'motorcycle';
 
-    const models = await controller.getModelsByTypeAndMake(normalizedType, makeId);
+    const result = await withVersionedCache(
+      fastify,
+      'models',
+      [normalizedType, makeId],
+      CACHE_TTL.LONG,
+      async () => {
+        const models = await controller.getModelsByTypeAndMake(normalizedType, makeId);
+        return {
+          success: true,
+          count: models.length,
+          data: models,
+        };
+      },
+    );
 
-    return reply.send({
-      success: true,
-      count: models.length,
-      data: models,
-    });
+    return reply.send(result);
   });
 };
 

@@ -99,21 +99,32 @@ export function AuctionVehicleListItem({
             />
           </div>
         )}
-        <button
-          type="button"
-          className={cn(
-            "flex-1 aspect-[4/3] rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer",
-            showCompareCheckbox ? "max-w-[100px]" : "w-full"
+        <div className={cn(
+          "relative flex-1 aspect-[4/3] rounded-md overflow-hidden bg-muted",
+          showCompareCheckbox ? "max-w-[100px]" : "w-full"
+        )}>
+          <button
+            type="button"
+            className="w-full h-full focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+            onClick={onViewDetails}
+          >
+            <img
+              src={mainPhotoUrl}
+              alt={`${item.year} ${item.make} ${item.model}`}
+              className="w-full h-full object-cover"
+              loading={priority ? 'eager' : 'lazy'}
+            />
+          </button>
+          {/* Source tag (Copart/IAAI) */}
+          {item.source && (
+            <div className={cn(
+              "absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-bold uppercase text-white",
+              item.source.toLowerCase() === 'copart' ? 'bg-[#002d72]' : 'bg-[#c41230]'
+            )}>
+              {item.source.toLowerCase() === 'copart' ? 'Copart' : 'IAAI'}
+            </div>
           )}
-          onClick={onViewDetails}
-        >
-          <img
-            src={mainPhotoUrl}
-            alt={`${item.year} ${item.make} ${item.model}`}
-            className="w-full h-full object-cover"
-            loading={priority ? 'eager' : 'lazy'}
-          />
-        </button>
+        </div>
       </div>
 
       {/* Lot Info Column (fixed width) */}
@@ -190,7 +201,7 @@ export function AuctionVehicleListItem({
         
         <Button
           size="sm"
-          className="w-full h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold mb-1.5"
+          className="w-full h-7 text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold mb-1.5"
           onClick={onViewDetails}
         >
           {t('auction.actions.bid_now')}
@@ -200,7 +211,7 @@ export function AuctionVehicleListItem({
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              className="h-7 px-3 text-[11px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold"
+              className="h-7 px-3 text-[11px] bg-accent hover:bg-accent/90 text-primary font-semibold"
               onClick={onViewDetails}
             >
               {t('auction.actions.buy_it_now')}

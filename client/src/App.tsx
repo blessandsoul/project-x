@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { PageLoader } from '@/components/ui/page-loader'
 import { RequireAuth, RequireGuest, RequireNoCompany } from '@/app/RequireAuth'
 import MainLayout from '@/layouts/MainLayout'
+import { InquiryDrawerProvider } from '@/contexts/InquiryDrawerContext'
 
 // Lazy load ALL pages for better performance (Code Splitting)
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -21,6 +22,8 @@ const FavoriteVehiclesPage = lazy(() => import('./pages/FavoriteVehiclesPage'))
 const SessionsPage = lazy(() => import('./pages/SessionsPage'))
 const CompanyOnboardPage = lazy(() => import('./pages/company/CompanyOnboardPage'))
 const CompanySettingsPage = lazy(() => import('./pages/CompanySettingsPage'))
+const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
+// MessagesPage removed - using InquiryDrawer globally instead
 
 function ScrollToTop() {
   const location = useLocation()
@@ -91,7 +94,7 @@ function AppRoutes() {
             {/* Public Pages */}
             <Route path="/" element={<LazyRoute><HomePage /></LazyRoute>} />
             <Route path="/catalog" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
-            <Route path="/companies" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
+            <Route path="/companies" element={<LazyRoute><CompaniesPage /></LazyRoute>} />
             <Route path="/company/:id" element={<LazyRoute><CompanyProfilePage /></LazyRoute>} />
             <Route path="/auction-listings" element={<LazyRoute><AuctionListingsPage /></LazyRoute>} />
             <Route path="/vin" element={<LazyRoute><CarfaxPage /></LazyRoute>} />
@@ -148,6 +151,7 @@ function AppRoutes() {
                 </RequireAuth>
               }
             />
+            {/* /messages route removed - drawer opens from header menu */}
 
             {/* Company Onboarding (2-step: user must be auth'd but NOT have a company) */}
             <Route
@@ -233,7 +237,9 @@ function App() {
 
   return (
     <Router>
-      <AppRoutes />
+      <InquiryDrawerProvider>
+        <AppRoutes />
+      </InquiryDrawerProvider>
     </Router>
   )
 }

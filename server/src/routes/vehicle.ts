@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
-import { withCache, buildCacheKeyFromObject, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
+import { withVersionedCache, incrementCacheVersion, CACHE_TTL } from '../utils/cache.js';
 import {
   vehicleSearchQuerySchema,
   VehicleSearchFilters,
@@ -210,13 +210,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       return;
     }
 
-    // Cache key based on filters (excluding user-specific data like favorites)
-    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset, sort });
-
-    // Try to get cached results (only the base search, not user-specific favorites)
-    const cachedResult = await withCache(
+    // Try to get cached results (versioned, excluding user-specific data like favorites)
+    const cachedResult = await withVersionedCache(
       fastify,
-      cacheKey,
+      'vehicles',
+      ['search', JSON.stringify({ ...filters, limit, offset, sort })],
       CACHE_TTL.SHORT, // 5 minutes
       async () => {
         const total = await vehicleModel.countByFilters(filters);
@@ -458,6 +456,9 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     if (!deleted) {
       throw new NotFoundError('Vehicle');
     }
+
+    // Bump cache version so all vehicle caches are invalidated
+    await incrementCacheVersion(fastify, 'vehicles');
 
     return reply.code(204).send();
   });

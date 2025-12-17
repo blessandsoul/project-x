@@ -12,12 +12,12 @@ const MEMBERSHIP_PLANS = [
   },
   {
     id: 'basic',
-    color: 'text-[#f5a623]',
+    color: 'text-accent',
     badge: 'promo',
   },
   {
     id: 'premier',
-    color: 'text-[#f5a623]',
+    color: 'text-accent',
     badge: 'promo',
   },
 ];
@@ -110,7 +110,7 @@ export function MembershipSection() {
         {/* Bottom CTA */}
         <div className="text-center mt-10">
           <Button
-            className="px-8 h-10 md:h-11 rounded-full font-semibold bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744]"
+            className="px-8 h-10 md:h-11 rounded-full font-semibold bg-accent hover:bg-accent/90 text-primary"
             onClick={() => {
               navigate('/register');
               window.scrollTo({ top: 0, behavior: 'smooth' });

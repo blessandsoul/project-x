@@ -1292,6 +1292,252 @@
           }
         }
       ]
+    },
+    {
+      "name": "Inquiries (User)",
+      "description": "User inquiry endpoints - Create and manage inquiries with companies",
+      "item": [
+        {
+          "name": "Create Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": 1,\n  \"vehicle_id\": 1,\n  \"message\": \"Hi, I am interested in shipping this vehicle. What is your best price?\",\n  \"subject\": \"Shipping inquiry for vehicle\",\n  \"quoted_total_price\": 2500.00,\n  \"quoted_currency\": \"USD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inquiries",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries"]
+            }
+          }
+        },
+        {
+          "name": "List My Inquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inquiries?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" },
+                { "key": "status", "value": "pending", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Inquiry by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Inquiry (Accept/Cancel)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Inquiry Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1/messages?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1", "messages"],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "cursor", "value": "100", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Thank you for your response. Can you provide more details?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inquiries/1/mark-read",
+              "host": ["{{baseUrl}}"],
+              "path": ["inquiries", "1", "mark-read"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inquiries (Company)",
+      "description": "Company inquiry endpoints - Manage inquiries from users (requires company role)",
+      "item": [
+        {
+          "name": "List Company Inquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" },
+                { "key": "status", "value": "pending", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Company Inquiry Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Company Inquiry by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Company Inquiry (Status/Price)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"final_price\": 2300.00,\n  \"final_currency\": \"USD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Company Inquiry Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/1/messages?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "1", "messages"],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "cursor", "value": "100", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Company Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello! Thank you for your interest. We can ship this vehicle for $2,300. Delivery time is 14 days.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/1/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "1", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Mark Company Inquiry as Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/company/inquiries/1/mark-read",
+              "host": ["{{baseUrl}}"],
+              "path": ["company", "inquiries", "1", "mark-read"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

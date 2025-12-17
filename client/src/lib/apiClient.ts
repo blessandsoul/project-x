@@ -82,7 +82,7 @@ type RefreshResult = 'success' | 'auth_failure' | 'network_error'
  *
  * CRITICAL: Distinguishes between auth failures (logout) and network errors (preserve state)
  */
-async function refreshAccessToken(): Promise<RefreshResult> {
+export async function refreshAccessToken(): Promise<RefreshResult> {
   try {
     // Use raw axios to avoid triggering our own interceptors
     // Response body is not parsed - we only care if request succeeded

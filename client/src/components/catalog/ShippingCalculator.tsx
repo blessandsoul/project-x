@@ -55,16 +55,6 @@ export interface CalculatorResult {
   [key: string]: unknown;
 }
 
-export interface ShippingCalculatorProps {
-  className?: string;
-  /** Called when calculation completes successfully */
-  onCalculationComplete?: (result: CalculatorResult) => void;
-  /** Called when calculation starts */
-  onCalculationStart?: () => void;
-  /** Called when calculation fails or is cleared */
-  onCalculationClear?: () => void;
-}
-
 const VEHICLE_TYPES = [
   { value: 'standard', label: 'Standard' },
   { value: 'heavy', label: 'Heavy' },
@@ -83,8 +73,37 @@ const VEHICLE_CATEGORIES = [
 type VehicleType = (typeof VEHICLE_TYPES)[number]['value'];
 type VehicleCategory = (typeof VEHICLE_CATEGORIES)[number]['value'];
 
+export interface CalculatorFormValues {
+  city: string;
+  destinationPort: string;
+  vehicleType: VehicleType;
+  vehicleCategory: VehicleCategory;
+}
+
+export interface ShippingCalculatorProps {
+  className?: string;
+  /** Initial values for the form (e.g., from URL params) */
+  initialValues?: Partial<CalculatorFormValues>;
+  /** If true and initialValues are complete, auto-submit on mount */
+  autoSubmit?: boolean;
+  /** Called when calculation completes successfully */
+  onCalculationComplete?: (result: CalculatorResult, formValues: CalculatorFormValues) => void;
+  /** Called when calculation starts */
+  onCalculationStart?: () => void;
+  /** Called when calculation fails or is cleared */
+  onCalculationClear?: () => void;
+}
+
+const isValidVehicleType = (v: string): v is VehicleType =>
+  VEHICLE_TYPES.some((t) => t.value === v);
+
+const isValidVehicleCategory = (v: string): v is VehicleCategory =>
+  VEHICLE_CATEGORIES.some((c) => c.value === v);
+
 export const ShippingCalculator = ({
   className,
+  initialValues,
+  autoSubmit = false,
   onCalculationComplete,
   onCalculationStart,
   onCalculationClear,
@@ -97,11 +116,34 @@ export const ShippingCalculator = ({
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isLoadingPorts, setIsLoadingPorts] = useState(true);
 
-  // Form state
-  const [city, setCity] = useState<string>('');
-  const [destinationPort, setDestinationPort] = useState<string>('');
-  const [vehicleType, setVehicleType] = useState<VehicleType>('standard');
-  const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory>('Sedan');
+  // Form state - initialize from props if provided
+  const [city, setCity] = useState<string>(initialValues?.city ?? '');
+  const [destinationPort, setDestinationPort] = useState<string>(initialValues?.destinationPort ?? '');
+  const [vehicleType, setVehicleType] = useState<VehicleType>(
+    initialValues?.vehicleType && isValidVehicleType(initialValues.vehicleType)
+      ? initialValues.vehicleType
+      : 'standard'
+  );
+  const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory>(
+    initialValues?.vehicleCategory && isValidVehicleCategory(initialValues.vehicleCategory)
+      ? initialValues.vehicleCategory
+      : 'Sedan'
+  );
+
+  // Sync form state when initialValues prop changes (for URL restore)
+  useEffect(() => {
+    if (initialValues?.city) setCity(initialValues.city);
+    if (initialValues?.destinationPort) setDestinationPort(initialValues.destinationPort);
+    if (initialValues?.vehicleType && isValidVehicleType(initialValues.vehicleType)) {
+      setVehicleType(initialValues.vehicleType);
+    }
+    if (initialValues?.vehicleCategory && isValidVehicleCategory(initialValues.vehicleCategory)) {
+      setVehicleCategory(initialValues.vehicleCategory);
+    }
+  }, [initialValues]);
+
+  // Track if auto-submit has been triggered
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
   // Submission state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -214,7 +256,7 @@ export const ShippingCalculator = ({
       onCalculationStart?.();
       const response = await apiPost<CalculatorResult>('/api/calculator', payload);
       setResult(response);
-      onCalculationComplete?.(response);
+      onCalculationComplete?.(response, { city, destinationPort, vehicleType, vehicleCategory });
     } catch (err) {
       console.error('Calculator API error:', err);
       const errorMessage =
@@ -227,6 +269,24 @@ export const ShippingCalculator = ({
       setIsCalculating(false);
     }
   };
+
+  // Auto-submit when data is loaded and initialValues are complete
+  useEffect(() => {
+    if (
+      autoSubmit &&
+      !hasAutoSubmitted &&
+      !isLoadingCities &&
+      !isLoadingPorts &&
+      city &&
+      destinationPort &&
+      vehicleType &&
+      vehicleCategory
+    ) {
+      setHasAutoSubmitted(true);
+      void handleCalculate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSubmit, hasAutoSubmitted, isLoadingCities, isLoadingPorts, city, destinationPort, vehicleType, vehicleCategory]);
 
   const isFormValid = city && destinationPort && vehicleType && vehicleCategory;
 
@@ -261,6 +321,12 @@ export const ShippingCalculator = ({
                   <SelectValue placeholder={t('calculator.select_city', 'Select city...')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  {/* Include initial value if not in list (for URL restore) */}
+                  {city && !cities.includes(city) && (
+                    <SelectItem key={city} value={city} className="text-sm">
+                      {city}
+                    </SelectItem>
+                  )}
                   {cities.map((cityName) => (
                     <SelectItem key={cityName} value={cityName} className="text-sm">
                       {cityName}
@@ -284,6 +350,12 @@ export const ShippingCalculator = ({
                   <SelectValue placeholder={t('calculator.select_port', 'Select port...')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  {/* Include initial value if not in list (for URL restore) */}
+                  {destinationPort && !ports.includes(destinationPort) && (
+                    <SelectItem key={destinationPort} value={destinationPort} className="text-sm">
+                      {t(`calculator.ports.${destinationPort}`, destinationPort)}
+                    </SelectItem>
+                  )}
                   {ports.map((portName) => (
                     <SelectItem key={portName} value={portName} className="text-sm">
                       {t(`calculator.ports.${portName}`, portName)}

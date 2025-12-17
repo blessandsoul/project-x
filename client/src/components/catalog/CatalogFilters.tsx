@@ -351,7 +351,7 @@ export const CatalogFilters = ({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-full sm:w-[400px] p-0 flex flex-col h-full bg-white">
-          <SheetHeader className="px-2 py-2 bg-[#0047AB] text-white">
+          <SheetHeader className="px-2 py-2 bg-primary text-white">
             <SheetTitle className="text-left flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">
               <Icon icon="mdi:filter-variant" className="w-3.5 h-3.5" /> {t('catalog.filters.title', 'Filters')}
             </SheetTitle>
@@ -365,7 +365,7 @@ export const CatalogFilters = ({
             <div className="flex flex-col gap-1.5 w-full">
               <SheetClose asChild>
                 <Button
-                  className="w-full h-7 text-[10px] bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-bold"
+                  className="w-full h-7 text-[10px] bg-accent hover:bg-accent/90 text-primary font-bold"
                   onClick={onApplyFilters}
                 >
                   {t('catalog.filters.show_results', 'Show Results')}

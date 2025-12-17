@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import axios, { AxiosError } from 'axios';
+import { invalidateReferenceDataCache } from '../utils/cache.js';
 
 interface CitiesApiResponse {
   success: boolean;
@@ -138,6 +139,9 @@ export class CitiesService {
       // Insert new cities
       const insertedCount = await this.insertCities(newCities);
       this.fastify.log.info(`Successfully inserted ${insertedCount} new cities`);
+
+      // Invalidate cache so next request gets fresh data
+      await invalidateReferenceDataCache(this.fastify, 'cities');
     } catch (error) {
       this.fastify.log.error({ error }, 'Cities synchronization failed');
       throw error;

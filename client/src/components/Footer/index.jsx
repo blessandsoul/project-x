@@ -295,7 +295,7 @@ const Footer = ({ onNavigate }) => {
 
   const FooterSection = ({ title, links }) => (
     <div className="space-y-4">
-      <h3 className="text-[#f5a623] font-semibold text-sm uppercase tracking-wide">
+      <h3 className="text-accent font-semibold text-sm uppercase tracking-wide">
         {title}
       </h3>
       <nav aria-label={title}>
@@ -330,7 +330,7 @@ const Footer = ({ onNavigate }) => {
             {/* Logo */}
             <Link to="/" className="inline-block">
               <span className="font-logo-bebas text-2xl tracking-wide">
-                <span className="text-[#f5a623] font-bold">Trusted</span>{" "}
+                <span className="text-accent font-bold">Trusted</span>{" "}
                 <span className="text-white font-normal">Importers</span>
               </span>
             </Link>
@@ -338,7 +338,7 @@ const Footer = ({ onNavigate }) => {
             {/* Language Selector */}
             <div className="relative">
               <select
-                className="w-full bg-[#1a1f2e] text-gray-300 text-sm px-3 py-2 rounded border border-gray-700 focus:border-[#f5a623] focus:outline-none appearance-none cursor-pointer"
+                className="w-full bg-[#1a1f2e] text-gray-300 text-sm px-3 py-2 rounded border border-gray-700 focus:border-accent focus:outline-none appearance-none cursor-pointer"
                 value={i18n.language?.substring(0, 2) || "ka"}
                 onChange={(e) => handleLanguageChange(e.target.value)}
               >
@@ -399,7 +399,7 @@ const Footer = ({ onNavigate }) => {
           <div className="space-y-6">
             {/* Social Links */}
             <div className="space-y-4">
-              <h3 className="text-[#f5a623] font-semibold text-sm uppercase tracking-wide">
+              <h3 className="text-accent font-semibold text-sm uppercase tracking-wide">
                 {t.connect}
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -420,7 +420,7 @@ const Footer = ({ onNavigate }) => {
 
             {/* App Download */}
             <div className="space-y-4">
-              <h3 className="text-[#f5a623] font-semibold text-sm uppercase tracking-wide">
+              <h3 className="text-accent font-semibold text-sm uppercase tracking-wide">
                 {t.downloadApp}
               </h3>
               <div className="flex flex-col gap-2">
@@ -464,7 +464,7 @@ const Footer = ({ onNavigate }) => {
             <p className="text-gray-500 text-xs text-center md:text-left">
               © {currentYear}{" "}
               <span className="font-logo-bebas">
-                <span className="text-[#f5a623] font-bold">Trusted</span>
+                <span className="text-accent font-bold">Trusted</span>
                 <span className="text-gray-400 font-normal">Importers</span>
               </span>
               . {t.copyright}

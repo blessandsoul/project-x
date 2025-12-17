@@ -11,15 +11,15 @@ import { VipBadge } from '@/components/company/VipBadge';
 import { EmptyState } from '@/components/company/EmptyState';
 import { Icon } from '@iconify/react/dist/iconify.js';
 // navigationItems/footerLinks now handled by MainLayout
-import { mockCompanies, mockCars } from '@/mocks/_mockData';
+import { mockCars } from '@/mocks/_mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { useCompaniesData } from '@/hooks/useCompaniesData';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchCompanyReviewsFromApi, createCompanyReviewFromApi, updateCompanyReviewFromApi, deleteCompanyReviewFromApi, type ApiCompanyReview } from '@/services/companiesApi';
+import { fetchCompanyByIdFromApi, fetchCompanyReviewsFromApi, createCompanyReviewFromApi, updateCompanyReviewFromApi, deleteCompanyReviewFromApi, type ApiCompanyReview } from '@/services/companiesApi';
+import type { Company } from '@/types/api';
 
 const CompanyProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -28,12 +28,41 @@ const CompanyProfilePage = () => {
   const location = useLocation();
   const { favorites, toggleFavorite } = useFavorites();
   const { addRecentlyViewed } = useRecentlyViewed();
-  const { companies, isLoading } = useCompaniesData();
+  
+  // Fetch company by ID directly (not from cached list)
+  const [company, setCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const numericId = id ? Number(id) : NaN;
-  const company =
-    companies.find((c) => c.id === numericId) ??
-    mockCompanies.find((c) => String(c.id) === id);
+  useEffect(() => {
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+
+    fetchCompanyByIdFromApi(id)
+      .then((data) => {
+        if (!isCancelled) {
+          setCompany(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          console.error('[CompanyProfilePage] Failed to load company', err);
+          setLoadError('Failed to load company');
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [id]);
   const companyCars = mockCars.filter((car) => car.companyId === (company?.id ?? ''));
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
@@ -399,7 +428,7 @@ const CompanyProfilePage = () => {
                       className="h-full w-full object-contain rounded-xl"
                     />
                   </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-[#f5a623] rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center shadow-md border-2 border-white">
                     <Icon icon="mdi:check-bold" className="h-4 w-4 text-slate-900" />
                   </div>
                 </div>
@@ -577,7 +606,7 @@ const CompanyProfilePage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(company.services ?? []).map(service => (
                       <div key={service} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-[#f5a623]" />
+                        <Icon icon="mdi:check-circle" className="h-5 w-5 text-accent" />
                         <span className="text-sm font-medium text-slate-700">{service}</span>
                       </div>
                     ))}
@@ -648,7 +677,7 @@ const CompanyProfilePage = () => {
                 <CardContent className="space-y-4">
                   {/* Review Form */}
                   {canWriteReviews && isReviewFormOpen && (
-                    <Card className="border-[#f5a623]/30 bg-[#f5a623]/5">
+                    <Card className="border-accent/30 bg-accent/5">
                       <CardContent className="pt-6">
                         <form className="space-y-4" onSubmit={handleSubmitReview}>
                           <div className="space-y-2">
@@ -659,7 +688,7 @@ const CompanyProfilePage = () => {
                                   <button
                                     key={star}
                                     type="button"
-                                    className="focus:outline-none focus:ring-2 focus:ring-[#f5a623] rounded hover:scale-110 transition-transform"
+                                    className="focus:outline-none focus:ring-2 focus:ring-accent rounded hover:scale-110 transition-transform"
                                     onClick={() => setReviewRating(star)}
                                     aria-label={`${star} stars`}
                                   >
@@ -667,7 +696,7 @@ const CompanyProfilePage = () => {
                                       icon="mdi:star"
                                       className={`h-5 w-5 ${
                                         star <= reviewRating
-                                          ? 'text-[#f5a623] fill-current'
+                                          ? 'text-accent fill-current'
                                           : 'text-slate-300'
                                       }`}
                                     />
@@ -844,7 +873,7 @@ const CompanyProfilePage = () => {
                                     key={index}
                                     icon="mdi:star"
                                     className={`h-3.5 w-3.5 ${
-                                      index < review.rating ? 'text-[#f5a623] fill-current' : 'text-slate-300'
+                                      index < review.rating ? 'text-accent fill-current' : 'text-slate-300'
                                     }`}
                                   />
                                 ))}
@@ -860,7 +889,7 @@ const CompanyProfilePage = () => {
                                     <button
                                       key={star}
                                       type="button"
-                                      className="focus:outline-none focus:ring-2 focus:ring-[#f5a623] rounded"
+                                      className="focus:outline-none focus:ring-2 focus:ring-accent rounded"
                                       onClick={() => setEditRating(star)}
                                       aria-label={`${star} stars`}
                                     >
@@ -868,7 +897,7 @@ const CompanyProfilePage = () => {
                                         icon="mdi:star"
                                         className={`h-5 w-5 ${
                                           star <= editRating
-                                            ? 'text-[#f5a623] fill-current'
+                                            ? 'text-accent fill-current'
                                             : 'text-slate-300'
                                         }`}
                                       />
@@ -1009,7 +1038,7 @@ const CompanyProfilePage = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {/* Rating */}
                     <div className="flex flex-col items-center p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                      <Icon icon="mdi:star" className="h-6 w-6 text-[#f5a623] fill-current mb-2" />
+                      <Icon icon="mdi:star" className="h-6 w-6 text-accent fill-current mb-2" />
                       <span className="text-xl font-bold text-slate-900">{company.rating}</span>
                       <p className="text-xs text-slate-500 mt-1">{t('company_profile.stats.rating')}</p>
                     </div>
@@ -1039,7 +1068,7 @@ const CompanyProfilePage = () => {
               </Card>
 
               {/* Call to Action - Yellow accent */}
-              <Card className="bg-[#f5a623] border-none shadow-lg">
+              <Card className="bg-accent border-none shadow-lg">
                 <CardContent className="pt-6">
                   <h3 className="font-semibold text-slate-900 mb-2">{t('company_profile.cta.title')}</h3>
                   <p className="text-sm text-slate-700/80 mb-4">

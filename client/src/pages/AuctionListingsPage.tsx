@@ -251,18 +251,28 @@ const createColumns = (
       const item = row.original;
       const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
       return (
-        <button
-          type="button"
-          className="aspect-[4/3] w-32 rounded-md overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
-          onClick={() => onViewDetails(item)}
-        >
-          <img
-            src={mainPhotoUrl}
-            alt={`${item.year} ${item.make} ${item.model}`}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </button>
+        <div className="relative aspect-[4/3] w-32 rounded-md overflow-hidden bg-muted">
+          <button
+            type="button"
+            className="w-full h-full focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+            onClick={() => onViewDetails(item)}
+          >
+            <img
+              src={mainPhotoUrl}
+              alt={`${item.year} ${item.make} ${item.model}`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </button>
+          {/* Source tag (Copart/IAAI) */}
+          {item.source && (
+            <div className={`absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-bold uppercase text-white ${
+              item.source.toLowerCase() === 'copart' ? 'bg-[#002d72]' : 'bg-[#c41230]'
+            }`}>
+              {item.source.toLowerCase() === 'copart' ? 'Copart' : 'IAAI'}
+            </div>
+          )}
+        </div>
       );
     },
     enableSorting: false,
@@ -491,7 +501,7 @@ const createColumns = (
 
           <Button
             size="sm"
-            className="w-full h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold mb-1.5"
+            className="w-full h-7 text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold mb-1.5"
             onClick={() => onViewDetails(item)}
           >
             {t('auction.actions.bid_now')}
@@ -501,7 +511,7 @@ const createColumns = (
             <div className="flex flex-col gap-0.5 text-[10px] sm:flex-row sm:items-center sm:gap-1">
               <Button
                 size="sm"
-                className="w-full sm:w-auto h-7 px-3 text-[10px] bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold whitespace-nowrap"
+                className="w-full sm:w-auto h-7 px-3 text-[10px] bg-accent hover:bg-accent/90 text-primary font-semibold whitespace-nowrap"
                 onClick={() => onViewDetails(item)}
               >
                 {t('auction.actions.buy_it_now')}
@@ -2455,7 +2465,7 @@ const AuctionListingsPage = () => {
                 </div>
                 <Button
                   onClick={applyFilters}
-                  className="h-10 sm:h-11 px-3 sm:px-6 bg-[#0066CC] hover:bg-[#0052a3] text-white whitespace-nowrap text-sm sm:text-base"
+                  className="h-10 sm:h-11 px-3 sm:px-6 bg-primary hover:bg-primary/90 text-white whitespace-nowrap text-sm sm:text-base"
                 >
                   <Icon icon="mdi:magnify" className="w-4 h-4 sm:hidden" />
                   <span className="hidden sm:inline">{t("common.search")}</span>
@@ -2514,7 +2524,7 @@ const AuctionListingsPage = () => {
                         key={tag.id}
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs px-3 rounded-full border-[#0066CC]/50 bg-[#E6F0FF] text-[#0047AB] font-medium gap-1 hover:bg-[#d0e2ff]"
+                        className="h-7 text-xs px-3 rounded-full border-primary/50 bg-primary/10 text-primary font-medium gap-1 hover:bg-primary/20"
                         onClick={() => handleRemoveFilter(tag.id)}
                       >
                         {tag.label}
@@ -2524,7 +2534,7 @@ const AuctionListingsPage = () => {
                     <Button
                       size="sm"
                       onClick={resetFilters}
-                      className="h-7 text-xs px-3 rounded-full bg-amber-400 hover:bg-amber-500 text-amber-950 font-medium"
+                      className="h-7 text-xs px-3 rounded-full bg-accent hover:bg-accent/90 text-primary font-medium"
                     >
                       {t("common.clear_all")}
                     </Button>
@@ -2545,11 +2555,11 @@ const AuctionListingsPage = () => {
                       backendData && (
                         <>
                           <span>{t("auction.showing_prefix")}</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E6F0FF] text-[#0047AB] text-[10px] font-semibold">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
                             {displayedItems.length}
                           </span>
                           <span>{t("auction.showing_middle")}</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E6F0FF] text-[#0047AB] text-[10px] font-semibold">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
                             {backendData.total}
                           </span>
                           <span>{t("auction.showing_suffix")}</span>
@@ -2642,14 +2652,14 @@ const AuctionListingsPage = () => {
                   <div className="hidden md:flex items-center border rounded-lg overflow-hidden">
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2 ${viewMode === 'list' ? 'bg-[#0047AB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
                       title={t('auction.view_list')}
                     >
                       <Icon icon="mdi:view-list" className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 ${viewMode === 'grid' ? 'bg-[#0047AB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
                       title={t('auction.view_grid')}
                     >
                       <Icon icon="mdi:view-grid" className="w-5 h-5" />

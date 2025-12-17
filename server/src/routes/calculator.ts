@@ -1,12 +1,15 @@
 import { FastifyPluginAsync } from 'fastify';
 import { CalculatorController } from '../controllers/calculatorController.js';
+import { createRateLimitHandler, RATE_LIMITS } from '../utils/rateLimit.js';
 
 const calculatorRoutes: FastifyPluginAsync = async (fastify) => {
   const controller = new CalculatorController(fastify);
 
   // POST /api/calculator
   // Calculate shipping costs using external calculator API
+  // Rate limited: 30 requests per minute
   fastify.post('/api/calculator', {
+    preHandler: createRateLimitHandler(fastify, RATE_LIMITS.calculator),
     schema: {
       body: {
         type: 'object',

@@ -1,12 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { injectBrandColors } from '@/theme/colors'
 import './index.css'
+
 import './lib/i18n'
 import App from './App.tsx'
 import { AuthProvider } from '@/hooks/useAuth'
 import { SearchProvider } from '@/hooks/useCompanySearch'
 import { FavoritesProvider } from '@/hooks/useFavorites'
 import { RecentlyViewedProvider } from '@/hooks/useRecentlyViewed'
+
+// Inject brand colors as CSS variables before render
+injectBrandColors()
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {

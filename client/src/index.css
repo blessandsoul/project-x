@@ -68,27 +68,27 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #0f172a;
 
-  --color-primary: #1a2744; /* Main Color - Dark Navy Blue */
+  --color-primary: var(--brand-primary, #1a2744); /* Main Color - Dark Navy Blue */
   --color-primary-foreground: #ffffff; /* White text on dark blue for contrast */
 
   --color-secondary: #f1f5f9; /* Slate 100 - kept for UI backgrounds */
   --color-secondary-foreground: #0f172a;
 
-  --color-sub: #f5a623; /* Sub Color - Golden Orange */
-  --color-sub-foreground: #1a2744;
+  --color-sub: var(--brand-accent, #f5a623); /* Sub Color - Golden Orange */
+  --color-sub-foreground: var(--brand-primary, #1a2744);
 
   --color-muted: #f8fafc; /* Slate 50 */
   --color-muted-foreground: #64748b; /* Slate 500 */
 
-  --color-accent: #f5a623; /* Using Sub Color as Accent - Golden Orange */
-  --color-accent-foreground: #1a2744;
+  --color-accent: var(--brand-accent, #f5a623); /* Using Sub Color as Accent - Golden Orange */
+  --color-accent-foreground: var(--brand-primary, #1a2744);
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
   --color-border: #e2e8f0; /* Slate 200 */
   --color-input: #e2e8f0;
-  --color-ring: #1a2744;
+  --color-ring: var(--brand-primary, #1a2744);
 
   --color-warning: #f59e0b;
   --color-warning-foreground: #ffffff;
@@ -112,7 +112,7 @@
 
   /* Custom Shadows */
   --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(26, 39, 68, 0.15);
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--brand-primary, #1a2744) 15%, transparent);
 }
 
 /* Language Specific Font Overrides */
@@ -148,27 +148,27 @@
   --color-popover: #0f172a;
   --color-popover-foreground: #f8fafc;
 
-  --color-primary: #1a2744;
+  --color-primary: var(--brand-primary, #1a2744);
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #1e293b; /* Slate 800 */
   --color-secondary-foreground: #f8fafc;
 
-  --color-sub: #f5a623;
-  --color-sub-foreground: #1a2744;
+  --color-sub: var(--brand-accent, #f5a623);
+  --color-sub-foreground: var(--brand-primary, #1a2744);
 
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
 
-  --color-accent: #f5a623;
-  --color-accent-foreground: #1a2744;
+  --color-accent: var(--brand-accent, #f5a623);
+  --color-accent-foreground: var(--brand-primary, #1a2744);
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #f8fafc;
 
   --color-border: #1e293b;
   --color-input: #1e293b;
-  --color-ring: #1a2744;
+  --color-ring: var(--brand-primary, #1a2744);
 
   --color-warning: #fbbf24;
   --color-warning-foreground: #020617;
@@ -247,7 +247,7 @@
   /* Custom Scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #1a2744 transparent;
+    scrollbar-color: var(--brand-primary, #1a2744) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -260,7 +260,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: #1a2744;
+    background-color: var(--brand-primary, #1a2744);
     border-radius: 20px;
   }
 }
@@ -471,13 +471,13 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1a2744; /* Primary Dark Navy */
+  background: var(--brand-primary, #1a2744); /* Primary Dark Navy */
   border-radius: 5px;
   border: 2px solid #0f172a;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a3f5f;
+  background: color-mix(in srgb, var(--brand-primary, #1a2744) 80%, white);
 }
 
 @keyframes dialogContentIn {

@@ -14,7 +14,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { apiClient, apiAuthorizedMutation } from '@/lib/apiClient'
+import { apiClient, apiAuthorizedMutation, API_BASE_URL } from '@/lib/apiClient'
 import { refreshCsrfToken, clearCsrfToken } from '@/lib/csrf'
 import type { User, UserRole } from '@/types/api'
 
@@ -600,7 +600,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const avatarUrl = response.data.avatarUrl
 
         if (avatarUrl) {
-          updateUser({ avatar: avatarUrl })
+          // Resolve to full URL if relative path
+          const fullAvatarUrl = avatarUrl.startsWith('http')
+            ? avatarUrl
+            : `${API_BASE_URL}${avatarUrl}`
+          updateUser({ avatar: fullAvatarUrl })
         } else {
           await refreshProfile()
         }

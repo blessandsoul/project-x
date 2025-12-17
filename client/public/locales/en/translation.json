@@ -73,11 +73,12 @@
     "home": "Home",
     "logistics": "Logistics",
     "catalog": "Companies",
-    "auctionListings": "Logistics",
+    "auctionListings": "Automobiles",
     "vinCheck": "VIN Check",
     "register": "Register",
     "sign_in": "Sign In",
     "carfax": "Carfax",
+    "companies": "Companies",
     "dashboard": "Dashboard"
   },
   "auth": {
@@ -184,6 +185,14 @@
       "vehicle_type_required": "Please select a vehicle type",
       "vehicle_category_required": "Please select a vehicle category",
       "calculation_failed": "Calculation failed. Please try again."
+    },
+    "info": {
+      "title": "How It Works",
+      "description": "Use this calculator to estimate shipping and import costs for your vehicle from the USA to Georgia.",
+      "point1": "Select your pickup city and destination port",
+      "point2": "Choose your vehicle type and category",
+      "point3": "Compare prices from multiple import companies",
+      "disclaimer": "Prices are indicative estimates and may vary based on actual conditions."
     }
   },
   "header": {
@@ -515,7 +524,9 @@
       "compare": "Compare",
       "sort_label": "Sort by:",
       "empty_title": "No companies found",
-      "empty_description": "Try different filters or clear your search"
+      "empty_description": "Try different filters or clear your search",
+      "use_calculator_title": "Companies will appear here",
+      "use_calculator_hint": "Fill in the calculator to see offers"
     },
     "sort": {
       "rating": "By Rating",
@@ -557,11 +568,25 @@
       "contact": "Contact",
       "offline": "Offline",
       "send_request": "Send",
-      "get_quote": "Get Quote"
+      "get_quote": "Get Quote",
+      "view_details": "View Details"
     },
     "comparison": {
       "cancel": "Cancel",
       "compare_now": "Compare"
+    },
+    "view_grid": "Grid view",
+    "view_list": "List view"
+  },
+  "companies": {
+    "subtitle": "Browse logistics and import companies",
+    "error": {
+      "title": "Something went wrong",
+      "load": "Failed to load companies. Please try again."
+    },
+    "empty": {
+      "title": "No companies found",
+      "description": "There are no companies available at the moment."
     }
   },
   "auction": {
@@ -1323,6 +1348,9 @@
     "service_fee": "Service Fee",
     "broker_fee": "Broker Fee",
     "services": "Services",
+    "custom_services": "Custom Services",
+    "custom_service_placeholder": "Enter custom service...",
+    "add_service": "Add",
     "social_links": "Social Links",
     "add_social_link": "Add Social Link",
     "save": "Save Changes",

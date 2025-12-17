@@ -70,9 +70,11 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           onClick={handleViewDetails}
         >
           <Image 
-            src={company.logo ?? ''} 
+            src={company.logo || '/car-logos/toyota.png'} 
             alt={`${company.name} logo`} 
-            className="h-full w-full object-cover"
+            className="h-full w-full"
+            fallbackSrc="/car-logos/toyota.png"
+            objectFit="contain"
           />
         </button>
 
@@ -148,7 +150,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         <div className="flex flex-col gap-1.5 pl-4 border-l border-slate-200 flex-shrink-0">
           <Button
             size="sm"
-            className="w-[100px] h-7 text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold"
+            className="w-[100px] h-7 text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold"
             onClick={handleViewDetails}
           >
             {t('catalog.card.send_request', 'გაგზავნა')}
@@ -197,9 +199,11 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
           onClick={handleViewDetails}
         >
           <Image 
-            src={company.logo ?? ''} 
+            src={company.logo || '/car-logos/toyota.png'} 
             alt={`${company.name} logo`} 
-            className="h-full w-full object-cover"
+            className="h-full w-full"
+            fallbackSrc="/car-logos/toyota.png"
+            objectFit="contain"
           />
         </button>
 
@@ -283,7 +287,7 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         <div className="ml-auto flex gap-1.5">
           <Button
             size="sm"
-            className="px-2.5 h-7 text-[10px] xl:text-[11px] bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold"
+            className="px-2.5 h-7 text-[10px] xl:text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold"
             onClick={handleViewDetails}
           >
             {t('catalog.card.send_request', 'გაგზავნა')}

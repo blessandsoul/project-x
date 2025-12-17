@@ -33,6 +33,7 @@ import { fetchSimilarVehicles } from '@/api/vehicles'
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
 import VehicleHeaderBar from '@/components/vehicle/VehicleHeaderBar'
 import VehicleQuotesSection from '@/components/vehicle/VehicleQuotesSection'
+import { useInquiryDrawer } from '@/contexts/InquiryDrawerContext'
 
 // --- Sub-components ---
 
@@ -298,7 +299,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                         </div>
                         <Button 
                             onClick={handleUnlock} 
-                            className="w-full bg-[#1877F2] hover:bg-[#1864D9] text-white h-8 sm:h-9 text-[10px] sm:text-xs font-medium gap-2"
+                            className="w-full bg-primary hover:bg-[#1864D9] text-white h-8 sm:h-9 text-[10px] sm:text-xs font-medium gap-2"
                             disabled={isLiking}
                         >
                             {isLiking ? (
@@ -631,7 +632,7 @@ const VehicleDetailsPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const shouldReduceMotion = useReducedMotion()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, userRole } = useAuth()
   const { isWatched, toggleWatch, isLoading: isWatchlistLoading } = useVehicleWatchlist()
 
   // Parse URL params for initial values - use ref to only read once on mount
@@ -695,6 +696,9 @@ const VehicleDetailsPage = () => {
 
   // State: Bids Modal
   const [isBidsModalOpen, setIsBidsModalOpen] = useState(false)
+
+  // Inquiry Drawer (global context)
+  const { openDrawer: openInquiryDrawer } = useInquiryDrawer()
 
   // Get bids data - sorted by date descending (latest first)
   const bids = useMemo(() => {
@@ -905,7 +909,7 @@ const VehicleDetailsPage = () => {
                       rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
                     >
-                      <Icon icon="mdi:rotate-3d-variant" className="w-5 h-5 text-[#0047AB]" />
+                      <Icon icon="mdi:rotate-3d-variant" className="w-5 h-5 text-primary" />
                       <span className="text-[12px] font-medium text-slate-700">360° Exterior</span>
                     </a>
                   )}
@@ -916,7 +920,7 @@ const VehicleDetailsPage = () => {
                       rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
                     >
-                      <Icon icon="mdi:car-seat" className="w-5 h-5 text-[#0047AB]" />
+                      <Icon icon="mdi:car-seat" className="w-5 h-5 text-primary" />
                       <span className="text-[12px] font-medium text-slate-700">360° Interior</span>
                     </a>
                   )}
@@ -931,7 +935,7 @@ const VehicleDetailsPage = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
                   <h2 className="text-[13px] font-semibold text-slate-900">{t('vehicle.details.title', 'Vehicle details')}</h2>
-                  <button className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-[11px]">
+                  <button className="flex items-center gap-1 text-slate-500 hover:text-primary text-[11px]">
                     <Icon icon="mdi:share-variant-outline" className="w-3.5 h-3.5" />
                     <span>{t('vehicle.details.share', 'Share')}</span>
                   </button>
@@ -1020,7 +1024,7 @@ const VehicleDetailsPage = () => {
                         {(vehicle as any).engine_view && (
                           <button
                             onClick={() => setIsEngineViewOpen(true)}
-                            className="text-[11px] text-[#0047AB] hover:underline"
+                            className="text-[11px] text-primary hover:underline"
                           >
                             {t('vehicle.details.view_engine', 'View engine')}
                           </button>
@@ -1087,7 +1091,7 @@ const VehicleDetailsPage = () => {
                   {/* Yard + Watchlist (stacked) */}
                   <div className="flex flex-col gap-1">
                     {(vehicle as any)?.yard_name && (
-                      <span className="text-[12px] font-semibold text-[#0047AB] uppercase pb-[5px]">
+                      <span className="text-[12px] font-semibold text-primary uppercase pb-[5px]">
                         {(vehicle as any).yard_name}
                       </span>
                     )}
@@ -1134,7 +1138,7 @@ const VehicleDetailsPage = () => {
                     {bids.length > 0 && (
                       <button
                         onClick={() => setIsBidsModalOpen(true)}
-                        className="text-[11px] text-[#0047AB] hover:underline mt-1"
+                        className="text-[11px] text-primary hover:underline mt-1"
                       >
                         {t('vehicle.bids.view_all', 'View all bids ({{count}})', { count: bids.length })}
                       </button>
@@ -1152,6 +1156,16 @@ const VehicleDetailsPage = () => {
                 priceUnavailableMessage={priceUnavailableMessage}
                 onOpenBreakdown={(quote) => setActiveBreakdownQuote(quote)}
                 onOpenLeadModal={() => setIsLeadModalOpen(true)}
+                onOpenMessage={userRole !== 'company' ? (quote) => {
+                  if (!vehicle) return
+                  openInquiryDrawer({
+                    vehicleId: vehicle.id,
+                    companyId: quote.company_id,
+                    quoteId: undefined,
+                    quotedTotalPrice: Number(quote.total_price) || undefined,
+                    companyName: quote.company_name,
+                  })
+                } : undefined}
               />
             </div>
           </motion.div>
@@ -1451,6 +1465,8 @@ const VehicleDetailsPage = () => {
             </form>
         </DialogContent>
       </Dialog>
+
+      {/* Inquiry Drawer is now rendered globally via InquiryDrawerProvider */}
 
     </div>
   )

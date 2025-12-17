@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL, apiAuthorizedMutation, apiAuthorizedGet } from '@/lib/apiClient'
+import { getCsrfToken } from '@/lib/csrf'
 import type { Company } from '@/types/api'
 
 export type ApiCompanyReview = {
@@ -233,6 +234,9 @@ export async function uploadCompanyLogoFromApi(
   const formData = new FormData()
   formData.append('file', file)
 
+  // Get CSRF token for protected mutation endpoint
+  const csrfToken = await getCsrfToken()
+
   // Use axios with withCredentials for cookie-based auth (no localStorage token)
   const response = await axios.post<{ logoUrl: string; originalLogoUrl: string }>(
     `${API_BASE_URL}/companies/${companyId}/logo`,
@@ -241,6 +245,7 @@ export async function uploadCompanyLogoFromApi(
       withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data',
+        'X-CSRF-Token': csrfToken,
       },
     },
   )

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useInquiryDrawer } from '@/contexts/InquiryDrawerContext';
 
 interface UserMenuUser {
   id: string;
@@ -30,10 +31,19 @@ interface UserMenuProps {
 }
 
 
-const userMenuNavigationItems = [
+type NavItem = {
+  id: string;
+  icon: string;
+  labelKey: string;
+  href?: string;
+  action?: 'openMessages';
+};
+
+const userMenuNavigationItems: NavItem[] = [
   { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
   { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'navigation.catalog', href: '/catalog' },
   { id: 'favorite-vehicles', icon: 'mdi:star-outline', labelKey: 'navigation.favorite_vehicles', href: '/favorite-vehicles' },
+  { id: 'messages', icon: 'mdi:message-text-outline', labelKey: 'header.messages', action: 'openMessages' },
 ];
 
 const getInitials = (name: string): string => {
@@ -47,6 +57,7 @@ const getInitials = (name: string): string => {
 const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
   const { t } = useTranslation();
   const { companyId } = useAuth();
+  const { openDrawer } = useInquiryDrawer();
   const initials = getInitials(user.name);
   const navigate = useNavigate();
 
@@ -105,7 +116,11 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
               key={item.id}
               onSelect={event => {
                 event.preventDefault();
-                navigate(item.href);
+                if (item.action === 'openMessages') {
+                  openDrawer();
+                } else if (item.href) {
+                  navigate(item.href);
+                }
               }}
             >
               <Icon icon={item.icon} className="me-2 h-4 w-4" />

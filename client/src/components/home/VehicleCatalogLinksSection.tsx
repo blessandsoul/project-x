@@ -75,7 +75,7 @@ export function VehicleCatalogLinksSection() {
                 {t('home.vehicle_catalog.promo.title_line1')}<br />
                 {t('home.vehicle_catalog.promo.title_line3')}
               </h3>
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-[#f5a623] text-[#1a2744] px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm">
+              <div className="mt-3 inline-flex items-center gap-1.5 bg-accent text-primary px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm">
                 <Icon icon="mdi:card-account-details-outline" className="w-3.5 h-3.5" />
                 {t('home.vehicle_catalog.promo.badge')}
               </div>

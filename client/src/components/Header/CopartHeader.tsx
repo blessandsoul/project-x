@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
       className={cn(
         'fixed top-0 z-40 w-full transition-all transform duration-200 ease-out will-change-transform',
         isHeroVariant
-          ? 'border-b border-white/10 bg-[#1a2744] text-white'
+          ? 'border-b border-white/10 bg-primary text-white'
           : 'border-white/30 bg-white/95 backdrop-blur-xl text-slate-900 shadow-sm',
         isSticky && '',
         isHidden ? '-translate-y-full' : 'translate-y-0'
@@ -131,9 +131,9 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className={cn(
             "flex h-8 w-8 items-center justify-center rounded-lg",
-            isHeroVariant ? "bg-[#f5a623]" : "bg-primary"
+            isHeroVariant ? "bg-accent" : "bg-primary"
           )}>
-            <Icon icon="mdi:car" className={cn("h-5 w-5", isHeroVariant ? "text-[#1a2744]" : "text-white")} />
+            <Icon icon="mdi:car" className={cn("h-5 w-5", isHeroVariant ? "text-primary" : "text-white")} />
           </div>
           <span
             className={cn('inline-block font-sans text-lg font-bold tracking-tight', isHeroVariant ? 'text-white' : 'text-slate-900')}
@@ -150,11 +150,11 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, isSticky = true,
               <input
                 type="text"
                 placeholder="Search Year, Make, Model, VIN..."
-                className="w-full h-10 pl-10 pr-4 rounded-lg bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f5a623]"
+                className="w-full h-10 pl-10 pr-4 rounded-lg bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <button 
                 type="button"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-4 bg-[#f5a623] hover:bg-[#e09520] text-white text-sm font-semibold rounded-md transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-4 bg-accent hover:bg-accent/90 text-white text-sm font-semibold rounded-md transition-colors"
               >
                 Search
               </button>

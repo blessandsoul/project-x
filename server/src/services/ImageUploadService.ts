@@ -306,6 +306,38 @@ export async function getImageUrls(config: ImageUploadConfig): Promise<ImageUrls
 }
 
 /**
+ * Delete any existing files with the same base name but different extensions
+ * This prevents stale files from accumulating when uploading different formats
+ */
+async function cleanupOldExtensions(
+  uploadsPath: string,
+  baseName: string,
+  newExt: string,
+): Promise<void> {
+  try {
+    const files = await fs.readdir(uploadsPath);
+    const toDelete = files.filter((f) => {
+      // Match files like "baseName.ext" or "baseName-original.ext"
+      const isMainFile = f.startsWith(`${baseName}.`) && !f.includes('-original');
+      const isOriginalFile = f.startsWith(`${baseName}-original.`);
+      if (!isMainFile && !isOriginalFile) return false;
+
+      // Only delete if it's a different extension
+      const fileExt = f.split('.').pop();
+      return fileExt !== newExt;
+    });
+
+    await Promise.all(
+      toDelete.map((filename) =>
+        fs.unlink(path.join(uploadsPath, filename)).catch(() => undefined),
+      ),
+    );
+  } catch {
+    // Directory doesn't exist yet - nothing to clean up
+  }
+}
+
+/**
  * Process and save an uploaded image
  */
 export async function processAndSaveImage(
@@ -319,6 +351,9 @@ export async function processAndSaveImage(
 
   // Ensure directory exists
   await fs.mkdir(uploadsPath, { recursive: true });
+
+  // Clean up any existing files with different extensions to prevent stale files
+  await cleanupOldExtensions(uploadsPath, config.baseName, ext);
 
   // File paths
   const filename = `${config.baseName}.${ext}`;
@@ -349,12 +384,13 @@ export async function processAndSaveImage(
     pipeline.toBuffer().then((resized) => fs.writeFile(filePath, resized)),
   ]);
 
-  // Build public URLs
+  // Build public URLs with cache-busting timestamp
   const relativePath = `/uploads/${config.category}/${config.identifier}/${config.subfolder}`;
+  const cacheBuster = `?v=${Date.now()}`;
 
   return {
-    url: buildPublicUrl(`${relativePath}/${filename}`),
-    originalUrl: buildPublicUrl(`${relativePath}/${originalFilename}`),
+    url: buildPublicUrl(`${relativePath}/${filename}`) + cacheBuster,
+    originalUrl: buildPublicUrl(`${relativePath}/${originalFilename}`) + cacheBuster,
     path: filePath,
     originalPath: originalFilePath,
   };

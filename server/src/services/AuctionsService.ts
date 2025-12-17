@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import axios, { AxiosError } from 'axios';
+import { invalidateReferenceDataCache } from '../utils/cache.js';
 
 interface AuctionItem {
   id: string;
@@ -141,6 +142,9 @@ export class AuctionsService {
       // Insert new auctions
       const insertedCount = await this.insertAuctions(newAuctions);
       this.fastify.log.info(`Successfully inserted ${insertedCount} new auctions`);
+
+      // Invalidate cache so next request gets fresh data
+      await invalidateReferenceDataCache(this.fastify, 'auctions');
     } catch (error) {
       this.fastify.log.error({ error }, 'Auctions synchronization failed');
       throw error;

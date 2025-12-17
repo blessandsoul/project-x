@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { VinController } from '../controllers/vinController.js';
+import { getSocketStats, getRedisAdapterStatus } from '../realtime/index.js';
 
 /**
  * Health Check Routes
@@ -126,6 +127,50 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         timestamp: new Date().toISOString(),
       });
     }
+  });
+
+  /**
+   * GET /health/socket
+   *
+   * Socket.IO health check endpoint (DEV ONLY).
+   * Returns socket connection stats and Redis adapter status.
+   * Controlled by ENABLE_SOCKET_HEALTH env variable.
+   *
+   * Response: { ok: boolean, socket: object, redisAdapter: object, workers: object }
+   */
+  fastify.get('/health/socket', async (request, reply) => {
+    // Only enable in development or when explicitly enabled
+    const enableSocketHealth = process.env.ENABLE_SOCKET_HEALTH === 'true';
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (isProd && !enableSocketHealth) {
+      return reply.code(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Route not found',
+      });
+    }
+
+    const socketStats = getSocketStats();
+    const redisStatus = getRedisAdapterStatus();
+
+    return {
+      ok: true,
+      socket: {
+        connected: socketStats.connected,
+        rooms: socketStats.rooms,
+        namespace: socketStats.namespace,
+      },
+      redisAdapter: {
+        enabled: redisStatus.enabled,
+        pub: redisStatus.pub,
+        sub: redisStatus.sub,
+      },
+      workers: {
+        pm2: typeof process.send === 'function',
+        pid: process.pid,
+      },
+    };
   });
 };
 

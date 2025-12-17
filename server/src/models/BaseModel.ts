@@ -20,11 +20,14 @@ const ALLOWED_TABLES = new Set([
   'user_favorite_vehicles',
   'user_favorite_companies',
   'user_recent_companies',
-    'exchange_rates',
+  'exchange_rates',
   'idempotency_keys',
   'user_company_activity',
   'yards',
   'auction_branch_distances',
+  'inquiries',
+  'inquiry_messages',
+  'inquiry_participants',
 ]);
 
 /**

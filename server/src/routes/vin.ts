@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { VinController } from '../controllers/vinController.js';
 import { ValidationError } from '../types/errors.js';
+import { withCache, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
 
 /**
  * VIN Routes
@@ -48,8 +49,16 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
     },
   }, async (request, reply) => {
     const { vin } = request.body as { vin: string };
+    const normalizedVin = vin.toUpperCase();
 
-    const result = await vinController.decodeVIN(vin);
+    // VIN data is immutable - cache for 24 hours
+    const cacheKey = buildCacheKey('vin', normalizedVin);
+    const result = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.IMMUTABLE,
+      () => vinController.decodeVIN(normalizedVin),
+    );
 
     if (result.success) {
       return reply.send(result);

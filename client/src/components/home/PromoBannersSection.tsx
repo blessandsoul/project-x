@@ -6,25 +6,25 @@ const PROMO_BANNERS = [
   {
     id: 'bid_anytime',
     icon: 'mdi:gavel',
-    bgColor: 'bg-[#1a2744]',
+    bgColor: 'bg-primary',
     image: '/cars/1.webp',
   },
   {
     id: 'daily_sales',
     icon: 'mdi:tag',
-    bgColor: 'bg-[#0047AB]',
+    bgColor: 'bg-[#002d72]',
     image: '/cars/2.webp',
   },
   {
     id: 'no_license',
     icon: 'mdi:card-remove',
-    bgColor: 'bg-[#1a2744]',
+    bgColor: 'bg-primary',
     image: '/cars/3.webp',
   },
   {
     id: 'bid_wins',
     icon: 'mdi:trophy',
-    bgColor: 'bg-[#f5a623]',
+    bgColor: 'bg-accent',
     image: '/cars/1.webp',
     textDark: true,
   },
@@ -51,11 +51,11 @@ export function PromoBannersSection() {
               className={`${banner.bgColor} rounded-2xl p-4 relative overflow-hidden cursor-pointer group hover:shadow-lg transition-shadow min-h-[140px]`}
             >
               {/* Text */}
-              <div className={banner.textDark ? 'text-[#1a2744]' : 'text-white'}>
+              <div className={banner.textDark ? 'text-primary' : 'text-white'}>
                 <h3 className="text-base font-bold leading-snug mb-1">
                   {t(`home.promo_banners.${banner.id}.title`)}
                 </h3>
-                <p className={`text-xs leading-relaxed ${banner.textDark ? 'text-[#1a2744]/70' : 'text-white/70'}`}>
+                <p className={`text-xs leading-relaxed ${banner.textDark ? 'text-primary/70' : 'text-white/70'}`}>
                   {t(`home.promo_banners.${banner.id}.description`)}
                 </p>
               </div>

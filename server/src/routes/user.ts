@@ -15,6 +15,7 @@ import {
   positiveIntegerSchema,
   paginationLimitSchema,
 } from '../schemas/commonSchemas.js';
+import { createRateLimitHandler, RATE_LIMITS, userScopedKeyGenerator } from '../utils/rateLimit.js';
 
 
 /**
@@ -100,9 +101,18 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Auth: Cookie-based (HttpOnly access token)
    * CSRF: Required (X-CSRF-Token header)
    * Limits: 2 MB max, JPEG/PNG/WEBP only
+   * Rate limit: 10 uploads per minute per user
    */
   fastify.post('/user/avatar', {
-    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    preHandler: [
+      fastify.authenticateCookie,
+      fastify.csrfProtection,
+      createRateLimitHandler(fastify, {
+        ...RATE_LIMITS.fileUpload,
+        keyPrefix: 'rl:avatar',
+        keyGenerator: userScopedKeyGenerator,
+      }),
+    ],
   }, async (request, reply) => {
     return handleAvatarUpload(request, reply);
   });
@@ -113,9 +123,18 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Alias for POST /user/avatar to support idempotent update semantics.
    * Auth: Cookie-based (HttpOnly access token)
    * CSRF: Required (X-CSRF-Token header)
+   * Rate limit: 10 uploads per minute per user
    */
   fastify.put('/user/avatar', {
-    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    preHandler: [
+      fastify.authenticateCookie,
+      fastify.csrfProtection,
+      createRateLimitHandler(fastify, {
+        ...RATE_LIMITS.fileUpload,
+        keyPrefix: 'rl:avatar',
+        keyGenerator: userScopedKeyGenerator,
+      }),
+    ],
   }, async (request, reply) => {
     return handleAvatarUpload(request, reply);
   });

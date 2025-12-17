@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { VehicleQuote } from '@/types/vehicles';
 import { useTranslation } from 'react-i18next';
+import { MessageSquare } from 'lucide-react';
 
 interface VehicleQuotesSectionProps {
   /** Quotes from the server API */
@@ -29,6 +30,8 @@ interface VehicleQuotesSectionProps {
   onOpenBreakdown: (quote: VehicleQuote) => void;
   /** Handler for opening lead/contact modal */
   onOpenLeadModal: () => void;
+  /** Handler for opening message/inquiry drawer */
+  onOpenMessage?: (quote: VehicleQuote) => void;
 }
 
 const VehicleQuotesSection = ({
@@ -40,6 +43,7 @@ const VehicleQuotesSection = ({
   priceUnavailableMessage,
   onOpenBreakdown,
   onOpenLeadModal,
+  onOpenMessage,
 }: VehicleQuotesSectionProps) => {
   const { t, i18n } = useTranslation();
   
@@ -213,6 +217,22 @@ const VehicleQuotesSection = ({
                   {t('vehicle.quotes_section.transportation_price', 'transportation price')}
                 </div>
               </div>
+
+              {/* Message button */}
+              {onOpenMessage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenMessage(quote);
+                  }}
+                >
+                  <MessageSquare className="size-3.5" />
+                  {t('vehicle.quotes_section.message', 'Message')}
+                </Button>
+              )}
 
               {/* Chevron */}
               <svg 

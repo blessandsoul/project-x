@@ -200,7 +200,7 @@ export function PopularVehiclesSection() {
               id="home-popular-vehicles-heading"
               className="text-xl md:text-2xl font-semibold tracking-tight text-foreground text-balance"
             >
-              {t('home.popular_vehicles.title')} <span className="text-[#f5a623]">{t('home.popular_vehicles.title_highlight')}</span>
+              {t('home.popular_vehicles.title')} <span className="text-accent">{t('home.popular_vehicles.title_highlight')}</span>
             </h2>
           </div>
           <div className="hidden items-center gap-2 md:flex">
@@ -287,7 +287,7 @@ export function PopularVehiclesSection() {
                 <div className="flex gap-1.5 pt-1 mt-auto">
                   <Button 
                     size="sm" 
-                    className="flex-1 h-7 px-2 text-[10px] min-[680px]:text-[11px] bg-[#0047AB] hover:bg-[#003d99] text-white font-semibold rounded-full"
+                    className="flex-1 h-7 px-2 text-[10px] min-[680px]:text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
                   >
                     {t('home.popular_vehicles.bid_now')}
                   </Button>

@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CatalogFilters } from '@/components/catalog/CatalogFilters';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
 import { CompanyComparisonModal } from '@/components/comparison/CompanyComparisonModal';
-import { ShippingCalculator, type CalculatorResult } from '@/components/catalog/ShippingCalculator';
+import { ShippingCalculator, type CalculatorResult, type CalculatorFormValues } from '@/components/catalog/ShippingCalculator';
 
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
@@ -39,12 +39,39 @@ const CompanyCatalogPage = () => {
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   
   // View mode: 'grid' (3 cols) or 'list' (1 col)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   // Calculator state for showing prices in company rows
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [hasCalculation, setHasCalculation] = useState(false);
+
+  // Calculator URL sync state - parse synchronously to avoid race condition
+  const [calculatorInitialValues] = useState<Partial<CalculatorFormValues> | undefined>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calcCity = params.get('calc_city') ?? '';
+    const calcPort = params.get('calc_port') ?? '';
+    const calcVehicleType = params.get('calc_type') ?? '';
+    const calcVehicleCategory = params.get('calc_category') ?? '';
+    
+    if (calcCity && calcPort && calcVehicleType && calcVehicleCategory) {
+      return {
+        city: calcCity,
+        destinationPort: calcPort,
+        vehicleType: calcVehicleType as CalculatorFormValues['vehicleType'],
+        vehicleCategory: calcVehicleCategory as CalculatorFormValues['vehicleCategory'],
+      };
+    }
+    return undefined;
+  });
+  const [calculatorAutoSubmit] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calcCity = params.get('calc_city') ?? '';
+    const calcPort = params.get('calc_port') ?? '';
+    const calcVehicleType = params.get('calc_type') ?? '';
+    const calcVehicleCategory = params.get('calc_category') ?? '';
+    return !!(calcCity && calcPort && calcVehicleType && calcVehicleCategory);
+  });
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -250,7 +277,7 @@ const CompanyCatalogPage = () => {
   );
 
   // Calculator event handlers
-  const handleCalculationComplete = useCallback((result: CalculatorResult) => {
+  const handleCalculationComplete = useCallback((result: CalculatorResult, formValues: CalculatorFormValues) => {
     // Extract transportation_total from nested data object or root level
     const price = result.data?.transportation_total 
       ?? result.transportation_total 
@@ -260,7 +287,16 @@ const CompanyCatalogPage = () => {
     setCalculatedPrice(price);
     setHasCalculation(true);
     setIsCalculatingPrice(false);
-  }, []);
+
+    // Update URL with calculator params
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('calc_city', formValues.city);
+    searchParams.set('calc_port', formValues.destinationPort);
+    searchParams.set('calc_type', formValues.vehicleType);
+    searchParams.set('calc_category', formValues.vehicleCategory);
+    const newUrl = `${location.pathname}?${searchParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [location.pathname]);
 
   const handleCalculationStart = useCallback(() => {
     setIsCalculatingPrice(true);
@@ -275,7 +311,8 @@ const CompanyCatalogPage = () => {
   const resultsContent = useMemo(
     () => (
       <>
-        {/* Results Header - Copart style */}
+        {/* Results Header - Copart style - only show when calculator has been used */}
+        {hasCalculation && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-3 border border-slate-200">
           <p className="text-[12px] font-medium text-slate-600">
             {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
@@ -323,7 +360,7 @@ const CompanyCatalogPage = () => {
                   className={cn(
                     "p-1.5",
                     viewMode === 'grid' 
-                      ? 'bg-[#0047AB] text-white' 
+                      ? 'bg-primary text-white' 
                       : 'bg-white text-slate-600 hover:bg-slate-100'
                   )}
                   title={t('catalog.view_grid', 'Grid view')}
@@ -335,7 +372,7 @@ const CompanyCatalogPage = () => {
                   className={cn(
                     "p-1.5",
                     viewMode === 'list' 
-                      ? 'bg-[#0047AB] text-white' 
+                      ? 'bg-primary text-white' 
                       : 'bg-white text-slate-600 hover:bg-slate-100'
                   )}
                   title={t('catalog.view_list', 'List view')}
@@ -346,9 +383,19 @@ const CompanyCatalogPage = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* List Results - grid or list view based on viewMode */}
-        {isLoading ? (
+        {!hasCalculation ? (
+          <div className="py-16 text-center">
+            <p className="text-sm text-muted-foreground">
+              {t('catalog.results.use_calculator_title', 'Companies will appear here')}
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              {t('catalog.results.use_calculator_hint', 'Fill in the calculator to see offers')}
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className={cn(
             "grid gap-3 xl:gap-4",
             viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
@@ -455,7 +502,7 @@ const CompanyCatalogPage = () => {
                     className={cn(
                       'h-7 min-w-[28px] px-2 text-[11px] font-medium transition-all border flex items-center justify-center',
                       isActive
-                        ? 'bg-[#0047AB] border-[#0047AB] text-white'
+                        ? 'bg-primary border-primary text-white'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     )}
                   >
@@ -748,12 +795,49 @@ const CompanyCatalogPage = () => {
               />
             </div>
 
-            {/* Shipping Calculator */}
-            <ShippingCalculator
-              onCalculationComplete={handleCalculationComplete}
-              onCalculationStart={handleCalculationStart}
-              onCalculationClear={handleCalculationClear}
-            />
+            {/* Shipping Calculator Section - Two column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Calculator */}
+              <ShippingCalculator
+                initialValues={calculatorInitialValues}
+                autoSubmit={calculatorAutoSubmit}
+                onCalculationComplete={handleCalculationComplete}
+                onCalculationStart={handleCalculationStart}
+                onCalculationClear={handleCalculationClear}
+              />
+              
+              {/* Info Block */}
+              <div className="rounded-md border border-slate-200 bg-white shadow-sm px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon icon="mdi:information-outline" className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold text-primary">
+                    {t('calculator.info.title', 'How It Works')}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t('calculator.info.description', 'Use this calculator to estimate shipping and import costs for your vehicle from the USA to Georgia.')}
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point1', 'Select your pickup city and destination port')}</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point2', 'Choose your vehicle type and category')}</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point3', 'Compare prices from multiple import companies')}</span>
+                  </li>
+                </ul>
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  <p className="text-xs text-muted-foreground/80 italic">
+                    {t('calculator.info.disclaimer', 'Prices are indicative estimates and may vary based on actual conditions.')}
+                  </p>
+                </div>
+              </div>
+            </div>
             
             {/* Results from useMemo */}
             {resultsContent}
@@ -779,11 +863,11 @@ const CompanyCatalogPage = () => {
             
             <Button 
                onClick={() => setIsComparisonModalOpen(true)} 
-               className="bg-[#0047AB] hover:bg-[#003d91] text-white shadow-lg px-4 h-10 flex items-center gap-2 transition-all text-[12px] font-semibold"
+               className="bg-primary hover:bg-primary/90 text-white shadow-lg px-4 h-10 flex items-center gap-2 transition-all text-[12px] font-semibold"
             >
                <div className="relative">
                  <Icon icon="mdi:compare-horizontal" className="h-5 w-5" />
-                 <span className="absolute -top-1.5 -right-1.5 bg-[#f5a623] text-[#1a2744] text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+                 <span className="absolute -top-1.5 -right-1.5 bg-accent text-primary text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                    {selectedCompanies.length}
                  </span>
                </div>

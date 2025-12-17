@@ -982,7 +982,7 @@ export function AuctionSidebarFilters({
   return (
     <div className="bg-white border border-slate-300 text-[11px]">
       {/* Header */}
-      <div className="flex items-center gap-1.5 px-2 py-2 bg-[#0047AB] text-white">
+      <div className="flex items-center gap-1.5 px-2 py-2 bg-primary text-white">
         <Icon icon="mdi:filter-variant" className="w-3.5 h-3.5" />
         <span className="font-semibold text-[11px] uppercase tracking-wide">
           {t('auction.filters.refine')}
@@ -1384,7 +1384,7 @@ export function AuctionSidebarFilters({
       {/* Action Buttons */}
       <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
         <Button 
-          className="w-full h-7 text-[10px] bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-bold"
+          className="w-full h-7 text-[10px] bg-accent hover:bg-accent/90 text-primary font-bold"
           onClick={() => onApplyFilters?.()}
         >
           {t('auction.filters.apply')}

@@ -294,7 +294,7 @@ export function AuctionVehicleCard({
             {/* DETAILS button - Yellow/Gold */}
             <button
               type="button"
-              className="flex items-center justify-center gap-1.5 h-[44px] bg-[#f5a623] hover:bg-[#e09520] text-slate-900 font-semibold text-[13px] transition-colors"
+              className="flex items-center justify-center gap-1.5 h-[44px] bg-accent hover:bg-accent/90 text-slate-900 font-semibold text-[13px] transition-colors"
               onClick={onViewDetails}
             >
               <Icon icon="mdi:plus-circle-outline" className="w-4 h-4" />
@@ -394,7 +394,7 @@ export function AuctionVehicleCard({
         <div className="flex flex-col flex-1 p-3">
           {/* Title */}
           <button onClick={onViewDetails} className="text-left mb-1.5">
-            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-[#0047AB] leading-snug line-clamp-2">
+            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-primary leading-snug line-clamp-2">
               {item.year} {item.make} {item.model}
             </h3>
           </button>
@@ -454,7 +454,7 @@ export function AuctionVehicleCard({
             <div className="flex flex-col gap-1.5">
               <Button
                 size="sm"
-                className="w-full h-7 text-[11px] rounded-full bg-[#f5a623] hover:bg-[#e5a800] text-[#1a2744] font-semibold"
+                className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
                 onClick={onViewDetails}
               >
                 {t('auction.actions.bid_now')}
@@ -462,7 +462,7 @@ export function AuctionVehicleCard({
               {hasBuyNow ? (
                 <Button
                   size="sm"
-                  className="w-full h-7 text-[11px] rounded-full bg-[#28a745] hover:bg-[#218838] text-white font-semibold"
+                  className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
                   onClick={onViewDetails}
                 >
                   {t('auction.actions.buy_it_now')}

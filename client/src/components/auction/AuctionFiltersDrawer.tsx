@@ -100,7 +100,7 @@ export function AuctionFiltersDrawer({
           className={`${
             showLabel
               ? 'h-9 px-3 flex items-center gap-2'
-              : 'h-10 sm:h-11 px-2.5 sm:px-4 flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-amber-950 border-transparent shadow-sm'
+              : 'h-10 sm:h-11 px-2.5 sm:px-4 flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-primary border-transparent shadow-sm'
           }`}
           onClick={() => setIsOpen(true)}
         >

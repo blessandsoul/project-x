@@ -15,12 +15,11 @@ import { validateAndNormalizeSocialUrl } from '../utils/sanitize.js';
 import { parsePagination, buildPaginatedResult } from '../utils/pagination.js';
 import { withIdempotency } from '../utils/idempotency.js';
 import {
-  withCache,
-  buildCacheKey,
-  buildCacheKeyFromObject,
-  invalidateCachePattern,
+  withVersionedCache,
+  incrementCacheVersion,
   CACHE_TTL,
 } from '../utils/cache.js';
+import { createRateLimitHandler, RATE_LIMITS, userScopedKeyGenerator } from '../utils/rateLimit.js';
 import {
   uploadCompanyLogoSecure,
   deleteCompanyLogo,
@@ -289,10 +288,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * can be created.
    */
   fastify.get('/companies', async (request, reply) => {
-    const cacheKey = 'companies:all';
-    const companies = await withCache(
+    const companies = await withVersionedCache(
       fastify,
-      cacheKey,
+      'companies',
+      ['all'],
       CACHE_TTL.MEDIUM, // 10 minutes
       () => controller.getCompanies(),
     );
@@ -398,11 +397,11 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       orderDirection: order_direction,
     };
 
-    // Cache company search results
-    const cacheKey = buildCacheKeyFromObject('companies:search', params);
-    const result = await withCache(
+    // Cache company search results (versioned)
+    const result = await withVersionedCache(
       fastify,
-      cacheKey,
+      'companies',
+      ['search', JSON.stringify(params)],
       CACHE_TTL.SHORT, // 5 minutes
       () => controller.searchCompanies(params),
     );
@@ -470,6 +469,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     // Admin check handled by requireAdmin middleware
     const payload = request.body as CompanyCreate;
     const created = await controller.createCompany(payload);
+    
+    // Bump cache version so all company caches are invalidated
+    await incrementCacheVersion(fastify, 'companies');
+    
     return reply.code(201).send(created);
   });
 
@@ -533,6 +536,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
 
     const updates = request.body as CompanyUpdate;
     const updated = await controller.updateCompany(id, updates);
+    
+    // Bump cache version so all company caches are invalidated
+    await incrementCacheVersion(fastify, 'companies');
+    
     return reply.send(updated);
   });
 
@@ -570,6 +577,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await controller.deleteCompany(id);
+    
+    // Bump cache version so all company caches are invalidated
+    await incrementCacheVersion(fastify, 'companies');
+    
     return reply.code(204).send();
   });
 
@@ -593,7 +604,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * - Image sanitization via sharp (strips metadata, re-encodes)
    */
   fastify.post('/companies/:id/logo', {
-    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    preHandler: [
+      fastify.authenticateCookie,
+      fastify.csrfProtection,
+      createRateLimitHandler(fastify, {
+        ...RATE_LIMITS.fileUpload,
+        keyPrefix: 'rl:logo',
+        keyGenerator: userScopedKeyGenerator,
+      }),
+    ],
     schema: {
       params: idParamsSchema,
     },
@@ -660,7 +679,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * CSRF: Required (X-CSRF-Token header)
    */
   fastify.put('/companies/:id/logo', {
-    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    preHandler: [
+      fastify.authenticateCookie,
+      fastify.csrfProtection,
+      createRateLimitHandler(fastify, {
+        ...RATE_LIMITS.fileUpload,
+        keyPrefix: 'rl:logo',
+        keyGenerator: userScopedKeyGenerator,
+      }),
+    ],
     schema: {
       params: idParamsSchema,
     },
@@ -1229,20 +1256,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Cache quote calculations - same vehicle + calculator input + currency + pagination = same result
     const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 5 ? minRating : undefined;
-    const cacheKey = buildCacheKey(
-      'quotes:calculate', 
-      vehicleId, 
-      calculatorInput.auction,
-      calculatorInput.usacity || 'none',
-      currency || 'USD', 
-      safeLimit, 
-      safeOffset, 
-      safeMinRating ?? 'none'
-    );
-    
-    const fullResult = await withCache(
+    const fullResult = await withVersionedCache(
       fastify,
-      cacheKey,
+      'companies',
+      ['quotes:calculate', vehicleId, calculatorInput.auction, calculatorInput.usacity || 'none', currency || 'USD', safeLimit, safeOffset, safeMinRating ?? 'none'],
       CACHE_TTL.CALCULATION, // 10 minutes
       () => controller.calculateQuotesForVehicleWithInput(vehicleId, calculatorInput, currency, {
         limit: safeLimit,
@@ -1296,11 +1313,11 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const { vehicleId } = request.params as { vehicleId: number };
     const { limit = 3, currency } = request.query as { limit?: number; currency?: string };
 
-    // Cache cheapest quotes - same vehicle + currency = same result
-    const cacheKey = buildCacheKey('quotes:cheapest', vehicleId, currency || 'USD', limit);
-    const fullResult = await withCache(
+    // Cache cheapest quotes - same vehicle + currency = same result (versioned)
+    const fullResult = await withVersionedCache(
       fastify,
-      cacheKey,
+      'companies',
+      ['quotes:cheapest', vehicleId, currency || 'USD', limit],
       CACHE_TTL.CALCULATION, // 10 minutes
       () => controller.calculateQuotesForVehicle(vehicleId, currency),
     );

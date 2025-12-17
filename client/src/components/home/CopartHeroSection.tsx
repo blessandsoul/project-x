@@ -10,7 +10,7 @@ export function CopartHeroSection() {
 
   return (
     <motion.section
-      className="relative overflow-hidden bg-[#f5a623] lg:bg-gradient-to-b lg:from-background lg:via-background lg:to-background/95"
+      className="relative overflow-hidden bg-accent lg:bg-gradient-to-b lg:from-background lg:via-background lg:to-background/95"
       role="banner"
       aria-labelledby="home-copart-hero-heading"
       initial={{ opacity: 0, y: 24 }}
@@ -20,7 +20,7 @@ export function CopartHeroSection() {
     >
       {/* Yellow diagonal background shape - DESKTOP ONLY (≥1024px) */}
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-[#f5a623]/90 dark:bg-[#f5a623]/80 z-0 hidden lg:block"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[64%] bg-accent/90 dark:bg-accent/80 z-0 hidden lg:block"
         style={{
           clipPath: 'polygon(0 0, 100% 0, 76% 100%, 0 100%)',
         }}
@@ -111,10 +111,10 @@ export function CopartHeroSection() {
               <div className="relative z-10 grid grid-cols-2 gap-4 w-full max-w-[700px]">
                 {/* Transparent prices */}
                 <div className="col-span-1 row-span-2 rounded-2xl bg-slate-900 text-white shadow-[0_18px_55px_rgba(15,23,42,0.45)] ring-1 ring-black/10 flex flex-col items-center justify-center p-6">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#f5a623] text-slate-900 shadow-lg mb-4">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-accent text-slate-900 shadow-lg mb-4">
                     <Icon icon="mdi:cash-multiple" className="w-10 h-10" aria-hidden="true" />
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-accent mb-1">
                     {t('home.copart_hero.transparent_prices_title')}
                   </p>
                   <p className="text-sm font-medium text-center max-w-[480px] mx-auto leading-relaxed">
@@ -231,10 +231,10 @@ export function CopartHeroSection() {
             <div className="grid grid-cols-[1fr_1fr] gap-4 max-w-[700px] mx-auto">
               {/* Transparent prices - tall left card */}
               <div className="row-span-2 rounded-2xl bg-slate-900 text-white shadow-[0_18px_55px_rgba(15,23,42,0.45)] ring-1 ring-black/10 flex flex-col items-center justify-center p-5">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5a623] text-slate-900 shadow-lg mb-3">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-slate-900 shadow-lg mb-3">
                   <Icon icon="mdi:cash-multiple" className="w-8 h-8" aria-hidden="true" />
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#f5a623] mb-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-accent mb-1">
                   {t('home.copart_hero.transparent_prices_title')}
                 </p>
                 <p className="text-sm font-medium text-center max-w-[480px] mx-auto leading-relaxed">

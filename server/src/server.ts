@@ -37,11 +37,14 @@ import { vehicleMakesRoutes } from './routes/vehicle-makes.js';
 import { vehicleModelsRoutes } from './routes/vehicle-models.js';
 import { authRoutes } from './routes/auth.js';
 import { accountRoutes } from './routes/account.js';
+import { inquiryRoutes } from './routes/inquiry.js';
+import { companyInquiryRoutes } from './routes/companyInquiry.js';
 import { AuctionApiService } from './services/AuctionApiService.js';
 import { FxRateService } from './services/FxRateService.js';
 import { CitiesService } from './services/CitiesService.js';
 import { PortsService } from './services/PortsService.js';
 import { AuctionsService } from './services/AuctionsService.js';
+import { initializeSocketIO, cleanupSocketIO } from './realtime/index.js';
 /**
  * Fastify Server Application
  *
@@ -470,6 +473,18 @@ await fastify.register(helmet, {
   crossOriginResourcePolicy: {
     policy: 'cross-origin',
   },
+  // Configure CSP to allow WebSocket connections for Socket.IO
+  contentSecurityPolicy: isProd
+    ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          connectSrc: ["'self'", 'wss:', 'ws:'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+        },
+      }
+    : false, // Disable CSP in development for easier debugging
 });
 
 await fastify.register(cors, {
@@ -577,6 +592,8 @@ await fastify.register(auctionsRoutes);
 await fastify.register(calculatorRoutes);
 await fastify.register(vehicleMakesRoutes);
 await fastify.register(vehicleModelsRoutes);
+await fastify.register(inquiryRoutes);
+await fastify.register(companyInquiryRoutes);
 
 // ---------------------------------------------------------------------------
 // Background jobs
@@ -647,6 +664,10 @@ const gracefulShutdown = async (signal: string) => {
   fastify.log.info({ signal }, 'Received shutdown signal, closing server gracefully...');
 
   try {
+    // Cleanup Socket.IO first
+    await cleanupSocketIO();
+    fastify.log.info('Socket.IO closed');
+
     // Close Fastify server (stops accepting new connections)
     await fastify.close();
     fastify.log.info('Server closed successfully');
@@ -683,9 +704,14 @@ const start = async () => {
     // Sync auctions on server startup
     await auctionsService.syncAuctions();
 
+    // Start HTTP server first
     await fastify.listen({ port, host });
     fastify.log.info(`Server listening on http://${host}:${port}`);
     fastify.log.info(`API documentation available at http://${host}:${port}/docs`);
+
+    // Initialize Socket.IO after server is listening
+    await initializeSocketIO(fastify, fastify.server);
+    fastify.log.info('Socket.IO real-time server ready');
 
     // Signal PM2 that the app is ready (for cluster mode with wait_ready: true)
     if (process.send) {

@@ -66,9 +66,11 @@ const CompanySettingsPage = () => {
   const [serviceFee, setServiceFee] = useState<number>(0)
   const [brokerFee, setBrokerFee] = useState<number>(0)
   const [services, setServices] = useState<string[]>([])
+  const [customServiceInput, setCustomServiceInput] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null)
 
   // Load company data
   useEffect(() => {
@@ -175,7 +177,19 @@ const CompanySettingsPage = () => {
 
       // Upload logo if changed
       if (logoFile) {
-        await uploadCompanyLogoFromApi(companyId, logoFile)
+        const logoResult = await uploadCompanyLogoFromApi(companyId, logoFile)
+        // Update displayed logo URL immediately from server response
+        if (logoResult.logoUrl) {
+          const fullLogoUrl = logoResult.logoUrl.startsWith('http')
+            ? logoResult.logoUrl
+            : `${API_BASE_URL}${logoResult.logoUrl}`
+          setCurrentLogoUrl(fullLogoUrl)
+        }
+        // Clean up preview URL
+        if (logoPreviewUrl) {
+          URL.revokeObjectURL(logoPreviewUrl)
+          setLogoPreviewUrl(null)
+        }
         setLogoFile(null)
       }
 
@@ -215,6 +229,9 @@ const CompanySettingsPage = () => {
     const file = event.target.files?.[0]
     if (file) {
       setLogoFile(file)
+      // Create immediate preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setLogoPreviewUrl(previewUrl)
     }
   }
 
@@ -330,9 +347,9 @@ const CompanySettingsPage = () => {
               <div className="space-y-2">
                 <Label>{t('company_settings.logo')}</Label>
                 <div className="flex items-center gap-4">
-                  {currentLogoUrl && (
+                  {(logoPreviewUrl || currentLogoUrl) && (
                     <img
-                      src={currentLogoUrl}
+                      src={logoPreviewUrl || currentLogoUrl || ''}
                       alt="Company logo"
                       className="h-16 w-16 rounded-md object-contain border"
                     />
@@ -449,71 +466,6 @@ const CompanySettingsPage = () => {
 
               <Separator />
 
-              {/* Pricing Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('company_settings.pricing')}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="basePrice">{t('company_settings.base_price')}</Label>
-                    <Input
-                      id="basePrice"
-                      type="number"
-                      value={basePrice}
-                      onChange={(e) => setBasePrice(Number(e.target.value))}
-                      min={0}
-                      disabled={isSaving || isDeleting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pricePerMile">{t('company_settings.price_per_mile')}</Label>
-                    <Input
-                      id="pricePerMile"
-                      type="number"
-                      step="0.01"
-                      value={pricePerMile}
-                      onChange={(e) => setPricePerMile(Number(e.target.value))}
-                      min={0}
-                      disabled={isSaving || isDeleting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customsFee">{t('company_settings.customs_fee')}</Label>
-                    <Input
-                      id="customsFee"
-                      type="number"
-                      value={customsFee}
-                      onChange={(e) => setCustomsFee(Number(e.target.value))}
-                      min={0}
-                      disabled={isSaving || isDeleting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="serviceFee">{t('company_settings.service_fee')}</Label>
-                    <Input
-                      id="serviceFee"
-                      type="number"
-                      value={serviceFee}
-                      onChange={(e) => setServiceFee(Number(e.target.value))}
-                      min={0}
-                      disabled={isSaving || isDeleting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="brokerFee">{t('company_settings.broker_fee')}</Label>
-                    <Input
-                      id="brokerFee"
-                      type="number"
-                      value={brokerFee}
-                      onChange={(e) => setBrokerFee(Number(e.target.value))}
-                      min={0}
-                      disabled={isSaving || isDeleting}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
               {/* Services Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">{t('company_settings.services')}</h3>
@@ -533,6 +485,69 @@ const CompanySettingsPage = () => {
                       </Label>
                     </div>
                   ))}
+                </div>
+
+                {/* Custom Services */}
+                {services.filter((s) => !SERVICES.includes(s)).length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">{t('company_settings.custom_services')}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {services
+                        .filter((s) => !SERVICES.includes(s))
+                        .map((customService) => (
+                          <div
+                            key={customService}
+                            className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                          >
+                            <span>{customService}</span>
+                            <button
+                              type="button"
+                              onClick={() => setServices((prev) => prev.filter((s) => s !== customService))}
+                              disabled={isSaving || isDeleting}
+                              className="ml-1 text-muted-foreground hover:text-destructive"
+                            >
+                              <Icon icon="mdi:close" className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Custom Service */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={customServiceInput}
+                    onChange={(e) => setCustomServiceInput(e.target.value)}
+                    placeholder={t('company_settings.custom_service_placeholder')}
+                    disabled={isSaving || isDeleting}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const trimmed = customServiceInput.trim()
+                        if (trimmed && !services.includes(trimmed)) {
+                          setServices((prev) => [...prev, trimmed])
+                          setCustomServiceInput('')
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const trimmed = customServiceInput.trim()
+                      if (trimmed && !services.includes(trimmed)) {
+                        setServices((prev) => [...prev, trimmed])
+                        setCustomServiceInput('')
+                      }
+                    }}
+                    disabled={isSaving || isDeleting || !customServiceInput.trim()}
+                  >
+                    <Icon icon="mdi:plus" className="me-1 h-4 w-4" />
+                    {t('company_settings.add_service')}
+                  </Button>
                 </div>
               </div>
 
