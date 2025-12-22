@@ -12,7 +12,8 @@ const HomePage = () => {
   const { loading } = useHomePageState();
 
   return (
-    <div className="flex-1 flex flex-col">
+    // Negative margin to pull hero under the fixed header (counteracts MainLayout padding)
+    <div className="flex-1 flex flex-col -mt-14 lg:-mt-24">
       {loading ? (
         <HomePageSkeleton />
       ) : (

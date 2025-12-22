@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useInquiryDrawer } from '@/contexts/InquiryDrawerContext';
+// import { useInquiryDrawer } from '@/contexts/InquiryDrawerContext'; // Disabled - inquiry system not ready
 
 interface UserMenuUser {
   id: string;
@@ -41,9 +41,8 @@ type NavItem = {
 
 const userMenuNavigationItems: NavItem[] = [
   { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
-  { id: 'catalog', icon: 'mdi:view-grid-outline', labelKey: 'navigation.catalog', href: '/catalog' },
   { id: 'favorite-vehicles', icon: 'mdi:star-outline', labelKey: 'navigation.favorite_vehicles', href: '/favorite-vehicles' },
-  { id: 'messages', icon: 'mdi:message-text-outline', labelKey: 'header.messages', action: 'openMessages' },
+  // { id: 'messages', icon: 'mdi:message-text-outline', labelKey: 'header.messages', action: 'openMessages' }, // Disabled - inquiry system not ready
 ];
 
 const getInitials = (name: string): string => {
@@ -56,8 +55,8 @@ const getInitials = (name: string): string => {
 
 const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
   const { t } = useTranslation();
-  const { companyId } = useAuth();
-  const { openDrawer } = useInquiryDrawer();
+  const { companyId, userRole } = useAuth();
+  // const { openDrawer } = useInquiryDrawer(); // Disabled - inquiry system not ready
   const initials = getInitials(user.name);
   const navigate = useNavigate();
 
@@ -104,64 +103,66 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
         collisionPadding={8}
         className="w-56 max-w-[calc(100vw-1rem)] overflow-hidden"
       >
-          <DropdownMenuLabel>
-            <div className="flex flex-col">
-              <span className="truncate text-sm font-medium">{user.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {userMenuNavigationItems.map(item => (
-            <DropdownMenuItem
-              key={item.id}
-              onSelect={event => {
-                event.preventDefault();
-                if (item.action === 'openMessages') {
-                  openDrawer();
-                } else if (item.href) {
-                  navigate(item.href);
-                }
-              }}
-            >
-              <Icon icon={item.icon} className="me-2 h-4 w-4" />
-              <span>{t(item.labelKey)}</span>
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="truncate text-sm font-medium">{user.name}</span>
+            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {userMenuNavigationItems.map(item => (
           <DropdownMenuItem
+            key={item.id}
             onSelect={event => {
               event.preventDefault();
-              navigate('/profile');
-            }}
-          >
-            <Icon icon="mdi:account-circle" className="me-2 h-4 w-4" />
-            <span>{t('header.profile')}</span>
-          </DropdownMenuItem>
-          {companyId && (
-            <DropdownMenuItem
-              onSelect={event => {
-                event.preventDefault();
-                navigate('/company/settings');
-              }}
-            >
-              <Icon icon="mdi:domain" className="me-2 h-4 w-4" />
-              <span>{t('header.company_settings')}</span>
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={event => {
-              event.preventDefault();
-              if (onLogout) {
-                onLogout();
+              // Disabled - inquiry system not ready
+              // if (item.action === 'openMessages') {
+              //   openDrawer();
+              // } else if (item.href) {
+              if (item.href) {
+                navigate(item.href);
               }
-              navigate('/');
             }}
           >
-            <Icon icon="mdi:logout" className="me-2 h-4 w-4" />
-            <span>{t('header.sign_out')}</span>
+            <Icon icon={item.icon} className="me-2 h-4 w-4" />
+            <span>{t(item.labelKey)}</span>
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={event => {
+            event.preventDefault();
+            navigate('/profile');
+          }}
+        >
+          <Icon icon="mdi:account-circle" className="me-2 h-4 w-4" />
+          <span>{t('header.profile')}</span>
+        </DropdownMenuItem>
+        {userRole === 'company' && companyId && (
+          <DropdownMenuItem
+            onSelect={event => {
+              event.preventDefault();
+              navigate('/company/settings');
+            }}
+          >
+            <Icon icon="mdi:domain" className="me-2 h-4 w-4" />
+            <span>{t('header.company_settings')}</span>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={async event => {
+            event.preventDefault();
+            if (onLogout) {
+              await onLogout();
+            }
+            navigate('/');
+          }}
+        >
+          <Icon icon="mdi:logout" className="me-2 h-4 w-4" />
+          <span>{t('header.sign_out')}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 };

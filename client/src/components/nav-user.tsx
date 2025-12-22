@@ -99,9 +99,9 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={(event) => {
+              onSelect={async (event) => {
                 event.preventDefault()
-                onLogout?.()
+                if (onLogout) await onLogout()
               }}
             >
               <LogOutIcon />

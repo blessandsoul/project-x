@@ -14,6 +14,7 @@ import { Vehicle } from '../types/vehicle.js';
 import { CompanyModel } from '../models/CompanyModel.js';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { CompanyReviewModel } from '../models/CompanyReviewModel.js';
+import { UserModel } from '../models/UserModel.js';
 import { ValidationError, NotFoundError, AuthorizationError } from '../types/errors.js';
 import { CompanyReview, CompanyReviewCreate, CompanyReviewUpdate } from '../types/companyReview.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
@@ -26,6 +27,7 @@ import { CalculatorRequestBody } from '../services/CalculatorRequestBuilder.js';
 interface CalculatedQuoteResponse {
   company_id: number;
   company_name: string;
+  website?: string | null;
   total_price: number;
   delivery_time_days: number | null;
   breakdown: any;
@@ -59,6 +61,7 @@ export class CompanyController {
   private companyReviewModel: CompanyReviewModel;
   private shippingQuoteService: ShippingQuoteService;
   private fxRateService: FxRateService;
+  private userModel: UserModel;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
@@ -67,7 +70,9 @@ export class CompanyController {
     this.companyReviewModel = new CompanyReviewModel(fastify);
     this.shippingQuoteService = new ShippingQuoteService(fastify);
     this.fxRateService = new FxRateService(fastify);
+    this.userModel = new UserModel(fastify);
   }
+
 
   /**
    * Get user avatar URLs using ImageUploadService
@@ -221,11 +226,68 @@ export class CompanyController {
   }
 
   async deleteCompany(id: number): Promise<void> {
+    // Fetch company details BEFORE deletion to get slug for asset cleanup
+    const company = await this.companyModel.findById(id);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    // Store owner_user_id for user role reversion
+    const ownerUserId = company.owner_user_id;
+
+    // Delete from database (hard delete with cascading to quotes and social links)
     const deleted = await this.companyModel.delete(id);
     if (!deleted) {
       throw new NotFoundError('Company');
     }
+
+    // Revert owner user's role from 'company' back to 'user' and clear company_id
+    // This allows the user to create a new company in the future if needed
+    if (ownerUserId) {
+      try {
+        await this.userModel.update(ownerUserId, {
+          role: 'user',
+          company_id: null,
+        });
+        this.fastify.log.info({
+          companyId: id,
+          userId: ownerUserId,
+        }, 'User role reverted from company to user');
+      } catch (error) {
+        // Log error but don't fail the deletion - user role update is best-effort
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.fastify.log.error({
+          companyId: id,
+          userId: ownerUserId,
+          error: message,
+        }, 'Failed to revert user role - manual update may be required');
+      }
+    }
+
+    // Clean up uploaded assets AFTER successful DB deletion
+    // This is best-effort - if it fails, we log but don't fail the operation
+    if (company.slug) {
+      try {
+        const { deleteCompanyAssets } = await import('../utils/fs.js');
+        const assetsDeleted = await deleteCompanyAssets(company.slug);
+        if (assetsDeleted) {
+          this.fastify.log.info({
+            companyId: id,
+            slug: company.slug,
+          }, 'Company assets deleted successfully');
+        }
+      } catch (error) {
+        // Log error but don't fail the deletion - filesystem cleanup is best-effort
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.fastify.log.error({
+          companyId: id,
+          slug: company.slug,
+          error: message,
+        }, 'Failed to delete company assets - manual cleanup may be required');
+      }
+    }
   }
+
 
   // ---------------------------------------------------------------------------
   // Social Links (optional, dependent on company_id)
@@ -712,14 +774,25 @@ export class CompanyController {
     const { distanceMiles, quotes: computedQuotes } =
       await this.shippingQuoteService.computeQuotesWithCalculatorInput(calculatorInput, companies);
 
-    // Build company metadata (ratings, review counts)
+    // Build company metadata (ratings, review counts, logo URLs)
     const companyIds = companies.map((c) => c.id);
     const reviewCounts = await this.companyReviewModel.countByCompanyIds(companyIds);
-    const companyMetaById = new Map<number, { rating: number; reviewCount: number }>();
+    const companyMetaById = new Map<number, { rating: number; reviewCount: number; logoUrl: string | null; website: string | null }>();
+
+    // Compute logo URLs for all companies
+    const logoUrlPromises = companies.map(async (company) => {
+      const logoMeta = await this.computeLogoUrls(company.slug || company.name);
+      return { companyId: company.id, logoUrl: logoMeta.logo_url };
+    });
+    const logoResults = await Promise.all(logoUrlPromises);
+    const logoUrlsById = new Map(logoResults.map(r => [r.companyId, r.logoUrl]));
+
     for (const company of companies) {
       const rating = typeof (company as any).rating === 'number' ? (company as any).rating : 0;
       const reviewCount = reviewCounts[company.id] ?? 0;
-      companyMetaById.set(company.id, { rating, reviewCount });
+      const logoUrl = logoUrlsById.get(company.id) ?? null;
+      const website = company.website ?? null;
+      companyMetaById.set(company.id, { rating, reviewCount, logoUrl, website });
     }
 
     // Map computed quotes to response format
@@ -728,6 +801,8 @@ export class CompanyController {
       return {
         company_id: cq.companyId,
         company_name: cq.companyName,
+        website: meta?.website ?? null,
+        logoUrl: meta?.logoUrl ?? null,
         total_price: cq.totalPrice,
         delivery_time_days: cq.deliveryTimeDays,
         breakdown: cq.breakdown,

@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
 interface VehicleHeaderBarProps {
@@ -14,6 +15,7 @@ const VehicleHeaderBar = ({
   model,
 }: VehicleHeaderBarProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <header className="vehicle-header space-y-2 mb-4">
@@ -26,7 +28,7 @@ const VehicleHeaderBar = ({
           className="flex items-center gap-1 px-0 h-auto text-primary text-[13px] font-medium hover:underline"
         >
           <Icon icon="mdi:arrow-left" className="w-4 h-4" />
-          Back to results
+          {t('vehicle.back_to_results')}
         </Button>
       </div>
       <div className="vehicle-header-title-row">

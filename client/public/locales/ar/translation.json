@@ -566,6 +566,8 @@
     }
   },
   "auction": {
+    "favorite_vehicles": "المركبات المفضلة",
+    "favorite_vehicles_description": "إدارة قائمة المراقبة الخاصة بك وتتبع المركبات التي تهتم بها.",
     "active_auctions": "المزادات النشطة",
     "description": "ابحث عن السيارات في مزادات Copart و IAAI في الوقت الفعلي",
     "search_placeholder": "ابحث عن الماركة أو الموديل أو VIN...",

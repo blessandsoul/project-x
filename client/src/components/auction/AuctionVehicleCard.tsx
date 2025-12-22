@@ -32,10 +32,10 @@ function useMobileDetect(): boolean {
     listeners.add(callback);
     return () => listeners.delete(callback);
   }, []);
-  
+
   const getSnapshot = useCallback(() => mobileState, []);
   const getServerSnapshot = useCallback(() => false, []);
-  
+
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
@@ -43,12 +43,32 @@ interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
   isSelected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
-  onCalculate: () => void;
-  onViewDetails: () => void;
+  onCalculate?: () => void;
+  onViewDetails?: () => void;
   showCompareCheckbox?: boolean;
   priority?: boolean;
   onToggleWatch?: () => void;
   isWatched?: boolean;
+  /** 
+   * 'default' = full interactive card
+   * 'preview' = non-interactive preview for hero device screens (no buttons, no hover effects)
+   */
+  variant?: 'default' | 'preview';
+  /**
+   * Force mobile or desktop layout regardless of screen size
+   * Useful for device screen previews
+   */
+  forceLayout?: 'mobile' | 'desktop';
+  /**
+   * Hide odometer section (useful for similar vehicles)
+   */
+  hideOdometer?: boolean;
+  /**
+   * Context determines styling variant:
+   * 'similar' = used in similar vehicles carousel (horizontal layout preserved)
+   * 'listing' = used in auction listings grid (vertical layout: image on top, data below)
+   */
+  context?: 'similar' | 'listing';
 }
 
 const formatMoney = (
@@ -71,6 +91,10 @@ export function AuctionVehicleCard({
   priority = false,
   onToggleWatch,
   isWatched = false,
+  variant = 'default',
+  forceLayout,
+  hideOdometer = false,
+  context = 'listing',
 }: AuctionVehicleCardProps) {
   const { t, i18n } = useTranslation();
   const isGeorgian = i18n.language?.startsWith('ka');
@@ -81,7 +105,11 @@ export function AuctionVehicleCard({
     'en',
   ];
   const monthShortKa = ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'];
-  const isMobile = useMobileDetect();
+  const detectedMobile = useMobileDetect();
+
+  // Use forceLayout if provided, otherwise use detected mobile state
+  const isMobile = forceLayout ? forceLayout === 'mobile' : detectedMobile;
+  const isPreview = variant === 'preview';
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
@@ -143,7 +171,7 @@ export function AuctionVehicleCard({
   // Mobile card - Copart-style layout for <768px (EXACT match)
   if (isMobile) {
     // Format odometer like Copart: "70465 miles (E)"
-    const odometerDisplay = item.mileage 
+    const odometerDisplay = item.mileage
       ? `${item.mileage.toLocaleString()} ${t('common.miles_short')} (E)`
       : 'N/A';
 
@@ -157,10 +185,10 @@ export function AuctionVehicleCard({
         const dateStr = isGeorgian
           ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
           : new Intl.DateTimeFormat(localeList, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }).format(auctionDate);
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }).format(auctionDate);
 
         let timeStr = '';
         if (item.sold_at_time) {
@@ -190,7 +218,11 @@ export function AuctionVehicleCard({
         transition={{ duration: 0.15 }}
         className="w-full mb-1.5"
       >
-        <div className="auction-card-mobile w-full overflow-hidden bg-white border border-slate-200 shadow-md flex flex-col">
+        <div className={cn(
+          "auction-card-mobile w-full overflow-hidden bg-white border border-slate-200 shadow-md flex flex-col",
+          context === 'similar' && "similar-vehicle-card force-horizontal-layout",
+          context === 'listing' && "listing-vehicle-card"
+        )}>
           {/* 1️⃣ HEADER - Title + Lot (Copart-style) */}
           <div className="auction-card-header px-4 py-3">
             <h3 className="font-bold text-[16px] leading-snug text-slate-900 uppercase tracking-tight">
@@ -201,25 +233,37 @@ export function AuctionVehicleCard({
             </p>
           </div>
 
-          {/* 2️⃣ MIDDLE ROW - Image (50%) + Info (50%), SAME HEIGHT */}
-          <div className="auction-card-middle flex flex-row items-stretch" style={{ minHeight: '140px' }}>
-            {/* LEFT: Car Image - 50% width, full height */}
-            <div className="auction-card-image relative w-1/2 flex-shrink-0">
-              <button
-                type="button"
-                className="w-full h-full bg-slate-100 focus:outline-none cursor-pointer overflow-hidden"
-                onClick={onViewDetails}
-                aria-label={t('auction.view_vehicle_details')}
-              >
-                <img
-                  src={mainPhotoUrl}
-                  alt={`${item.year} ${item.make} ${item.model}`}
-                  className="w-full h-full object-cover"
-                  loading={priority ? 'eager' : 'lazy'}
-                />
-              </button>
-              {/* Compare checkbox */}
-              {showCompareCheckbox && (
+          {/* 2️⃣ MIDDLE ROW - Image + Info, layout controlled by CSS based on context */}
+          <div className="auction-card-middle flex items-stretch" style={{ minHeight: context === 'similar' ? '100px' : undefined, maxHeight: context === 'similar' ? '120px' : undefined }}>
+            {/* Car Image - width controlled by CSS */}
+            <div className="auction-card-image relative flex-shrink-0">
+              {isPreview ? (
+                <div className="w-full h-full bg-slate-100 overflow-hidden">
+                  <img
+                    src={mainPhotoUrl}
+                    alt={`${item.year} ${item.make} ${item.model}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    style={{ imageRendering: 'auto' }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full h-full bg-slate-100 focus:outline-none cursor-pointer overflow-hidden"
+                  onClick={onViewDetails}
+                  aria-label={t('auction.view_vehicle_details')}
+                >
+                  <img
+                    src={mainPhotoUrl}
+                    alt={`${item.year} ${item.make} ${item.model}`}
+                    className="w-full h-full object-cover"
+                    loading={priority ? 'eager' : 'lazy'}
+                  />
+                </button>
+              )}
+              {/* Compare checkbox - hidden in preview */}
+              {showCompareCheckbox && !isPreview && (
                 <div className="absolute top-2 left-2">
                   <Checkbox
                     id={`compare-${item.id}`}
@@ -231,13 +275,15 @@ export function AuctionVehicleCard({
               )}
             </div>
 
-            {/* RIGHT: Info - 50% width, full height, top-aligned, light gray background */}
-            <div className="auction-card-info w-1/2 flex flex-col justify-start p-3 gap-1 bg-slate-100">
-              {/* Odometer section */}
-              <div className="mb-1">
-                <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.odometer')}</p>
-                <p className="text-[13px] text-slate-600">{odometerDisplay}</p>
-              </div>
+            {/* Info - width controlled by CSS */}
+            <div className="auction-card-info flex flex-col justify-start p-3 gap-1 bg-slate-100">
+              {/* Odometer section - hidden if hideOdometer is true */}
+              {!hideOdometer && (
+                <div className="mb-1">
+                  <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.odometer')}</p>
+                  <p className="text-[13px] text-slate-600">{odometerDisplay}</p>
+                </div>
+              )}
 
               {/* Current Bid section */}
               <div className="mb-1">
@@ -268,20 +314,17 @@ export function AuctionVehicleCard({
                       icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"}
                       className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`}
                     />
-                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${
-                      auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
-                    }`}>
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
+                      }`}>
                       {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
                     </span>
                   </div>
-                  <div className={`text-[13px] font-bold ${
-                    auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
-                  }`}>
+                  <div className={`text-[13px] font-bold ${auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+                    }`}>
                     {auctionInfo.date}
                   </div>
-                  <div className={`text-[12px] font-semibold ${
-                    auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
-                  }`}>
+                  <div className={`text-[12px] font-semibold ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+                    }`}>
                     {auctionInfo.time}
                   </div>
                 </div>
@@ -289,45 +332,47 @@ export function AuctionVehicleCard({
             </div>
           </div>
 
-          {/* 3️⃣ BOTTOM BUTTONS - Always 3 buttons on mobile */}
-          <div className="auction-card-buttons grid grid-cols-3 border-t border-slate-200">
-            {/* DETAILS button - Yellow/Gold */}
-            <button
-              type="button"
-              className="flex items-center justify-center gap-1.5 h-[44px] bg-accent hover:bg-accent/90 text-slate-900 font-semibold text-[13px] transition-colors"
-              onClick={onViewDetails}
-            >
-              <Icon icon="mdi:plus-circle-outline" className="w-4 h-4" />
-              {t('common.details')}
-            </button>
+          {/* 3️⃣ BOTTOM BUTTONS - Hidden in preview mode */}
+          {!isPreview && (
+            <div className="auction-card-buttons grid grid-cols-3 border-t border-slate-200">
+              {/* DETAILS button - Yellow/Gold */}
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 h-[44px] bg-accent hover:bg-accent/90 text-slate-900 font-semibold text-[13px] transition-colors"
+                onClick={onViewDetails}
+              >
+                <Icon icon="mdi:plus-circle-outline" className="w-4 h-4" />
+                {t('common.details')}
+              </button>
 
-            {/* WATCH button - White background, blue text */}
-            <button
-              type="button"
-              className={cn(
-                "flex items-center justify-center gap-1.5 h-[44px] font-semibold text-[13px] transition-colors border-l border-slate-200",
-                isWatched 
-                  ? "bg-amber-50 text-amber-600" 
-                  : "bg-white hover:bg-slate-50 text-blue-600"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleWatch?.();
-              }}
-            >
-              <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
-              {t('auction.actions.watch')}
-            </button>
+              {/* WATCH button - White background, blue text */}
+              <button
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 h-[44px] font-semibold text-[13px] transition-colors border-l border-slate-200",
+                  isWatched
+                    ? "bg-green-50 text-green-600"
+                    : "bg-white hover:bg-slate-50 text-blue-600"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWatch?.();
+                }}
+              >
+                <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
+                {t('auction.actions.watch')}
+              </button>
 
-            {/* BID NOW button - Blue, always visible on mobile */}
-            <button
-              type="button"
-              className="flex items-center justify-center gap-1.5 h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-[13px] transition-colors border-l border-slate-200"
-              onClick={onViewDetails}
-            >
-              {t('auction.actions.bid_now')}
-            </button>
-          </div>
+              {/* BID NOW button - Blue, always visible on mobile */}
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-[13px] transition-colors border-l border-slate-200"
+                onClick={onViewDetails}
+              >
+                {t('auction.actions.bid_now')}
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     );
@@ -355,8 +400,8 @@ export function AuctionVehicleCard({
             />
           </button>
 
-          {/* Compare Checkbox */}
-          {showCompareCheckbox && (
+          {/* Compare Checkbox - hidden in preview */}
+          {showCompareCheckbox && !isPreview && (
             <div className="absolute top-2 left-2">
               <Checkbox
                 id={`compare-${item.id}`}
@@ -367,8 +412,8 @@ export function AuctionVehicleCard({
             </div>
           )}
 
-          {/* Watch button */}
-          {onToggleWatch && (
+          {/* Watch button - hidden in preview */}
+          {onToggleWatch && !isPreview && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -376,9 +421,9 @@ export function AuctionVehicleCard({
               }}
               className="absolute top-2 right-2 bg-black/50 p-1 rounded hover:bg-black/70 transition-colors"
             >
-              <Icon 
-                icon={isWatched ? "mdi:heart" : "mdi:heart-outline"} 
-                className={cn("w-4 h-4", isWatched ? "text-red-500" : "text-white")}
+              <Icon
+                icon={isWatched ? "mdi:heart" : "mdi:heart-outline"}
+                className={cn("w-4 h-4", isWatched ? "text-green-500" : "text-white")}
               />
             </button>
           )}
@@ -451,33 +496,36 @@ export function AuctionVehicleCard({
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Button
-                size="sm"
-                className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
-                onClick={onViewDetails}
-              >
-                {t('auction.actions.bid_now')}
-              </Button>
-              {hasBuyNow ? (
+            {/* Buttons - hidden in preview mode */}
+            {!isPreview && (
+              <div className="flex flex-col gap-1.5">
                 <Button
                   size="sm"
                   className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
                   onClick={onViewDetails}
                 >
-                  {t('auction.actions.buy_it_now')}
+                  {t('auction.actions.bid_now')}
                 </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full h-7 text-[11px] rounded-full border-slate-300 text-slate-600 font-medium hover:bg-slate-50"
-                  onClick={onViewDetails}
-                >
-                  {t('common.details')}
-                </Button>
-              )}
-            </div>
+                {hasBuyNow ? (
+                  <Button
+                    size="sm"
+                    className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
+                    onClick={onViewDetails}
+                  >
+                    {t('auction.actions.buy_it_now')}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-7 text-[11px] rounded-full border-slate-300 text-slate-600 font-medium hover:bg-slate-50"
+                    onClick={onViewDetails}
+                  >
+                    {t('common.details')}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

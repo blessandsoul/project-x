@@ -12,6 +12,7 @@ import { CompanyModel } from '../models/CompanyModel.js';
 import { UserModel } from '../models/UserModel.js';
 import { invalidateUserCache } from '../utils/cache.js';
 import { validateAndNormalizeSocialUrl } from '../utils/sanitize.js';
+import { requireCompanyMembership } from '../middleware/rbac.js';
 import { parsePagination, buildPaginatedResult } from '../utils/pagination.js';
 import { withIdempotency } from '../utils/idempotency.js';
 import {
@@ -189,7 +190,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Use transaction for atomicity
     const connection = await (fastify as any).mysql.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
@@ -264,12 +265,12 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       });
     } catch (error: any) {
       await connection.rollback();
-      
+
       // Handle MySQL duplicate key error (race condition on UNIQUE owner_user_id)
       if (error?.code === 'ER_DUP_ENTRY' || error?.errno === 1062) {
         throw new ConflictError('User already owns a company');
       }
-      
+
       throw error;
     } finally {
       connection.release();
@@ -469,10 +470,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     // Admin check handled by requireAdmin middleware
     const payload = request.body as CompanyCreate;
     const created = await controller.createCompany(payload);
-    
+
     // Bump cache version so all company caches are invalidated
     await incrementCacheVersion(fastify, 'companies');
-    
+
     return reply.code(201).send(created);
   });
 
@@ -486,7 +487,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
    * CSRF: Required (X-CSRF-Token header)
    */
   fastify.put('/companies/:id', {
-    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection, requireCompanyMembership()],
     schema: {
       params: idParamsSchema,
       body: {
@@ -536,10 +537,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
 
     const updates = request.body as CompanyUpdate;
     const updated = await controller.updateCompany(id, updates);
-    
+
     // Bump cache version so all company caches are invalidated
     await incrementCacheVersion(fastify, 'companies');
-    
+
     return reply.send(updated);
   });
 
@@ -577,10 +578,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await controller.deleteCompany(id);
-    
+
     // Bump cache version so all company caches are invalidated
     await incrementCacheVersion(fastify, 'companies');
-    
+
     return reply.code(204).send();
   });
 
@@ -1177,6 +1178,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         properties: {
           auction: { type: 'string', minLength: 1, maxLength: 50 },
           usacity: { type: 'string', minLength: 1, maxLength: 100 },
+          vehiclecategory: { type: 'string', enum: ['Sedan', 'Bike'] },
         },
         additionalProperties: false,
       },
@@ -1194,11 +1196,15 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, reply) => {
     // SECURITY: vehicleId is already validated as positive integer by schema
     const { vehicleId } = request.params as { vehicleId: number };
-    const { auction, usacity } = request.body as { auction: string; usacity: string };
-    const { limit = 5, offset = 0, currency, minRating } = request.query as { 
-      limit?: number; 
-      offset?: number; 
-      currency?: string; 
+    const { auction, usacity, vehiclecategory } = request.body as {
+      auction: string;
+      usacity: string;
+      vehiclecategory?: 'Sedan' | 'Bike';
+    };
+    const { limit = 5, offset = 0, currency, minRating } = request.query as {
+      limit?: number;
+      offset?: number;
+      currency?: string;
       minRating?: number;
     };
 
@@ -1212,6 +1218,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     const buildResult = await calculatorRequestBuilder.buildCalculatorRequest({
       auction,
       usacity,
+    }, {
+      // Pass vehiclecategory from client if provided (otherwise server default applies)
+      ...(vehiclecategory && { vehiclecategory }),
     });
 
     // If city/auction couldn't be matched, return a response indicating price unavailable
@@ -1220,7 +1229,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         { vehicleId, auction, usacity, error: buildResult.error },
         'Could not build calculator request - price calculation unavailable'
       );
-      
+
       // Return a response indicating price couldn't be calculated (not an error)
       return reply.code(200).send({
         vehicle_id: vehicleId,

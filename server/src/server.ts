@@ -35,6 +35,7 @@ import { auctionsRoutes } from './routes/auctions.js';
 import { calculatorRoutes } from './routes/calculator.js';
 import { vehicleMakesRoutes } from './routes/vehicle-makes.js';
 import { vehicleModelsRoutes } from './routes/vehicle-models.js';
+import { servicesRoutes } from './routes/services.js';
 import { authRoutes } from './routes/auth.js';
 import { accountRoutes } from './routes/account.js';
 import { inquiryRoutes } from './routes/inquiry.js';
@@ -68,19 +69,19 @@ const __dirname = path.dirname(__filename);
 const fastify = Fastify({
   logger: isProd
     ? {
-        level: logLevel,
-      }
+      level: logLevel,
+    }
     : {
-        level: logLevel,
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss.l',
-            singleLine: false,
-          },
+      level: logLevel,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          singleLine: false,
         },
       },
+    },
   // Protect against excessively large request bodies (basic DoS mitigation)
   bodyLimit: 5 * 1024 * 1024, // 5 MiB
   // Generate unique request IDs for tracing
@@ -136,7 +137,8 @@ const ENUM_PARAMS: Record<string, Set<string>> = {
   order_direction: new Set(['asc', 'desc']),
   sort: new Set(['price_asc', 'price_desc', 'year_desc', 'year_asc', 'mileage_asc', 'mileage_desc', 'sold_date_desc', 'sold_date_asc', 'best_value']),
   role: new Set(['user', 'dealer', 'company', 'admin']),
-  source: new Set(['copart', 'iaai']),
+  // NOTE: 'source' is NOT included here because it supports comma-separated values (e.g., "copart,iaai")
+  // The Zod schema (vehicleSearchSchema.ts) handles validation and transformation of comma-separated source values
 };
 
 // Parameters that should be boolean (true/false only)
@@ -180,7 +182,7 @@ function isInvalidNumericValue(value: string, allowFloat: boolean): boolean {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
   if (trimmed === '') return true; // Empty is invalid for numeric
-  
+
   // Check if it's a valid number
   if (allowFloat) {
     // Allow integers and floats: 10, -5, 3.14, -2.5
@@ -213,7 +215,7 @@ fastify.addHook('preValidation', async (request, reply) => {
   if (query && typeof query === 'object') {
     for (const [key, value] of Object.entries(query)) {
       if (typeof value !== 'string') continue;
-      
+
       // Check numeric parameters for non-numeric content
       if (NUMERIC_PARAMS.has(key) && isInvalidNumericValue(value, false)) {
         fastify.log.warn({
@@ -222,14 +224,14 @@ fastify.addHook('preValidation', async (request, reply) => {
           param: key,
           value: value.slice(0, 100),
         }, 'Invalid numeric value in query parameter');
-        
+
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
           message: `Invalid value for parameter: ${key}. Expected integer.`,
         });
       }
-      
+
       // Check float parameters for non-numeric content
       if (NUMERIC_FLOAT_PARAMS.has(key) && isInvalidNumericValue(value, true)) {
         fastify.log.warn({
@@ -238,14 +240,14 @@ fastify.addHook('preValidation', async (request, reply) => {
           param: key,
           value: value.slice(0, 100),
         }, 'Invalid numeric value in query parameter');
-        
+
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
           message: `Invalid value for parameter: ${key}. Expected number.`,
         });
       }
-      
+
       // Check enum parameters for valid values
       if (ENUM_PARAMS[key]) {
         const allowedValues = ENUM_PARAMS[key];
@@ -256,7 +258,7 @@ fastify.addHook('preValidation', async (request, reply) => {
             param: key,
             value: value.slice(0, 100),
           }, 'Invalid enum value in query parameter');
-          
+
           return reply.status(400).send({
             statusCode: 400,
             error: 'Bad Request',
@@ -264,7 +266,7 @@ fastify.addHook('preValidation', async (request, reply) => {
           });
         }
       }
-      
+
       // Check boolean parameters for valid values
       if (BOOLEAN_PARAMS.has(key)) {
         const lower = value.toLowerCase();
@@ -275,7 +277,7 @@ fastify.addHook('preValidation', async (request, reply) => {
             param: key,
             value: value.slice(0, 100),
           }, 'Invalid boolean value in query parameter');
-          
+
           return reply.status(400).send({
             statusCode: 400,
             error: 'Bad Request',
@@ -283,7 +285,7 @@ fastify.addHook('preValidation', async (request, reply) => {
           });
         }
       }
-      
+
       // Check string parameters for SQL injection patterns
       if (STRING_PARAMS_TO_CHECK.has(key) && containsSqlInjection(value)) {
         fastify.log.warn({
@@ -292,14 +294,14 @@ fastify.addHook('preValidation', async (request, reply) => {
           param: key,
           value: value.slice(0, 100),
         }, 'SQL injection attempt detected in query parameter');
-        
+
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
           message: `Invalid value for parameter: ${key}`,
         });
       }
-      
+
       // For any other parameter, check for obvious SQL injection patterns
       if (containsSqlInjection(value)) {
         fastify.log.warn({
@@ -308,7 +310,7 @@ fastify.addHook('preValidation', async (request, reply) => {
           param: key,
           value: value.slice(0, 100),
         }, 'SQL injection attempt detected in query parameter');
-        
+
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
@@ -323,7 +325,7 @@ fastify.addHook('preValidation', async (request, reply) => {
   if (params && typeof params === 'object') {
     for (const [key, value] of Object.entries(params)) {
       if (typeof value !== 'string') continue;
-      
+
       // Skip catch-all route parameters (e.g., '*' for 404 handlers)
       if (key === '*') continue;
 
@@ -346,7 +348,7 @@ fastify.addHook('preValidation', async (request, reply) => {
 
         continue;
       }
-      
+
       // All path params in this app should be numeric IDs
       if (isInvalidNumericValue(value, false)) {
         fastify.log.warn({
@@ -355,7 +357,7 @@ fastify.addHook('preValidation', async (request, reply) => {
           param: key,
           value: value.slice(0, 100),
         }, 'Invalid numeric value in path parameter');
-        
+
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
@@ -476,14 +478,14 @@ await fastify.register(helmet, {
   // Configure CSP to allow WebSocket connections for Socket.IO
   contentSecurityPolicy: isProd
     ? {
-        directives: {
-          defaultSrc: ["'self'"],
-          connectSrc: ["'self'", 'wss:', 'ws:'],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-        },
-      }
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'wss:', 'ws:'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    }
     : false, // Disable CSP in development for easier debugging
 });
 
@@ -546,14 +548,14 @@ await fastify.register(fastifyStatic, {
     // Without this, browsers block cross-origin image loads even with CORS headers
     // Helmet sets this globally but @fastify/static bypasses it
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    
+
     // CORS: Allow cross-origin requests from any origin for public images
     res.setHeader('Access-Control-Allow-Origin', '*');
-    
+
     // Remove CSP for static assets - images don't need CSP protection
     // and Helmet's default CSP (img-src 'self') blocks cross-origin embedding
     (res as any).removeHeader('Content-Security-Policy');
-    
+
     // Cache static assets for 1 day in production, no cache in dev
     if (isProd) {
       res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -592,8 +594,12 @@ await fastify.register(auctionsRoutes);
 await fastify.register(calculatorRoutes);
 await fastify.register(vehicleMakesRoutes);
 await fastify.register(vehicleModelsRoutes);
-await fastify.register(inquiryRoutes);
-await fastify.register(companyInquiryRoutes);
+await fastify.register(servicesRoutes);
+// chat between company and user
+// this is disabled because in release we do not want this apis yet
+// we will enable this once we need and inquiries will work
+// await fastify.register(inquiryRoutes);
+// await fastify.register(companyInquiryRoutes);
 
 // ---------------------------------------------------------------------------
 // Background jobs

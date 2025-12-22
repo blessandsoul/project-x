@@ -13,9 +13,9 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 // navigationItems/footerLinks now handled by MainLayout
 import { mockCars } from '@/mocks/_mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFavorites } from '@/hooks/useFavorites';
+
+
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchCompanyByIdFromApi, fetchCompanyReviewsFromApi, createCompanyReviewFromApi, updateCompanyReviewFromApi, deleteCompanyReviewFromApi, type ApiCompanyReview } from '@/services/companiesApi';
@@ -26,9 +26,9 @@ const CompanyProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { favorites, toggleFavorite } = useFavorites();
+
   const { addRecentlyViewed } = useRecentlyViewed();
-  
+
   // Fetch company by ID directly (not from cached list)
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,11 +64,16 @@ const CompanyProfilePage = () => {
     };
   }, [id]);
   const companyCars = mockCars.filter((car) => car.companyId === (company?.id ?? ''));
-  const [isContactOpen, setIsContactOpen] = useState(false);
-  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyPhone = () => {
+    if (company?.contact?.phone) {
+      void navigator.clipboard.writeText(company.contact.phone);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
   const [reviews, setReviews] = useState<ApiCompanyReview[]>([]);
   const [reviewsPage, setReviewsPage] = useState<number>(1);
   const [reviewsTotalPages, setReviewsTotalPages] = useState<number>(1);
@@ -180,28 +185,7 @@ const CompanyProfilePage = () => {
   }, [company?.id, reviewsLimit, reviewsPage, t]);
 
 
-  const handleSubmitContact = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!company || isSubmittingContact) {
-      return;
-    }
 
-    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
-      return;
-    }
-
-    setIsSubmittingContact(true);
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setIsContactOpen(false);
-      setContactName('');
-      setContactEmail('');
-      setContactMessage('');
-    } finally {
-      setIsSubmittingContact(false);
-    }
-  };
 
   const handleSubmitReview = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -386,21 +370,21 @@ const CompanyProfilePage = () => {
   // Generate gradient style from extracted colors
   const gradientStyle = gradientColors.length >= 2
     ? {
-        background: `linear-gradient(135deg, 
+      background: `linear-gradient(135deg, 
           rgba(${gradientColors[0]}, 0.15) 0%, 
           rgba(${gradientColors[1]}, 0.1) 50%, 
           rgba(${gradientColors[2] || gradientColors[0]}, 0.05) 100%)`,
-      }
+    }
     : {};
 
   return (
     <div className="flex-1 flex flex-col relative min-h-screen">
       {/* Full-page gradient background from logo colors */}
-      <div 
+      <div
         className="fixed inset-0 pointer-events-none z-0 transition-all duration-1000"
         style={gradientStyle}
       />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden z-10">
 
@@ -421,16 +405,14 @@ const CompanyProfilePage = () => {
               {/* Company Logo */}
               {logoSrc && (
                 <div className="relative mb-6 lg:mb-0 flex-shrink-0">
-                  <div className="w-28 h-28 lg:w-32 lg:h-32 mx-auto lg:mx-0 rounded-2xl border-2 border-white bg-white p-2 shadow-lg">
+                  <div className="w-28 h-28 lg:w-32 lg:h-32 mx-auto lg:mx-0 rounded-2xl border-white bg-white shadow-lg">
                     <img
                       src={logoSrc}
                       alt={company.name}
                       className="h-full w-full object-contain rounded-xl"
                     />
                   </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:-right-2 lg:translate-x-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                    <Icon icon="mdi:check-bold" className="h-4 w-4 text-slate-900" />
-                  </div>
+
                 </div>
               )}
 
@@ -439,21 +421,9 @@ const CompanyProfilePage = () => {
                   <div>
                     {/* Company Name & Actions */}
                     <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{company.name}</h1>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 capitalize">{company.name}</h1>
                       {hasHighTrustScore && <VipBadge />}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 rounded-full flex-shrink-0 border-slate-300 bg-white/80 hover:bg-white"
-                        onClick={() => toggleFavorite(String(company.id))}
-                        aria-pressed={favorites.includes(String(company.id))}
-                        aria-label={favorites.includes(String(company.id)) ? t('company_profile.favorites.remove') : t('company_profile.favorites.add')}
-                      >
-                        <Icon
-                          icon={favorites.includes(String(company.id)) ? 'mdi:heart' : 'mdi:heart-outline'}
-                          className={favorites.includes(String(company.id)) ? 'h-4 w-4 text-red-500' : 'h-4 w-4 text-slate-500'}
-                        />
-                      </Button>
+
                     </div>
 
                     {/* Meta Info Badges */}
@@ -466,7 +436,7 @@ const CompanyProfilePage = () => {
                       </div>
                       <div className="flex items-center bg-white/80 border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm text-slate-700">
                         <Icon icon="mdi:map-marker" className="h-4 w-4 me-1.5 text-slate-500" />
-                        <span>
+                        <span className="capitalize">
                           {company.location?.city ?? ''}
                           {company.location?.city && company.location?.state ? ', ' : ''}
                           {company.location?.state ?? ''}
@@ -488,102 +458,103 @@ const CompanyProfilePage = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-row flex-wrap justify-center lg:justify-start gap-3 w-full lg:w-auto">
-                  <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
+                  <Dialog open={isPhoneModalOpen} onOpenChange={setIsPhoneModalOpen}>
                     <Button
                       size="lg"
-                      onClick={() => setIsContactOpen(true)}
+                      onClick={() => setIsPhoneModalOpen(true)}
                       className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                     >
                       <Icon icon="mdi:phone" className="me-2 h-5 w-5" />
                       {t('company_profile.contact_btn')}
                     </Button>
-                    <DialogContent className="sm:max-w-[420px]">
+                    <DialogContent className="sm:max-w-[400px]">
                       {/* Header Icon */}
-                      <div className="flex justify-center -mt-2 mb-2">
-                        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-slate-800/10 to-slate-600/10 flex items-center justify-center shadow-sm">
-                          <Icon icon="mdi:message-text" className="h-7 w-7 text-slate-700" />
+                      <div className="flex justify-center -mt-2 mb-3">
+                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-600/10 flex items-center justify-center shadow-sm">
+                          <Icon icon="mdi:phone" className="h-8 w-8 text-green-600" />
                         </div>
                       </div>
-                      
-                      <DialogHeader>
-                        <DialogTitle>{t('company_profile.contact.title')}</DialogTitle>
-                        <DialogDescription>
-                          {t('company_profile.contact.description', { name: company.name })}
+
+                      <DialogHeader className="text-center">
+                        <DialogTitle className="text-xl">{t('company_profile.phone.title', 'Contact Phone')}</DialogTitle>
+                        <DialogDescription className="text-center">
+                          {t('company_profile.phone.description', 'Call us directly')}
                         </DialogDescription>
                       </DialogHeader>
-                      
-                      <form
-                        className="space-y-5"
-                        onSubmit={handleSubmitContact}
-                      >
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {t('company_profile.contact.name')}
-                          </Label>
-                          <Input
-                            id="contact-name"
-                            type="text"
-                            value={contactName}
-                            onChange={(event) => setContactName(event.target.value)}
-                            required
-                            className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-email" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {t('company_profile.contact.email')}
-                          </Label>
-                          <Input
-                            id="contact-email"
-                            type="email"
-                            value={contactEmail}
-                            onChange={(event) => setContactEmail(event.target.value)}
-                            required
-                            className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-message" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {t('company_profile.contact.message')}
-                          </Label>
-                          <textarea
-                            id="contact-message"
-                            value={contactMessage}
-                            onChange={(event) => setContactMessage(event.target.value)}
-                            required
-                            className="min-h-[100px] w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-                          />
-                        </div>
-                        <DialogFooter className="pt-2">
-                          <Button
-                            type="submit"
-                            disabled={isSubmittingContact}
-                            className="w-full h-12 rounded-xl font-bold text-base bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/25"
-                          >
-                            {isSubmittingContact ? (
-                              <span className="flex items-center gap-2">
-                                <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
-                                {t('common.sending', { defaultValue: 'Sending...' })}
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-2">
-                                <Icon icon="mdi:send" className="h-5 w-5" />
-                                {t('company_profile.contact.submit')}
-                              </span>
-                            )}
-                          </Button>
-                        </DialogFooter>
-                      </form>
+
+                      <div className="py-6">
+                        {company.contact?.phone ? (
+                          <div className="text-center space-y-4">
+                            {/* Mobile: Link to call */}
+                            <a
+                              href={`tel:${company.contact.phone}`}
+                              className="lg:hidden block text-3xl font-bold text-slate-900 hover:text-green-600 transition-colors"
+                            >
+                              {company.contact.phone}
+                            </a>
+
+                            {/* Desktop: Click to copy */}
+                            <button
+                              onClick={handleCopyPhone}
+                              className="hidden lg:block w-full text-3xl font-bold text-slate-900 hover:text-green-600 transition-colors"
+                              title={t('company_profile.phone.click_to_copy', 'Click to copy')}
+                            >
+                              {company.contact.phone}
+                            </button>
+
+                            <p className="text-sm text-slate-500 lg:hidden">
+                              {t('company_profile.phone.tap_to_call', 'Tap to call')}
+                            </p>
+
+                            {/* Copied feedback for desktop */}
+                            <p className="hidden lg:block text-sm text-slate-500 h-5">
+                              {isCopied ? (
+                                <span className="text-green-600 flex items-center justify-center gap-1 font-medium">
+                                  <Icon icon="mdi:check-circle" className="h-4 w-4" />
+                                  {t('company_profile.phone.copied', 'Copied!')}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 group-hover:text-slate-600 transition-colors">
+                                  {t('company_profile.phone.click_to_copy', 'Click to copy')}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-center text-slate-500">
+                            {t('company_profile.phone.not_available', 'Phone number not available')}
+                          </p>
+                        )}
+                      </div>
+
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsPhoneModalOpen(false)}
+                          className="w-full"
+                        >
+                          {t('common.close', 'Close')}
+                        </Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" size="lg" className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
-                    <Icon icon="mdi:email" className="me-2 h-5 w-5" />
-                    {t('company_profile.email_btn')}
-                  </Button>
-                  <Button variant="outline" size="lg" className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50">
-                    <Icon icon="mdi:web" className="me-2 h-5 w-5" />
-                    {t('company_profile.website_btn')}
-                  </Button>
+
+                  {company.contact?.website && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+                      onClick={() => {
+                        const url = company.contact!.website!.startsWith('http')
+                          ? company.contact!.website!
+                          : `https://${company.contact!.website!}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      <Icon icon="mdi:web" className="me-2 h-5 w-5" />
+                      {t('company_profile.website_btn')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -694,11 +665,10 @@ const CompanyProfilePage = () => {
                                   >
                                     <Icon
                                       icon="mdi:star"
-                                      className={`h-5 w-5 ${
-                                        star <= reviewRating
-                                          ? 'text-accent fill-current'
-                                          : 'text-slate-300'
-                                      }`}
+                                      className={`h-5 w-5 ${star <= reviewRating
+                                        ? 'text-accent fill-current'
+                                        : 'text-slate-300'
+                                        }`}
                                     />
                                   </button>
                                 ))}
@@ -760,205 +730,203 @@ const CompanyProfilePage = () => {
                   {/* Reviews List */}
                   <div className={`space-y-4 ${isReviewFormOpen ? 'mt-6' : ''}`}>
                     {isReviewsLoading && (
-                    <div className="space-y-3">
-                      {[...Array(3)].map((_, index) => (
-                        <div key={index} className="animate-pulse space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="h-4 w-24 rounded bg-slate-200" />
-                            <div className="h-3 w-16 rounded bg-slate-200" />
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, index) => (
+                          <div key={index} className="animate-pulse space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="h-4 w-24 rounded bg-slate-200" />
+                              <div className="h-3 w-16 rounded bg-slate-200" />
+                            </div>
+                            <div className="h-3 w-full rounded bg-slate-200" />
+                            <div className="h-3 w-5/6 rounded bg-slate-200" />
                           </div>
-                          <div className="h-3 w-full rounded bg-slate-200" />
-                          <div className="h-3 w-5/6 rounded bg-slate-200" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
 
-                  {!isReviewsLoading && reviewsError && (
-                    <p className="text-sm text-red-500">
-                      {reviewsError}
-                    </p>
-                  )}
+                    {!isReviewsLoading && reviewsError && (
+                      <p className="text-sm text-red-500">
+                        {reviewsError}
+                      </p>
+                    )}
 
-                  {!isReviewsLoading && !reviewsError && reviews.length === 0 && (
-                    <p className="text-sm text-slate-500">
-                      {t('company_profile.reviews.empty')}
-                    </p>
-                  )}
+                    {!isReviewsLoading && !reviewsError && reviews.length === 0 && (
+                      <p className="text-sm text-slate-500">
+                        {t('company_profile.reviews.empty')}
+                      </p>
+                    )}
 
-                  {!isReviewsLoading && !reviewsError && reviews.length > 0 && (
-                    <div className="space-y-4">
-                      {reviews.map((review) => (
-                        <div key={`review-${review.id}-${review.created_at}`} className="border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
-                          <div className="flex items-start gap-3 mb-2">
-                            {review.avatar && review.avatar.trim().length > 0 && (
-                              <img
-                                src={review.avatar}
-                                alt={review.user_name || `${t('common.user')} #${review.user_id}`}
-                                className="h-9 w-9 rounded-full object-cover border border-slate-200 flex-shrink-0 mt-1"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-medium text-sm sm:text-base text-slate-900 truncate">
-                                  {review.user_name && review.user_name.trim().length > 0
-                                    ? review.user_name
-                                    : `${t('common.user')} #${review.user_id}`}
-                                </span>
-
-                                <div className="flex items-center gap-2 ml-auto sm:ml-0">
-                                  {isReviewOwner(review) && (
-                                    <div className="flex items-center gap-1">
-                                      {editingReviewId === String(review.id) ? (
-                                        <>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleUpdateReview(String(review.id))}
-                                            disabled={isUpdatingReview}
-                                            className="h-6 w-6"
-                                            title={t('common.save')}
-                                          >
-                                            {isUpdatingReview ? (
-                                              <Icon icon="mdi:loading" className="h-3.5 w-3.5 animate-spin" />
-                                            ) : (
-                                              <Icon icon="mdi:check" className="h-3.5 w-3.5 text-green-600" />
-                                            )}
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={handleCancelEditReview}
-                                            disabled={isUpdatingReview}
-                                            className="h-6 w-6"
-                                            title={t('common.cancel')}
-                                          >
-                                            <Icon icon="mdi:close" className="h-3.5 w-3.5 text-slate-400" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleStartEditReview(review)}
-                                            className="h-6 w-6 text-slate-400 hover:text-slate-700"
-                                            title={t('common.edit')}
-                                          >
-                                            <Icon icon="mdi:pencil" className="h-3.5 w-3.5" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleDeleteReview(String(review.id))}
-                                            disabled={isDeletingReview}
-                                            className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                            title={t('common.delete')}
-                                          >
-                                            <Icon icon="mdi:delete" className="h-3.5 w-3.5" />
-                                          </Button>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-                                  <span className="text-xs text-slate-500 whitespace-nowrap">
-                                    {formatDate(review.created_at, i18n.language)}
+                    {!isReviewsLoading && !reviewsError && reviews.length > 0 && (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div key={`review-${review.id}-${review.created_at}`} className="border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
+                            <div className="flex items-start gap-3 mb-2">
+                              {review.avatar && review.avatar.trim().length > 0 && (
+                                <img
+                                  src={review.avatar}
+                                  alt={review.user_name || `${t('common.user')} #${review.user_id}`}
+                                  className="h-9 w-9 rounded-full object-cover border border-slate-200 flex-shrink-0 mt-1"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium text-sm sm:text-base text-slate-900 truncate">
+                                    {review.user_name && review.user_name.trim().length > 0
+                                      ? review.user_name
+                                      : `${t('common.user')} #${review.user_id}`}
                                   </span>
+
+                                  <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                                    {isReviewOwner(review) && (
+                                      <div className="flex items-center gap-1">
+                                        {editingReviewId === String(review.id) ? (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => handleUpdateReview(String(review.id))}
+                                              disabled={isUpdatingReview}
+                                              className="h-6 w-6"
+                                              title={t('common.save')}
+                                            >
+                                              {isUpdatingReview ? (
+                                                <Icon icon="mdi:loading" className="h-3.5 w-3.5 animate-spin" />
+                                              ) : (
+                                                <Icon icon="mdi:check" className="h-3.5 w-3.5 text-green-600" />
+                                              )}
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={handleCancelEditReview}
+                                              disabled={isUpdatingReview}
+                                              className="h-6 w-6"
+                                              title={t('common.cancel')}
+                                            >
+                                              <Icon icon="mdi:close" className="h-3.5 w-3.5 text-slate-400" />
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => handleStartEditReview(review)}
+                                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                                              title={t('common.edit')}
+                                            >
+                                              <Icon icon="mdi:pencil" className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => handleDeleteReview(String(review.id))}
+                                              disabled={isDeletingReview}
+                                              className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                              title={t('common.delete')}
+                                            >
+                                              <Icon icon="mdi:delete" className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                    <span className="text-xs text-slate-500 whitespace-nowrap">
+                                      {formatDate(review.created_at, i18n.language)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center mt-1">
+                                  {[...Array(5)].map((_, index) => (
+                                    <Icon
+                                      key={index}
+                                      icon="mdi:star"
+                                      className={`h-3.5 w-3.5 ${index < review.rating ? 'text-accent fill-current' : 'text-slate-300'
+                                        }`}
+                                    />
+                                  ))}
                                 </div>
                               </div>
-
-                              <div className="flex items-center mt-1">
-                                {[...Array(5)].map((_, index) => (
-                                  <Icon
-                                    key={index}
-                                    icon="mdi:star"
-                                    className={`h-3.5 w-3.5 ${
-                                      index < review.rating ? 'text-accent fill-current' : 'text-slate-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
                             </div>
-                          </div>
-                          {editingReviewId === String(review.id) ? (
-                            <div className="mt-3 space-y-3">
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
-                                <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      type="button"
-                                      className="focus:outline-none focus:ring-2 focus:ring-accent rounded"
-                                      onClick={() => setEditRating(star)}
-                                      aria-label={`${star} stars`}
-                                    >
-                                      <Icon
-                                        icon="mdi:star"
-                                        className={`h-5 w-5 ${
-                                          star <= editRating
+                            {editingReviewId === String(review.id) ? (
+                              <div className="mt-3 space-y-3">
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
+                                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        className="focus:outline-none focus:ring-2 focus:ring-accent rounded"
+                                        onClick={() => setEditRating(star)}
+                                        aria-label={`${star} stars`}
+                                      >
+                                        <Icon
+                                          icon="mdi:star"
+                                          className={`h-5 w-5 ${star <= editRating
                                             ? 'text-accent fill-current'
                                             : 'text-slate-300'
-                                        }`}
-                                      />
-                                    </button>
-                                  ))}
-                                  <span className="ms-2 text-sm text-slate-500">
-                                    {editRating} / 5
-                                  </span>
+                                            }`}
+                                        />
+                                      </button>
+                                    ))}
+                                    <span className="ms-2 text-sm text-slate-500">
+                                      {editRating} / 5
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-comment-${review.id}`} className="text-slate-700">{t('company_profile.reviews.comment_label')}</Label>
+                                  <textarea
+                                    id={`edit-comment-${review.id}`}
+                                    value={editComment}
+                                    onChange={(event) => setEditComment(event.target.value)}
+                                    placeholder={t('company_profile.reviews.comment_placeholder')}
+                                    className="min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                  />
                                 </div>
                               </div>
+                            ) : (
+                              review.comment && (
+                                <p className="text-sm text-slate-600">
+                                  {review.comment}
+                                </p>
+                              )
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                              <div className="space-y-2">
-                                <Label htmlFor={`edit-comment-${review.id}`} className="text-slate-700">{t('company_profile.reviews.comment_label')}</Label>
-                                <textarea
-                                  id={`edit-comment-${review.id}`}
-                                  value={editComment}
-                                  onChange={(event) => setEditComment(event.target.value)}
-                                  placeholder={t('company_profile.reviews.comment_placeholder')}
-                                  className="min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            review.comment && (
-                              <p className="text-sm text-slate-600">
-                                {review.comment}
-                              </p>
-                            )
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {reviewsTotalPages > 1 && !reviewsError && (
-                    <div className="flex items-center justify-between pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isReviewsLoading || reviewsPage <= 1}
-                        onClick={() => setReviewsPage((prev) => Math.max(1, prev - 1))}
-                        className="border-slate-300 text-slate-600 hover:bg-slate-50"
-                      >
-                        <Icon icon="mdi:chevron-left" className="h-4 w-4 me-1" />
-                        {t('company_profile.reviews.prev')}
-                      </Button>
-                      <span className="text-sm text-slate-500">
-                        {reviewsPage} / {reviewsTotalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isReviewsLoading || reviewsPage >= reviewsTotalPages}
-                        onClick={() => setReviewsPage((prev) => Math.min(reviewsTotalPages, prev + 1))}
-                        className="border-slate-300 text-slate-600 hover:bg-slate-50"
-                      >
-                        {t('company_profile.reviews.next')}
-                        <Icon icon="mdi:chevron-right" className="h-4 w-4 ms-1" />
-                      </Button>
-                    </div>
-                  )}
+                    {reviewsTotalPages > 1 && !reviewsError && (
+                      <div className="flex items-center justify-between pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isReviewsLoading || reviewsPage <= 1}
+                          onClick={() => setReviewsPage((prev) => Math.max(1, prev - 1))}
+                          className="border-slate-300 text-slate-600 hover:bg-slate-50"
+                        >
+                          <Icon icon="mdi:chevron-left" className="h-4 w-4 me-1" />
+                          {t('company_profile.reviews.prev')}
+                        </Button>
+                        <span className="text-sm text-slate-500">
+                          {reviewsPage} / {reviewsTotalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isReviewsLoading || reviewsPage >= reviewsTotalPages}
+                          onClick={() => setReviewsPage((prev) => Math.min(reviewsTotalPages, prev + 1))}
+                          className="border-slate-300 text-slate-600 hover:bg-slate-50"
+                        >
+                          {t('company_profile.reviews.next')}
+                          <Icon icon="mdi:chevron-right" className="h-4 w-4 ms-1" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1067,19 +1035,7 @@ const CompanyProfilePage = () => {
                 </CardContent>
               </Card>
 
-              {/* Call to Action - Yellow accent */}
-              <Card className="bg-accent border-none shadow-lg">
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-slate-900 mb-2">{t('company_profile.cta.title')}</h3>
-                  <p className="text-sm text-slate-700/80 mb-4">
-                    {t('company_profile.cta.description')}
-                  </p>
-                  <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-md">
-                    <Icon icon="mdi:send" className="me-2 h-4 w-4" />
-                    {t('company_profile.cta.button')}
-                  </Button>
-                </CardContent>
-              </Card>
+
 
             </div>
           </div>

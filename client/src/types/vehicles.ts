@@ -89,7 +89,7 @@ export interface QuoteBreakdown {
   distance_miles?: number
   /** Source of the calculation formula */
   formula_source?: string
-  
+
   // Legacy fields (may not be present in new API responses)
   base_price?: number
   price_per_mile?: number
@@ -108,6 +108,8 @@ export interface QuoteBreakdown {
 export interface VehicleQuote {
   company_id: number
   company_name: string
+  website?: string | null
+  logoUrl?: string | null
   total_price: number
   delivery_time_days?: number | null
   breakdown: QuoteBreakdown
@@ -136,15 +138,15 @@ export interface SearchQuotesResponse {
   totalPages: number
 }
 
-export type VehicleSortOption = 
-  | 'price_asc' 
-  | 'price_desc' 
-  | 'year_desc' 
-  | 'year_asc' 
-  | 'mileage_asc' 
-  | 'mileage_desc' 
-  | 'sold_date_desc' 
-  | 'sold_date_asc' 
+export type VehicleSortOption =
+  | 'price_asc'
+  | 'price_desc'
+  | 'year_desc'
+  | 'year_asc'
+  | 'mileage_asc'
+  | 'mileage_desc'
+  | 'sold_date_desc'
+  | 'sold_date_asc'
   | 'best_value'
 
 export interface VehiclesSearchFilters {

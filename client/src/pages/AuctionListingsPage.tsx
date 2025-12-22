@@ -68,7 +68,7 @@ import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListI
 import { ComparisonModal } from '@/components/auction/ComparisonModal';
 import { QuotesShowcase } from '@/components/auction/QuotesShowcase';
 
-type ViewMode = 'grid' | 'list';
+
 
 type AuctionHouse = 'all' | 'Copart' | 'IAAI';
 type LotStatus = 'all' | 'run' | 'enhanced' | 'non-runner';
@@ -139,7 +139,8 @@ const buildFiltersFromDraftState = (
     // drive filter: comma-separated values (front, rear, full)
     drive: input.driveFilter || undefined,
     // source filter: comma-separated values (copart, iaai)
-    source: input.sourceFilter || undefined,
+    // Ensure source filter is passed even when both are selected (e.g., "copart,iaai")
+    source: input.sourceFilter && input.sourceFilter.trim().length > 0 ? input.sourceFilter : undefined,
     // title type filter: comma-separated values
     title_type: input.titleType || undefined,
     // transmission filter: 'auto', 'manual', or 'auto,manual'
@@ -215,327 +216,323 @@ const createColumns = (
   monthShortKa: string[],
   isLargeScreen: boolean,
 ): ColumnDef<BackendItem>[] => [
-  // Checkbox column
-  ...(showCompareCheckbox ? [{
-    id: 'select',
-    header: () => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          aria-label="Select all"
-          className="h-4 w-4"
-        />
-      </div>
-    ),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      const isSelected = selectedVehicleIds.includes(item.vehicle_id ?? item.id);
-      return (
+    // Checkbox column
+    ...(showCompareCheckbox ? [{
+      id: 'select',
+      header: () => (
         <div className="flex items-center justify-center">
           <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => onToggleSelect(item, checked === true)}
+            aria-label="Select all"
             className="h-4 w-4"
-            aria-label={`Select ${item.year} ${item.make} ${item.model}`}
           />
         </div>
-      );
-    },
-    enableSorting: false,
-    size: 40,
-  }] : []),
-  // Image column
-  {
-    id: 'image',
-    header: t('auction.columns.image'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
-      return (
-        <div className="relative aspect-[4/3] w-32 rounded-md overflow-hidden bg-muted">
-          <button
-            type="button"
-            className="w-full h-full focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
-            onClick={() => onViewDetails(item)}
-          >
-            <img
-              src={mainPhotoUrl}
-              alt={`${item.year} ${item.make} ${item.model}`}
-              className="w-full h-full object-cover"
-              loading="lazy"
+      ),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
+        const isSelected = selectedVehicleIds.includes(item.vehicle_id ?? item.id);
+        return (
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onToggleSelect(item, checked === true)}
+              className="h-4 w-4"
+              aria-label={`Select ${item.year} ${item.make} ${item.model}`}
             />
-          </button>
-          {/* Source tag (Copart/IAAI) */}
-          {item.source && (
-            <div className={`absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-bold uppercase text-white ${
-              item.source.toLowerCase() === 'copart' ? 'bg-[#002d72]' : 'bg-[#c41230]'
-            }`}>
-              {item.source.toLowerCase() === 'copart' ? 'Copart' : 'IAAI'}
-            </div>
-          )}
-        </div>
-      );
-    },
-    enableSorting: false,
-    size: 150,
-  },
-  // Lot Info column
-  {
-    id: 'lot_info',
-    header: t('auction.columns.lot_info'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      return (
-        <div className="max-w-[140px] pl-2">
-          <button onClick={() => onViewDetails(item)} className="text-left">
-            <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase whitespace-normal break-words">
-              {item.year} {item.make} {item.model}
-            </h3>
-          </button>
-          <div className="text-muted-foreground mt-0.5 text-[11px]">
-            {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
           </div>
-          {/* Yard name - always visible under lot */}
-          {item.yard_name && (
-            <div className="mt-0.5 text-[11px] text-muted-foreground truncate" title={item.yard_name}>
-              {item.yard_name}
-            </div>
-          )}
-          <div className="flex items-center gap-1 mt-2">
-            <Button
-              variant={isWatched(item.vehicle_id ?? item.id) ? "default" : "outline"}
-              size="sm"
-              className={`h-6 text-[10px] gap-1 ${isWatched(item.vehicle_id ?? item.id) && "bg-green-600 hover:bg-green-700"}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleWatch(item);
-              }}
+        );
+      },
+      enableSorting: false,
+      size: 40,
+    }] : []),
+    // Image column
+    {
+      id: 'image',
+      header: t('auction.columns.image'),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
+        const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
+        return (
+          <div className="relative aspect-[4/3] w-32 rounded-md overflow-hidden bg-muted">
+            <button
+              type="button"
+              className="w-full h-full focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+              onClick={() => onViewDetails(item)}
             >
-              <Icon icon="mdi:bookmark" className="w-3 h-3" />
-              {t('auction.actions.watch')}
-            </Button>
+              <img
+                src={mainPhotoUrl}
+                alt={`${item.year} ${item.make} ${item.model}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </button>
+            {/* Source tag (Copart/IAAI) */}
+            {item.source && (
+              <div className={`absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-bold uppercase text-white ${item.source.toLowerCase() === 'copart' ? 'bg-[#002d72]' : 'bg-[#c41230]'
+                }`}>
+                {item.source.toLowerCase() === 'copart' ? 'Copart' : 'IAAI'}
+              </div>
+            )}
           </div>
-        </div>
-      );
+        );
+      },
+      enableSorting: false,
+      size: 150,
     },
-    size: 110,
-  },
-  // Vehicle Info column
-  {
-    id: 'vehicle_info',
-    header: t('auction.columns.vehicle_info'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      const retailValue = item.retail_value
-        ? (typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value))
-        : null;
+    // Lot Info column
+    {
+      id: 'lot_info',
+      header: t('auction.columns.lot_info'),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
+        return (
+          <div className="max-w-[140px] pl-2">
+            <button onClick={() => onViewDetails(item)} className="text-left">
+              <h3 className="font-semibold text-xs text-primary hover:underline leading-tight uppercase whitespace-normal break-words">
+                {item.year} {item.make} {item.model}
+              </h3>
+            </button>
+            <div className="text-muted-foreground mt-0.5 text-[11px]">
+              {t('auction.lot')} <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
+            </div>
+            {/* Yard name - always visible under lot */}
+            {item.yard_name && (
+              <div className="mt-0.5 text-[11px] text-muted-foreground truncate" title={item.yard_name}>
+                {item.yard_name}
+              </div>
+            )}
+            <div className="flex items-center gap-1 mt-2">
+              <Button
+                variant={isWatched(item.vehicle_id ?? item.id) ? "default" : "outline"}
+                size="sm"
+                className={`h-6 text-[10px] gap-1 ${isWatched(item.vehicle_id ?? item.id) && "bg-green-600 hover:bg-green-700"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWatch(item);
+                }}
+              >
+                <Icon icon="mdi:bookmark" className="w-3 h-3" />
+                {t('auction.actions.watch')}
+              </Button>
+            </div>
+          </div>
+        );
+      },
+      size: 110,
+    },
+    // Vehicle Info column
+    {
+      id: 'vehicle_info',
+      header: t('auction.columns.vehicle_info'),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
+        const retailValue = item.retail_value
+          ? (typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value))
+          : null;
 
-      return (
-        <div>
-          <div className="text-muted-foreground text-[11px]">{t('auction.fields.odometer')}</div>
-          <div className="font-semibold text-foreground">
-            {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
+        return (
+          <div>
+            <div className="text-muted-foreground text-[11px]">{t('auction.fields.odometer')}</div>
+            <div className="font-semibold text-foreground">
+              {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
+            </div>
+            <div className="text-muted-foreground mt-1.5 text-[11px]">{t('auction.fields.estimated_retail_value')}</div>
+            <div className="font-semibold text-foreground">
+              {retailValue ? formatMoney(retailValue) : 'N/A'}
+            </div>
           </div>
-          <div className="text-muted-foreground mt-1.5 text-[11px]">{t('auction.fields.estimated_retail_value')}</div>
-          <div className="font-semibold text-foreground">
-            {retailValue ? formatMoney(retailValue) : 'N/A'}
-          </div>
-        </div>
-      );
+        );
+      },
+      size: 105,
     },
-    size: 105,
-  },
-  // Document column (renamed from Condition)
-  {
-    id: 'document',
-    header: t('auction.columns.document'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-      
-      // Format auction start date/time
-      const formatAuctionDate = (): { date: string; time: string; isUpcoming: boolean } | null => {
-        if (!item.sold_at_date) return null;
-        
-        try {
-          const auctionDate = new Date(item.sold_at_date);
-          const now = new Date();
-          const isUpcoming = auctionDate > now;
-          
-          // Format date: "Nov 12, 2025"
-          const dateStr = isGeorgian
-            ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
-            : new Intl.DateTimeFormat(localeList, {
+    // Document column (renamed from Condition)
+    {
+      id: 'document',
+      header: t('auction.columns.document'),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
+
+        // Format auction start date/time
+        const formatAuctionDate = (): { date: string; time: string; isUpcoming: boolean } | null => {
+          if (!item.sold_at_date) return null;
+
+          try {
+            const auctionDate = new Date(item.sold_at_date);
+            const now = new Date();
+            const isUpcoming = auctionDate > now;
+
+            // Format date: "Nov 12, 2025"
+            const dateStr = isGeorgian
+              ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
+              : new Intl.DateTimeFormat(localeList, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
               }).format(auctionDate);
-          
-          // Format time from sold_at_time if available, otherwise from the date
-          let timeStr = '';
-          if (item.sold_at_time) {
-            // Parse "18:00:00" format
-            const [hours, minutes] = item.sold_at_time.split(':');
-            const hour = parseInt(hours, 10);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const hour12 = hour % 12 || 12;
-            timeStr = `${hour12}:${minutes} ${ampm}`;
-          } else {
-            timeStr = new Intl.DateTimeFormat(localeList, {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            }).format(auctionDate);
+
+            // Format time from sold_at_time if available, otherwise from the date
+            let timeStr = '';
+            if (item.sold_at_time) {
+              // Parse "18:00:00" format
+              const [hours, minutes] = item.sold_at_time.split(':');
+              const hour = parseInt(hours, 10);
+              const ampm = hour >= 12 ? 'PM' : 'AM';
+              const hour12 = hour % 12 || 12;
+              timeStr = `${hour12}:${minutes} ${ampm}`;
+            } else {
+              timeStr = new Intl.DateTimeFormat(localeList, {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              }).format(auctionDate);
+            }
+
+            return { date: dateStr, time: timeStr, isUpcoming };
+          } catch {
+            return null;
           }
-          
-          return { date: dateStr, time: timeStr, isUpcoming };
-        } catch {
-          return null;
-        }
-      };
-      
-      const auctionInfo = formatAuctionDate();
-      
-      return (
-        <div className="max-w-[180px] whitespace-normal break-words">
-          <div className="text-muted-foreground text-[10px] mb-0.5">{t('auction.document_label')}</div>
-          <div className="text-foreground font-medium text-[11px]">{item.document || 'N/A'}</div>
-          
-          {/* Auction Start Date - Eye-catching display */}
-          {auctionInfo && (
-            <div className="mt-2">
-              <div className="flex items-center gap-1 mb-0.5">
-                <Icon 
-                  icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"} 
-                  className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`} 
-                />
-                <span className={`text-[9px] font-semibold uppercase tracking-wide ${
-                  auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
-                }`}>
-                  {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
-                </span>
+        };
+
+        const auctionInfo = formatAuctionDate();
+
+        return (
+          <div className="max-w-[180px] whitespace-normal break-words">
+            <div className="text-muted-foreground text-[10px] mb-0.5">{t('auction.document_label')}</div>
+            <div className="text-foreground font-medium text-[11px]">{item.document || 'N/A'}</div>
+
+            {/* Auction Start Date - Eye-catching display */}
+            {auctionInfo && (
+              <div className="mt-2">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <Icon
+                    icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"}
+                    className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`}
+                  />
+                  <span className={`text-[9px] font-semibold uppercase tracking-wide ${auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
+                    }`}>
+                    {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
+                  </span>
+                </div>
+                <div className={`text-[12px] font-bold ${auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+                  }`}>
+                  {auctionInfo.date}
+                </div>
+                <div className={`text-[11px] font-semibold ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+                  }`}>
+                  {auctionInfo.time}
+                </div>
               </div>
-              <div className={`text-[12px] font-bold ${
-                auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
-              }`}>
-                {auctionInfo.date}
-              </div>
-              <div className={`text-[11px] font-semibold ${
-                auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
-              }`}>
-                {auctionInfo.time}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    },
-    size: 140,
-  },
-  // Bids column
-  {
-    id: 'bids',
-    header: t('auction.columns.bids'),
-    cell: ({ row }: { row: Row<BackendItem> }) => {
-      const item = row.original;
-
-      // Last bid from API (preferred) or fallback to calc_price
-      const lastBid = item.last_bid;
-      let currentBidValue: number | null = null;
-      let bidTime: string | null = null;
-
-      if (lastBid && lastBid.bid != null) {
-        currentBidValue = lastBid.bid;
-        bidTime = lastBid.bid_time;
-      } else if (item.calc_price != null) {
-        const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
-        if (Number.isFinite(numericCalc)) currentBidValue = numericCalc;
-      }
-
-      // Format bid time for display
-      const formatBidTime = (isoTime: string | null): string => {
-        if (!isoTime) return '';
-        try {
-          const date = new Date(isoTime);
-          if (isGeorgian) {
-            const month = monthShortKa[date.getMonth()];
-            const day = date.getDate();
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            return `${month} ${day}, ${year}, ${hours}:${minutes}`;
-          }
-          return new Intl.DateTimeFormat(localeList, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          }).format(date);
-        } catch {
-          return '';
-        }
-      };
-
-      // Buy Now price
-      let buyNowPrice: number | null = null;
-      if (item.buy_it_now_price != null) {
-        const numeric = typeof item.buy_it_now_price === 'number' ? item.buy_it_now_price : Number(item.buy_it_now_price);
-        if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
-      } else if (item.buy_it_now != null) {
-        const numeric = typeof item.buy_it_now === 'number' ? item.buy_it_now : Number(item.buy_it_now);
-        if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
-      }
-
-      const hasBuyNow = buyNowPrice != null;
-
-      return (
-        <div className="flex flex-col">
-          <div className="text-muted-foreground text-[10px]">{t('auction.fields.current_bid')}</div>
-          <div className="text-base font-bold text-foreground">
-            {formatMoney(currentBidValue)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+            )}
           </div>
-          {bidTime && (
-            <div className="text-[9px] text-muted-foreground mb-1.5">
-              {formatBidTime(bidTime)}
-            </div>
-          )}
-          {!bidTime && <div className="mb-2" />}
+        );
+      },
+      size: 140,
+    },
+    // Bids column
+    {
+      id: 'bids',
+      header: t('auction.columns.bids'),
+      cell: ({ row }: { row: Row<BackendItem> }) => {
+        const item = row.original;
 
-          <Button
-            size="sm"
-            className="w-full h-7 text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold mb-1.5"
-            onClick={() => onViewDetails(item)}
-          >
-            {t('auction.actions.bid_now')}
-          </Button>
+        // Last bid from API (preferred) or fallback to calc_price
+        const lastBid = item.last_bid;
+        let currentBidValue: number | null = null;
+        let bidTime: string | null = null;
 
-          {hasBuyNow ? (
-            <div className="flex flex-col gap-0.5 text-[10px] sm:flex-row sm:items-center sm:gap-1">
-              <Button
-                size="sm"
-                className="w-full sm:w-auto h-7 px-3 text-[10px] bg-accent hover:bg-accent/90 text-primary font-semibold whitespace-nowrap"
-                onClick={() => onViewDetails(item)}
-              >
-                {t('auction.actions.buy_it_now')}
-              </Button>
-              <span className="text-[10px] text-foreground font-semibold whitespace-nowrap">
-                {formatMoney(buyNowPrice)} <span className="text-[9px] font-normal text-muted-foreground">USD</span>
-              </span>
+        if (lastBid && lastBid.bid != null) {
+          currentBidValue = lastBid.bid;
+          bidTime = lastBid.bid_time;
+        } else if (item.calc_price != null) {
+          const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
+          if (Number.isFinite(numericCalc)) currentBidValue = numericCalc;
+        }
+
+        // Format bid time for display
+        const formatBidTime = (isoTime: string | null): string => {
+          if (!isoTime) return '';
+          try {
+            const date = new Date(isoTime);
+            if (isGeorgian) {
+              const month = monthShortKa[date.getMonth()];
+              const day = date.getDate();
+              const year = date.getFullYear();
+              const hours = date.getHours().toString().padStart(2, '0');
+              const minutes = date.getMinutes().toString().padStart(2, '0');
+              return `${month} ${day}, ${year}, ${hours}:${minutes}`;
+            }
+            return new Intl.DateTimeFormat(localeList, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(date);
+          } catch {
+            return '';
+          }
+        };
+
+        // Buy Now price
+        let buyNowPrice: number | null = null;
+        if (item.buy_it_now_price != null) {
+          const numeric = typeof item.buy_it_now_price === 'number' ? item.buy_it_now_price : Number(item.buy_it_now_price);
+          if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
+        } else if (item.buy_it_now != null) {
+          const numeric = typeof item.buy_it_now === 'number' ? item.buy_it_now : Number(item.buy_it_now);
+          if (Number.isFinite(numeric) && numeric > 0) buyNowPrice = numeric;
+        }
+
+        const hasBuyNow = buyNowPrice != null;
+
+        return (
+          <div className="flex flex-col">
+            <div className="text-muted-foreground text-[10px]">{t('auction.fields.current_bid')}</div>
+            <div className="text-base font-bold text-foreground">
+              {formatMoney(currentBidValue)} <span className="text-xs font-normal text-muted-foreground">USD</span>
             </div>
-          ) : (
+            {bidTime && (
+              <div className="text-[9px] text-muted-foreground mb-1.5">
+                {formatBidTime(bidTime)}
+              </div>
+            )}
+            {!bidTime && <div className="mb-2" />}
+
             <Button
               size="sm"
-              variant="outline"
-              className="w-full h-7 text-[11px] border-primary text-primary hover:bg-primary/5"
+              className="w-full h-7 text-[11px] bg-primary hover:bg-primary/90 text-white font-semibold mb-1.5"
               onClick={() => onViewDetails(item)}
             >
-              {t('common.details')}
+              {t('auction.actions.bid_now')}
             </Button>
-          )}
-        </div>
-      );
+
+            {hasBuyNow ? (
+              <div className="flex flex-col gap-0.5 text-[10px] sm:flex-row sm:items-center sm:gap-1">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto h-7 px-3 text-[10px] bg-accent hover:bg-accent/90 text-primary font-semibold whitespace-nowrap"
+                  onClick={() => onViewDetails(item)}
+                >
+                  {t('auction.actions.buy_it_now')}
+                </Button>
+                <span className="text-[10px] text-foreground font-semibold whitespace-nowrap">
+                  {formatMoney(buyNowPrice)} <span className="text-[9px] font-normal text-muted-foreground">USD</span>
+                </span>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-[11px] border-primary text-primary hover:bg-primary/5"
+                onClick={() => onViewDetails(item)}
+              >
+                {t('common.details')}
+              </Button>
+            )}
+          </div>
+        );
+      },
+      size: 170,
     },
-    size: 170,
-  },
-];
+  ];
 
 const AuctionListingsPage = () => {
   const { t, i18n } = useTranslation();
@@ -631,12 +628,12 @@ const AuctionListingsPage = () => {
   } = useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
   const [isLargeScreen, setIsLargeScreen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     return window.innerWidth >= 1280;
   });
-  
+
   const hasInitializedFromUrl = useRef(false);
 
   const displayedItems: BackendItem[] = useMemo(
@@ -933,7 +930,7 @@ const AuctionListingsPage = () => {
     if (appliedFilters.fuel_type || appliedFilters.fuel) {
       const fuelValue = appliedFilters.fuel || appliedFilters.fuel_type || "";
       const fuelTypes = fuelValue.split(",").map((f) => f.trim().toLowerCase()).filter(Boolean);
-      
+
       const fuelLabels = fuelTypes.map((fuelType) => {
         switch (fuelType) {
           case "petrol":
@@ -1176,9 +1173,9 @@ const AuctionListingsPage = () => {
     const kindParam = params.get("kind");
     const nextSearchKind =
       kindParam === "all" ||
-      kindParam === "car" ||
-      kindParam === "moto" ||
-      kindParam === "van"
+        kindParam === "car" ||
+        kindParam === "moto" ||
+        kindParam === "van"
         ? kindParam
         : "all";
 
@@ -1201,9 +1198,9 @@ const AuctionListingsPage = () => {
     const fuelParam = params.get("fuel_type");
     const nextFuelType =
       fuelParam &&
-      ["all", "petrol", "diesel", "hybrid", "electric", "flexible"].includes(
-        fuelParam
-      )
+        ["all", "petrol", "diesel", "hybrid", "electric", "flexible"].includes(
+          fuelParam
+        )
         ? fuelParam
         : "all";
 
@@ -1306,9 +1303,9 @@ const AuctionListingsPage = () => {
     const nextExactYear =
       yearExactParam !== null && yearExactParam !== ""
         ? (() => {
-            const parsed = Number(yearExactParam);
-            return Number.isNaN(parsed) ? "" : parsed;
-          })()
+          const parsed = Number(yearExactParam);
+          return Number.isNaN(parsed) ? "" : parsed;
+        })()
         : "";
 
     // Mileage range – default is "no filter" [0, 0]
@@ -1354,18 +1351,18 @@ const AuctionListingsPage = () => {
     const limitParam = params.get("limit");
     const nextLimit = limitParam
       ? (() => {
-          const parsed = Number(limitParam);
-          return [12, 24, 36, 60].includes(parsed) ? parsed : 36;
-        })()
+        const parsed = Number(limitParam);
+        return [12, 24, 36, 60].includes(parsed) ? parsed : 36;
+      })()
       : 36;
 
     // Page
     const pageParam = params.get("page");
     const nextPage = pageParam
       ? (() => {
-          const parsed = Number(pageParam);
-          return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
-        })()
+        const parsed = Number(pageParam);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+      })()
       : 1;
 
     // Optional make/model from URL (used for deep links)
@@ -2647,24 +2644,6 @@ const AuctionListingsPage = () => {
                   </Select>
 
                   {/* Compare feature hidden for now */}
-
-                  {/* View Mode Toggle (hidden below 768px) */}
-                  <div className="hidden md:flex items-center border rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-                      title={t('auction.view_list')}
-                    >
-                      <Icon icon="mdi:view-list" className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-                      title={t('auction.view_grid')}
-                    >
-                      <Icon icon="mdi:view-grid" className="w-5 h-5" />
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -2728,165 +2707,108 @@ const AuctionListingsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={viewMode}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.18, ease: 'easeOut' }}
-                      >
-                        {viewMode === 'list' ? (
-                          <>
-                            {/* Table View (md and up) */}
-                            <div className="hidden md:block rounded-md border overflow-x-auto">
-                              <div>
-                                <Table className="w-full table-fixed xl:table-auto">
-                                  <TableHeader>
-                                    {table.getHeaderGroups().map((headerGroup) => (
-                                      <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => (
-                                          <TableHead 
-                                            key={header.id} 
-                                            className={`bg-muted/50 whitespace-normal lg:whitespace-nowrap ${header.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px]' : ''}`}
-                                          >
-                                            {header.isPlaceholder
-                                              ? null
-                                              : flexRender(
-                                                  header.column.columnDef.header,
-                                                  header.getContext()
-                                                )}
-                                          </TableHead>
-                                        ))}
-                                      </TableRow>
-                                    ))}
-                                  </TableHeader>
-                                  <TableBody>
-                                    {table.getRowModel().rows?.length ? (
-                                      table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                          key={row.id}
-                                          data-state={row.getIsSelected() && "selected"}
-                                        >
-                                          {row.getVisibleCells().map((cell) => (
-                                            <TableCell 
-                                              key={cell.id} 
-                                              className={`align-top whitespace-normal lg:whitespace-nowrap break-words p-2 ${cell.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px] px-1 overflow-visible' : 'overflow-hidden'}`}
-                                            >
-                                              {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                              )}
-                                            </TableCell>
-                                          ))}
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell
-                                          colSpan={columns.length}
-                                          className="h-24 text-center"
-                                        >
-                                          No results.
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </div>
-
-                            {/* Mobile List View (<768px) - Copart-style cards */}
-                            <div className="md:hidden space-y-1 auction-cards-grid">
-                              {displayedItems.length > 0 ? (
-                                displayedItems.map((item, idx) => (
-                                  <AuctionVehicleCard
-                                    key={`${item.id}-${item.vehicle_id}`}
-                                    item={item as any}
-                                    priority={idx < 4}
-                                    isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                                    showCompareCheckbox={showCompareCheckboxes}
-                                    isWatched={isWatched(item.vehicle_id ?? item.id)}
-                                    onToggleSelect={(checked: boolean) => {
-                                      const id = item.vehicle_id ?? item.id;
-                                      const isMobile = window.innerWidth < 640;
-                                      const maxCompare = isMobile ? 2 : 5;
-                                      setSelectedVehicleIds((prev) =>
-                                        checked
-                                          ? prev.length < maxCompare
-                                            ? [...prev, id]
-                                            : prev
-                                          : prev.filter((pid) => pid !== id)
-                                      );
-                                    }}
-                                    onToggleWatch={() => {
-                                      const id = item.vehicle_id ?? item.id;
-                                      if (!isAuthenticated) {
-                                        setIsAuthDialogOpen(true);
-                                        return;
-                                      }
-                                      toggleWatch(id);
-                                    }}
-                                    onCalculate={() => {
-                                      const id = item.vehicle_id ?? item.id;
-                                      setIsCalcModalOpen(true);
-                                      calculateQuotes(id);
-                                    }}
-                                    onViewDetails={() => {
-                                      const id = item.vehicle_id ?? item.id;
-                                      navigate({ pathname: `/vehicle/${id}` });
-                                    }}
-                                  />
-                                ))
-                              ) : null}
-                            </div>
-                          </>
-                        ) : (
-                          /* Grid View */
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
-                            {displayedItems.map((item, idx) => (
-                              <AuctionVehicleCard
-                                key={`${item.id}-${item.vehicle_id}`}
-                                item={item}
-                                priority={idx < 4}
-                                isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
-                                showCompareCheckbox={false}
-                                isWatched={isWatched(item.vehicle_id ?? item.id)}
-                                onToggleSelect={(checked: boolean) => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  const isMobile = window.innerWidth < 640;
-                                  const maxCompare = isMobile ? 2 : 5;
-                                  setSelectedVehicleIds((prev) =>
-                                    checked
-                                      ? prev.length < maxCompare
-                                        ? [...prev, id]
-                                        : prev
-                                      : prev.filter((pid) => pid !== id)
-                                  );
-                                }}
-                                onToggleWatch={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  if (!isAuthenticated) {
-                                    setIsAuthDialogOpen(true);
-                                    return;
-                                  }
-                                  toggleWatch(id);
-                                }}
-                                onCalculate={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  setIsCalcModalOpen(true);
-                                  calculateQuotes(id);
-                                }}
-                                onViewDetails={() => {
-                                  const id = item.vehicle_id ?? item.id;
-                                  navigate({ pathname: `/vehicle/${id}` });
-                                }}
-                              />
+                    {/* Table View (md and up) */}
+                    <div className="hidden md:block rounded-md border overflow-x-auto">
+                      <div>
+                        <Table className="w-full table-fixed xl:table-auto">
+                          <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                              <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => (
+                                  <TableHead
+                                    key={header.id}
+                                    className={`bg-muted/50 whitespace-normal lg:whitespace-nowrap ${header.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px]' : ''}`}
+                                  >
+                                    {header.isPlaceholder
+                                      ? null
+                                      : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                      )}
+                                  </TableHead>
+                                ))}
+                              </TableRow>
                             ))}
-                          </div>
-                        )}
-                      </motion.div>
-                    </AnimatePresence>
+                          </TableHeader>
+                          <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                              table.getRowModel().rows.map((row) => (
+                                <TableRow
+                                  key={row.id}
+                                  data-state={row.getIsSelected() && "selected"}
+                                >
+                                  {row.getVisibleCells().map((cell) => (
+                                    <TableCell
+                                      key={cell.id}
+                                      className={`align-top whitespace-normal lg:whitespace-nowrap break-words p-2 ${cell.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px] px-1 overflow-visible' : 'overflow-hidden'}`}
+                                    >
+                                      {flexRender(
+                                        cell.column.columnDef.cell,
+                                        cell.getContext()
+                                      )}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={columns.length}
+                                  className="h-24 text-center"
+                                >
+                                  No results.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+
+                    {/* Mobile List View (<768px) - Copart-style cards */}
+                    <div className="md:hidden auction-cards-grid">
+                      {displayedItems.length > 0 ? (
+                        displayedItems.map((item, idx) => (
+                          <AuctionVehicleCard
+                            key={`${item.id}-${item.vehicle_id}`}
+                            item={item as any}
+                            priority={idx < 4}
+                            isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                            showCompareCheckbox={showCompareCheckboxes}
+                            isWatched={isWatched(item.vehicle_id ?? item.id)}
+                            onToggleSelect={(checked: boolean) => {
+                              const id = item.vehicle_id ?? item.id;
+                              const isMobile = window.innerWidth < 640;
+                              const maxCompare = isMobile ? 2 : 5;
+                              setSelectedVehicleIds((prev) =>
+                                checked
+                                  ? prev.length < maxCompare
+                                    ? [...prev, id]
+                                    : prev
+                                  : prev.filter((pid) => pid !== id)
+                              );
+                            }}
+                            onToggleWatch={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              if (!isAuthenticated) {
+                                setIsAuthDialogOpen(true);
+                                return;
+                              }
+                              toggleWatch(id);
+                            }}
+                            onCalculate={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              setIsCalcModalOpen(true);
+                              calculateQuotes(id);
+                            }}
+                            onViewDetails={() => {
+                              const id = item.vehicle_id ?? item.id;
+                              navigate({ pathname: `/vehicle/${id}` });
+                            }}
+                          />
+                        ))
+                      ) : null}
+                    </div>
 
                     {/* Pagination */}
                     <div className="flex flex-col items-center gap-4 pt-4 border-t">
@@ -3120,11 +3042,10 @@ const AuctionListingsPage = () => {
                 <button
                   key={idx}
                   onClick={() => setBackendGalleryIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-12 rounded overflow-hidden transition-all ${
-                    idx === backendGalleryIndex
-                      ? "ring-2 ring-white opacity-100"
-                      : "opacity-50 hover:opacity-80"
-                  }`}
+                  className={`relative flex-shrink-0 w-16 h-12 rounded overflow-hidden transition-all ${idx === backendGalleryIndex
+                    ? "ring-2 ring-white opacity-100"
+                    : "opacity-50 hover:opacity-80"
+                    }`}
                 >
                   <img
                     src={photo}

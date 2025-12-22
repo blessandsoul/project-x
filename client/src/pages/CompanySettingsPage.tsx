@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Icon } from '@iconify/react'
 import { useAuth } from '@/hooks/useAuth'
-import { SERVICES } from '@/constants/onboarding'
+import { fetchServices, type Service } from '@/api/services'
 import { API_BASE_URL } from '@/lib/apiClient'
 import {
   fetchRawCompanyByIdFromApi,
@@ -66,11 +66,14 @@ const CompanySettingsPage = () => {
   const [serviceFee, setServiceFee] = useState<number>(0)
   const [brokerFee, setBrokerFee] = useState<number>(0)
   const [services, setServices] = useState<string[]>([])
-  const [customServiceInput, setCustomServiceInput] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null)
+
+  // Services from API
+  const [availableServices, setAvailableServices] = useState<Service[]>([])
+  const [isLoadingServices, setIsLoadingServices] = useState(true)
 
   // Load company data
   useEffect(() => {
@@ -110,8 +113,8 @@ const CompanySettingsPage = () => {
         // Handle social links
         const links = Array.isArray(company.social_links)
           ? company.social_links
-              .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
-              .map((link) => ({ id: link.id, url: link.url || '' }))
+            .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
+            .map((link) => ({ id: link.id, url: link.url || '' }))
           : []
         setSocialLinks(links)
 
@@ -139,6 +142,32 @@ const CompanySettingsPage = () => {
       isMounted = false
     }
   }, [companyId, t])
+
+  // Fetch available services from API
+  useEffect(() => {
+    let mounted = true
+
+    async function loadServices() {
+      try {
+        const apiServices = await fetchServices()
+        if (mounted) {
+          setAvailableServices(apiServices)
+        }
+      } catch (err) {
+        console.error('[CompanySettings] Failed to load services:', err)
+      } finally {
+        if (mounted) {
+          setIsLoadingServices(false)
+        }
+      }
+    }
+
+    loadServices()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -215,7 +244,7 @@ const CompanySettingsPage = () => {
       await deleteCompanyFromApi(companyId)
       await refreshProfile()
       toast.success(t('company_settings.delete_success'))
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       const message = err instanceof Error ? err.message : t('company_settings.error.delete')
       setError(message)
@@ -469,86 +498,30 @@ const CompanySettingsPage = () => {
               {/* Services Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">{t('company_settings.services')}</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {SERVICES.map((service) => (
-                    <div key={service} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`service-${service}`}
-                        checked={services.includes(service)}
-                        onCheckedChange={(checked) =>
-                          handleServiceToggle(service, checked === true)
-                        }
-                        disabled={isSaving || isDeleting}
-                      />
-                      <Label htmlFor={`service-${service}`} className="font-normal">
-                        {service}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Custom Services */}
-                {services.filter((s) => !SERVICES.includes(s)).length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">{t('company_settings.custom_services')}</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {services
-                        .filter((s) => !SERVICES.includes(s))
-                        .map((customService) => (
-                          <div
-                            key={customService}
-                            className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
-                          >
-                            <span>{customService}</span>
-                            <button
-                              type="button"
-                              onClick={() => setServices((prev) => prev.filter((s) => s !== customService))}
-                              disabled={isSaving || isDeleting}
-                              className="ml-1 text-muted-foreground hover:text-destructive"
-                            >
-                              <Icon icon="mdi:close" className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                    </div>
+                {isLoadingServices ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading services...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableServices.map((service) => (
+                      <div key={service.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`service-${service.id}`}
+                          checked={services.includes(service.name)}
+                          onCheckedChange={(checked) =>
+                            handleServiceToggle(service.name, checked === true)
+                          }
+                          disabled={isSaving || isDeleting}
+                        />
+                        <Label htmlFor={`service-${service.id}`} className="font-normal">
+                          {service.name}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 )}
-
-                {/* Add Custom Service */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={customServiceInput}
-                    onChange={(e) => setCustomServiceInput(e.target.value)}
-                    placeholder={t('company_settings.custom_service_placeholder')}
-                    disabled={isSaving || isDeleting}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        const trimmed = customServiceInput.trim()
-                        if (trimmed && !services.includes(trimmed)) {
-                          setServices((prev) => [...prev, trimmed])
-                          setCustomServiceInput('')
-                        }
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const trimmed = customServiceInput.trim()
-                      if (trimmed && !services.includes(trimmed)) {
-                        setServices((prev) => [...prev, trimmed])
-                        setCustomServiceInput('')
-                      }
-                    }}
-                    disabled={isSaving || isDeleting || !customServiceInput.trim()}
-                  >
-                    <Icon icon="mdi:plus" className="me-1 h-4 w-4" />
-                    {t('company_settings.add_service')}
-                  </Button>
-                </div>
               </div>
 
               <Separator />

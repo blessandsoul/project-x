@@ -79,6 +79,7 @@
     "sign_in": "Sign In",
     "carfax": "Carfax",
     "companies": "Companies",
+    "favorite_vehicles": "Favorite Vehicles",
     "dashboard": "Dashboard"
   },
   "auth": {
@@ -188,10 +189,10 @@
     },
     "info": {
       "title": "How It Works",
-      "description": "Use this calculator to estimate shipping and import costs for your vehicle from the USA to Georgia.",
+      "description": "Use calculator to calculate import prices from auction to port.",
       "point1": "Select your pickup city and destination port",
       "point2": "Choose your vehicle type and category",
-      "point3": "Compare prices from multiple import companies",
+      "point3": "Compare prices of different companies",
       "disclaimer": "Prices are indicative estimates and may vary based on actual conditions."
     }
   },
@@ -357,22 +358,22 @@
       }
     },
     "copart_hero": {
-      "title": "100% Online Auto Auctions",
+      "title": "Find The Best Offer",
       "subtitle": "<strong>Copart</strong> and <strong>IAAI</strong> auctions, importer company prices — fast, transparent, and without unnecessary calls.",
       "real_reviews_title": "Real reviews",
       "real_reviews_desc": "Read real customer experiences and ratings.",
       "transparent_prices_title": "Transparent prices",
-      "transparent_prices_desc": "No hidden fees. See exactly what you pay.",
+      "transparent_prices_desc": "No hidden fees. You see exactly what you pay for.",
       "all_prices_title": "All prices in one place",
       "all_prices_desc": "See every company's price in one place and choose the best for you.",
-      "browse_inventory": "Browse active listings",
+      "browse_inventory": "Start searching",
       "download_appstore": "Download on",
       "appstore": "App Store",
       "get_on": "Get it on",
       "google_play": "Google Play",
       "buyer_protection": "Copart / IAAI auctions search in one place",
       "nationwide_delivery": "Real import prices",
-      "vehicle_history": "Vehicle price calculation"
+      "vehicle_history": "Client Experience"
     },
     "popular_vehicles": {
       "title": "Popular",
@@ -429,7 +430,7 @@
     },
     "vehicle_catalog": {
       "title": "Copart / IAAI - Live Auctions",
-      "subtitle": "Find any vehicle type you're interested in.",
+      "subtitle": "Find any vehicle you're interested in.",
       "tabs": {
         "makes": "Makes",
         "models": "Models",
@@ -460,7 +461,7 @@
         "search_title": "Easy Search",
         "search_desc": "Find companies in one place.",
         "compare_title": "Compare",
-        "compare_desc": "Match prices and terms.",
+        "compare_desc": "Compare prices and terms.",
         "calculate_title": "Full Calculation",
         "calculate_desc": "See the total cost upfront.",
         "reviews_title": "Trusted Reviews",
@@ -515,7 +516,7 @@
     "terms": "Terms"
   },
   "catalog": {
-    "title": "Import Companies Catalog",
+    "title": "Trusted Importers",
     "subtitle": "Find the best company for your car import from USA to Georgia",
     "results": {
       "showing": "Showing",
@@ -590,9 +591,11 @@
     }
   },
   "auction": {
+    "favorite_vehicles": "Favorite Vehicles",
+    "favorite_vehicles_description": "Manage your watchlist and track vehicles you are interested in.",
     "active_auctions": "Active Auctions",
     "description": "Search vehicles on Copart and IAAI auctions in real time",
-    "search_placeholder": "Search make, model or VIN...",
+    "search_placeholder": "Search make, model, lot or VIN...",
     "real_results": "Results",
     "loading_data": "Loading data...",
     "showing_results": "Showing {{count}} of {{total}} results",
@@ -638,14 +641,14 @@
     },
     "document_label": "Sale Document",
     "auction_starts": "Auction Starts",
-    "auction_start_date": "Auction Start Date",
+    "auction_start_date": "Start Date",
     "lot": "Lot #",
     "load_more": "Load More",
     "watch_auth_title": "Save vehicle to watchlist",
     "watch_auth_description": "To save vehicles to your watch list, please sign in or create an account.",
     "filters": {
       "title": "Filters",
-      "refine": "Refine Search",
+      "refine": "Filters",
       "apply": "Apply Filters",
       "auction": "Auction",
       "fuel": "Fuel",
@@ -662,9 +665,11 @@
       "title_type": "Title",
       "transmission": "Transmission",
       "automatic": "Automatic",
+      "auto": "Automatic",
       "manual": "Manual",
       "fuel_type": "Fuel Type",
       "gasoline": "Gasoline",
+      "petrol": "Petrol",
       "diesel": "Diesel",
       "hybrid": "Hybrid",
       "electric": "Electric",
@@ -813,6 +818,7 @@
     }
   },
   "vehicle": {
+    "back_to_results": "Back to results",
     "breadcrumb_home": "Home",
     "breadcrumb_vehicles": "Vehicles",
     "lot": "Lot",
@@ -900,16 +906,19 @@
       "title": "Bid History",
       "bids_count": "{{count}} bid",
       "no_bids": "No bids recorded for this vehicle",
+      "bids_count_one": "{{count}} bid",
+      "bids_count_other": "{{count}} bids",
       "latest_bid": "Latest Bid",
       "no_date": "No date"
     },
     "quotes_section": {
-      "aria_label": "Import quotes",
+      "aria_label": "Trusted Importers",
       "title": "Shipping Quotes",
       "verified_importers": "{{count}} verified importers",
       "prices_include_all_fees": "Prices include all fees",
       "transportation_price": "transportation price",
       "best": "Best",
+      "lowest_price": "Lowest Price",
       "rating_na": "N/A",
       "delivery_days": "{{count}} days",
       "delivery_unknown": "—",
@@ -918,7 +927,10 @@
       "unavailable_description": "Shipping quotes cannot be calculated for this location.",
       "request_custom_quote": "Request Custom Quote",
       "empty": "No offers available yet",
-      "footer_note": "Free · No commitment · Reply within 24h"
+      "footer_note": "Free · No commitment · Reply within 24h",
+      "showing_companies": "Showing {{count}} companies",
+      "prev": "Prev",
+      "next": "Next"
     },
     "carfax": {
       "title": "Get Full Vehicle History",
@@ -1304,6 +1316,14 @@
       "reviews_load": "Failed to load reviews",
       "review_length": "Review must be at least 10 characters",
       "review_submit": "Failed to submit review"
+    },
+    "phone": {
+      "title": "Contact Phone",
+      "description": "Call us directly",
+      "tap_to_call": "Tap to call",
+      "click_to_copy": "Click to copy",
+      "copied": "Copied!",
+      "not_available": "Phone number not available"
     }
   },
   "sidebar": {

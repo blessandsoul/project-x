@@ -27,7 +27,7 @@ export function VehicleCatalogLinksSection() {
       transition={{ duration: 0.55, ease: 'easeOut' }}
     >
       <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
-        <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,280px)] gap-6 items-start">
+        <div className="grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,280px)] gap-6 items-start">
           {/* Left: Links Grid */}
           <div>
             <h2
@@ -81,7 +81,7 @@ export function VehicleCatalogLinksSection() {
               </div>
             </div>
             <div className="mt-4">
-              <Button 
+              <Button
                 size="sm"
                 className="bg-white text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-full px-4"
               >

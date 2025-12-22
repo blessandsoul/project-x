@@ -97,11 +97,10 @@ export function AuctionFiltersDrawer({
         <Button
           variant="outline"
           size="sm"
-          className={`${
-            showLabel
+          className={`${showLabel
               ? 'h-9 px-3 flex items-center gap-2'
               : 'h-10 sm:h-11 px-2.5 sm:px-4 flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-primary border-transparent shadow-sm'
-          }`}
+            }`}
           onClick={() => setIsOpen(true)}
         >
           <Icon icon="mdi:filter-variant" className="w-4 h-4" />
@@ -115,6 +114,7 @@ export function AuctionFiltersDrawer({
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="left"
+          hideCloseButton
           className={cn(
             "bg-white h-full w-[320px] sm:w-[400px] border-r-2 border-primary/20 shadow-2xl p-0 overflow-hidden flex flex-col",
             "data-[state=closed]:pointer-events-none"

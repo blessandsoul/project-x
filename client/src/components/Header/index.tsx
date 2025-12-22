@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,9 +38,23 @@ interface HeaderProps {
  */
 const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const { user: authUser, logout, isInitialized } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Check if we're on the home page or VIN page for green transparent header
+  const isGreenHeaderPage = location.pathname === '/' || location.pathname === '/vin';
+
+  // Track scroll position for header background transition
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   let storedUser: User | null = null;
 
@@ -59,11 +73,11 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
 
   const effectiveMenuUser = effectiveUser
     ? {
-        id: String(effectiveUser.id),
-        name: effectiveUser.name ?? effectiveUser.email,
-        email: effectiveUser.email,
-        avatar: effectiveUser.avatar ?? '',
-      }
+      id: String(effectiveUser.id),
+      name: effectiveUser.name ?? effectiveUser.email,
+      email: effectiveUser.email,
+      avatar: effectiveUser.avatar ?? '',
+    }
     : null;
 
   const handleNavClick = (href: string) => {
@@ -90,10 +104,38 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
     }
   };
 
+  // Header style: glass effect on green pages (not scrolled), solid on scrolled
+  // Green on home page and VIN page, navy blue on all other pages
+  const showGlassHeader = isGreenHeaderPage && !isScrolled;
+
+  // Navy blue CSS variable overrides for non-green pages
+  // These override the same variables the header already uses via Tailwind classes
+  const navyVariableOverrides: React.CSSProperties = !isGreenHeaderPage ? {
+    '--header-glass-bg': 'rgba(26, 39, 68, 0.85)',
+    '--header-glass-bg-scrolled': 'rgba(26, 39, 68, 0.95)',
+    '--header-glass-border': 'rgba(255, 255, 255, 0.1)',
+    '--header-glass-shadow': '0 4px 30px rgba(0, 0, 0, 0.15)',
+    '--header-nav-hover': 'rgba(255, 255, 255, 0.1)',
+    '--header-nav-active': 'rgba(255, 255, 255, 0.18)',
+    '--header-nav-active-border': 'rgba(255, 255, 255, 0.25)',
+  } as React.CSSProperties : {};
+
   return (
-    <header className="sticky top-0 z-50 w-full" role="banner">
-      {/* Top Bar - Dark Blue Gradient */}
-      <div className="bg-gradient-to-r from-primary via-[#243754] to-primary">
+    <header
+      className={cn(
+        "fixed top-0 z-50 w-full transition-all duration-300 backdrop-blur-xl backdrop-saturate-150 border-b border-[var(--header-glass-border)]",
+        showGlassHeader
+          ? "bg-[var(--header-glass-bg)]"
+          : "bg-[var(--header-glass-bg-scrolled)] shadow-[var(--header-glass-shadow)]"
+      )}
+      style={{
+        WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+        ...navyVariableOverrides,
+      }}
+      role="banner"
+    >
+      {/* Top Bar */}
+      <div className="transition-colors duration-300">
         {/* Full-width below 1024px, centered and capped width on lg+ */}
         <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="flex h-14 items-center justify-between gap-4">
@@ -148,14 +190,19 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                     variant="outline"
                     size="sm"
                     onClick={() => navigate('/register')}
-                    className="hidden sm:flex h-8 px-4 bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white rounded-md text-sm font-medium"
+                    className={cn(
+                      "hidden sm:flex h-8 px-4 rounded-full text-sm font-medium transition-all",
+                      showGlassHeader
+                        ? "bg-[var(--glass-surface)] border-[var(--glass-border)] text-white hover:bg-[var(--glass-surface-hover)] hover:border-[var(--glass-border-hover)] backdrop-blur-sm"
+                        : "bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white"
+                    )}
                   >
                     {t('navigation.register')}
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => navigate('/login')}
-                    className="hidden sm:flex h-8 px-4 bg-accent hover:bg-accent/90 text-primary rounded-md text-sm font-medium"
+                    className="hidden sm:flex h-8 px-5 bg-white hover:bg-white/90 text-[var(--hero-gradient-start)] rounded-full text-sm font-semibold shadow-lg shadow-black/10"
                   >
                     {t('navigation.sign_in')}
                   </Button>
@@ -194,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                         <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                       </div>
                     </form>
-                    
+
                     {/* Mobile Nav Links */}
                     {navigationItems.map((item) => (
                       <SheetClose asChild key={item.id}>
@@ -207,7 +254,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                         </button>
                       </SheetClose>
                     ))}
-                    
+
                     <div className="border-t border-white/10 mt-4 pt-4 px-4 space-y-2">
                       {/* Language Selector */}
                       <div className="space-y-1">
@@ -282,8 +329,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
         </div>
       </div>
 
-      {/* Bottom Nav Bar - Slightly Lighter Blue (hidden below 1024px) */}
-      <div className="hidden lg:block bg-[#141f33] border-b border-white/10">
+      {/* Bottom Nav Bar - Glass style (hidden below 1024px) */}
+      <div className="hidden lg:block border-t border-[var(--header-glass-border)] transition-all duration-300">
         <div className="px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="flex items-center justify-between h-10">
             {/* Navigation Links */}
@@ -294,10 +341,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   to={item.href}
                   className={({ isActive }) =>
                     cn(
-                      'px-3 py-2 text-sm font-medium transition-colors rounded-sm',
+                      'px-3 py-1.5 text-sm font-medium transition-all duration-200 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent',
                       isActive
-                        ? 'text-white bg-white/10'
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                        ? 'text-white bg-[var(--header-nav-active)] border border-[var(--header-nav-active-border)] shadow-sm'
+                        : 'text-white/85 hover:text-white hover:bg-[var(--header-nav-hover)] border border-transparent'
                     )
                   }
                 >

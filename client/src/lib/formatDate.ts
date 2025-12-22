@@ -71,13 +71,15 @@ export function formatDate(
     if (options.hour !== undefined || options.minute !== undefined) {
       const hours = d.getHours();
       const minutes = d.getMinutes().toString().padStart(2, '0');
-      
+
+      const separator = result.length > 0 ? ', ' : '';
+
       if (options.hour12) {
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const hour12 = hours % 12 || 12;
-        result += `, ${hour12}:${minutes} ${ampm}`;
+        result += `${separator}${hour12}:${minutes} ${ampm}`;
       } else {
-        result += `, ${hours.toString().padStart(2, '0')}:${minutes}`;
+        result += `${separator}${hours.toString().padStart(2, '0')}:${minutes}`;
       }
     }
 

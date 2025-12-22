@@ -48,9 +48,11 @@ function SheetContent({
   className,
   children,
   side = "right",
+  hideCloseButton = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
+  hideCloseButton?: boolean
 }) {
   return (
     <SheetPortal>
@@ -61,13 +63,13 @@ function SheetContent({
         className={cn(
           "bg-white fixed z-50 flex flex-col gap-4 shadow-2xl shadow-primary/10 will-change-transform sheet-content",
           side === "right" &&
-            "inset-y-0 right-0 h-full w-3/4 border-l-2 border-primary/20 sm:max-w-sm",
+          "inset-y-0 right-0 h-full w-3/4 border-l-2 border-primary/20 sm:max-w-sm",
           side === "left" &&
-            "inset-y-0 left-0 h-full w-3/4 border-r-2 border-primary/20 sm:max-w-sm",
+          "inset-y-0 left-0 h-full w-3/4 border-r-2 border-primary/20 sm:max-w-sm",
           side === "top" &&
-            "inset-x-0 top-0 h-auto border-b-2 border-primary/20",
+          "inset-x-0 top-0 h-auto border-b-2 border-primary/20",
           side === "bottom" &&
-            "inset-x-0 bottom-0 h-auto border-t-2 border-primary/20",
+          "inset-x-0 bottom-0 h-auto border-t-2 border-primary/20",
           className
         )}
         aria-describedby={undefined}
@@ -87,10 +89,12 @@ function SheetContent({
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-sub to-accent" />
         )}
         {children}
-        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-md bg-muted/80 p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-primary hover:text-white focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-          <XIcon className="size-4" />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
+        {!hideCloseButton && (
+          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-md bg-muted/80 p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-primary hover:text-white focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+            <XIcon className="size-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        )}
       </SheetPrimitive.Content>
     </SheetPortal>
   )

@@ -39,7 +39,7 @@ export function useVehicleWatchlist(): UseVehicleWatchlistReturn {
     // Fetch all watchlist items (paginate if needed)
     const loadWatchlist = async () => {
       try {
-        const response = await fetchWatchlist(1, 250) // Get up to 250 items
+        const response = await fetchWatchlist(1, 100) // Get up to 100 items (server max)
         if (!isMounted) return
 
         const ids = new Set(response.items.map((item) => item.id))

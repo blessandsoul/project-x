@@ -56,7 +56,7 @@ export const CatalogFilters = ({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const countryInputRef = useRef<HTMLInputElement | null>(null);
   const cityInputRef = useRef<HTMLInputElement | null>(null);
-  
+
   // Suppress unused variable warnings - refs kept for potential future use
   void searchInputRef;
   void countryInputRef;
@@ -212,7 +212,7 @@ export const CatalogFilters = ({
             <Icon icon="mdi:crown" className="h-3 w-3 text-amber-500" />
           </span>
         </label>
-        <p className="text-[9px] text-slate-500 mt-1 px-1">{t('catalog.filters.vip_desc')}</p>
+
       </FilterSection>
     </FiltersSidebarLayout>
   );
@@ -328,7 +328,7 @@ export const CatalogFilters = ({
             <Icon icon="mdi:crown" className="h-3 w-3 text-amber-500" />
           </span>
         </label>
-        <p className="text-[9px] text-slate-500 mt-1 px-1">{t('catalog.filters.vip_desc')}</p>
+
       </FilterSection>
     </div>
   );
@@ -356,11 +356,11 @@ export const CatalogFilters = ({
               <Icon icon="mdi:filter-variant" className="w-3.5 h-3.5" /> {t('catalog.filters.title', 'Filters')}
             </SheetTitle>
           </SheetHeader>
-          
+
           <div className="flex-1 overflow-y-auto bg-white border-x border-slate-300">
             {mobileFilterContent}
           </div>
-          
+
           <SheetFooter className="p-2 bg-slate-50 border-t border-slate-200">
             <div className="flex flex-col gap-1.5 w-full">
               <SheetClose asChild>

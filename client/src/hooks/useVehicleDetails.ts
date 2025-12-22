@@ -33,6 +33,15 @@ interface UseVehicleDetailsResult {
   setMinRating: (rating: number | null) => void
 }
 
+/**
+ * Map vehicle_type field to calculator vehiclecategory.
+ * @param vehicleType - 'c' for motorcycles, 'v' for vehicles, or other
+ * @returns 'Bike' for motorcycles, 'Sedan' for everything else
+ */
+function mapVehicleTypeToCategory(vehicleType: string | null | undefined): 'Sedan' | 'Bike' {
+  return vehicleType === 'c' ? 'Bike' : 'Sedan'
+}
+
 export function useVehicleDetails(
   vehicleId: number | null,
   options?: UseVehicleDetailsOptions
@@ -45,16 +54,16 @@ export function useVehicleDetails(
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  
+
   // Price availability state (from server response)
   const [priceAvailable, setPriceAvailable] = useState(true)
   const [priceUnavailableMessage, setPriceUnavailableMessage] = useState<string | null>(null)
-  
+
   // Pagination state - use initial values from options
   const [quotesTotal, setQuotesTotal] = useState(0)
   const [quotesLimit, setQuotesLimit] = useState(options?.initialLimit ?? 5)
   const [currentOffset, setCurrentOffset] = useState(0)
-  
+
   // Rating filter - use initial value from options
   const [minRating, setMinRating] = useState<number | null>(options?.initialMinRating ?? null)
 
@@ -126,6 +135,8 @@ export function useVehicleDetails(
 
       try {
         // Call API with auction and usacity from vehicle data
+        // Map vehicle_type to vehiclecategory: 'c' = Bike, anything else = Sedan
+        const vehiclecategory = mapVehicleTypeToCategory(vehicle.vehicle_type)
         const quotesResponse = await calculateVehicleQuotes(
           vehicleId,
           auction,
@@ -135,6 +146,7 @@ export function useVehicleDetails(
             limit: quotesLimit,
             offset: 0,
             ...(minRating !== null && { minRating }),
+            vehiclecategory,
           }
         )
         if (!isMounted) return
@@ -147,6 +159,7 @@ export function useVehicleDetails(
         setDistanceMiles(quotesResponse.distance_miles ?? null)
 
         const itemsQuotes = Array.isArray(quotesResponse.quotes) ? quotesResponse.quotes : []
+
         // Update quotes only after we have new data
         setQuotes(itemsQuotes)
         setCurrentOffset(itemsQuotes.length)
@@ -190,6 +203,7 @@ export function useVehicleDetails(
     setIsLoadingMore(true)
 
     try {
+      const vehiclecategory = mapVehicleTypeToCategory(vehicle.vehicle_type)
       const quotesResponse = await calculateVehicleQuotes(
         vehicleId,
         auction,
@@ -199,11 +213,12 @@ export function useVehicleDetails(
           limit: quotesLimit,
           offset: currentOffset,
           ...(minRating !== null && { minRating }),
+          vehiclecategory,
         }
       )
 
       const newQuotes = Array.isArray(quotesResponse.quotes) ? quotesResponse.quotes : []
-      
+
       setQuotes(prev => [...prev, ...newQuotes])
       setCurrentOffset(prev => prev + newQuotes.length)
 

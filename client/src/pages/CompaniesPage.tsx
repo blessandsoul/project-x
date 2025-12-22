@@ -58,9 +58,7 @@ const CompaniesPage = () => {
           <h1 className="text-xl font-bold text-slate-900">
             {t('navigation.companies')}
           </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            {t('companies.subtitle', 'Browse logistics and import companies')}
-          </p>
+
         </div>
       </div>
 
@@ -242,9 +240,9 @@ function CompanyCard({ company }: CompanyCardProps) {
       {/* TOP: Logo + Name + City */}
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 xl:h-14 xl:w-14 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100">
-          <Image 
-            src={company.logo || '/car-logos/toyota.png'} 
-            alt={`${company.name} logo`} 
+          <Image
+            src={company.logo || '/car-logos/toyota.png'}
+            alt={`${company.name} logo`}
             className="h-full w-full"
             fallbackSrc="/car-logos/toyota.png"
             loading="eager"
@@ -253,7 +251,7 @@ function CompanyCard({ company }: CompanyCardProps) {
         </div>
 
         <div className="flex flex-col min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-primary leading-tight line-clamp-1">
+          <h3 className="text-sm font-semibold text-primary leading-tight line-clamp-1 capitalize">
             {company.name}
           </h3>
           <div className="flex items-center gap-1 text-[10px] xl:text-[11px] text-muted-foreground">

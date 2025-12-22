@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* * {
+  outline: 1px solid green;
+} */
+
 @font-face {
   font-family: "HomepageHeroFont";
   src: url("/font/font.ttf") format("truetype");
@@ -10,29 +14,25 @@
 
 @font-face {
   font-family: mainRegular;
-  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2")
-    format("woff2");
+  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2") format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainMedium;
-  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2")
-    format("woff2");
+  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2") format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainSemiBold;
-  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2")
-    format("woff2");
+  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2") format("woff2");
   font-display: swap;
 }
 
 @font-face {
   font-family: mainBold;
-  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2")
-    format("woff2");
+  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2") format("woff2");
   font-display: swap;
 }
 
@@ -60,7 +60,8 @@
   --oklch-border-strong: oklch(0.8 0.04 240);
 
   --color-background: #ffffff;
-  --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
+  --color-foreground: #0f172a;
+  /* Slate 900 - softer than pure black */
 
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
@@ -68,25 +69,33 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #0f172a;
 
-  --color-primary: var(--brand-primary, #1a2744); /* Main Color - Dark Navy Blue */
-  --color-primary-foreground: #ffffff; /* White text on dark blue for contrast */
+  --color-primary: var(--brand-primary, #1a2744);
+  /* Main Color - Dark Navy Blue */
+  --color-primary-foreground: #ffffff;
+  /* White text on dark blue for contrast */
 
-  --color-secondary: #f1f5f9; /* Slate 100 - kept for UI backgrounds */
+  --color-secondary: #f1f5f9;
+  /* Slate 100 - kept for UI backgrounds */
   --color-secondary-foreground: #0f172a;
 
-  --color-sub: var(--brand-accent, #f5a623); /* Sub Color - Golden Orange */
+  --color-sub: var(--brand-accent, #f5a623);
+  /* Sub Color - Golden Orange */
   --color-sub-foreground: var(--brand-primary, #1a2744);
 
-  --color-muted: #f8fafc; /* Slate 50 */
-  --color-muted-foreground: #64748b; /* Slate 500 */
+  --color-muted: #f8fafc;
+  /* Slate 50 */
+  --color-muted-foreground: #64748b;
+  /* Slate 500 */
 
-  --color-accent: var(--brand-accent, #f5a623); /* Using Sub Color as Accent - Golden Orange */
+  --color-accent: var(--brand-accent, #f5a623);
+  /* Using Sub Color as Accent - Golden Orange */
   --color-accent-foreground: var(--brand-primary, #1a2744);
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
-  --color-border: #e2e8f0; /* Slate 200 */
+  --color-border: #e2e8f0;
+  /* Slate 200 */
   --color-input: #e2e8f0;
   --color-ring: var(--brand-primary, #1a2744);
 
@@ -94,7 +103,8 @@
   --color-warning-foreground: #ffffff;
 
   /* Radii - softer, more modern feel */
-  --radius: 0.5rem; /* 8px - standard */
+  --radius: 0.5rem;
+  /* 8px - standard */
   --radius-lg: 0.75rem;
   --radius-md: 0.5rem;
   --radius-sm: 0.3rem;
@@ -139,10 +149,12 @@
 }
 
 .dark {
-  --color-background: #020617; /* Slate 950 */
+  --color-background: #020617;
+  /* Slate 950 */
   --color-foreground: #f8fafc;
 
-  --color-card: #0f172a; /* Slate 900 */
+  --color-card: #0f172a;
+  /* Slate 900 */
   --color-card-foreground: #f8fafc;
 
   --color-popover: #0f172a;
@@ -151,7 +163,8 @@
   --color-primary: var(--brand-primary, #1a2744);
   --color-primary-foreground: #ffffff;
 
-  --color-secondary: #1e293b; /* Slate 800 */
+  --color-secondary: #1e293b;
+  /* Slate 800 */
   --color-secondary-foreground: #f8fafc;
 
   --color-sub: var(--brand-accent, #f5a623);
@@ -209,21 +222,25 @@
   * {
     @apply border-border;
   }
+
   html {
     /* Prevent layout shift when Radix dialogs/selects hide scrollbar */
     scrollbar-gutter: stable;
   }
+
   /* Override Radix scroll lock - prevent body width change when scrollbar is hidden */
   body[data-scroll-locked] {
     overflow: auto !important;
     margin-right: 0 !important;
   }
+
   body {
     @apply text-foreground antialiased;
     font-family: var(--font-sans);
     /* Light neutral background so loading and blank states are not black */
     background: #f8fafc;
   }
+
   h1,
   h2,
   h3,
@@ -233,9 +250,11 @@
     font-family: var(--font-heading);
     @apply tracking-tight;
   }
+
   .font-homepage-hero {
     font-family: "HomepageHeroFont", var(--font-georgian);
   }
+
   /* Legacy font support */
   .font-logo-bebas {
     font-family: "Inter", "Noto Sans Georgian", sans-serif;
@@ -298,21 +317,15 @@
     content: "";
     position: absolute;
     inset: -20%;
-    background: radial-gradient(
-        circle at 20% 30%,
+    background: radial-gradient(circle at 20% 30%,
         rgba(255, 255, 255, 0.15),
-        transparent 55%
-      ),
-      radial-gradient(
-        circle at 80% 20%,
+        transparent 55%),
+      radial-gradient(circle at 80% 20%,
         rgba(245, 166, 35, 0.25),
-        transparent 55%
-      ),
-      radial-gradient(
-        circle at 50% 80%,
+        transparent 55%),
+      radial-gradient(circle at 50% 80%,
         rgba(26, 39, 68, 0.35),
-        transparent 60%
-      );
+        transparent 60%);
     filter: blur(40px);
     opacity: 0.8;
     mix-blend-mode: screen;
@@ -331,12 +344,15 @@
   .dialog-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.35s ease-out forwards;
   }
+
   .dialog-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.35s ease-in forwards;
   }
+
   .dialog-content[data-state="open"] {
     animation: dialogContentIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .dialog-content[data-state="closed"] {
     animation: dialogContentOut 0.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
   }
@@ -345,6 +361,7 @@
   .sheet-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.5s ease-out forwards;
   }
+
   .sheet-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.5s ease-in forwards;
   }
@@ -352,6 +369,7 @@
   .sheet-content[data-state="open"] {
     animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-state="closed"] {
     animation: slideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -359,6 +377,7 @@
   .sheet-content[data-side="right"][data-state="open"] {
     animation: slideInFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-side="right"][data-state="closed"] {
     animation: slideOutToRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -366,6 +385,7 @@
   .sheet-content[data-side="left"][data-state="open"] {
     animation: slideInFromLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-side="left"][data-state="closed"] {
     animation: slideOutToLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -375,51 +395,63 @@
   0% {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   25% {
     transform: translate3d(-4%, 2%, 0) scale(1.05);
   }
+
   50% {
     transform: translate3d(3%, -3%, 0) scale(1.02);
   }
+
   75% {
     transform: translate3d(-2%, -4%, 0) scale(1.06);
   }
+
   100% {
     transform: translate3d(4%, 3%, 0) scale(1.03);
   }
 }
 
 @keyframes float-slow {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(30px, -30px) scale(1.1);
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
 }
 
 @keyframes float-slower {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     transform: translate(-40px, 40px) scale(1.15);
   }
 }
 
 @keyframes float-medium {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   25% {
     transform: translate(25px, 25px) scale(1.05);
   }
+
   75% {
     transform: translate(-30px, -20px) scale(0.95);
   }
@@ -429,6 +461,7 @@
   0% {
     transform: translateY(0);
   }
+
   100% {
     transform: translateY(-33.333%);
   }
@@ -446,6 +479,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -455,6 +489,7 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -471,7 +506,8 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--brand-primary, #1a2744); /* Primary Dark Navy */
+  background: var(--brand-primary, #1a2744);
+  /* Primary Dark Navy */
   border-radius: 5px;
   border: 2px solid #0f172a;
 }
@@ -485,6 +521,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -496,6 +533,7 @@
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.95);
@@ -506,6 +544,7 @@
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -515,6 +554,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(100%);
   }
@@ -524,6 +564,7 @@
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -533,6 +574,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-100%);
   }
@@ -544,6 +586,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -554,6 +597,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -591,7 +635,8 @@
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: 1rem; /* 16px, matches desktop */
+    gap: 1rem;
+    /* 16px, matches desktop */
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     padding-bottom: 12px;
@@ -602,7 +647,8 @@
   }
 
   .similar-vehicle-card {
-    flex: 0 0 260px; /* compact fixed width so several cards fit in view */
+    flex: 0 0 260px;
+    /* compact fixed width so several cards fit in view */
     max-width: 260px;
     scroll-snap-align: start;
     height: auto;
@@ -611,11 +657,13 @@
 
 /* Similar Vehicles - normalize card + image heights on small phones (<768px) */
 @media (max-width: 768px) {
+
   /* 1. Cards: full-width, fixed height, snap scroll */
   .similar-vehicle-card {
     flex: 0 0 100%;
     max-width: 100%;
-    height: 380px; /* uniform card height; tweak as needed */
+    height: 380px;
+    /* uniform card height; tweak as needed */
     display: flex;
     flex-direction: column;
     border-radius: 10px;
@@ -637,19 +685,20 @@
   }
 
   /* 3. Ensure inner card fills the fixed height */
-  .similar-vehicle-card > * {
+  .similar-vehicle-card>* {
     flex: 1;
     display: flex;
     flex-direction: column;
   }
 
   /* 4. Middle row (image + gray info) gets fixed height so images are equal */
-  .similar-vehicle-card > * > div:nth-child(2) {
-    flex: 0 0 180px; /* fixed image/info band */
+  .similar-vehicle-card>*>div:nth-child(2) {
+    flex: 0 0 180px;
+    /* fixed image/info band */
     min-height: 180px;
   }
 
-  .similar-vehicle-card > * > div:nth-child(2) img {
+  .similar-vehicle-card>*>div:nth-child(2) img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -675,36 +724,42 @@
 
   .similar-vehicles-track {
     display: flex;
-    gap: 1rem; /* 16px */
+    gap: 1rem;
+    /* 16px */
   }
 
   .similar-vehicles-card {
-    flex: 0 0 calc((100% - 3 * 16px) / 4); /* default: 4 per row for 1024–1439px */
+    flex: 0 0 calc((100% - 3 * 16px) / 4);
+    /* default: 4 per row for 1024–1439px */
     max-width: calc((100% - 3 * 16px) / 4);
   }
 }
 
 @media (min-width: 1440px) and (max-width: 1919px) {
   .similar-vehicles-card {
-    flex: 0 0 calc((100% - 4 * 16px) / 5); /* 5 per row */
+    flex: 0 0 calc((100% - 4 * 16px) / 5);
+    /* 5 per row */
     max-width: calc((100% - 4 * 16px) / 5);
   }
 }
 
 @media (min-width: 1920px) {
   .similar-vehicles-card {
-    flex: 0 0 calc((100% - 5 * 16px) / 6); /* 6 per row */
+    flex: 0 0 calc((100% - 5 * 16px) / 6);
+    /* 6 per row */
     max-width: calc((100% - 5 * 16px) / 6);
   }
 }
 
 /* Similar Vehicles - compact image + content only in this section */
-.similar-vehicle-card .group > div:first-child {
-  max-height: 110px; /* smaller image area so full card looks more compact */
+.similar-vehicle-card .group>div:first-child {
+  max-height: 110px;
+  /* smaller image area so full card looks more compact */
 }
 
-.similar-vehicle-card .group > div:nth-child(2) {
-  padding: 8px; /* tighten inner padding */
+.similar-vehicle-card .group>div:nth-child(2) {
+  padding: 8px;
+  /* tighten inner padding */
 }
 
 .similar-vehicle-card .group h3 {
@@ -746,8 +801,10 @@
     max-width: 100%;
     margin-left: 0;
     margin-right: 0;
-    padding-left: 0.75rem; /* ~12px */
-    padding-right: 0.75rem; /* ~12px */
+    padding-left: 0.75rem;
+    /* ~12px */
+    padding-right: 0.75rem;
+    /* ~12px */
   }
 
   .vin-hero-grid {
@@ -821,21 +878,25 @@
   .vehicle-header-meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem; /* ~6px between items */
+    gap: 0.375rem;
+    /* ~6px between items */
     align-items: center;
     justify-content: flex-start;
-    margin-top: 0.25rem; /* close to title/meta badge */
+    margin-top: 0.25rem;
+    /* close to title/meta badge */
     font-size: 0.75rem;
   }
 
   /* Lot#/VIN block: two compact lines, no separator dot */
   .vehicle-header-meta-row span:nth-child(2) {
-    display: none; /* hide the bullet between Lot# and VIN */
+    display: none;
+    /* hide the bullet between Lot# and VIN */
   }
 
   .vehicle-header-meta-row span:nth-child(1),
   .vehicle-header-meta-row span:nth-child(3) {
-    color: #64748b; /* muted */
+    color: #64748b;
+    /* muted */
     line-height: 1.2;
     white-space: nowrap;
   }
@@ -869,10 +930,11 @@
 }
 
 /* ==========================================================================
-   AUCTION VEHICLE CARDS - Mobile (<600px)
+   AUCTION VEHICLE CARDS - Mobile (<768px)
    Two-column grid layout with compact cards
    ========================================================================== */
-@media (max-width: 599px) {
+@media (max-width: 767.98px) {
+
   /* Grid container for vehicle cards - 2 columns, equal height rows */
   .auction-cards-grid {
     display: grid !important;
@@ -882,7 +944,7 @@
   }
 
   /* Card motion wrapper: stretch to fill grid cell */
-  .auction-cards-grid > div {
+  .auction-cards-grid>div {
     display: flex !important;
     height: 100% !important;
   }
@@ -915,7 +977,8 @@
 
   /* Header section: very compact */
   .auction-card-mobile .auction-card-header {
-    padding: 0.375rem 0.5rem !important; /* 6px 8px */
+    padding: 0.375rem 0.5rem !important;
+    /* 6px 8px */
   }
 
   .auction-card-mobile .auction-card-header h3 {
@@ -945,7 +1008,7 @@
   }
 
   /* Image button wrapper: fill container, clickable */
-  .auction-card-mobile .auction-card-image > button {
+  .auction-card-mobile .auction-card-image>button {
     width: 100% !important;
     height: 100% !important;
     background-color: #f0f1f3 !important;
@@ -965,13 +1028,16 @@
   /* Info panel: very compact */
   .auction-card-mobile .auction-card-info {
     width: 100% !important;
-    padding: 0.375rem 0.5rem !important; /* 6px 8px */
-    gap: 0.125rem !important; /* 2px */
+    padding: 0.375rem 0.5rem !important;
+    /* 6px 8px */
+    gap: 0.125rem !important;
+    /* 2px */
     background-color: #f8f9fa !important;
   }
 
-  .auction-card-mobile .auction-card-info > div {
-    margin-bottom: 0.125rem !important; /* 2px */
+  .auction-card-mobile .auction-card-info>div {
+    margin-bottom: 0.125rem !important;
+    /* 2px */
   }
 
   .auction-card-mobile .auction-card-info p {
@@ -998,8 +1064,8 @@
   }
 
   /* Hide auction date section to save space */
-  .auction-card-mobile .auction-card-info > div:last-child:has(.text-emerald-600),
-  .auction-card-mobile .auction-card-info > div:last-child:has(.text-emerald-700) {
+  .auction-card-mobile .auction-card-info>div:last-child:has(.text-emerald-600),
+  .auction-card-mobile .auction-card-info>div:last-child:has(.text-emerald-700) {
     display: none !important;
   }
 
@@ -1023,10 +1089,53 @@
     width: 12px !important;
     height: 12px !important;
   }
+
+  /* Override for similar vehicles - keep horizontal layout */
+  .similar-vehicle-card .auction-card-middle,
+  .force-horizontal-layout .auction-card-middle {
+    flex-direction: row !important;
+  }
+
+  .similar-vehicle-card .auction-card-image,
+  .force-horizontal-layout .auction-card-image {
+    width: 50% !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+  }
+
+  .similar-vehicle-card .auction-card-info,
+  .force-horizontal-layout .auction-card-info {
+    width: 50% !important;
+  }
+
+  /* Listing vehicle card - vertical layout: image on top, data below */
+  .listing-vehicle-card .auction-card-middle {
+    flex-direction: column !important;
+  }
+
+  .listing-vehicle-card .auction-card-image {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important;
+  }
+
+  .listing-vehicle-card .auction-card-info {
+    width: 100% !important;
+  }
+}
+
+/* AUCTION VEHICLE CARDS - Very Small Screens (<370px)
+   Single column layout for narrow devices
+   ========================================================================== */
+@media (max-width: 369px) {
+  .auction-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* VIN Hero - Tablet-only layout (768px–1024px) */
 @media (min-width: 768px) and (max-width: 1024px) {
+
   /* Make hero feel like a full orange landing section on tablet */
   .vin-hero {
     background: #f5a623;
@@ -1035,11 +1144,9 @@
 
   /* Soften overlay so content stays readable on orange */
   .vin-hero-overlay {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.16),
-      rgba(0, 0, 0, 0.12)
-    );
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(0, 0, 0, 0.12));
     mix-blend-mode: normal;
   }
 
@@ -1047,7 +1154,8 @@
   .vin-hero-container {
     max-width: 760px;
     margin-inline: auto;
-    padding-inline: 1.75rem; /* ~28px */
+    padding-inline: 1.75rem;
+    /* ~28px */
   }
 
   .vin-hero-content,
@@ -1128,12 +1236,39 @@
 
 /* Popular Vehicles Section - Equal Height Cards */
 .popular-vehicle-card {
+
   /* Fixed height for desktop (680px+) */
   @media (min-width: 680px) {
     min-height: 340px;
   }
+
   /* Smaller fixed height for mobile */
   @media (max-width: 679px) {
     min-height: 240px;
+  }
+}
+
+/* Responsive image sizing for favorites page - smaller below 550px */
+.responsive-image-cell {
+  width: 192px;
+  min-width: 192px;
+  max-width: 192px;
+}
+
+.responsive-image {
+  width: 192px;
+  /* w-48 */
+}
+
+@media (max-width: 549px) {
+  .responsive-image-cell {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+
+  .responsive-image {
+    width: 120px !important;
+    /* Larger on mobile to fill vertical space */
   }
 }

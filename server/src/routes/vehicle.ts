@@ -36,12 +36,18 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // All query params are validated with Zod before processing.
   // ---------------------------------------------------------------------------
   fastify.get('/vehicles/search', async (request, reply) => {
+    // Debug logging for source filter issue
+    if (request.query && typeof request.query === 'object' && 'source' in request.query) {
+      fastify.log.info({ source: request.query.source, queryType: typeof request.query.source }, 'DEBUG: Source filter received');
+    }
+
     // Validate query params with Zod
     const parseResult = vehicleSearchQuerySchema.safeParse(request.query);
     if (!parseResult.success) {
       // Zod v4 uses .issues instead of .errors
       const issues = parseResult.error.issues || [];
       const messages = issues.map((issue: { message: string }) => issue.message).join(', ');
+      fastify.log.error({ query: request.query, issues }, 'Validation failed for /vehicles/search');
       throw new ValidationError(messages || 'Invalid query parameters');
     }
 
@@ -154,6 +160,11 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
     // Location filter (city name)
     if (query.location && query.location.trim().length > 0) {
       filters.location = query.location.trim();
+    }
+
+    // Fuzzy location matching flag
+    if (query.fuzzy_location === true) {
+      filters.fuzzyLocation = true;
     }
 
     // Cylinders filter (multi-value)

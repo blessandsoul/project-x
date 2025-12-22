@@ -40,7 +40,7 @@ export default function DashboardPage() {
     recentlyViewed.includes(String(company.id)),
   )
   const shouldReduceMotion = useReducedMotion()
-  const { user, updateUser, companyId } = useAuth()
+  const { user, updateUser, companyId, userRole } = useAuth()
   const [localRole, setLocalRole] = useState<UserRole>('user')
   const role: UserRole = (user?.role as UserRole | undefined) ?? localRole
   const navigate = useNavigate()
@@ -50,7 +50,7 @@ export default function DashboardPage() {
   const [quickGeography, setQuickGeography] = useState<string>('')
   const [quickBudget, setQuickBudget] = useState<'low' | 'medium' | 'high' | ''>('')
 
-  
+
   const isDashboardLoading = false
   const dashboardError: string | null = null
 
@@ -298,7 +298,7 @@ export default function DashboardPage() {
         .map(([state, count]) => ({ state, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5)
-      },
+    },
     [],
   )
 
@@ -579,8 +579,8 @@ export default function DashboardPage() {
                 {role === 'company' && t('dashboard.company.welcome_subtitle')}
               </p>
 
-              {/* Company Onboarding CTA - Show only if user is authenticated but has no company */}
-              {user && companyId === null && (
+              {/* Company Onboarding CTA - Show if user is authenticated and has no company */}
+              {user && !companyId && (userRole === 'user' || userRole === null) && (
                 <Card className="mt-4 border-primary/20 bg-primary/5">
                   <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4">
                     <div className="flex-shrink-0 p-3 rounded-full bg-primary/10">

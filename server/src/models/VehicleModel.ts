@@ -1,6 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { BaseModel } from './BaseModel.js';
 import { Vehicle, VehiclePhoto } from '../types/vehicle.js';
+import {
+  normalizeLocationName,
+  buildLocationLikePatterns,
+  scoreLocationMatch,
+} from '../utils/locationMatcher.js';
 
 export class VehicleModel extends BaseModel {
   private fastify: FastifyInstance;
@@ -148,6 +153,7 @@ export class VehicleModel extends BaseModel {
       soldFrom?: string;
       soldTo?: string;
       location?: string;
+      fuzzyLocation?: boolean;
       date?: string;
     },
     limit: number = 50,
@@ -309,10 +315,23 @@ export class VehicleModel extends BaseModel {
       params.push(datePart, datePart, timePart);
     }
 
-    // Location filter (matches yard_name, both lowercase with spaces removed)
+    // Location filter (matches yard_name)
+    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
     if (filters.location) {
-      conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
-      params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      if (filters.fuzzyLocation) {
+        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
+        const likePatterns = buildLocationLikePatterns(filters.location);
+        if (likePatterns.length > 0) {
+          // Use OR for multiple patterns to get candidate matches
+          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
+          conditions.push(`(${likeConditions})`);
+          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
+        }
+      } else {
+        // Exact matching (legacy behavior): lowercase with spaces removed
+        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      }
     }
 
     // Exact date filter (sold_at_date = date)
@@ -419,6 +438,7 @@ export class VehicleModel extends BaseModel {
     soldTo?: string;
     sourceLotId?: string;
     location?: string;
+    fuzzyLocation?: boolean;
     date?: string;
   }): Promise<number> {
     const conditions: string[] = [];
@@ -572,10 +592,22 @@ export class VehicleModel extends BaseModel {
       params.push(datePart, datePart, timePart);
     }
 
-    // Location filter (matches yard_name, both lowercase with spaces removed)
+    // Location filter (matches yard_name)
+    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
     if (filters.location) {
-      conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
-      params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      if (filters.fuzzyLocation) {
+        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
+        const likePatterns = buildLocationLikePatterns(filters.location);
+        if (likePatterns.length > 0) {
+          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
+          conditions.push(`(${likeConditions})`);
+          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
+        }
+      } else {
+        // Exact matching (legacy behavior): lowercase with spaces removed
+        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      }
     }
 
     // Exact date filter (sold_at_date = date)

@@ -12,6 +12,4 @@ export const USAGE_GOALS = [
 
 export const REGIONS = ['USA', 'Europe', 'Korea', 'Japan', 'China', 'UAE'];
 
-export const SERVICES = ['Ocean Freight', 'Inland Trucking', 'Customs Clearance', 'Insurance', 'Parts Shipping'];
-
 export const DEALER_INVENTORY_SIZES = ['0-10', '10-50', '50+'];

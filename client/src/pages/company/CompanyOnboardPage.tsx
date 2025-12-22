@@ -16,7 +16,7 @@
  * Guard: RequireNoCompany (auth required, no existing company)
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -46,7 +46,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { onboardCompany, type OnboardError } from '@/services/companyOnboardService'
 import { uploadCompanyLogo, validateLogoFile, formatFileSize, LOGO_MAX_SIZE_BYTES } from '@/services/companyLogoService'
 import { createMultipleSocialLinks, isValidUrl, normalizeUrl } from '@/services/companySocialLinksService'
-import { SERVICES } from '@/constants/onboarding'
+import { fetchServices, type Service } from '@/api/services'
 
 // Form validation schema (websites handled separately as state)
 const onboardFormSchema = z.object({
@@ -91,7 +91,10 @@ const CompanyOnboardPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('idle')
   const [error, setError] = useState<OnboardError | null>(null)
-  const [customService, setCustomService] = useState('')
+
+  // Services state (fetched from API)
+  const [availableServices, setAvailableServices] = useState<Service[]>([])
+  const [isLoadingServices, setIsLoadingServices] = useState(true)
 
   // Websites state (managed separately from form)
   const [websites, setWebsites] = useState<string[]>([])
@@ -147,28 +150,46 @@ const CompanyOnboardPage = () => {
     form.setValue('services', watchedServices.filter(s => s !== service))
   }, [watchedServices, form])
 
-  const handleCustomServiceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddService(customService)
-      setCustomService('')
+  // Fetch services from API on mount
+  useEffect(() => {
+    let mounted = true
+
+    async function loadServices() {
+      try {
+        const services = await fetchServices()
+        if (mounted) {
+          setAvailableServices(services)
+        }
+      } catch (err) {
+        console.error('[Onboarding] Failed to load services:', err)
+      } finally {
+        if (mounted) {
+          setIsLoadingServices(false)
+        }
+      }
     }
-  }
+
+    loadServices()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // Website handlers
   const handleAddWebsite = useCallback(() => {
     setWebsiteError(null)
     const trimmed = newWebsite.trim()
-    
+
     if (!trimmed) return
-    
+
     if (websites.length >= MAX_WEBSITES) {
       setWebsiteError(`Maximum ${MAX_WEBSITES} websites allowed`)
       return
     }
 
     const normalized = normalizeUrl(trimmed)
-    
+
     if (!isValidUrl(normalized)) {
       setWebsiteError('Invalid URL format. Use https://example.com')
       return
@@ -199,7 +220,7 @@ const CompanyOnboardPage = () => {
   const handleLogoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLogoError(null)
     const file = e.target.files?.[0]
-    
+
     if (!file) {
       setLogoFile(null)
       setLogoPreview(null)
@@ -214,7 +235,7 @@ const CompanyOnboardPage = () => {
     }
 
     setLogoFile(file)
-    
+
     // Create preview
     const reader = new FileReader()
     reader.onload = (event) => {
@@ -243,10 +264,21 @@ const CompanyOnboardPage = () => {
     const failures: string[] = []
 
     try {
+      // Step 0: Auto-add website from input if user typed but didn't click '+'
+      // This prevents data loss when user expects the typed value to be saved
+      let finalWebsites = [...websites]
+      if (newWebsite.trim()) {
+        const normalized = normalizeUrl(newWebsite.trim())
+        if (isValidUrl(normalized) && !finalWebsites.some(w => normalizeUrl(w) === normalized)) {
+          finalWebsites.push(normalized)
+          console.log('[Onboarding] Auto-added website from input:', normalized)
+        }
+      }
+
       // Step 1: Create company
-      // First website goes to company.website, rest will be social links
-      const primaryWebsite = websites.length > 0 ? websites[0] : undefined
-      
+      // First website goes to company.website, ALL websites go to social links
+      const primaryWebsite = finalWebsites.length > 0 ? finalWebsites[0] : undefined
+
       const payload = {
         name: data.name,
         companyPhone: data.companyPhone || undefined,
@@ -279,19 +311,22 @@ const CompanyOnboardPage = () => {
         }
       }
 
-      // Step 3: Add extra websites as social links
-      const extraWebsites = websites.slice(1) // Skip first (already in company.website)
-      if (extraWebsites.length > 0 && companyId) {
+      // Step 3: Add ALL websites as social links
+      // Note: First website is already in company.website, but we also create it as a social link
+      // to match the behavior on settings page where website field and social links are independent
+      if (finalWebsites.length > 0 && companyId) {
         setCurrentStep('adding_websites')
+        console.log('[Onboarding] Creating social links for websites:', finalWebsites)
         try {
-          const results = await createMultipleSocialLinks(companyId, extraWebsites)
+          const results = await createMultipleSocialLinks(companyId, finalWebsites)
+          console.log('[Onboarding] Social links creation results:', results)
           const failedLinks = results.filter(r => !r.success)
           if (failedLinks.length > 0) {
             failures.push(`${failedLinks.length} website(s) failed to save`)
           }
         } catch (linksErr: any) {
           console.error('[Onboarding] Social links failed:', linksErr)
-          failures.push('Failed to save additional websites')
+          failures.push('Failed to save websites')
         }
       }
 
@@ -547,7 +582,7 @@ const CompanyOnboardPage = () => {
                     </p>
                   </div>
                 )}
-                
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -704,76 +739,59 @@ const CompanyOnboardPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Predefined services */}
-                <div className="flex flex-wrap gap-2">
-                  {SERVICES.map((service) => {
-                    const isSelected = watchedServices.includes(service)
-                    return (
-                      <Badge
-                        key={service}
-                        variant={isSelected ? 'default' : 'outline'}
-                        className="cursor-pointer transition-colors"
-                        onClick={() => {
-                          if (isSelected) {
-                            handleRemoveService(service)
-                          } else {
-                            handleAddService(service)
-                          }
-                        }}
-                      >
-                        {isSelected && <Icon icon="mdi:check" className="h-3 w-3 mr-1" />}
-                        {service}
-                      </Badge>
-                    )
-                  })}
-                </div>
-
-                <Separator />
-
-                {/* Custom service input */}
-                <div className="space-y-2">
-                  <Label>Add Custom Service</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter custom service..."
-                      value={customService}
-                      onChange={(e) => setCustomService(e.target.value)}
-                      onKeyDown={handleCustomServiceKeyDown}
-                      maxLength={100}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        handleAddService(customService)
-                        setCustomService('')
-                      }}
-                      disabled={!customService.trim()}
-                    >
-                      <Icon icon="mdi:plus" className="h-4 w-4" />
-                    </Button>
+                {/* Available services from API */}
+                {isLoadingServices ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading services...</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {availableServices.map((service) => {
+                      const isSelected = watchedServices.includes(service.name)
+                      return (
+                        <Badge
+                          key={service.id}
+                          variant={isSelected ? 'default' : 'outline'}
+                          className="cursor-pointer transition-colors"
+                          onClick={() => {
+                            if (isSelected) {
+                              handleRemoveService(service.name)
+                            } else {
+                              handleAddService(service.name)
+                            }
+                          }}
+                        >
+                          {isSelected && <Icon icon="mdi:check" className="h-3 w-3 mr-1" />}
+                          {service.name}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                )}
 
                 {/* Selected services display */}
                 {watchedServices.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Selected Services ({watchedServices.length}/20)</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {watchedServices.map((service) => (
-                        <Badge key={service} variant="secondary" className="gap-1">
-                          {service}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveService(service)}
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <Icon icon="mdi:close" className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Selected Services ({watchedServices.length}/20)</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {watchedServices.map((service) => (
+                          <Badge key={service} variant="secondary" className="gap-1">
+                            {service}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveService(service)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <Icon icon="mdi:close" className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>

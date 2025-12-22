@@ -47,13 +47,13 @@ const DialogContent = React.forwardRef<
       >
         {/* Premium gradient accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-primary to-blue-500" />
-        
+
         {/* Close button */}
         <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:pointer-events-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
-        
+
         {/* Content wrapper with proper padding */}
         <div className="p-6 pt-8">
           {children}

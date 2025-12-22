@@ -6,9 +6,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody } from '@/components/ui/table'
 import { Icon } from '@iconify/react/dist/iconify.js'
 // navigationItems now handled by MainLayout
-import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
+import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListItem'
 import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist'
 import { useCalculateVehicleQuotes } from '@/hooks/useCalculateVehicleQuotes'
 import { fetchWatchlist } from '@/api/watchlist'
@@ -32,7 +33,7 @@ const FavoriteVehiclesPage = () => {
     setIsLoading(true)
     setError(null)
 
-    fetchWatchlist(1, 250)
+    fetchWatchlist(1, 100)
       .then((response) => {
         if (!isMounted) return
         setItems(response.items)
@@ -102,25 +103,6 @@ const FavoriteVehiclesPage = () => {
 
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="space-y-6">
-            {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  {t('auction.real_results')}
-                  {items && (
-                    <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
-                      {items.length}
-                    </Badge>
-                  )}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {isBusy && t('auction.loading_data')}
-                  {!isBusy && !error && items &&
-                    t('auction.showing_results', { count: items.length, total: items.length })}
-                </p>
-              </div>
-            </div>
-
             {/* Content Grid */}
             <div className="min-h-[400px]">
               {isBusy && items.length === 0 ? (
@@ -169,32 +151,36 @@ const FavoriteVehiclesPage = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
-                    {items.map((item, idx) => (
-                      <AuctionVehicleCard
-                        key={`${item.id}-${item.vehicle_id}`}
-                        item={item}
-                        priority={idx < 4}
-                        isSelected={false}
-                        showCompareCheckbox={false}
-                        isWatched={isWatched(item.vehicle_id ?? item.id)}
-                        onToggleWatch={() => {
-                          const id = item.vehicle_id ?? item.id
-                          toggleWatch(id)
-                        }}
-                        onCalculate={() => {
-                          const id = item.vehicle_id ?? item.id
-                          setIsCalcModalOpen(true)
-                          calculateQuotes(id)
-                        }}
-                        onViewDetails={() => {
-                          const id = item.vehicle_id ?? item.id
-                          navigate({ pathname: `/vehicle/${id}` })
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {items.map((item, idx) => (
+                    <div key={`${item.id}-${item.vehicle_id}`} className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableBody>
+                          <AuctionVehicleListItem
+                            item={item}
+                            priority={idx < 4}
+                            isSelected={false}
+                            showCompareCheckbox={false}
+                            isWatched={isWatched(item.vehicle_id ?? item.id)}
+                            hideExtraColumns={true}
+                            onToggleWatch={() => {
+                              const id = item.vehicle_id ?? item.id
+                              toggleWatch(id)
+                            }}
+                            onCalculate={() => {
+                              const id = item.vehicle_id ?? item.id
+                              setIsCalcModalOpen(true)
+                              calculateQuotes(id)
+                            }}
+                            onViewDetails={() => {
+                              const id = item.vehicle_id ?? item.id
+                              navigate({ pathname: `/vehicle/${id}` })
+                            }}
+                          />
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -254,7 +240,7 @@ const FavoriteVehiclesPage = () => {
                         <span>
                           {formatMoney(
                             randomCalcQuote.breakdown.service_fee +
-                              randomCalcQuote.breakdown.broker_fee,
+                            randomCalcQuote.breakdown.broker_fee,
                           )}
                         </span>
                       </div>

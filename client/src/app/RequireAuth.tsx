@@ -64,3 +64,35 @@ export function RequireNoCompany({ children }: { children: ReactNode }) {
 
   return <>{children}</>
 }
+
+/**
+ * Route guard for company-only pages (e.g., /company/settings)
+ *
+ * Requirements:
+ * - User must be authenticated
+ * - User must have role='company'
+ * - User must have an active company (company_id !== null)
+ *
+ * If requirements not met, redirect to /company/onboard.
+ */
+export function RequireCompany({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isInitialized, userRole, companyId } = useAuth()
+  const location = useLocation()
+
+  // Show loading state while auth initializes (prevents flicker)
+  if (!isInitialized) {
+    return <PageLoader />
+  }
+
+  // Must be authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  // Must have company role AND active company
+  if (userRole !== 'company' || !companyId) {
+    return <Navigate to="/company/onboard" replace />
+  }
+
+  return <>{children}</>
+}

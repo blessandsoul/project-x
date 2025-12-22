@@ -78,14 +78,14 @@ export interface VehicleSimilarResponse {
  * @param auction - Auction source (e.g., "copart", "iaai") - will be normalized server-side
  * @param usacity - US city/yard name (e.g., "Permian Basin (TX)") - will be smart-matched server-side
  * @param currency - Currency for prices (default: 'usd')
- * @param options - Pagination and filter options
+ * @param options - Pagination, filter options, and vehiclecategory
  */
 export async function calculateVehicleQuotes(
   vehicleId: number,
   auction: string,
   usacity: string,
   currency: 'usd' | 'gel' = 'usd',
-  options?: { limit?: number; offset?: number; minRating?: number },
+  options?: { limit?: number; offset?: number; minRating?: number; vehiclecategory?: 'Sedan' | 'Bike' },
 ): Promise<VehicleQuotesResponse> {
   const params = new URLSearchParams()
 
@@ -112,6 +112,7 @@ export async function calculateVehicleQuotes(
   const response = await apiPost<VehicleQuotesResponse>(path, {
     auction,
     usacity,
+    ...(options?.vehiclecategory && { vehiclecategory: options.vehiclecategory }),
   })
 
   // eslint-disable-next-line no-console

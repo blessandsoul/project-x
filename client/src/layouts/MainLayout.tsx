@@ -45,7 +45,8 @@ const MainLayout = ({
       )}
 
       {/* Main Content Area - Grows to fill available space */}
-      <main className="flex-1 flex flex-col">
+      {/* pt-14 for mobile header (h-14), lg:pt-24 for desktop header (h-14 + h-10 nav bar) */}
+      <main className="flex-1 flex flex-col pt-14 lg:pt-24">
         <Outlet />
       </main>
 

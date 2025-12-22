@@ -51,6 +51,7 @@ export class FavoriteModel extends BaseModel {
         v.mileage,
         v.yard_name,
         v.source,
+        v.source_lot_id,
         v.retail_value,
         v.calc_price,
         v.engine_fuel AS fuel_type,

@@ -2,9 +2,9 @@ import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { PageLoader } from '@/components/ui/page-loader'
-import { RequireAuth, RequireGuest, RequireNoCompany } from '@/app/RequireAuth'
+import { RequireAuth, RequireGuest, RequireNoCompany, RequireCompany } from '@/app/RequireAuth'
 import MainLayout from '@/layouts/MainLayout'
-import { InquiryDrawerProvider } from '@/contexts/InquiryDrawerContext'
+// import { InquiryDrawerProvider } from '@/contexts/InquiryDrawerContext' // Disabled - inquiry system not ready
 
 // Lazy load ALL pages for better performance (Code Splitting)
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -165,9 +165,9 @@ function AppRoutes() {
             <Route
               path="/company/settings"
               element={
-                <RequireAuth>
+                <RequireCompany>
                   <LazyRoute><CompanySettingsPage /></LazyRoute>
-                </RequireAuth>
+                </RequireCompany>
               }
             />
 
@@ -237,9 +237,10 @@ function App() {
 
   return (
     <Router>
-      <InquiryDrawerProvider>
-        <AppRoutes />
-      </InquiryDrawerProvider>
+      {/* InquiryDrawerProvider disabled - inquiry system not ready */}
+      {/* <InquiryDrawerProvider> */}
+      <AppRoutes />
+      {/* </InquiryDrawerProvider> */}
     </Router>
   )
 }

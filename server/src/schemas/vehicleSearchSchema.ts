@@ -113,7 +113,7 @@ export const vehicleSearchQuerySchema = z.object({
     .transform((val) => val?.trim() || undefined)
     .optional(),
   search: z.string().optional(),
-  
+
   // Source filter (comma-separated, max 50 chars)
   // Allowed: 'copart', 'iaai' or any combination
   source: commaSeparatedEnum(ALLOWED_SOURCES, 50),
@@ -248,6 +248,16 @@ export const vehicleSearchQuerySchema = z.object({
   // Location filter (city name, max 100 chars)
   location: z.string().max(100).optional(),
 
+  // Fuzzy location matching - when true, uses fuzzy matching instead of exact match
+  // Also automatically enabled when exact match returns 0 results
+  fuzzy_location: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      return val.toLowerCase() === 'true' || val === '1';
+    }),
+
   // Cylinders filter (comma-separated, max 50 chars)
   // Allowed: 0,1,2,3,4,5,6,8,10,12,U (any combination, case-insensitive)
   cylinders: commaSeparatedEnum(ALLOWED_CYLINDERS, 50),
@@ -311,5 +321,6 @@ export interface VehicleSearchFilters {
   soldFrom?: string;
   soldTo?: string;
   location?: string;
+  fuzzyLocation?: boolean;
   date?: string;
 }

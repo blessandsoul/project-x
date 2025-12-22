@@ -567,6 +567,8 @@
     }
   },
   "auction": {
+    "favorite_vehicles": "Избранные автомобили",
+    "favorite_vehicles_description": "Управляйте списком наблюдения и отслеживайте интересующие вас автомобили.",
     "active_auctions": "Активные аукционы",
     "description": "Ищите автомобили на аукционах Copart и IAAI в реальном времени",
     "search_placeholder": "Поиск по марке, модели или VIN...",

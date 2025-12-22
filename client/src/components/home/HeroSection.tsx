@@ -65,22 +65,29 @@ export const HeroSection: FC<HeroSectionProps> = ({ onSectionChange }) => {
       onWheel={handleWheel}
       className="relative hero-gradient-mesh min-h-screen flex items-center overflow-hidden bg-[#1F1F1F] lg:block"
     >
-      {/* Enhanced animated background - deeper greens + warm orange accents */}
+      {/* Clean gradient background - smooth teal/emerald with subtle vignette */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {/* Base green blurred blobs (static, more vivid) */}
-        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-emerald-400/45 rounded-full blur-[110px]" />
-        <div className="absolute top-1/4 -right-52 w-[640px] h-[640px] bg-emerald-500/35 rounded-full blur-[130px]" />
-        <div className="absolute -bottom-52 left-1/4 w-[580px] h-[580px] bg-teal-400/35 rounded-full blur-[110px]" />
-
-        {/* Warm orange glow behind tablet/phone (stronger and larger) */}
-        <div className="absolute top-[28%] right-[6%] w-[520px] h-[520px] bg-orange-400/40 rounded-full blur-[120px]" />
-        <div className="absolute top-[55%] right-[0%] w-[460px] h-[460px] bg-amber-300/32 rounded-full blur-[110px]" />
-
-        {/* Floating Orbs & Ring Waves - Red/Salmon accent elements */}
+        {/* Base gradient - smooth teal to dark */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 120% 100% at 30% 20%, #0d9488 0%, #115e59 35%, #134e4a 55%, #0f3d3a 75%, #0a2e2c 100%)',
+          }}
+        />
+        
+        {/* Subtle center-right glow for depth */}
+        <div className="absolute top-[30%] right-[15%] w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[150px]" />
+        
+        {/* Floating geometric shapes - orange outlines */}
         <HeroFloatingOrbs />
 
-        {/* Subtle dark overlay to slightly mute the background */}
-        <div className="absolute inset-0 bg-black/35" />
+        {/* Subtle vignette overlay */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 0%, rgba(0,0,0,0.15) 100%)',
+          }}
+        />
       </div>
       
       {/* Content container */}
