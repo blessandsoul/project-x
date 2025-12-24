@@ -128,7 +128,8 @@ export class CompanyController {
   }
 
   async getCompanies(limit: number = 100, offset: number = 0): Promise<Array<Company & { reviewCount: number; logo_url: string | null; original_logo_url: string | null }>> {
-    const companies = await this.companyModel.findAll(limit, offset);
+    // Use findAllActive to exclude deactivated companies from public listings
+    const companies = await this.companyModel.findAllActive(limit, offset);
     if (!companies.length) {
       return [];
     }
@@ -678,7 +679,8 @@ export class CompanyController {
 
     // Always calculate quotes fresh from calculator API.
     // No DB persistence - calculator prices can change anytime.
-    const companies = await this.companyModel.findAll(1000, 0);
+    // Only use active companies (exclude those where owner has deactivated)
+    const companies = await this.companyModel.findAllActive(1000, 0);
 
     if (!companies.length) {
       throw new ValidationError('No companies configured for quote calculation');
@@ -764,8 +766,8 @@ export class CompanyController {
       throw new NotFoundError('Vehicle');
     }
 
-    // Load all companies
-    const companies = await this.companyModel.findAll(1000, 0);
+    // Load all active companies (exclude those where owner has deactivated)
+    const companies = await this.companyModel.findAllActive(1000, 0);
     if (!companies.length) {
       throw new ValidationError('No companies configured for quote calculation');
     }

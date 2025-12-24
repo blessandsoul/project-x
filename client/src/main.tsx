@@ -9,6 +9,7 @@ import { AuthProvider } from '@/hooks/useAuth'
 import { SearchProvider } from '@/hooks/useCompanySearch'
 import { FavoritesProvider } from '@/hooks/useFavorites'
 import { RecentlyViewedProvider } from '@/hooks/useRecentlyViewed'
+import { Toaster } from '@/components/ui/sonner'
 
 // Inject brand colors as CSS variables before render
 injectBrandColors()
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
         <RecentlyViewedProvider>
           <SearchProvider>
             <App />
+            <Toaster position="top-right" richColors closeButton />
           </SearchProvider>
         </RecentlyViewedProvider>
       </FavoritesProvider>

@@ -344,9 +344,26 @@ const accountRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthenticationError('Password is incorrect');
     }
 
-    // Mark user as deactivated
     const now = new Date();
-    await userModel.update(userId, { deactivated_at: now });
+    // Schedule permanent deletion for 30 days from now
+    const deletionScheduledAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // If user is a company owner, deactivate their companies first
+    if (user.role === 'company') {
+      const deactivatedCount = await companyModel.deactivateByOwnerId(userId);
+      if (deactivatedCount > 0) {
+        fastify.log.info({ userId, deactivatedCount }, 'Companies deactivated due to account deactivation');
+        // Invalidate company cache so public listings update
+        const { incrementCacheVersion } = await import('../utils/cache.js');
+        await incrementCacheVersion(fastify, 'companies');
+      }
+    }
+
+    // Mark user as deactivated with scheduled deletion date
+    await userModel.update(userId, {
+      deactivated_at: now,
+      deletion_scheduled_at: deletionScheduledAt,
+    });
 
     // Revoke all sessions
     await sessionService.revokeAllUserSessions(userId);
@@ -359,10 +376,14 @@ const accountRoutes: FastifyPluginAsync = async (fastify) => {
 
     fastify.log.info({
       userId,
+      deletionScheduledAt: deletionScheduledAt.toISOString(),
       reason: reason?.slice(0, 100) || null,
     }, 'Account deactivated');
 
-    return reply.send({ success: true });
+    return reply.send({
+      success: true,
+      deletionScheduledAt: deletionScheduledAt.toISOString(),
+    });
   });
 };
 

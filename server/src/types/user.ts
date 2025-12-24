@@ -10,6 +10,8 @@ export interface User {
   onboarding_ends_at: Date | null;
   is_blocked: boolean;
   deactivated_at: Date | null;
+  deletion_scheduled_at: Date | null;
+  deletion_completed_at: Date | null;
   password_hash: string;
   created_at: Date;
   updated_at: Date;
@@ -39,6 +41,8 @@ export interface UserUpdate {
   onboarding_ends_at?: Date | null;
   is_blocked?: boolean;
   deactivated_at?: Date | null;
+  deletion_scheduled_at?: Date | null;
+  deletion_completed_at?: Date | null;
 }
 
 export interface AuthUser {

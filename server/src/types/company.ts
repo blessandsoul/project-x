@@ -1,6 +1,7 @@
 export interface Company {
   id: number;
   owner_user_id: number | null;
+  is_active: boolean;
   name: string;
   slug: string;
   base_price: number;
@@ -36,7 +37,7 @@ export interface CompanyCreate {
   customs_fee?: number;
   service_fee?: number;
   broker_fee?: number;
-   insurance?: number | null;
+  insurance?: number | null;
   final_formula?: any | null;
   description?: string | null;
   country?: string | null;

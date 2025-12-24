@@ -26,6 +26,7 @@ interface AuthContextValue {
   userRole: UserRole | null
   companyId: number | null
   login: (identifier: string, password: string) => Promise<void>
+  reactivateAccount: (identifier: string, password: string) => Promise<boolean>
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   updateUser: (updates: Partial<User>) => void
@@ -54,7 +55,18 @@ type AuthMeResponse = {
 }
 
 type AuthLoginResponse = {
+  authenticated?: boolean
+  user?: BackendUser
+  needsReactivation?: boolean
+  daysRemaining?: number
+  userId?: number
+  message?: string
+}
+
+type AuthReactivateResponse = {
+  reactivated: boolean
   authenticated: boolean
+  message: string
   user: BackendUser
 }
 
@@ -281,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             // Attempt to refresh access token
             await axios.post(`${apiClient.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true })
-            
+
             // Refresh succeeded - retry /auth/me
             const retryResponse = await apiClient.get<AuthMeResponse>('/auth/me')
             const backendUser = retryResponse.data.user
@@ -372,6 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Login with email/username and password
+   * Throws NeedsReactivationError if account is deactivated but within grace period
    */
   const login = useCallback(
     async (identifier: string, password: string) => {
@@ -382,6 +395,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           identifier,
           password,
         })
+
+        // Check if account needs reactivation
+        if (response.data.needsReactivation) {
+          const err = new Error(response.data.message || t('auth.reactivation.needed')) as Error & {
+            needsReactivation: boolean
+            daysRemaining: number
+            credentials: { identifier: string; password: string }
+          }
+          err.needsReactivation = true
+          err.daysRemaining = response.data.daysRemaining || 0
+          err.credentials = { identifier, password }
+          throw err
+        }
 
         const backendUser = response.data.user
 
@@ -394,6 +420,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Refresh CSRF token after login
         await refreshCsrfToken()
       } catch (error: unknown) {
+        // Re-throw reactivation errors as-is
+        if (error instanceof Error && (error as any).needsReactivation) {
+          throw error
+        }
+
         if (axios.isAxiosError(error)) {
           const payload = error.response?.data as unknown
           const { code, message } = extractErrorInfo(payload)
@@ -426,6 +457,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         throw new Error(t('auth.error.login_generic'))
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [t, setUserFromBackend],
+  )
+
+  /**
+   * Reactivate a deactivated account
+   * Called when user confirms they want to restore their account during grace period
+   */
+  const reactivateAccount = useCallback(
+    async (identifier: string, password: string) => {
+      setIsLoading(true)
+
+      try {
+        const response = await apiClient.post<AuthReactivateResponse>('/auth/reactivate', {
+          identifier,
+          password,
+        })
+
+        const backendUser = response.data.user
+
+        if (!backendUser) {
+          throw new Error(t('auth.error.reactivation_failed'))
+        }
+
+        setUserFromBackend(backendUser)
+
+        // Refresh CSRF token after reactivation
+        await refreshCsrfToken()
+
+        return true
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          const payload = error.response?.data as unknown
+          const { message } = extractErrorInfo(payload)
+          throw new Error(message || t('auth.error.reactivation_failed'))
+        }
+
+        if (error instanceof Error) {
+          throw error
+        }
+
+        throw new Error(t('auth.error.reactivation_failed'))
       } finally {
         setIsLoading(false)
       }
@@ -701,6 +777,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userRole,
     companyId,
     login,
+    reactivateAccount,
     register,
     logout,
     updateUser,

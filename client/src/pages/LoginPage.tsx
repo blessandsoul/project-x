@@ -9,6 +9,17 @@ import { Label } from '@/components/ui/label'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { useAuth } from '@/hooks/useAuth'
 import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
 interface LocationState {
   from?: {
@@ -16,9 +27,17 @@ interface LocationState {
   }
 }
 
+interface ReactivationData {
+  daysRemaining: number
+  credentials: {
+    identifier: string
+    password: string
+  }
+}
+
 const LoginPage = () => {
   const { t } = useTranslation()
-  const { login, isLoading } = useAuth()
+  const { login, reactivateAccount, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LocationState | undefined
@@ -26,6 +45,9 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [showReactivation, setShowReactivation] = useState(false)
+  const [reactivationData, setReactivationData] = useState<ReactivationData | null>(null)
+  const [isReactivating, setIsReactivating] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +63,22 @@ const LoginPage = () => {
       // Redirect to origin or default to dashboard/onboarding
       const redirectTo = state?.from?.pathname || '/dashboard'
       navigate(redirectTo, { replace: true })
-    } catch (err) {
+    } catch (err: unknown) {
+      // Check if this is a reactivation needed error
+      if (err instanceof Error && (err as any).needsReactivation) {
+        const reactivationErr = err as Error & {
+          needsReactivation: boolean
+          daysRemaining: number
+          credentials: { identifier: string; password: string }
+        }
+        setReactivationData({
+          daysRemaining: reactivationErr.daysRemaining,
+          credentials: reactivationErr.credentials,
+        })
+        setShowReactivation(true)
+        return
+      }
+
       const message =
         err instanceof Error && err.message
           ? err.message
@@ -49,6 +86,40 @@ const LoginPage = () => {
 
       setError(message)
     }
+  }
+
+  const handleReactivate = async () => {
+    if (!reactivationData) return
+
+    setIsReactivating(true)
+    try {
+      await reactivateAccount(
+        reactivationData.credentials.identifier,
+        reactivationData.credentials.password
+      )
+
+      setShowReactivation(false)
+      toast.success(t('auth.reactivation.success', 'Account reactivated successfully!'))
+
+      // Redirect to dashboard
+      const redirectTo = state?.from?.pathname || '/dashboard'
+      navigate(redirectTo, { replace: true })
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : t('auth.reactivation.error', 'Failed to reactivate account')
+
+      setShowReactivation(false)
+      setError(message)
+    } finally {
+      setIsReactivating(false)
+    }
+  }
+
+  const handleCancelReactivation = () => {
+    setShowReactivation(false)
+    setReactivationData(null)
   }
 
   return (
@@ -87,7 +158,7 @@ const LoginPage = () => {
             </div>
 
             <Link to="/" className="mx-auto flex items-center gap-2 mb-4">
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20"
@@ -103,30 +174,30 @@ const LoginPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isLoading}>
               <motion.div layout className="space-y-4">
-                  <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="email">{t('auth.login.email')}</Label>
                   <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="h-11"
-                      required
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-11"
+                    required
                   />
-                  </div>
-                  <div className="space-y-2">
-                      <Label htmlFor="password">{t('auth.login.password')}</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-11"
-                        required
-                      />
-                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('auth.login.password')}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-11"
+                    required
+                  />
+                </div>
               </motion.div>
 
               <AnimatePresence>
@@ -152,15 +223,15 @@ const LoginPage = () => {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                      <>
-                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
-                        {t('auth.login.loading')}
-                      </>
+                    <>
+                      <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
+                      {t('auth.login.loading')}
+                    </>
                   ) : (
-                      <>
-                        <Icon icon="mdi:login" className="mr-2 h-5 w-5" />
-                        {t('auth.login.submit')}
-                      </>
+                    <>
+                      <Icon icon="mdi:login" className="mr-2 h-5 w-5" />
+                      {t('auth.login.submit')}
+                    </>
                   )}
                 </Button>
               </motion.div>
@@ -172,16 +243,16 @@ const LoginPage = () => {
 
             <div className="mt-8 text-center space-y-4">
               <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                      {t('auth.login.new_here', 'New here?')}
-                      </span>
-                  </div>
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    {t('auth.login.new_here', 'New here?')}
+                  </span>
+                </div>
               </div>
-              
+
               <p className="text-sm text-muted-foreground">
                 {t('auth.login.no_account')}{' '}
                 <Link to="/register" className="font-medium text-primary hover:text-primary/90 hover:underline underline-offset-4">
@@ -192,6 +263,60 @@ const LoginPage = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Reactivation Dialog */}
+      <AlertDialog open={showReactivation} onOpenChange={setShowReactivation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Icon icon="mdi:account-reactivate" className="h-5 w-5" />
+              </div>
+              <AlertDialogTitle className="text-xl">
+                {t('auth.reactivation.title', 'Welcome Back!')}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="space-y-3 text-left">
+              <p>
+                {t('auth.reactivation.description', 'Your account was scheduled for deletion.')}
+              </p>
+              {reactivationData && (
+                <p className="text-sm font-medium text-foreground">
+                  {t('auth.reactivation.days_remaining', {
+                    count: reactivationData.daysRemaining,
+                    defaultValue: `You have ${reactivationData.daysRemaining} days remaining to reactivate.`
+                  })}
+                </p>
+              )}
+              <p className="text-sm">
+                {t('auth.reactivation.prompt', 'Would you like to restore your account?')}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelReactivation} disabled={isReactivating}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReactivate}
+              disabled={isReactivating}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isReactivating ? (
+                <>
+                  <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
+                  {t('auth.reactivation.reactivating', 'Reactivating...')}
+                </>
+              ) : (
+                <>
+                  <Icon icon="mdi:account-check" className="mr-2 h-4 w-4" />
+                  {t('auth.reactivation.button', 'Reactivate My Account')}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

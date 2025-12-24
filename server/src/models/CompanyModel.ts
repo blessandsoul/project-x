@@ -118,7 +118,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -136,7 +136,7 @@ export class CompanyModel extends BaseModel {
     const safeLimit = Math.floor(limit);
     const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      `SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       [],
     );
 
@@ -165,7 +165,7 @@ export class CompanyModel extends BaseModel {
     const placeholders = uniqueIds.map(() => '?').join(', ');
 
     const rows = await this.executeQuery(
-      `SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
       uniqueIds,
     );
 
@@ -521,7 +521,7 @@ export class CompanyModel extends BaseModel {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
-    const whereClauses: string[] = [];
+    const whereClauses: string[] = ['c.is_active = 1']; // Only show active companies
     const queryParams: any[] = [];
 
     if (typeof minRating === 'number' && Number.isFinite(minRating)) {
@@ -607,7 +607,7 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.owner_user_id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.owner_user_id, c.is_active, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count
@@ -628,7 +628,7 @@ export class CompanyModel extends BaseModel {
 
   async findByOwnerUserId(ownerUserId: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
       [ownerUserId],
     );
 
@@ -640,5 +640,75 @@ export class CompanyModel extends BaseModel {
     row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
     row.services = safeJsonParse(row.services, 'services', row.id);
     return row as Company;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Account Deactivation Cascade Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Deactivate all companies owned by a user
+   *
+   * Sets is_active = 0 for all companies where owner_user_id matches.
+   * Called when a company user deactivates their account.
+   *
+   * @param userId - User ID whose companies should be deactivated
+   * @returns Number of companies affected
+   */
+  async deactivateByOwnerId(userId: number): Promise<number> {
+    const result = await this.executeCommand(
+      'UPDATE companies SET is_active = 0, updated_at = NOW() WHERE owner_user_id = ?',
+      [userId],
+    );
+    return (result as any).affectedRows ?? 0;
+  }
+
+  /**
+   * Reactivate all companies owned by a user
+   *
+   * Sets is_active = 1 for all companies where owner_user_id matches.
+   * Called when a company user reactivates their account.
+   *
+   * @param userId - User ID whose companies should be reactivated
+   * @returns Number of companies affected
+   */
+  async reactivateByOwnerId(userId: number): Promise<number> {
+    const result = await this.executeCommand(
+      'UPDATE companies SET is_active = 1, updated_at = NOW() WHERE owner_user_id = ?',
+      [userId],
+    );
+    return (result as any).affectedRows ?? 0;
+  }
+
+  /**
+   * Find all active companies (for public listings)
+   *
+   * Only returns companies where is_active = 1
+   */
+  async findAllActive(limit: number = 20, offset: number = 0): Promise<Company[]> {
+    const safeLimit = Math.floor(limit);
+    const safeOffset = Math.floor(offset);
+    const rows = await this.executeQuery(
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE is_active = 1 ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [],
+    );
+
+    for (const row of rows) {
+      row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+      row.services = safeJsonParse(row.services, 'services', row.id);
+    }
+
+    return rows as Company[];
+  }
+
+  /**
+   * Count all active companies
+   */
+  async countAllActive(): Promise<number> {
+    const rows = await this.executeQuery(
+      'SELECT COUNT(*) AS cnt FROM companies WHERE is_active = 1',
+      [],
+    );
+    return rows.length ? (rows[0] as { cnt: number }).cnt : 0;
   }
 }

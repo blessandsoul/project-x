@@ -148,7 +148,24 @@
       "facebook": "Facebook"
     },
     "error": {
-      "profile_load": "Failed to load profile. Please sign in again."
+      "profile_load": "Failed to load profile. Please sign in again.",
+      "login_response": "Invalid login response",
+      "login_invalid": "Invalid email or password",
+      "email_password_incorrect": "Email or password is incorrect",
+      "login_generic": "Failed to sign in. Please try again.",
+      "reactivation_failed": "Failed to reactivate account. Please try again."
+    },
+    "reactivation": {
+      "needed": "Your account is scheduled for deletion",
+      "title": "Welcome Back!",
+      "description": "Your account was scheduled for deletion.",
+      "days_remaining": "You have {{count}} day remaining to reactivate.",
+      "days_remaining_plural": "You have {{count}} days remaining to reactivate.",
+      "prompt": "Would you like to restore your account and all your data?",
+      "button": "Reactivate My Account",
+      "reactivating": "Reactivating...",
+      "success": "Account reactivated successfully! Welcome back.",
+      "error": "Failed to reactivate account. Please try again."
     }
   },
   "calculator": {
@@ -208,13 +225,72 @@
     "avatar_alt": "User avatar"
   },
   "profile": {
-    "title": "My Profile",
-    "save": "Save changes",
-    "delete_account": "Delete account",
-    "avatar_label": "Upload avatar",
+    "title": "Profile Settings",
+    "description": "Manage your account settings and preferences",
+    "not_found": "User not found",
+    "login_again": "Please log in to access your profile",
+    "back_to_login": "Back to Login",
+    "loading": "Loading profile...",
+    "save_changes": "Save Changes",
+    "saving": "Saving...",
+    "avatar": {
+      "title": "Profile Photo",
+      "description": "Upload a profile picture. Max 5MB, JPEG/PNG/WebP.",
+      "upload": "Upload Photo",
+      "save": "Save Photo",
+      "delete": "Remove",
+      "deleting": "Deleting...",
+      "uploading": "Uploading...",
+      "hint": "Recommended: Square image, at least 200x200 pixels",
+      "upload_success": "Profile photo uploaded successfully",
+      "upload_error": "Failed to upload photo. Please try again.",
+      "delete_success": "Profile photo removed successfully",
+      "delete_error": "Failed to delete photo. Please try again."
+    },
+    "account": {
+      "title": "Account Information",
+      "description": "Update your username and email address",
+      "update_success": "Account information updated",
+      "update_error": "Failed to update account information"
+    },
     "username": "Username",
+    "username_placeholder": "Enter username",
+    "username_hint": "3-50 characters. Letters, numbers, underscores, hyphens only.",
     "email": "Email",
-    "new_password": "New password"
+    "email_placeholder": "Enter email",
+    "password": {
+      "title": "Change Password",
+      "description": "Update your password. You will be logged out of other devices.",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm New Password",
+      "requirements": "Min 10 characters with uppercase, lowercase, and number",
+      "change": "Update Password",
+      "changing": "Changing...",
+      "change_success": "Password changed successfully. You will be logged out of other devices.",
+      "change_error": "Failed to change password"
+    },
+    "delete": {
+      "title": "Deactivate Account",
+      "description": "Deactivate your account. You have 30 days to change your mind by simply logging back in.",
+      "warning_title": "What happens when you deactivate",
+      "warning_1": "Your profile will be hidden from public view",
+      "warning_2": "Your companies will be hidden from public listings",
+      "warning_3": "After 30 days, your data will be permanently deleted",
+      "warning_4": "You can reactivate anytime within 30 days by logging in",
+      "password_label": "Confirm with your password",
+      "reason_label": "Reason for leaving (optional)",
+      "reason_placeholder": "Let us know why you are leaving...",
+      "reason_hint": "Your feedback helps us improve our service",
+      "button": "Deactivate My Account",
+      "dialog_title": "Are you sure you want to deactivate?",
+      "dialog_description": "Your account will be deactivated and scheduled for permanent deletion in 30 days. You can restore your account by logging back in within this period.",
+      "confirm": "Yes, deactivate my account",
+      "deleting": "Deactivating...",
+      "success": "Account deactivated. You can reactivate within 30 days by logging in.",
+      "error": "Failed to deactivate account",
+      "grace_period_info": "After deactivation, you have 30 days to reactivate your account by simply logging back in with your email and password."
+    }
   },
   "home": {
     "hero": {

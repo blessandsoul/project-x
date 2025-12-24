@@ -35,6 +35,7 @@ import { generateSecureToken } from '../utils/crypto.js';
 import { AUTH_RATE_LIMIT } from '../config/auth.js';
 import { getUserAvatarUrls, getCompanyLogoUrls } from '../services/ImageUploadService.js';
 import { CompanyModel } from '../models/CompanyModel.js';
+import { incrementCacheVersion, invalidateUserCache } from '../utils/cache.js';
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const userModel = new UserModel(fastify);
@@ -220,8 +221,34 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthenticationError('Account is blocked');
     }
 
+    // Check if account is deactivated
     if (user.deactivated_at) {
-      throw new AuthenticationError('Account is deactivated');
+      const now = new Date();
+
+      // Check if still within grace period (deletion_scheduled_at > now)
+      if (user.deletion_scheduled_at && user.deletion_scheduled_at > now) {
+        // Account is deactivated but within grace period - offer reactivation
+        const daysRemaining = Math.ceil(
+          (user.deletion_scheduled_at.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Verify password first
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+          throw new AuthenticationError('Invalid credentials');
+        }
+
+        // Return special response for reactivation
+        return reply.send({
+          needsReactivation: true,
+          daysRemaining,
+          userId: user.id,
+          message: 'Your account is scheduled for deletion. Would you like to reactivate it?',
+        });
+      }
+
+      // Past grace period or deletion_scheduled_at is null (legacy deactivated account)
+      throw new AuthenticationError('Account has been permanently deleted');
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
@@ -265,6 +292,119 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     return reply.send({
       authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        company_id: user.company_id,
+        ...imageUrls,
+      },
+    });
+  });
+
+  /**
+   * POST /auth/reactivate
+   *
+   * Reactivate a deactivated account during the 30-day grace period.
+   * Clears deactivated_at and deletion_scheduled_at, restores companies.
+   */
+  fastify.post('/auth/reactivate', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['identifier', 'password'],
+        properties: {
+          identifier: { type: 'string', minLength: 1, maxLength: 255 },
+          password: { type: 'string', minLength: 1, maxLength: 255 },
+        },
+        additionalProperties: false,
+      },
+    },
+    config: {
+      rateLimit: {
+        max: AUTH_RATE_LIMIT.login.max,
+        timeWindow: AUTH_RATE_LIMIT.login.timeWindow,
+      },
+    },
+  }, async (request, reply) => {
+    const { identifier, password } = request.body as { identifier: string; password: string };
+
+    // Find user by email or username
+    const user = await userModel.findByIdentifier(identifier);
+
+    if (!user) {
+      await bcrypt.compare(password, '$2a$12$dummy.hash.to.prevent.timing.attacks');
+      throw new AuthenticationError('Invalid credentials');
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      throw new AuthenticationError('Invalid credentials');
+    }
+
+    // Check if account is deactivated
+    if (!user.deactivated_at) {
+      throw new ValidationError('Account is not deactivated');
+    }
+
+    // Check if still within grace period
+    const now = new Date();
+    if (user.deletion_scheduled_at && user.deletion_scheduled_at <= now) {
+      throw new AuthenticationError('Reactivation period has expired. Account has been permanently deleted.');
+    }
+
+    // Reactivate user account
+    await userModel.reactivate(user.id);
+
+    // Reactivate companies if company user
+    if (user.role === 'company') {
+      const reactivatedCount = await companyModel.reactivateByOwnerId(user.id);
+      if (reactivatedCount > 0) {
+        fastify.log.info({ userId: user.id, reactivatedCount }, 'Companies reactivated');
+        await incrementCacheVersion(fastify, 'companies');
+      }
+    }
+
+    // Invalidate cache
+    await invalidateUserCache(fastify, user.id);
+
+    // Create session
+    const userAgent = request.headers['user-agent'] || null;
+    const ip = request.ip || null;
+
+    const tokenPair = await sessionService.createSession({
+      userId: user.id,
+      userAgent,
+      ip,
+    });
+
+    // Set cookies
+    setAuthCookies(reply, tokenPair.accessToken, tokenPair.refreshToken);
+
+    // Generate and set CSRF token
+    const csrfToken = generateSecureToken(32);
+    setCsrfTokenCookie(reply, csrfToken);
+
+    // Get image URLs
+    const imageUrls = await getUserImageUrls({
+      username: user.username,
+      role: user.role,
+      company_id: user.company_id,
+    });
+
+    // Log reactivation
+    fastify.log.info({
+      userId: user.id,
+      sessionId: tokenPair.sessionId,
+      ip,
+    }, 'Account reactivated');
+
+    return reply.send({
+      reactivated: true,
+      authenticated: true,
+      message: 'Account reactivated successfully',
       user: {
         id: user.id,
         email: user.email,

@@ -61,7 +61,7 @@ export class UserModel extends BaseModel {
 
   async findById(id: number): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, password_hash, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, deletion_scheduled_at, deletion_completed_at, password_hash, created_at, updated_at FROM users WHERE id = ?',
       [id]
     );
 
@@ -70,7 +70,7 @@ export class UserModel extends BaseModel {
 
   async findByEmail(email: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, password_hash, created_at, updated_at FROM users WHERE email = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, deletion_scheduled_at, deletion_completed_at, password_hash, created_at, updated_at FROM users WHERE email = ?',
       [email]
     );
 
@@ -79,7 +79,7 @@ export class UserModel extends BaseModel {
 
   async findByUsername(username: string): Promise<User | null> {
     const rows = await this.executeQuery(
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, password_hash, created_at, updated_at FROM users WHERE username = ?',
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, deletion_scheduled_at, deletion_completed_at, password_hash, created_at, updated_at FROM users WHERE username = ?',
       [username]
     );
 
@@ -170,7 +170,7 @@ export class UserModel extends BaseModel {
     }
 
     let sql =
-      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, password_hash, created_at, updated_at FROM users';
+      'SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, is_blocked, deactivated_at, deletion_scheduled_at, deletion_completed_at, password_hash, created_at, updated_at FROM users';
 
     if (where.length > 0) {
       sql += ` WHERE ${where.join(' AND ')}`;
@@ -243,6 +243,16 @@ export class UserModel extends BaseModel {
     if (updates.deactivated_at !== undefined) {
       updateFields.push('deactivated_at = ?');
       updateValues.push(updates.deactivated_at);
+    }
+
+    if (updates.deletion_scheduled_at !== undefined) {
+      updateFields.push('deletion_scheduled_at = ?');
+      updateValues.push(updates.deletion_scheduled_at);
+    }
+
+    if (updates.deletion_completed_at !== undefined) {
+      updateFields.push('deletion_completed_at = ?');
+      updateValues.push(updates.deletion_completed_at);
     }
 
     if (updateFields.length === 0) {
@@ -342,5 +352,72 @@ export class UserModel extends BaseModel {
 
     const rows = await this.executeQuery(sql, params);
     return rows[0].count;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Account Deactivation Lifecycle Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Find accounts pending permanent deletion
+   *
+   * Returns users where deletion_scheduled_at has passed but
+   * deletion_completed_at is not set (cleanup not done yet).
+   */
+  async findPendingDeletion(): Promise<User[]> {
+    const rows = await this.executeQuery(
+      `SELECT id, email, username, role, dealer_slug, company_id, onboarding_ends_at, 
+              is_blocked, deactivated_at, deletion_scheduled_at, deletion_completed_at, 
+              password_hash, created_at, updated_at 
+       FROM users 
+       WHERE deletion_scheduled_at IS NOT NULL 
+         AND deletion_scheduled_at < NOW()
+         AND deletion_completed_at IS NULL`
+    );
+    return rows as User[];
+  }
+
+  /**
+   * Reactivate a deactivated account
+   *
+   * Clears deactivated_at and deletion_scheduled_at to restore account.
+   * Called when user logs in during grace period and confirms reactivation.
+   *
+   * @param id - User ID to reactivate
+   * @returns Updated user object or null if not found
+   */
+  async reactivate(id: number): Promise<User | null> {
+    await this.executeCommand(
+      `UPDATE users SET 
+         deactivated_at = NULL, 
+         deletion_scheduled_at = NULL,
+         updated_at = NOW() 
+       WHERE id = ?`,
+      [id]
+    );
+    return this.findById(id);
+  }
+
+  /**
+   * Anonymize user data for permanent deletion
+   *
+   * Replaces email and username with anonymous placeholders,
+   * invalidates password, and sets deletion_completed_at.
+   * Companies owned by this user remain but with anonymized owner.
+   *
+   * @param id - User ID to anonymize
+   */
+  async anonymize(id: number): Promise<void> {
+    const anonSuffix = id.toString().padStart(8, '0');
+    await this.executeCommand(
+      `UPDATE users SET 
+         email = CONCAT('deleted_', ?, '@anon.local'),
+         username = CONCAT('deleted_', ?),
+         password_hash = 'ANONYMIZED',
+         deletion_completed_at = NOW(),
+         updated_at = NOW()
+       WHERE id = ?`,
+      [anonSuffix, anonSuffix, id]
+    );
   }
 }
