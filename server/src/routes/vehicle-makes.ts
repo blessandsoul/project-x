@@ -5,10 +5,9 @@ import { withVersionedCache, CACHE_TTL } from '../utils/cache.js';
 /**
  * Vehicle Makes Routes
  *
- * GET /api/vehicle-makes?type=car
- * GET /api/vehicle-makes?type=motorcycle
+ * GET /api/vehicle-makes
  *
- * Returns makes filtered by vehicle type.
+ * Returns all valid vehicle makes.
  * Cached for 1 hour (rarely changes).
  */
 const vehicleMakesRoutes: FastifyPluginAsync = async (fastify) => {
@@ -17,42 +16,25 @@ const vehicleMakesRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /api/vehicle-makes
    *
-   * Query parameters:
-   * - type (required): 'car' or 'motorcycle'
-   *
    * Response example:
    * {
    *   "success": true,
-   *   "count": 2,
+   *   "count": 82,
    *   "data": [
-   *     { "id": 123, "makeId": 452, "name": "BMW" },
-   *     { "id": 124, "makeId": 845, "name": "APRILIA" }
+   *     { "id": 1, "name": "Acura" },
+   *     { "id": 2, "name": "Alfa Romeo" },
+   *     ...
    *   ]
    * }
    */
-  fastify.get('/api/vehicle-makes', {
-    schema: {
-      querystring: {
-        type: 'object',
-        required: ['type'],
-        properties: {
-          type: { type: 'string', enum: ['car', 'motorcycle', 'CAR', 'MOTORCYCLE', 'Car', 'Motorcycle'] },
-        },
-        additionalProperties: false,
-      },
-    },
-  }, async (request, reply) => {
-    // SECURITY: type is already validated by schema
-    const { type } = request.query as { type: string };
-    const normalizedType = type.toLowerCase() as 'car' | 'motorcycle';
-
+  fastify.get('/api/vehicle-makes', async (request, reply) => {
     const result = await withVersionedCache(
       fastify,
       'makes',
-      [normalizedType],
+      ['all'],
       CACHE_TTL.LONG,
       async () => {
-        const makes = await controller.getMakesByType(normalizedType);
+        const makes = await controller.getAllMakes();
         return {
           success: true,
           count: makes.length,
@@ -60,7 +42,7 @@ const vehicleMakesRoutes: FastifyPluginAsync = async (fastify) => {
         };
       },
     );
-    
+
     return reply.send(result);
   });
 };

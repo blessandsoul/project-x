@@ -409,12 +409,14 @@ export class SessionService {
     if (count > maxSessions) {
       // Revoke oldest sessions to stay within limit
       const toRevoke = count - maxSessions;
+      // Note: MySQL 8.0 doesn't support placeholders in LIMIT, so we use direct interpolation
+      // This is safe because toRevoke is guaranteed to be a number
       const [oldestRows] = await pool.execute<RowDataPacket[]>(
         `SELECT id FROM user_sessions 
          WHERE user_id = ? AND revoked_at IS NULL AND expires_at > NOW()
          ORDER BY created_at ASC
-         LIMIT ?`,
-        [userId, toRevoke],
+         LIMIT ${Math.max(0, Math.floor(toRevoke))}`,
+        [userId],
       );
 
       for (const row of oldestRows) {

@@ -5,7 +5,7 @@ import { VehicleMakeModel } from '../models/VehicleMakeModel.js';
  * VehicleMakesController
  *
  * Handles vehicle makes API requests.
- * Provides endpoints to retrieve makes filtered by vehicle type (car or motorcycle).
+ * Provides endpoints to retrieve all valid makes.
  */
 export class VehicleMakesController {
   private fastify: FastifyInstance;
@@ -17,11 +17,19 @@ export class VehicleMakesController {
   }
 
   /**
-   * Get makes by type
-   * @param type - 'car' or 'motorcycle'
-   * @returns Array of makes with id, makeId, and name
+   * Get all valid makes
+   * @returns Array of makes with id and name
    */
-  async getMakesByType(type: 'car' | 'motorcycle'): Promise<Array<{ id: number; makeId: number; name: string }>> {
-    return await this.model.getMakesByType(type);
+  async getAllMakes(): Promise<Array<{ id: number; name: string }>> {
+    return await this.model.getAllMakes();
+  }
+
+  /**
+   * Get make by id
+   * @param id - Make ID
+   * @returns Make object or null
+   */
+  async getMakeById(id: number): Promise<{ id: number; name: string } | null> {
+    return await this.model.getById(id);
   }
 }

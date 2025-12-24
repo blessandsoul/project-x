@@ -5,7 +5,7 @@ import { VehicleModelsModel } from '../models/VehicleModelsModel.js';
  * VehicleModelsController
  *
  * Handles vehicle models API requests.
- * Provides endpoints to retrieve models filtered by vehicle type and make.
+ * Provides endpoints to retrieve models filtered by make and optionally by type.
  */
 export class VehicleModelsController {
   private fastify: FastifyInstance;
@@ -17,18 +17,34 @@ export class VehicleModelsController {
   }
 
   /**
-   * Get models by type and make_id
-   * @param type - 'car' or 'motorcycle'
+   * Get all models for a specific make
    * @param makeId - The make_id to filter by
-   * @returns Array of vehicle models with id and modelName only
+   * @returns Array of vehicle models with id, name, and vehicleType
    */
-  async getModelsByTypeAndMake(
-    type: 'car' | 'motorcycle',
+  async getModelsByMakeId(
     makeId: number
   ): Promise<Array<{
     id: number;
-    modelName: string;
+    name: string;
+    vehicleType: string | null;
   }>> {
-    return await this.model.getModelsByTypeAndMake(type, makeId);
+    return await this.model.getModelsByMakeId(makeId);
+  }
+
+  /**
+   * Get models filtered by make and vehicle type
+   * @param makeId - The make_id to filter by
+   * @param vehicleType - Optional vehicle type filter (e.g., 'Automobile', 'Motorcycle')
+   * @returns Array of vehicle models
+   */
+  async getModelsByMakeAndType(
+    makeId: number,
+    vehicleType?: string
+  ): Promise<Array<{
+    id: number;
+    name: string;
+    vehicleType: string | null;
+  }>> {
+    return await this.model.getModelsByMakeAndType(makeId, vehicleType);
   }
 }

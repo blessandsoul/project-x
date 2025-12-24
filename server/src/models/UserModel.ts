@@ -176,8 +176,7 @@ export class UserModel extends BaseModel {
       sql += ` WHERE ${where.join(' AND ')}`;
     }
 
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(safeLimit, safeOffset);
+    sql += ` ORDER BY created_at DESC LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}`;
 
     const rows = await this.executeQuery(sql, params);
 
@@ -236,10 +235,10 @@ export class UserModel extends BaseModel {
       updateValues.push(onboarding_ends_at);
     }
 
-	    if (is_blocked !== undefined) {
-	      updateFields.push('is_blocked = ?');
-	      updateValues.push(is_blocked ? 1 : 0);
-	    }
+    if (is_blocked !== undefined) {
+      updateFields.push('is_blocked = ?');
+      updateValues.push(is_blocked ? 1 : 0);
+    }
 
     if (updates.deactivated_at !== undefined) {
       updateFields.push('deactivated_at = ?');

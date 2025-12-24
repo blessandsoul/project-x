@@ -133,9 +133,11 @@ export class CompanyModel extends BaseModel {
   }
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
+    const safeLimit = Math.floor(limit);
+    const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      'SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset],
+      `SELECT id, owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [],
     );
 
     for (const row of rows) {
@@ -612,8 +614,8 @@ export class CompanyModel extends BaseModel {
           FROM company_reviews
           GROUP BY company_id
        ) r ON r.company_id = c.id
-       ${whereSql} ${orderSql} LIMIT ? OFFSET ?`,
-      [...queryParams, safeLimit, safeOffset],
+       ${whereSql} ${orderSql} LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}`,
+      queryParams,
     );
 
     for (const row of rows) {

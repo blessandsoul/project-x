@@ -86,8 +86,8 @@ export class InquiryModel extends BaseModel {
        LEFT JOIN vehicles v ON i.vehicle_id = v.id
        ${whereClause}
        ORDER BY i.last_message_at DESC, i.id DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+       LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+      params
     );
 
     return rows.map((row: any) => this.mapRowToInquiryWithDetails(row));
@@ -120,8 +120,8 @@ export class InquiryModel extends BaseModel {
        LEFT JOIN vehicles v ON i.vehicle_id = v.id
        ${whereClause}
        ORDER BY i.last_message_at DESC, i.id DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+       LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+      params
     );
 
     return rows.map((row: any) => this.mapRowToInquiryWithDetails(row));
@@ -371,27 +371,27 @@ export class InquiryModel extends BaseModel {
       expires_at: row.expires_at,
       user: row.user_username
         ? {
-            id: row.user_id,
-            username: row.user_username,
-            email: row.user_email,
-          }
+          id: row.user_id,
+          username: row.user_username,
+          email: row.user_email,
+        }
         : undefined,
       company: row.company_name
         ? {
-            id: row.company_id,
-            name: row.company_name,
-            logo_url: null,
-          }
+          id: row.company_id,
+          name: row.company_name,
+          logo_url: null,
+        }
         : undefined,
       vehicle: row.vehicle_make
         ? {
-            id: row.vehicle_id,
-            make: row.vehicle_make,
-            model: row.vehicle_model,
-            year: row.vehicle_year,
-            vin: row.vehicle_vin,
-            primary_photo_url: null,
-          }
+          id: row.vehicle_id,
+          make: row.vehicle_make,
+          model: row.vehicle_model,
+          year: row.vehicle_year,
+          vin: row.vehicle_vin,
+          primary_photo_url: null,
+        }
         : undefined,
     };
   }

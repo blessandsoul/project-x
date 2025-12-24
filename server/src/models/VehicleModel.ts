@@ -6,6 +6,11 @@ import {
   buildLocationLikePatterns,
   scoreLocationMatch,
 } from '../utils/locationMatcher.js';
+import {
+  toCanonicalBrandKey,
+  toCanonicalModelKey,
+  canonicalizeVehicle,
+} from '../utils/vehicleCanonicalizer.js';
 
 export class VehicleModel extends BaseModel {
   private fastify: FastifyInstance;
@@ -106,8 +111,8 @@ export class VehicleModel extends BaseModel {
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
     const rows = await this.executeQuery(
-      'SELECT id, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ? OFFSET ?',
-      [safeLimit, safeOffset],
+      `SELECT id, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}`,
+      [],
     );
 
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -166,13 +171,19 @@ export class VehicleModel extends BaseModel {
     const conditions: string[] = [];
     const params: any[] = [];
 
+    // Canonical make matching: exact match on pre-computed canonical_brand
     if (filters.make) {
-      conditions.push('brand_name LIKE ?');
-      params.push(`%${filters.make}%`);
+      const canonicalBrandKey = toCanonicalBrandKey(filters.make);
+      conditions.push('canonical_brand = ?');
+      // Also try fuzzy fallback for vehicles without canonical data
+      // conditions.push('(canonical_brand = ? OR LOWER(REPLACE(REPLACE(brand_name, \'-\', \' \'), \'_\', \' \')) LIKE ?)');
+      params.push(canonicalBrandKey);
     }
+    // Canonical model matching: exact match on pre-computed canonical_model_key
     if (filters.model) {
-      conditions.push('model_name LIKE ?');
-      params.push(`%${filters.model}%`);
+      const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
+      conditions.push('canonical_model_key = ?');
+      params.push(canonicalModelKey);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
@@ -399,10 +410,8 @@ export class VehicleModel extends BaseModel {
       FROM vehicles
       ${where}
       ORDER BY ${this.getSortClause(sort)}
-      LIMIT ? OFFSET ?
+      LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}
     `;
-
-    params.push(safeLimit, safeOffset);
 
     const rows = await this.executeQuery(query, params);
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -444,13 +453,17 @@ export class VehicleModel extends BaseModel {
     const conditions: string[] = [];
     const params: any[] = [];
 
+    // Canonical make matching: exact match on pre-computed canonical_brand
     if (filters.make) {
-      conditions.push('brand_name LIKE ?');
-      params.push(`%${filters.make}%`);
+      const canonicalBrandKey = toCanonicalBrandKey(filters.make);
+      conditions.push('canonical_brand = ?');
+      params.push(canonicalBrandKey);
     }
+    // Canonical model matching: exact match on pre-computed canonical_model_key
     if (filters.model) {
-      conditions.push('model_name LIKE ?');
-      params.push(`%${filters.model}%`);
+      const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
+      conditions.push('canonical_model_key = ?');
+      params.push(canonicalModelKey);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
@@ -731,10 +744,8 @@ export class VehicleModel extends BaseModel {
       ORDER BY
         RAND(),
         id DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}
     `;
-
-    params.push(limit, offset);
 
     const rows = await this.executeQuery(query, params);
     const items = Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -809,8 +820,16 @@ export class VehicleModel extends BaseModel {
     }
   }
 
-
   private async upsertVehicleFromAuction(lot: any): Promise<number> {
+    // Extract brand and model names
+    const brandName = lot.brand_name ?? (lot.model?.brand?.name ?? null);
+    const modelName = lot.model_name ?? lot.model?.name ?? null;
+
+    // Calculate canonical values for deterministic search
+    const canonical = brandName && modelName
+      ? canonicalizeVehicle(brandName, modelName)
+      : { canonical_brand: null, canonical_model_key: null };
+
     const query = `
       INSERT INTO vehicles (
         id,
@@ -883,6 +902,8 @@ export class VehicleModel extends BaseModel {
         engine_fuel_rus,
         brand_name,
         model_name,
+        canonical_brand,
+        canonical_model_key,
         has_keys_readable,
         run_and_drive,
         calc_price,
@@ -890,7 +911,7 @@ export class VehicleModel extends BaseModel {
         sold_at_time,
         timezone_rus
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
       ON DUPLICATE KEY UPDATE
         number = VALUES(number),
@@ -962,6 +983,8 @@ export class VehicleModel extends BaseModel {
         engine_fuel_rus = VALUES(engine_fuel_rus),
         brand_name = VALUES(brand_name),
         model_name = VALUES(model_name),
+        canonical_brand = VALUES(canonical_brand),
+        canonical_model_key = VALUES(canonical_model_key),
         has_keys_readable = VALUES(has_keys_readable),
         run_and_drive = VALUES(run_and_drive),
         calc_price = VALUES(calc_price),
@@ -1039,8 +1062,10 @@ export class VehicleModel extends BaseModel {
       lot.relative_link ?? null,
       lot.clear_link ?? null,
       lot.engine_fuel_rus ?? null,
-      lot.brand_name ?? (lot.model?.brand?.name ?? null),
-      lot.model_name ?? lot.model?.name ?? null,
+      brandName,
+      modelName,
+      canonical.canonical_brand,
+      canonical.canonical_model_key,
       lot.has_keys_readable ?? null,
       lot.run_and_drive ?? null,
       lot.calc_price ?? null,

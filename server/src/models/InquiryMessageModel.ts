@@ -81,8 +81,7 @@ export class InquiryMessageModel extends BaseModel {
       ? ' ORDER BY im.id DESC'
       : ' ORDER BY im.id ASC';
 
-    query += ' LIMIT ?';
-    params.push(limit);
+    query += ` LIMIT ${Math.floor(limit)}`;
 
     const rows = await this.executeQuery(query, params);
 
@@ -106,8 +105,8 @@ export class InquiryMessageModel extends BaseModel {
        LEFT JOIN users u ON im.sender_id = u.id
        WHERE im.inquiry_id = ?
        ORDER BY im.id DESC
-       LIMIT ?`,
-      [inquiryId, limit]
+       LIMIT ${Math.floor(limit)}`,
+      [inquiryId]
     );
 
     // Reverse to get chronological order
@@ -232,10 +231,10 @@ export class InquiryMessageModel extends BaseModel {
       ...message,
       sender: row.sender_username
         ? {
-            id: row.sender_id,
-            username: row.sender_username,
-            role: row.sender_role,
-          }
+          id: row.sender_id,
+          username: row.sender_username,
+          role: row.sender_role,
+        }
         : undefined,
     };
   }

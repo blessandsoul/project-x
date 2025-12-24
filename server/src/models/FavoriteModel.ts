@@ -42,6 +42,7 @@ export class FavoriteModel extends BaseModel {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 250 ? limit : 20;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
+    // MySQL 8.0 doesn't support placeholders in LIMIT/OFFSET, use template literals
     const query = `
       SELECT
         v.id,
@@ -75,10 +76,10 @@ export class FavoriteModel extends BaseModel {
       JOIN vehicles v ON v.id = uf.vehicle_id
       WHERE uf.user_id = ?
       ORDER BY uf.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}
     `;
 
-    const rows = await this.executeQuery(query, [userId, safeLimit, safeOffset]);
+    const rows = await this.executeQuery(query, [userId]);
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
   }
 

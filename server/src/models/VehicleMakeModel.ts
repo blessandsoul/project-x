@@ -7,17 +7,14 @@ import { BaseModel } from './BaseModel.js';
  */
 export interface VehicleMake extends RowDataPacket {
   id: number;
-  make_id: number;
-  make_name: string;
-  has_car: number; // TINYINT(1): 0 or 1
-  has_motorcycle: number; // TINYINT(1): 0 or 1
+  name: string;
+  is_valid: number; // TINYINT(1): 0 or 1
 }
 
 /**
  * VehicleMakeModel
  *
  * Manages vehicle makes data from the vehicle_makes table.
- * This is a derived lookup table built from vehicle_models.
  */
 export class VehicleMakeModel extends BaseModel {
   private fastify: FastifyInstance;
@@ -28,37 +25,48 @@ export class VehicleMakeModel extends BaseModel {
   }
 
   /**
-   * Get makes by type (car or motorcycle)
-   * @param type - 'car' or 'motorcycle'
-   * @returns Array of makes with id, makeId, and name
+   * Get all valid makes
+   * @returns Array of makes with id and name
    */
-  async getMakesByType(type: 'car' | 'motorcycle'): Promise<Array<{ id: number; makeId: number; name: string }>> {
-    const column = type === 'car' ? 'has_car' : 'has_motorcycle';
-    
+  async getAllMakes(): Promise<Array<{ id: number; name: string }>> {
     const query = `
-      SELECT id, make_id, make_name
+      SELECT id, name
       FROM vehicle_makes
-      WHERE ${column} = 1
-      ORDER BY make_name ASC
+      WHERE is_valid = 1
+      ORDER BY name ASC
     `;
 
     const rows = await this.executeQuery(query);
 
     return rows.map((row: VehicleMake) => ({
       id: row.id,
-      makeId: row.make_id,
-      name: row.make_name,
+      name: row.name,
     }));
   }
 
   /**
-   * Check if a make exists by make_id
+   * Check if a make exists by id
    */
-  async existsByMakeId(makeId: number): Promise<boolean> {
+  async existsById(id: number): Promise<boolean> {
     const rows = await this.executeQuery(
-      'SELECT id FROM vehicle_makes WHERE make_id = ? LIMIT 1',
-      [makeId]
+      'SELECT id FROM vehicle_makes WHERE id = ? LIMIT 1',
+      [id]
     );
     return Array.isArray(rows) && rows.length > 0;
+  }
+
+  /**
+   * Get make by id
+   */
+  async getById(id: number): Promise<{ id: number; name: string } | null> {
+    const rows = await this.executeQuery(
+      'SELECT id, name FROM vehicle_makes WHERE id = ? AND is_valid = 1 LIMIT 1',
+      [id]
+    );
+    if (Array.isArray(rows) && rows.length > 0) {
+      const row = rows[0] as VehicleMake;
+      return { id: row.id, name: row.name };
+    }
+    return null;
   }
 }

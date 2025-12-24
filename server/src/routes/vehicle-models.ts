@@ -5,10 +5,10 @@ import { withVersionedCache, CACHE_TTL } from '../utils/cache.js';
 /**
  * Vehicle Models Routes
  *
- * GET /api/vehicle-models?type=car&makeId=452
- * GET /api/vehicle-models?type=motorcycle&makeId=845
+ * GET /api/vehicle-models?makeId=1
+ * GET /api/vehicle-models?makeId=1&vehicleType=Automobile
  *
- * Returns models filtered by vehicle type and make.
+ * Returns models filtered by make (required) and optionally by vehicle type.
  * Cached for 1 hour (rarely changes).
  */
 const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
@@ -18,17 +18,17 @@ const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
    * GET /api/vehicle-models
    *
    * Query parameters:
-   * - type (required): 'car' or 'motorcycle'
    * - makeId (required): numeric make ID
+   * - vehicleType (optional): filter by vehicle type (e.g., 'Automobile', 'Motorcycle', 'ATV')
    *
    * Response example:
    * {
    *   "success": true,
-   *   "count": 3,
+   *   "count": 18,
    *   "data": [
-   *     { "id": 1001, "modelName": "3 Series" },
-   *     { "id": 1002, "modelName": "X5" },
-   *     { "id": 1003, "modelName": "R 1250 GS Adventure" }
+   *     { "id": 1001, "name": "MDX", "vehicleType": "Automobile" },
+   *     { "id": 1002, "name": "RDX", "vehicleType": "Automobile" },
+   *     ...
    *   ]
    * }
    */
@@ -36,26 +36,26 @@ const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
     schema: {
       querystring: {
         type: 'object',
-        required: ['type', 'makeId'],
+        required: ['makeId'],
         properties: {
-          type: { type: 'string', enum: ['car', 'motorcycle', 'CAR', 'MOTORCYCLE', 'Car', 'Motorcycle'] },
           makeId: { type: 'integer', minimum: 1 },
+          vehicleType: { type: 'string' },
         },
         additionalProperties: false,
       },
     },
   }, async (request, reply) => {
-    // SECURITY: type and makeId are already validated by schema
-    const { type, makeId } = request.query as { type: string; makeId: number };
-    const normalizedType = type.toLowerCase() as 'car' | 'motorcycle';
+    const { makeId, vehicleType } = request.query as { makeId: number; vehicleType?: string };
+
+    const cacheKey = vehicleType ? [makeId, vehicleType] : [makeId, 'all'];
 
     const result = await withVersionedCache(
       fastify,
       'models',
-      [normalizedType, makeId],
+      cacheKey,
       CACHE_TTL.LONG,
       async () => {
-        const models = await controller.getModelsByTypeAndMake(normalizedType, makeId);
+        const models = await controller.getModelsByMakeAndType(makeId, vehicleType);
         return {
           success: true,
           count: models.length,

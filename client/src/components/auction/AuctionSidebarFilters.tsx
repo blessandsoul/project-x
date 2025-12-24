@@ -129,7 +129,7 @@ function MakeCombobox({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const selectedMake = makes.find((m) => m.makeId === selectedMakeId);
+  const selectedMake = makes.find((m) => m.id === selectedMakeId);
   const displayValue = isLoading ? loadingText : (selectedMake?.name || placeholder);
 
   // Filter makes based on search (case-insensitive, contains)
@@ -185,10 +185,10 @@ function MakeCombobox({
               </CommandItem>
               {filteredMakes.map((make) => (
                 <CommandItem
-                  key={make.makeId}
-                  value={String(make.makeId)}
+                  key={make.id}
+                  value={String(make.id)}
                   onSelect={() => {
-                    onMakeChange(String(make.makeId));
+                    onMakeChange(String(make.id));
                     setOpen(false);
                     setSearch('');
                   }}
@@ -197,7 +197,7 @@ function MakeCombobox({
                   <Check
                     className={cn(
                       "mr-2 h-3 w-3",
-                      selectedMakeId === make.makeId ? "opacity-100" : "opacity-0"
+                      selectedMakeId === make.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {make.name}
@@ -238,13 +238,13 @@ function ModelCombobox({
   const [search, setSearch] = useState('');
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
-  const displayValue = isLoading ? loadingText : (selectedModel?.modelName || placeholder);
+  const displayValue = isLoading ? loadingText : (selectedModel?.name || placeholder);
 
   // Filter models based on search (case-insensitive, contains)
   const filteredModels = useMemo(() => {
     if (!search.trim()) return models;
     const lowerSearch = search.toLowerCase();
-    return models.filter((model) => model.modelName.toLowerCase().includes(lowerSearch));
+    return models.filter((model) => model.name.toLowerCase().includes(lowerSearch));
   }, [models, search]);
 
   return (
@@ -308,7 +308,7 @@ function ModelCombobox({
                       selectedModelId === model.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {model.modelName}
+                  {model.name}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -587,7 +587,7 @@ export function AuctionSidebarFilters({
 
         // Check if current selected make is still valid
         if (selectedMakeId) {
-          const isStillValid = fetchedMakes.some((m) => m.makeId === selectedMakeId);
+          const isStillValid = fetchedMakes.some((m) => m.id === selectedMakeId);
           if (!isStillValid) {
             // Clear invalid make and models
             onMakeChange?.(undefined, undefined);
@@ -645,7 +645,7 @@ export function AuctionSidebarFilters({
       setModels([]);
     } else {
       const makeId = parseInt(value, 10);
-      const make = makes.find((m) => m.makeId === makeId);
+      const make = makes.find((m) => m.id === makeId);
       onMakeChange?.(makeId, make?.name);
       onModelChange?.(undefined, undefined); // Clear model when make changes
     }
@@ -658,7 +658,7 @@ export function AuctionSidebarFilters({
     } else {
       const modelId = parseInt(value, 10);
       const model = models.find((m) => m.id === modelId);
-      onModelChange?.(modelId, model?.modelName);
+      onModelChange?.(modelId, model?.name);
     }
   };
 
@@ -683,18 +683,18 @@ export function AuctionSidebarFilters({
   // Handler for year input blur - validates and triggers API call
   const handleYearBlur = () => {
     if (!onYearRangeChange) return;
-    
+
     // Validate both values - only use valid 4-digit years
     const fromValid = isValidYear(localYearFrom);
     const toValid = isValidYear(localYearTo);
-    
+
     // If invalid, clear the invalid field
     if (!fromValid) setLocalYearFrom('');
     if (!toValid) setLocalYearTo('');
-    
+
     const from = fromValid && localYearFrom ? parseInt(localYearFrom, 10) : 0;
     const to = toValid && localYearTo ? parseInt(localYearTo, 10) : 0;
-    
+
     // Only trigger if values actually changed
     if (from !== yearRange[0] || to !== yearRange[1]) {
       onYearRangeChange(from, to);
@@ -728,15 +728,15 @@ export function AuctionSidebarFilters({
   // Handler for odometer input blur - validates and triggers API call
   const handleOdometerBlur = () => {
     if (!onOdometerRangeChange) return;
-    
+
     // Validate both values
     const fromValid = isValidOdometer(localOdometerFrom);
     const toValid = isValidOdometer(localOdometerTo);
-    
+
     // If invalid (>250000), cap at 250000
     let from = fromValid && localOdometerFrom ? parseInt(localOdometerFrom, 10) : 0;
     let to = toValid && localOdometerTo ? parseInt(localOdometerTo, 10) : 0;
-    
+
     // Cap values at 250000
     if (from > 250000) {
       from = 250000;
@@ -746,7 +746,7 @@ export function AuctionSidebarFilters({
       to = 250000;
       setLocalOdometerTo('250000');
     }
-    
+
     // Only trigger if values actually changed
     if (from !== odometerRange[0] || to !== odometerRange[1]) {
       onOdometerRangeChange(from, to);
@@ -780,15 +780,15 @@ export function AuctionSidebarFilters({
   // Handler for price input blur - validates and triggers API call
   const handlePriceBlur = () => {
     if (!onPriceRangeChange) return;
-    
+
     // Validate both values
     const fromValid = isValidPrice(localPriceFrom);
     const toValid = isValidPrice(localPriceTo);
-    
+
     // If invalid (>500000), cap at 500000
     let from = fromValid && localPriceFrom ? parseInt(localPriceFrom, 10) : 0;
     let to = toValid && localPriceTo ? parseInt(localPriceTo, 10) : 0;
-    
+
     // Cap values at 500000
     if (from > 500000) {
       from = 500000;
@@ -798,7 +798,7 @@ export function AuctionSidebarFilters({
       to = 500000;
       setLocalPriceTo('500000');
     }
-    
+
     // Only trigger if values actually changed
     if (from !== priceRange[0] || to !== priceRange[1]) {
       onPriceRangeChange(from, to);
@@ -1383,14 +1383,14 @@ export function AuctionSidebarFilters({
 
       {/* Action Buttons */}
       <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
-        <Button 
+        <Button
           className="w-full h-7 text-[10px] bg-accent hover:bg-accent/90 text-primary font-bold"
           onClick={() => onApplyFilters?.()}
         >
           {t('auction.filters.apply')}
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="w-full h-7 text-[10px] border-slate-300 text-slate-600 hover:bg-slate-100"
           onClick={() => onResetFilters?.()}
         >

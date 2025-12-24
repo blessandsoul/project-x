@@ -2507,31 +2507,31 @@ const AuctionListingsPage = () => {
                 </div>
               </div>
 
-              {/* Desktop Active Filter Chips */}
+              {/* Active Filter Chips */}
               <AnimatePresence>
                 {activeFilterLabels.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="hidden lg:flex flex-wrap gap-2"
+                    className="flex flex-wrap gap-1 md:gap-2"
                   >
                     {activeFilterLabels.map((tag) => (
                       <Button
                         key={tag.id}
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs px-3 rounded-full border-primary/50 bg-primary/10 text-primary font-medium gap-1 hover:bg-primary/20"
+                        className="h-6 text-[10px] px-2 md:h-7 md:text-xs md:px-3 rounded-full border-primary/50 bg-primary/10 text-primary font-medium gap-0.5 md:gap-1 hover:bg-primary/20"
                         onClick={() => handleRemoveFilter(tag.id)}
                       >
                         {tag.label}
-                        <Icon icon="mdi:close" className="w-3 h-3" />
+                        <Icon icon="mdi:close" className="w-2.5 h-2.5 md:w-3 md:h-3" />
                       </Button>
                     ))}
                     <Button
                       size="sm"
                       onClick={resetFilters}
-                      className="h-7 text-xs px-3 rounded-full bg-accent hover:bg-accent/90 text-primary font-medium"
+                      className="h-6 text-[10px] px-2 md:h-7 md:text-xs md:px-3 rounded-full bg-accent hover:bg-accent/90 text-primary font-medium"
                     >
                       {t("common.clear_all")}
                     </Button>

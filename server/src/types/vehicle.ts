@@ -1,24 +1,21 @@
-export interface Brand {
+/**
+ * VehicleMake - Represents a vehicle make from the vehicle_makes table
+ */
+export interface VehicleMake {
   id: number;
-  slug: string;
   name: string;
-  popular: number;
-  count: number;
-  created_at: Date | null;
-  updated_at: Date | null;
-  markabrand_ru: string | null;
+  is_valid: boolean;
 }
 
-export interface Model {
+/**
+ * VehicleModel - Represents a vehicle model from the vehicle_models table
+ */
+export interface VehicleModelEntity {
   id: number;
-  clean_model_id: number | null;
-  brand_id: number;
-  slug: string;
+  make_id: number;
   name: string;
-  clean_model_name: string | null;
-  clean_model_slug: string | null;
-  created_at: Date | null;
-  updated_at: Date | null;
+  vehicle_type: string | null;
+  is_valid: boolean;
 }
 
 export interface VehiclePhoto {
@@ -52,9 +49,7 @@ export interface Vehicle {
   source_lot_id: string | null;
   vin: string;
 
-  // Brand / model (aliased from brand_name/model_name columns)
-  brand_id?: number | null;
-  model_id?: number | null;
+  // Make / Model (stored as strings on the vehicles table)
   make: string;
   model: string;
 
@@ -119,8 +114,8 @@ export interface Vehicle {
 }
 
 export interface VehicleWithRelations extends Vehicle {
-  brand?: Brand | null;
-  model_entity?: Model | null;
+  make_entity?: VehicleMake | null;
+  model_entity?: VehicleModelEntity | null;
   photos: VehiclePhoto[];
   bids: VehicleLotBid[];
 }

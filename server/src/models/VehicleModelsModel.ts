@@ -8,18 +8,15 @@ import { BaseModel } from './BaseModel.js';
 export interface VehicleModelRow extends RowDataPacket {
   id: number;
   make_id: number;
-  make_name: string;
-  model_name: string;
-  vehicle_types: string; // e.g., 'car', 'multipurpose', 'truck', 'motorcycle', or comma-separated combos
-  first_year: number | null;
-  last_year: number | null;
+  name: string;
+  vehicle_type: string | null; // e.g., 'Automobile', 'Motorcycle', 'ATV', etc.
+  is_valid: number; // TINYINT(1): 0 or 1
 }
 
 /**
  * VehicleModelsModel
  *
  * Manages vehicle models data from the vehicle_models table.
- * This is the source of truth for make/model combinations.
  */
 export class VehicleModelsModel extends BaseModel {
   private fastify: FastifyInstance;
@@ -30,49 +27,85 @@ export class VehicleModelsModel extends BaseModel {
   }
 
   /**
-   * Get models by type and make_id
-   * @param type - 'car' or 'motorcycle'
+   * Get all valid models for a specific make
    * @param makeId - The make_id to filter by
-   * @returns Array of vehicle models with id and modelName only
+   * @returns Array of vehicle models with id, name, and vehicleType
    */
-  async getModelsByTypeAndMake(
-    type: 'car' | 'motorcycle',
+  async getModelsByMakeId(
     makeId: number
   ): Promise<Array<{
     id: number;
-    modelName: string;
+    name: string;
+    vehicleType: string | null;
   }>> {
-    let query: string;
-
-    if (type === 'car') {
-      // Car side: vehicle_types contains 'car', 'multipurpose', or 'truck'
-      query = `
-        SELECT id, model_name
-        FROM vehicle_models
-        WHERE make_id = ?
-          AND (
-            vehicle_types LIKE '%car%'
-            OR vehicle_types LIKE '%multipurpose%'
-            OR vehicle_types LIKE '%truck%'
-          )
-        ORDER BY model_name ASC
-      `;
-    } else {
-      // Motorcycle side: vehicle_types contains 'motorcycle' as a set element
-      query = `
-        SELECT id, model_name
-        FROM vehicle_models
-        WHERE make_id = ?
-          AND FIND_IN_SET('motorcycle', vehicle_types) > 0
-        ORDER BY model_name ASC
-      `;
-    }
+    const query = `
+      SELECT id, name, vehicle_type
+      FROM vehicle_models
+      WHERE make_id = ? AND is_valid = 1
+      ORDER BY name ASC
+    `;
 
     const rows = await this.executeQuery(query, [makeId]);
 
     return rows.map((row: VehicleModelRow) => ({
       id: row.id,
-      modelName: row.model_name,
+      name: row.name,
+      vehicleType: row.vehicle_type,
     }));
+  }
+
+  /**
+   * Get models filtered by make and vehicle type
+   * @param makeId - The make_id to filter by
+   * @param vehicleType - Optional vehicle type filter (e.g., 'Automobile', 'Motorcycle')
+   * @returns Array of vehicle models
+   */
+  async getModelsByMakeAndType(
+    makeId: number,
+    vehicleType?: string
+  ): Promise<Array<{
+    id: number;
+    name: string;
+    vehicleType: string | null;
+  }>> {
+    let query: string;
+    let params: (number | string)[];
+
+    if (vehicleType) {
+      query = `
+        SELECT id, name, vehicle_type
+        FROM vehicle_models
+        WHERE make_id = ? AND vehicle_type = ? AND is_valid = 1
+        ORDER BY name ASC
+      `;
+      params = [makeId, vehicleType];
+    } else {
+      query = `
+        SELECT id, name, vehicle_type
+        FROM vehicle_models
+        WHERE make_id = ? AND is_valid = 1
+        ORDER BY name ASC
+      `;
+      params = [makeId];
+    }
+
+    const rows = await this.executeQuery(query, params);
+
+    return rows.map((row: VehicleModelRow) => ({
+      id: row.id,
+      name: row.name,
+      vehicleType: row.vehicle_type,
+    }));
+  }
+
+  /**
+   * Check if a model exists by id
+   */
+  async existsById(id: number): Promise<boolean> {
+    const rows = await this.executeQuery(
+      'SELECT id FROM vehicle_models WHERE id = ? LIMIT 1',
+      [id]
+    );
+    return Array.isArray(rows) && rows.length > 0;
   }
 }
