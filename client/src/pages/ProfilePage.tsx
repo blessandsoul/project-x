@@ -154,7 +154,7 @@ function calculatePasswordStrength(password: string): {
 const ProfilePage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user, isLoading: authLoading, refreshProfile } = useAuth()
+  const { user, isLoading: authLoading, refreshProfile, logout } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ---------------------------------------------------------------------------
@@ -428,25 +428,26 @@ const ProfilePage = () => {
         })
 
         toast.success(
-          t('profile.delete.success', 'Account deleted successfully. Redirecting...')
+          t('profile.delete.success', 'Account deactivated successfully. Redirecting...')
         )
 
-        // Redirect after 2 seconds to allow user to see the success message
-        setTimeout(() => {
-          navigate('/', { replace: true })
-        }, 2000)
+        // Logout to clear user state immediately
+        await logout()
+
+        // Redirect to home page
+        navigate('/', { replace: true })
       } catch (error: any) {
-        console.error('[Profile] Account deletion failed:', error)
+        console.error('[Profile] Account deactivation failed:', error)
         const message =
           error.response?.data?.message ||
-          t('profile.delete.error', 'Failed to delete account')
+          t('profile.delete.error', 'Failed to deactivate account')
         toast.error(message)
         setShowDeleteDialog(false)
       } finally {
         setIsDeletingAccount(false)
       }
     },
-    [navigate, t]
+    [logout, navigate, t]
   )
 
   // ---------------------------------------------------------------------------
@@ -530,9 +531,13 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* 2-Column Grid Layout: Desktop (≥1024px) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 lg:gap-8">
-          {/* Left Column: Profile Photo (Sticky on desktop) */}
+        {/* Responsive Grid Layout:
+            - Mobile (<768px): Single column, vertical stack
+            - Tablet (768px-1024px): 2-column grid, 2 sections per row
+            - Desktop (≥1024px): 2-column layout with sticky left sidebar
+        */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[380px_1fr] gap-6 gap-y-6 lg:gap-8">
+          {/* Profile Photo Section */}
           <div className="lg:sticky lg:top-28 lg:self-start lg:z-20">
             {/* =================================================================== */}
             {/* Section 1: Profile Avatar */}
@@ -665,9 +670,8 @@ const ProfilePage = () => {
             </Card>
           </div>
 
-          {/* Right Column: Account Settings */}
-          <div className="space-y-6">
-
+          {/* Account Settings Sections - Grouped on desktop, individual grid items on tablet */}
+          <div className="space-y-6 md:space-y-0 md:contents lg:block lg:space-y-6">
             {/* =================================================================== */}
             {/* Section 2: Account Information */}
             {/* =================================================================== */}
@@ -690,7 +694,7 @@ const ProfilePage = () => {
                     onSubmit={accountInfoForm.handleSubmit(onSubmitAccountInfo)}
                     className="space-y-4"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <FormField
                         control={accountInfoForm.control}
                         name="username"
@@ -927,12 +931,12 @@ const ProfilePage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
                   <Icon icon="mdi:account-remove" className="h-5 w-5" />
-                  {t('profile.delete.title', 'Delete Account')}
+                  {t('profile.delete.title', 'Deactivate Account')}
                 </CardTitle>
                 <CardDescription>
                   {t(
                     'profile.delete.description',
-                    'Permanently delete your account and all associated data. This action cannot be undone.'
+                    'Deactivate your account temporarily. You have 30 days to reactivate by logging in, after which your account and data will be permanently deleted.'
                   )}
                 </CardDescription>
               </CardHeader>
@@ -945,17 +949,17 @@ const ProfilePage = () => {
                     />
                     <div className="text-sm">
                       <p className="font-medium text-destructive">
-                        {t('profile.delete.warning_title', 'Warning: This is permanent')}
+                        {t('profile.delete.warning_title', 'Important: 30-Day Grace Period')}
                       </p>
                       <ul className="mt-2 space-y-1 text-muted-foreground">
                         <li>
-                          • {t('profile.delete.warning_1', 'Your profile will be permanently deleted')}
+                          • {t('profile.delete.warning_1', 'Your account will be deactivated immediately')}
                         </li>
                         <li>
-                          • {t('profile.delete.warning_2', 'All your data will be removed')}
+                          • {t('profile.delete.warning_2', 'You have 30 days to reactivate by logging in')}
                         </li>
                         <li>
-                          • {t('profile.delete.warning_3', 'You will be logged out immediately')}
+                          • {t('profile.delete.warning_3', 'After 30 days, all data will be permanently deleted')}
                         </li>
                       </ul>
                     </div>
@@ -963,130 +967,126 @@ const ProfilePage = () => {
                 </div>
 
                 <Form {...deleteAccountForm}>
-                  <form className="space-y-4">
-                    <FormField
-                      control={deleteAccountForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t('profile.delete.password_label', 'Confirm with your password')}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="password"
-                              placeholder="••••••••••"
-                              {...field}
-                              disabled={isDeletingAccount}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={isDeletingAccount}
+                      >
+                        <Icon icon="mdi:account-off" className="me-2 h-4 w-4" />
+                        {t('profile.delete.button', 'Deactivate My Account')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {t('profile.delete.dialog_title', 'Deactivate your account?')}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t(
+                            'profile.delete.dialog_description',
+                            'Your account will be deactivated immediately. You can reactivate it within 30 days by logging in. After 30 days, your account and all data will be permanently deleted.'
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
 
-                    <FormField
-                      control={deleteAccountForm.control}
-                      name="reason"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t('profile.delete.reason_label', 'Reason for leaving (optional)')}
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder={t(
-                                'profile.delete.reason_placeholder',
-                                'Let us know why you are leaving...'
-                              )}
-                              className="resize-none"
-                              rows={3}
-                              {...field}
-                              disabled={isDeletingAccount}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t(
-                              'profile.delete.reason_hint',
-                              'Your feedback helps us improve our service'
-                            )}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      {/* Form fields inside dialog */}
+                      <div className="space-y-4 py-4">
+                        <FormField
+                          control={deleteAccountForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-destructive">
+                                {t('profile.delete.password_label', 'Confirm with your password')} *
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="password"
+                                  placeholder="••••••••••"
+                                  {...field}
+                                  disabled={isDeletingAccount}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          onClick={async () => {
-                            // Validate form before opening dialog
+                        <FormField
+                          control={deleteAccountForm.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('profile.delete.reason_label', 'Reason for leaving (optional)')}
+                              </FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder={t(
+                                    'profile.delete.reason_placeholder',
+                                    'Let us know why you are leaving...'
+                                  )}
+                                  className="resize-none"
+                                  rows={3}
+                                  {...field}
+                                  disabled={isDeletingAccount}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {t(
+                                  'profile.delete.reason_hint',
+                                  'Your feedback helps us improve our service'
+                                )}
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeletingAccount}>
+                          {t('common.cancel', 'Cancel')}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={async (e) => {
+                            e.preventDefault()
+                            // Validate and submit
                             const valid = await deleteAccountForm.trigger()
                             if (valid) {
-                              setShowDeleteDialog(true)
+                              const formValues = deleteAccountForm.getValues()
+                              await onSubmitDeleteAccount(formValues)
                             }
                           }}
                           disabled={isDeletingAccount}
                         >
-                          <Icon icon="mdi:delete-forever" className="me-2 h-4 w-4" />
-                          {t('profile.delete.button', 'Delete My Account')}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {t('profile.delete.dialog_title', 'Are you absolutely sure?')}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {t(
-                              'profile.delete.dialog_description',
-                              'This action cannot be undone. Your account will be permanently deleted and you will lose access to all your data.'
-                            )}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel disabled={isDeletingAccount}>
-                            {t('common.cancel', 'Cancel')}
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={async (e) => {
-                              e.preventDefault()
-                              // Get current form values and submit
-                              const formValues = deleteAccountForm.getValues()
-                              await onSubmitDeleteAccount(formValues)
-                            }}
-                            disabled={isDeletingAccount}
-                          >
-                            {isDeletingAccount ? (
-                              <>
-                                <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
-                                {t('profile.delete.deleting', 'Deleting...')}
-                              </>
-                            ) : (
-                              <>
-                                <Icon icon="mdi:delete-forever" className="me-2 h-4 w-4" />
-                                {t('profile.delete.confirm', 'Yes, delete my account')}
-                              </>
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </form>
+                          {isDeletingAccount ? (
+                            <>
+                              <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
+                              {t('profile.delete.deleting', 'Deactivating...')}
+                            </>
+                          ) : (
+                            <>
+                              <Icon icon="mdi:account-off" className="me-2 h-4 w-4" />
+                              {t('profile.delete.confirm', 'Yes, Deactivate My Account')}
+                            </>
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </Form>
               </CardContent>
             </Card>
-
           </div>
         </div>
 
         {/* Bottom spacing */}
         <div className="h-8" />
       </div>
-    </div>
+    </div >
   )
 }
 

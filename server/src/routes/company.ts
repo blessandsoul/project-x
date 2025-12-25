@@ -99,8 +99,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           country: { type: 'string', maxLength: 100 },
           city: { type: 'string', maxLength: 100 },
           state: { type: 'string', maxLength: 100 },
-          // Company details (optional)
-          description: { type: 'string', maxLength: 5000 },
+          // Company details (optional) - Multi-language descriptions
+          descriptionGeo: { type: 'string', maxLength: 5000 },
+          descriptionEng: { type: 'string', maxLength: 5000 },
+          descriptionRus: { type: 'string', maxLength: 5000 },
           establishedYear: { type: 'integer', minimum: 1900, maximum: 2100 },
           services: { type: 'array', items: { type: 'string', maxLength: 100 }, maxItems: 20 },
           // Pricing (optional, defaults to 0 or null)
@@ -156,7 +158,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       country,
       city,
       state,
-      description,
+      descriptionGeo,
+      descriptionEng,
+      descriptionRus,
       establishedYear,
       services,
       basePrice,
@@ -172,7 +176,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       country?: string;
       city?: string;
       state?: string;
-      description?: string;
+      descriptionGeo?: string;
+      descriptionEng?: string;
+      descriptionRus?: string;
       establishedYear?: number;
       services?: string[];
       basePrice?: number;
@@ -204,7 +210,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         country: country?.trim() ?? null,
         city: city?.trim() ?? null,
         state: state?.trim() ?? null,
-        description: description?.trim() ?? null,
+        description_geo: descriptionGeo?.trim() ?? null,
+        description_eng: descriptionEng?.trim() ?? null,
+        description_rus: descriptionRus?.trim() ?? null,
         established_year: typeof establishedYear === 'number' ? establishedYear : null,
         services: Array.isArray(services) ? services : null,
         base_price: typeof basePrice === 'number' ? basePrice : 0,
@@ -244,7 +252,9 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           country: createdCompany.country,
           city: createdCompany.city,
           state: createdCompany.state,
-          description: createdCompany.description,
+          description_geo: createdCompany.description_geo,
+          description_eng: createdCompany.description_eng,
+          description_rus: createdCompany.description_rus,
           established_year: createdCompany.established_year,
           base_price: createdCompany.base_price,
           price_per_mile: createdCompany.price_per_mile,
@@ -502,8 +512,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           country: { type: ['string', 'null'], maxLength: 100 },
           city: { type: ['string', 'null'], maxLength: 100 },
           state: { type: ['string', 'null'], maxLength: 100 },
-          // Company details
-          description: { type: ['string', 'null'], maxLength: 5000 },
+          // Company details - Multi-language descriptions
+          description_geo: { type: ['string', 'null'], maxLength: 5000 },
+          description_eng: { type: ['string', 'null'], maxLength: 5000 },
+          description_rus: { type: ['string', 'null'], maxLength: 5000 },
           established_year: { type: ['integer', 'null'], minimum: 1900, maximum: 2100 },
           services: { type: ['array', 'null'], items: { type: 'string', maxLength: 100 }, maxItems: 20 },
           // Pricing
@@ -810,9 +822,11 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /companies/:companyId/social-links
    *
-   * Fetch all social links for a company. Social links are optional and
-   * only exist if a company has related social profiles. The company_id
-   * must be valid; otherwise a 404 Not Found is returned.
+   * Fetch structured social links for a company.
+   * Returns: { website: {...} | null, social_links: [...] }
+   * 
+   * - website: The company's main website (1 max)
+   * - social_links: Social media profiles (2 max, facebook/instagram only)
    */
   fastify.get('/companies/:companyId/social-links', {
     schema: {
@@ -821,16 +835,19 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, reply) => {
     // SECURITY: companyId is already validated as positive integer by schema
     const { companyId } = request.params as { companyId: number };
-    const links = await controller.getSocialLinks(companyId);
-    return reply.send(links);
+    const structuredLinks = await controller.getStructuredSocialLinks(companyId);
+    return reply.send(structuredLinks);
   });
 
   /**
    * POST /companies/:companyId/social-links
    *
-   * Create a new social link for a company. Social links are never
-   * auto-created when a company is created; they must be explicitly
-   * added when needed.
+   * Create a new social link for a company.
+   * 
+   * Constraints:
+   * - link_type='website': Only 1 allowed per company
+   * - link_type='social': Max 2 allowed, platform required (facebook/instagram)
+   * - No duplicate platforms allowed
    *
    * Auth: Cookie-based (HttpOnly access token)
    * CSRF: Required (X-CSRF-Token header)
@@ -842,8 +859,16 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       params: companyIdParamsSchema,
       body: {
         type: 'object',
-        required: ['url'],
+        required: ['link_type', 'url'],
         properties: {
+          link_type: {
+            type: 'string',
+            enum: ['website', 'social'],
+          },
+          platform: {
+            type: 'string',
+            enum: ['facebook', 'instagram'],
+          },
           url: {
             type: 'string',
             minLength: 5,
@@ -871,7 +896,16 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthorizationError('Not authorized to modify social links for this company');
     }
 
-    const body = request.body as { url: string };
+    const body = request.body as {
+      link_type: 'website' | 'social';
+      platform?: 'facebook' | 'instagram';
+      url: string;
+    };
+
+    // Validate platform is provided for social links
+    if (body.link_type === 'social' && !body.platform) {
+      throw new ValidationError('Platform is required for social links');
+    }
 
     // SECURITY: Strict URL validation (protocol, no credentials, etc.)
     let validatedUrl: string;
@@ -882,8 +916,28 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new ValidationError(message);
     }
 
-    const created = await controller.createSocialLink(companyId, validatedUrl);
-    return reply.code(201).send(created);
+    try {
+      const created = await controller.createSocialLink(
+        companyId,
+        body.link_type,
+        validatedUrl,
+        body.platform ?? null
+      );
+      return reply.code(201).send(created);
+    } catch (err) {
+      // Convert model errors to proper HTTP errors
+      if (err instanceof Error) {
+        if (err.message.includes('already has a website') ||
+          err.message.includes('maximum 2 social links') ||
+          err.message.includes('already exists')) {
+          throw new ConflictError(err.message);
+        }
+        if (err.message.includes('Unsupported') || err.message.includes('required')) {
+          throw new ValidationError(err.message);
+        }
+      }
+      throw err;
+    }
   });
 
   /**
@@ -907,6 +961,10 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
             type: 'string',
             minLength: 5,
             maxLength: 500,
+          },
+          platform: {
+            type: 'string',
+            enum: ['facebook', 'instagram'],
           },
         },
         additionalProperties: false,
@@ -933,7 +991,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       throw new AuthorizationError('Not authorized to modify this social link');
     }
 
-    const body = request.body as { url?: string };
+    const body = request.body as { url?: string; platform?: 'facebook' | 'instagram' };
     const updates: CompanySocialLinkUpdate = {};
 
     // SECURITY: Strict URL validation if URL is being updated
@@ -944,6 +1002,11 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         const message = err instanceof Error ? err.message : 'Invalid URL';
         throw new ValidationError(message);
       }
+    }
+
+    // Allow platform updates for social links
+    if (body.platform !== undefined) {
+      updates.platform = body.platform;
     }
 
     const updated = await controller.updateSocialLink(id, updates);

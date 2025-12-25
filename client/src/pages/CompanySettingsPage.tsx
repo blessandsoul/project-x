@@ -37,6 +37,7 @@ import { toast } from 'sonner'
 
 type SocialLink = {
   id?: string | number
+  platform: 'facebook' | 'instagram'
   url: string
 }
 
@@ -53,7 +54,9 @@ const CompanySettingsPage = () => {
 
   // Form state
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [descriptionGeo, setDescriptionGeo] = useState('')
+  const [descriptionEng, setDescriptionEng] = useState('')
+  const [descriptionRus, setDescriptionRus] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [website, setWebsite] = useState('')
@@ -89,7 +92,9 @@ const CompanySettingsPage = () => {
         if (!company || !isMounted) return
 
         setName(company.name || '')
-        setDescription(company.description || '')
+        setDescriptionGeo(company.description_geo || '')
+        setDescriptionEng(company.description_eng || '')
+        setDescriptionRus(company.description_rus || '')
         setContactEmail(company.contact_email || '')
         setPhoneNumber(company.phone_number || '')
         setWebsite(company.website || '')
@@ -110,13 +115,23 @@ const CompanySettingsPage = () => {
           setEstablishedYear(new Date(company.created_at).getFullYear())
         }
 
-        // Handle social links
-        const links = Array.isArray(company.social_links)
-          ? company.social_links
-            .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
-            .map((link) => ({ id: link.id, url: link.url || '' }))
-          : []
-        setSocialLinks(links)
+        // Handle social links - filter for social type and include platform
+        const rawLinks = company.social_links
+        if (Array.isArray(rawLinks)) {
+          const mappedLinks = rawLinks
+            .filter((link) =>
+              link &&
+              typeof link.url === 'string' &&
+              link.url.trim().length > 0 &&
+              link.link_type === 'social' // Only social links, not website
+            )
+            .map((link) => ({
+              id: link.id,
+              platform: (link.platform || 'facebook') as 'facebook' | 'instagram',
+              url: link.url || '',
+            }))
+          setSocialLinks(mappedLinks)
+        }
 
         // Handle logo URL - resolve to full URL for display
         const rawLogo = company.logo_url || (company as any).logo || null
@@ -181,7 +196,9 @@ const CompanySettingsPage = () => {
       // Update company details
       await updateCompanyFromApi(companyId, {
         name: name.trim(),
-        description: description.trim() || null,
+        description_geo: descriptionGeo.trim() || null,
+        description_eng: descriptionEng.trim() || null,
+        description_rus: descriptionRus.trim() || null,
         contact_email: contactEmail.trim() || null,
         phone_number: phoneNumber.trim() || null,
         website: website.trim() || null,
@@ -200,7 +217,9 @@ const CompanySettingsPage = () => {
       const newLinks = socialLinks.filter((link) => !link.id && link.url.trim())
       if (newLinks.length > 0) {
         await Promise.all(
-          newLinks.map((link) => createCompanySocialLinkFromApi(companyId, link.url.trim()))
+          newLinks.map((link) =>
+            createCompanySocialLinkFromApi(companyId, 'social', link.url.trim(), link.platform)
+          )
         )
       }
 
@@ -272,8 +291,19 @@ const CompanySettingsPage = () => {
     }
   }
 
+  // Compute used platforms
+  const usedPlatforms = socialLinks.map((link) => link.platform)
+
+  const handleSocialLinkChange = (index: number, field: 'url' | 'platform', value: string) => {
+    setSocialLinks((prev) =>
+      prev.map((link, i) =>
+        i === index ? { ...link, [field]: value } : link
+      )
+    )
+  }
+
   const handleAddSocialLink = () => {
-    setSocialLinks((prev) => [...prev, { url: '' }])
+    setSocialLinks((prev) => [...prev, { platform: 'facebook', url: '' }])
   }
 
   const handleRemoveSocialLink = async (index: number) => {
@@ -289,12 +319,6 @@ const CompanySettingsPage = () => {
         toast.error(t('company_settings.error.delete_link'))
       }
     }
-  }
-
-  const handleSocialLinkChange = (index: number, url: string) => {
-    setSocialLinks((prev) =>
-      prev.map((link, i) => (i === index ? { ...link, url } : link))
-    )
   }
 
   // Loading state
@@ -342,299 +366,554 @@ const CompanySettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        <Card>
-          <CardHeader className="space-y-2">
-            <div className="relative flex items-center">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute left-0 h-8 w-8"
-                onClick={() => navigate(-1)}
-              >
-                <Icon icon="mdi:arrow-left" className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Icon icon="mdi:domain" className="h-10 w-10 text-primary" />
-                  <CardTitle className="text-2xl font-bold">
-                    {t('company_settings.title')}
-                  </CardTitle>
-                </div>
-              </div>
-            </div>
-            <CardDescription className="text-center">
+    <div className="min-h-screen bg-muted/30 py-8 px-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            aria-label={t('common.back', 'Go back')}
+          >
+            <Icon icon="mdi:arrow-left" className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t('company_settings.title')}
+            </h1>
+            <p className="text-muted-foreground text-sm">
               {t('company_settings.description')}
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </div>
+        </div>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Logo Section */}
-              <div className="space-y-2">
-                <Label>{t('company_settings.logo')}</Label>
-                <div className="flex items-center gap-4">
-                  {(logoPreviewUrl || currentLogoUrl) && (
-                    <img
-                      src={logoPreviewUrl || currentLogoUrl || ''}
-                      alt="Company logo"
-                      className="h-16 w-16 rounded-md object-contain border"
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            {/* Responsive Grid Layout:
+                - Mobile (<768px): Single column, vertical stack
+                - Tablet (768px-1024px): 2-column grid, 2 sections per row
+                - Desktop (≥1024px): 2-column grid with proper spacing
+            */}
+
+            {/* Row 1: Company Information (Left) + Company Descriptions (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Info Section - Left */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:domain" className="h-5 w-5" />
+                    {t('company_settings.company_info', 'Company Information')}
+                  </CardTitle>
+                  <CardDescription>
+                    Basic information about your company
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">{t('company_settings.name')}</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={t('company_settings.name_placeholder')}
+                      required
+                      disabled={isSaving || isDeleting}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">{t('company_settings.phone')}</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder={t('company_settings.phone_placeholder', '+1 234 567 8900')}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactEmail">{t('company_settings.contact_email')}</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder={t('company_settings.email_placeholder', 'contact@company.com')}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="establishedYear">{t('company_settings.established_year')}</Label>
+                    <Input
+                      id="establishedYear"
+                      type="number"
+                      value={establishedYear}
+                      onChange={(e) => setEstablishedYear(Number(e.target.value))}
+                      min={1900}
+                      max={2100}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Company Descriptions Section - Right */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:text-box-multiple" className="h-5 w-5" />
+                    {t('company_settings.descriptions', 'Company Descriptions')}
+                  </CardTitle>
+                  <CardDescription>
+                    Describe your company in multiple languages
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="descriptionGeo" className="flex items-center justify-between">
+                      <span>{t('company_settings.description_geo', 'Description (Georgian)')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {descriptionGeo.length}/5000
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="descriptionGeo"
+                      value={descriptionGeo}
+                      onChange={(e) => setDescriptionGeo(e.target.value)}
+                      placeholder={t('company_settings.description_geo_placeholder', 'აღწერა ქართულად...')}
+                      disabled={isSaving || isDeleting}
+                      rows={3}
+                      maxLength={5000}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="descriptionEng" className="flex items-center justify-between">
+                      <span>{t('company_settings.description_eng', 'Description (English)')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {descriptionEng.length}/5000
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="descriptionEng"
+                      value={descriptionEng}
+                      onChange={(e) => setDescriptionEng(e.target.value)}
+                      placeholder={t('company_settings.description_eng_placeholder', 'Description in English...')}
+                      disabled={isSaving || isDeleting}
+                      rows={3}
+                      maxLength={5000}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="descriptionRus" className="flex items-center justify-between">
+                      <span>{t('company_settings.description_rus', 'Description (Russian)')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {descriptionRus.length}/5000
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="descriptionRus"
+                      value={descriptionRus}
+                      onChange={(e) => setDescriptionRus(e.target.value)}
+                      placeholder={t('company_settings.description_rus_placeholder', 'Описание на русском...')}
+                      disabled={isSaving || isDeleting}
+                      rows={3}
+                      maxLength={5000}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: Company Logo (Left) + Pricing (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Logo Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:image" className="h-5 w-5" />
+                    {t('company_settings.logo')}
+                  </CardTitle>
+                  <CardDescription>
+                    Upload your company logo (max 2 MB, JPEG/PNG/WEBP)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(logoPreviewUrl || currentLogoUrl) ? (
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <img
+                          src={logoPreviewUrl || currentLogoUrl || ''}
+                          alt="Company logo"
+                          className="w-24 h-24 object-contain rounded-lg border bg-muted"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          disabled={isSaving || isDeleting}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Click to change logo
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        disabled={isSaving || isDeleting}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        JPEG, PNG, or WEBP up to 2 MB
+                      </p>
+                    </div>
                   )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{t('company_settings.name')}</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('company_settings.name_placeholder')}
-                    required
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="establishedYear">{t('company_settings.established_year')}</Label>
-                  <Input
-                    id="establishedYear"
-                    type="number"
-                    value={establishedYear}
-                    onChange={(e) => setEstablishedYear(Number(e.target.value))}
-                    min={1900}
-                    max={2100}
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-              </div>
+              {/* Pricing Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:currency-usd" className="h-5 w-5" />
+                    {t('company_settings.pricing')}
+                  </CardTitle>
+                  <CardDescription>
+                    Set your pricing structure
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="basePrice">{t('company_settings.base_price')}</Label>
+                      <Input
+                        id="basePrice"
+                        type="number"
+                        value={basePrice}
+                        onChange={(e) => setBasePrice(Number(e.target.value))}
+                        min={0}
+                        step={0.01}
+                        disabled={isSaving || isDeleting}
+                      />
+                    </div>
 
-              {/* Contact Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">{t('company_settings.contact_email')}</Label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="email@company.com"
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">{t('company_settings.phone')}</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+1 234 567 8900"
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pricePerMile">{t('company_settings.price_per_mile')}</Label>
+                      <Input
+                        id="pricePerMile"
+                        type="number"
+                        value={pricePerMile}
+                        onChange={(e) => setPricePerMile(Number(e.target.value))}
+                        min={0}
+                        step={0.01}
+                        disabled={isSaving || isDeleting}
+                      />
+                    </div>
 
-              {/* Location */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="country">{t('company_settings.country')}</Label>
-                  <Input
-                    id="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder={t('company_settings.country_placeholder')}
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">{t('company_settings.city')}</Label>
-                  <Input
-                    id="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder={t('company_settings.city_placeholder')}
-                    disabled={isSaving || isDeleting}
-                  />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customsFee">{t('company_settings.customs_fee')}</Label>
+                      <Input
+                        id="customsFee"
+                        type="number"
+                        value={customsFee}
+                        onChange={(e) => setCustomsFee(Number(e.target.value))}
+                        min={0}
+                        step={0.01}
+                        disabled={isSaving || isDeleting}
+                      />
+                    </div>
 
-              {/* Website */}
-              <div className="space-y-2">
-                <Label htmlFor="website">{t('company_settings.website')}</Label>
-                <Input
-                  id="website"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://example.com"
-                  disabled={isSaving || isDeleting}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceFee">{t('company_settings.service_fee')}</Label>
+                      <Input
+                        id="serviceFee"
+                        type="number"
+                        value={serviceFee}
+                        onChange={(e) => setServiceFee(Number(e.target.value))}
+                        min={0}
+                        step={0.01}
+                        disabled={isSaving || isDeleting}
+                      />
+                    </div>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">{t('company_settings.description_label')}</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('company_settings.description_placeholder')}
-                  rows={4}
-                  disabled={isSaving || isDeleting}
-                />
-              </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="brokerFee">{t('company_settings.broker_fee')}</Label>
+                      <Input
+                        id="brokerFee"
+                        type="number"
+                        value={brokerFee}
+                        onChange={(e) => setBrokerFee(Number(e.target.value))}
+                        min={0}
+                        step={0.01}
+                        disabled={isSaving || isDeleting}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <Separator />
+            {/* Row 3: Website & Social Links (Left) + Location (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Website & Social Links Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:web" className="h-5 w-5" />
+                    Website & Social Links
+                  </CardTitle>
+                  <CardDescription>
+                    Add your company website and social media profiles
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Website Input */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Icon icon="mdi:web" className="h-4 w-4" />
+                      Company Website
+                    </Label>
+                    <Input
+                      placeholder="https://yourcompany.com"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
 
-              {/* Services Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('company_settings.services')}</h3>
+                  <Separator />
+
+                  {/* Social Links Section */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Icon icon="mdi:share-variant" className="h-4 w-4" />
+                        Social Media Links ({socialLinks.length}/2)
+                      </span>
+                    </Label>
+
+                    {socialLinks.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No social links added.
+                      </p>
+                    )}
+
+                    {socialLinks.map((link, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <select
+                          value={link.platform}
+                          onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                          disabled={isSaving || isDeleting}
+                          className="h-9 w-[130px] rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                        >
+                          <option
+                            value="facebook"
+                            disabled={usedPlatforms.includes('facebook') && link.platform !== 'facebook'}
+                          >
+                            Facebook
+                          </option>
+                          <option
+                            value="instagram"
+                            disabled={usedPlatforms.includes('instagram') && link.platform !== 'instagram'}
+                          >
+                            Instagram
+                          </option>
+                        </select>
+
+                        <Input
+                          value={link.url}
+                          onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                          placeholder={link.platform === 'facebook' ? 'https://facebook.com/page' : 'https://instagram.com/page'}
+                          disabled={isSaving || isDeleting}
+                          className="flex-1"
+                        />
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveSocialLink(index)}
+                          disabled={isSaving || isDeleting}
+                        >
+                          <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    {socialLinks.length < 2 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddSocialLink}
+                        disabled={isSaving || isDeleting}
+                        className="w-full"
+                      >
+                        <Icon icon="mdi:plus" className="me-2 h-4 w-4" />
+                        {t('company_settings.add_social_link', 'Add Social Link')}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Location Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:map-marker" className="h-5 w-5" />
+                    {t('company_settings.location', 'Location')}
+                  </CardTitle>
+                  <CardDescription>
+                    Where your company is located
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="country">{t('company_settings.country')}</Label>
+                    <Input
+                      id="country"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      placeholder={t('company_settings.country_placeholder', 'United States')}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">{t('company_settings.city')}</Label>
+                    <Input
+                      id="city"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder={t('company_settings.city_placeholder', 'New York')}
+                      disabled={isSaving || isDeleting}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 4: Services (Full Width) */}
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon icon="mdi:briefcase" className="h-5 w-5" />
+                  {t('company_settings.services')}
+                </CardTitle>
+                <CardDescription>
+                  Services your company offers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 {isLoadingServices ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Loading services...</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {availableServices.map((service) => (
-                      <div key={service.id} className="flex items-center space-x-2">
+                      <div key={service.id} className="flex items-center space-x-3">
                         <Checkbox
                           id={`service-${service.id}`}
                           checked={services.includes(service.name)}
                           onCheckedChange={(checked) =>
-                            handleServiceToggle(service.name, checked === true)
+                            handleServiceToggle(service.name, checked as boolean)
                           }
                           disabled={isSaving || isDeleting}
                         />
-                        <Label htmlFor={`service-${service.id}`} className="font-normal">
+                        <Label htmlFor={`service-${service.id}`} className="font-normal cursor-pointer">
                           {service.name}
                         </Label>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              <Separator />
+            {/* Action Buttons */}
+            <Card className="shadow-sm">
+              <CardContent className="pt-6">
+                {error && (
+                  <p className="text-sm text-destructive mb-4">{error}</p>
+                )}
+                {success && (
+                  <p className="text-sm text-emerald-600 mb-4">{success}</p>
+                )}
 
-              {/* Social Links Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('company_settings.social_links')}</h3>
-                {socialLinks.map((link, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={link.url}
-                      onChange={(e) => handleSocialLinkChange(index, e.target.value)}
-                      placeholder="https://social.com/..."
-                      disabled={isSaving || isDeleting}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveSocialLink(index)}
-                      disabled={isSaving || isDeleting}
-                    >
-                      <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddSocialLink}
-                  disabled={isSaving || isDeleting}
-                >
-                  <Icon icon="mdi:plus" className="me-2 h-4 w-4" />
-                  {t('company_settings.add_social_link')}
-                </Button>
-              </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    type="submit"
+                    disabled={isSaving || isDeleting}
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
+                        {t('company_settings.saving')}
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="mdi:content-save" className="me-2 h-4 w-4" />
+                        {t('company_settings.save')}
+                      </>
+                    )}
+                  </Button>
 
-              {/* Error/Success Messages */}
-              {error && (
-                <p className="text-sm text-destructive" aria-live="polite">
-                  {error}
-                </p>
-              )}
-              {success && (
-                <p className="text-sm text-emerald-600" aria-live="polite">
-                  {success}
-                </p>
-              )}
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-4">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSaving || isDeleting}
-                >
-                  {isSaving ? (
-                    <>
-                      <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
-                      {t('company_settings.saving')}
-                    </>
-                  ) : (
-                    <>
-                      <Icon icon="mdi:content-save" className="me-2 h-4 w-4" />
-                      {t('company_settings.save')}
-                    </>
-                  )}
-                </Button>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      className="w-full"
-                      disabled={isSaving || isDeleting}
-                    >
-                      <Icon icon="mdi:delete" className="me-2 h-4 w-4" />
-                      {t('company_settings.delete_company')}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {t('company_settings.delete_confirm_title')}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t('company_settings.delete_confirm_description')}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteCompany}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={isSaving || isDeleting}
                       >
-                        {isDeleting ? (
-                          <>
-                            <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
-                            {t('company_settings.deleting')}
-                          </>
-                        ) : (
-                          t('company_settings.delete_confirm')
-                        )}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                        <Icon icon="mdi:delete" className="me-2 h-4 w-4" />
+                        {t('company_settings.delete_company')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('company_settings.delete_confirm_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('company_settings.delete_confirm_description')}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteCompany}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Icon icon="mdi:loading" className="me-2 h-4 w-4 animate-spin" />
+                              {t('company_settings.deleting')}
+                            </>
+                          ) : (
+                            t('company_settings.delete_confirm')
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </form>
       </div>
     </div>
   )

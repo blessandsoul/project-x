@@ -303,6 +303,21 @@ export class CompanyController {
     return this.companyModel.getSocialLinksByCompanyId(companyId);
   }
 
+  /**
+   * Get structured social links for API response
+   * Returns: { website: {...} | null, social_links: [...] }
+   */
+  async getStructuredSocialLinks(companyId: number): Promise<{
+    website: { id: number; url: string } | null;
+    social_links: Array<{ id: number; platform: string; url: string }>;
+  }> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+    return this.companyModel.getStructuredSocialLinks(companyId);
+  }
+
   async getSocialLinkById(id: number): Promise<CompanySocialLink> {
     const link = await this.companyModel.getSocialLinkById(id);
     if (!link) {
@@ -311,7 +326,19 @@ export class CompanyController {
     return link;
   }
 
-  async createSocialLink(companyId: number, url: string): Promise<CompanySocialLink> {
+  /**
+   * Create a social link with structured data
+   * @param companyId - Company ID
+   * @param linkType - 'website' or 'social'
+   * @param url - The URL
+   * @param platform - Required if linkType='social', must be 'facebook' or 'instagram'
+   */
+  async createSocialLink(
+    companyId: number,
+    linkType: 'website' | 'social',
+    url: string,
+    platform?: 'facebook' | 'instagram' | null
+  ): Promise<CompanySocialLink> {
     // Validate parent company exists (FK constraint in code, not just DB)
     const company = await this.companyModel.findById(companyId);
     if (!company) {
@@ -322,7 +349,17 @@ export class CompanyController {
       throw new ValidationError('Social link URL is required');
     }
 
-    return this.companyModel.createSocialLink({ company_id: companyId, url });
+    // The model handles validation for:
+    // - Only 1 website per company
+    // - Max 2 social links
+    // - Platform required for social
+    // - Duplicate platform check
+    return this.companyModel.createSocialLink({
+      company_id: companyId,
+      link_type: linkType,
+      platform: platform ?? null,
+      url,
+    });
   }
 
   async updateSocialLink(id: number, updates: CompanySocialLinkUpdate): Promise<CompanySocialLink> {

@@ -358,6 +358,28 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     // Reactivate user account
     await userModel.reactivate(user.id);
 
+    // Update deactivation log with reactivation timestamp and clear scheduled deletion
+    // This prevents old deactivation records from triggering deletion
+    // First, get the most recent deactivation log ID
+    const [logs] = await fastify.mysql.query(
+      `SELECT id FROM user_deactivation_logs 
+       WHERE user_id = ? 
+       AND reactivated_at IS NULL 
+       ORDER BY deactivated_at DESC 
+       LIMIT 1`,
+      [user.id]
+    ) as any;
+
+    if (logs && logs.length > 0) {
+      await fastify.mysql.query(
+        `UPDATE user_deactivation_logs 
+         SET reactivated_at = ?, 
+             scheduled_deletion_at = NULL 
+         WHERE id = ?`,
+        [now, logs[0].id]
+      );
+    }
+
     // Reactivate companies if company user
     if (user.role === 'company') {
       const reactivatedCount = await companyModel.reactivateByOwnerId(user.id);

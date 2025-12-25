@@ -26,8 +26,10 @@ export interface CompanyOnboardRequest {
   country?: string
   city?: string
   state?: string
-  // Company details (optional)
-  description?: string
+  // Company details (optional) - Multi-language descriptions
+  descriptionGeo?: string
+  descriptionEng?: string
+  descriptionRus?: string
   establishedYear?: number
   services?: string[]
   // Pricing (optional, defaults to 0)
@@ -52,7 +54,9 @@ export interface CompanyOnboardResponse {
     country: string | null
     city: string | null
     state: string | null
-    description: string | null
+    description_geo: string | null
+    description_eng: string | null
+    description_rus: string | null
     established_year: number | null
     base_price: number
     price_per_mile: number

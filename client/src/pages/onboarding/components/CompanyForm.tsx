@@ -181,7 +181,7 @@ export function CompanyForm() {
           service_fee: Number(company.service_fee) || 0,
           broker_fee: Number(company.broker_fee) || 0,
           insurance: company.insurance != null ? Number(company.insurance) || 0 : 0,
-          description: company.description || "",
+          description: company.description_eng || company.description_geo || company.description_rus || "",
           country: company.country || "",
           city: company.city || "",
           phone_number: company.phone_number || "",
@@ -277,9 +277,16 @@ export function CompanyForm() {
       const newSocialLinks = socialLinks.filter((link) => !link.id)
 
       if (newSocialLinks.length > 0) {
+        // Auto-detect platform from URL for backward compatibility
+        const detectPlatform = (url: string): 'facebook' | 'instagram' => {
+          const lowerUrl = url.toLowerCase()
+          if (lowerUrl.includes('instagram.com')) return 'instagram'
+          return 'facebook' // default
+        }
+
         await Promise.all(
           newSocialLinks.map((link) =>
-            createCompanySocialLinkFromApi(companyId, link.url.trim()),
+            createCompanySocialLinkFromApi(companyId, 'social', link.url.trim(), detectPlatform(link.url)),
           ),
         )
       }

@@ -21,10 +21,13 @@ export interface User {
 export interface SocialLink {
   id: number;
   company_id: number;
+  link_type: 'website' | 'social';
+  platform?: 'facebook' | 'instagram';
   url: string;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface Company {
   id: number;
@@ -37,7 +40,9 @@ export interface Company {
   broker_fee: number;
   insurance?: number;
   final_formula: Record<string, any> | null;
-  description: string | null;
+  description_geo: string | null;
+  description_eng: string | null;
+  description_rus: string | null;
   phone_number: string | null;
   rating: number;
   reviewCount: number;

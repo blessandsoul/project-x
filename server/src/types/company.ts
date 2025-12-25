@@ -11,7 +11,9 @@ export interface Company {
   broker_fee: number;
   insurance: number | null;
   final_formula: any | null;
-  description: string | null;
+  description_geo: string | null;
+  description_eng: string | null;
+  description_rus: string | null;
   country: string | null;
   city: string | null;
   state: string | null;
@@ -39,7 +41,9 @@ export interface CompanyCreate {
   broker_fee?: number;
   insurance?: number | null;
   final_formula?: any | null;
-  description?: string | null;
+  description_geo?: string | null;
+  description_eng?: string | null;
+  description_rus?: string | null;
   country?: string | null;
   city?: string | null;
   state?: string | null;
@@ -64,7 +68,9 @@ export interface CompanyUpdate {
   broker_fee?: number;
   insurance?: number | null;
   final_formula?: any | null;
-  description?: string | null;
+  description_geo?: string | null;
+  description_eng?: string | null;
+  description_rus?: string | null;
   country?: string | null;
   city?: string | null;
   state?: string | null;
@@ -79,19 +85,42 @@ export interface CompanyUpdate {
   established_year?: number | null;
 }
 
+// Structured Social Links Types
+export type SocialLinkType = 'website' | 'social';
+export type SocialPlatform = 'facebook' | 'instagram';
+
+export const SUPPORTED_SOCIAL_PLATFORMS: SocialPlatform[] = ['facebook', 'instagram'];
+
 export interface CompanySocialLink {
   id: number;
   company_id: number;
+  link_type: SocialLinkType;
+  platform: SocialPlatform | null; // null for website, required for social
   url: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CompanySocialLinkCreate {
   company_id: number;
+  link_type: SocialLinkType;
+  platform?: SocialPlatform | null; // Required if link_type='social'
   url: string;
 }
 
 export interface CompanySocialLinkUpdate {
   url?: string;
+  platform?: SocialPlatform; // Can change platform for social links
+}
+
+// Structured response for GET /companies/:id/social-links
+export interface StructuredSocialLinks {
+  website: { id: number; url: string } | null;
+  social_links: Array<{
+    id: number;
+    platform: SocialPlatform;
+    url: string;
+  }>;
 }
 
 export interface CompanyQuote {

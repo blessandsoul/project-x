@@ -8,7 +8,7 @@
  * - User is redirected to their company page
  *
  * Features:
- * - Multiple websites support (first goes to company.website, rest as social links)
+ * - Structured social links (1 website + 2 social links: facebook/instagram)
  * - Logo upload with preview and validation (max 2MB, JPEG/PNG/WEBP)
  * - Single "Create Company" button handles all steps atomically
  *
@@ -45,10 +45,10 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { onboardCompany, type OnboardError } from '@/services/companyOnboardService'
 import { uploadCompanyLogo, validateLogoFile, formatFileSize, LOGO_MAX_SIZE_BYTES } from '@/services/companyLogoService'
-import { createMultipleSocialLinks, isValidUrl, normalizeUrl } from '@/services/companySocialLinksService'
+import { createOnboardingSocialLinks, isValidUrl, normalizeUrl, type SocialPlatform } from '@/services/companySocialLinksService'
 import { fetchServices, type Service } from '@/api/services'
 
-// Form validation schema (websites handled separately as state)
+// Form validation schema (website and social links handled separately as state)
 const onboardFormSchema = z.object({
   name: z.string().min(1, 'Company name is required').max(255),
   companyPhone: z.string().max(50).optional().or(z.literal('')),
@@ -56,7 +56,10 @@ const onboardFormSchema = z.object({
   country: z.string().max(100).optional().or(z.literal('')),
   city: z.string().max(100).optional().or(z.literal('')),
   state: z.string().max(100).optional().or(z.literal('')),
-  description: z.string().max(5000).optional().or(z.literal('')),
+  // Multi-language descriptions
+  descriptionGeo: z.string().max(5000).optional().or(z.literal('')),
+  descriptionEng: z.string().max(5000).optional().or(z.literal('')),
+  descriptionRus: z.string().max(5000).optional().or(z.literal('')),
   establishedYear: z.coerce.number().min(1900).max(2100).optional().or(z.literal('')),
   services: z.array(z.string()).max(20).optional(),
   basePrice: z.coerce.number().min(0).optional(),
@@ -69,18 +72,19 @@ const onboardFormSchema = z.object({
 type OnboardFormValues = z.infer<typeof onboardFormSchema>
 
 // Onboarding steps for progress display
-type OnboardingStep = 'idle' | 'creating' | 'uploading_logo' | 'adding_websites' | 'refreshing' | 'done'
+type OnboardingStep = 'idle' | 'creating' | 'uploading_logo' | 'adding_links' | 'refreshing' | 'done'
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   idle: '',
   creating: 'Creating company...',
   uploading_logo: 'Uploading logo...',
-  adding_websites: 'Adding websites...',
+  adding_links: 'Adding website and social links...',
   refreshing: 'Finalizing...',
   done: 'Complete!',
 }
 
-const MAX_WEBSITES = 10
+// Social Link Types
+type SocialLinkEntry = { platform: SocialPlatform; url: string }
 
 const CompanyOnboardPage = () => {
   const navigate = useNavigate()
@@ -96,10 +100,10 @@ const CompanyOnboardPage = () => {
   const [availableServices, setAvailableServices] = useState<Service[]>([])
   const [isLoadingServices, setIsLoadingServices] = useState(true)
 
-  // Websites state (managed separately from form)
-  const [websites, setWebsites] = useState<string[]>([])
-  const [newWebsite, setNewWebsite] = useState('')
+  // Website and Social Links state (structured approach)
+  const [website, setWebsite] = useState('')
   const [websiteError, setWebsiteError] = useState<string | null>(null)
+  const [socialLinks, setSocialLinks] = useState<SocialLinkEntry[]>([])
 
   // Logo state
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -118,7 +122,9 @@ const CompanyOnboardPage = () => {
       country: '',
       city: '',
       state: '',
-      description: '',
+      descriptionGeo: '',
+      descriptionEng: '',
+      descriptionRus: '',
       establishedYear: undefined,
       services: [],
       basePrice: 0,
@@ -176,45 +182,36 @@ const CompanyOnboardPage = () => {
     }
   }, [])
 
-  // Website handlers
-  const handleAddWebsite = useCallback(() => {
-    setWebsiteError(null)
-    const trimmed = newWebsite.trim()
+  // Social Link handlers
+  const handleAddSocialLink = useCallback(() => {
+    if (socialLinks.length >= 2) return
 
-    if (!trimmed) return
+    // Determine which platform is available
+    const usedPlatforms = socialLinks.map(l => l.platform)
+    const nextPlatform: SocialPlatform = !usedPlatforms.includes('facebook') ? 'facebook' : 'instagram'
 
-    if (websites.length >= MAX_WEBSITES) {
-      setWebsiteError(`Maximum ${MAX_WEBSITES} websites allowed`)
-      return
-    }
+    setSocialLinks([...socialLinks, { platform: nextPlatform, url: '' }])
+  }, [socialLinks])
 
-    const normalized = normalizeUrl(trimmed)
+  const handleRemoveSocialLink = useCallback((index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index))
+  }, [socialLinks])
 
-    if (!isValidUrl(normalized)) {
-      setWebsiteError('Invalid URL format. Use https://example.com')
-      return
-    }
+  const handleSocialLinkChange = useCallback((index: number, field: 'platform' | 'url', value: string) => {
+    setSocialLinks(prev => {
+      const updated = [...prev]
+      if (field === 'platform') {
+        updated[index] = { ...updated[index], platform: value as SocialPlatform }
+      } else {
+        updated[index] = { ...updated[index], url: value }
+      }
+      return updated
+    })
+  }, [])
 
-    // Check for duplicates
-    if (websites.some(w => normalizeUrl(w) === normalized)) {
-      setWebsiteError('Website already added')
-      return
-    }
+  // Get used platforms for disabling in select
+  const usedPlatforms = socialLinks.map(l => l.platform)
 
-    setWebsites([...websites, normalized])
-    setNewWebsite('')
-  }, [newWebsite, websites])
-
-  const handleRemoveWebsite = useCallback((index: number) => {
-    setWebsites(websites.filter((_, i) => i !== index))
-  }, [websites])
-
-  const handleWebsiteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddWebsite()
-    }
-  }
 
   // Logo handlers
   const handleLogoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,30 +261,21 @@ const CompanyOnboardPage = () => {
     const failures: string[] = []
 
     try {
-      // Step 0: Auto-add website from input if user typed but didn't click '+'
-      // This prevents data loss when user expects the typed value to be saved
-      let finalWebsites = [...websites]
-      if (newWebsite.trim()) {
-        const normalized = normalizeUrl(newWebsite.trim())
-        if (isValidUrl(normalized) && !finalWebsites.some(w => normalizeUrl(w) === normalized)) {
-          finalWebsites.push(normalized)
-          console.log('[Onboarding] Auto-added website from input:', normalized)
-        }
-      }
+      // Normalize website URL if provided
+      const normalizedWebsite = website.trim() ? normalizeUrl(website.trim()) : undefined
 
       // Step 1: Create company
-      // First website goes to company.website, ALL websites go to social links
-      const primaryWebsite = finalWebsites.length > 0 ? finalWebsites[0] : undefined
-
       const payload = {
         name: data.name,
         companyPhone: data.companyPhone || undefined,
         contactEmail: data.contactEmail || undefined,
-        website: primaryWebsite,
+        website: normalizedWebsite,
         country: data.country || undefined,
         city: data.city || undefined,
         state: data.state || undefined,
-        description: data.description || undefined,
+        descriptionGeo: data.descriptionGeo || undefined,
+        descriptionEng: data.descriptionEng || undefined,
+        descriptionRus: data.descriptionRus || undefined,
         establishedYear: data.establishedYear || undefined,
         services: data.services?.length ? data.services : undefined,
         basePrice: data.basePrice || undefined,
@@ -311,22 +299,28 @@ const CompanyOnboardPage = () => {
         }
       }
 
-      // Step 3: Add ALL websites as social links
-      // Note: First website is already in company.website, but we also create it as a social link
-      // to match the behavior on settings page where website field and social links are independent
-      if (finalWebsites.length > 0 && companyId) {
-        setCurrentStep('adding_websites')
-        console.log('[Onboarding] Creating social links for websites:', finalWebsites)
+      // Step 3: Add website and social links via structured API
+      const hasWebsite = normalizedWebsite && isValidUrl(normalizedWebsite)
+      const validSocialLinks = socialLinks.filter(l => l.url.trim() && isValidUrl(normalizeUrl(l.url.trim())))
+
+      if ((hasWebsite || validSocialLinks.length > 0) && companyId) {
+        setCurrentStep('adding_links')
+        console.log('[Onboarding] Creating structured social links:', { website: normalizedWebsite, socialLinks: validSocialLinks })
+
         try {
-          const results = await createMultipleSocialLinks(companyId, finalWebsites)
-          console.log('[Onboarding] Social links creation results:', results)
-          const failedLinks = results.filter(r => !r.success)
-          if (failedLinks.length > 0) {
-            failures.push(`${failedLinks.length} website(s) failed to save`)
+          const linksResult = await createOnboardingSocialLinks(
+            companyId,
+            hasWebsite ? normalizedWebsite : null,
+            validSocialLinks.map(l => ({ platform: l.platform, url: normalizeUrl(l.url.trim()) }))
+          )
+          console.log('[Onboarding] Social links creation results:', linksResult)
+
+          if (linksResult.errors.length > 0) {
+            failures.push(`Some links failed to save: ${linksResult.errors.map(e => e.message).join(', ')}`)
           }
         } catch (linksErr: any) {
           console.error('[Onboarding] Social links failed:', linksErr)
-          failures.push('Failed to save websites')
+          failures.push('Failed to save website/social links')
         }
       }
 
@@ -381,8 +375,8 @@ const CompanyOnboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background py-8 px-4 lg:px-8">
+      <div className="w-full lg:max-w-[1440px] lg:mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -433,33 +427,40 @@ const CompanyOnboardPage = () => {
         {/* Main Form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Company Info Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon icon="mdi:domain" className="h-5 w-5" />
-                  Company Information
-                </CardTitle>
-                <CardDescription>
-                  Basic information about your company
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your company name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Responsive Grid Layout:
+                - Mobile (<768px): Single column, vertical stack
+                - Tablet (768px-1024px): 2-column grid, 2 sections per row
+                - Desktop (≥1024px): 2-column grid with proper spacing
+            */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Row 1: Company Information (Left) + Company Descriptions (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Info Section - Left */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:domain" className="h-5 w-5" />
+                    Company Information
+                  </CardTitle>
+                  <CardDescription>
+                    Basic information about your company
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="companyPhone"
@@ -473,6 +474,7 @@ const CompanyOnboardPage = () => {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="contactEmail"
@@ -486,53 +488,115 @@ const CompanyOnboardPage = () => {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Tell customers about your company and services..."
-                          className="min-h-[100px] resize-y"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        {(field.value?.length || 0)} / 5000 characters
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="establishedYear"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Established Year</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="2015"
+                            min={1900}
+                            max={2100}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
 
-                <FormField
-                  control={form.control}
-                  name="establishedYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Established Year</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="2015"
-                          min={1900}
-                          max={2100}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+              {/* Company Descriptions Section - Right */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:text-box-multiple" className="h-5 w-5" />
+                    Company Descriptions
+                  </CardTitle>
+                  <CardDescription>
+                    Add your company description in one or more languages
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="descriptionGeo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <span>🇬🇪</span> Georgian
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="კომპანიის აღწერა..."
+                            className="min-h-[80px] resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          {(field.value?.length || 0)} / 5000
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* Logo Upload Section */}
-            <Card>
+                  <FormField
+                    control={form.control}
+                    name="descriptionEng"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <span>🇬🇧</span> English
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Company description..."
+                            className="min-h-[80px] resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          {(field.value?.length || 0)} / 5000
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="descriptionRus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <span>🇷🇺</span> Russian
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Описание компании..."
+                            className="min-h-[80px] resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          {(field.value?.length || 0)} / 5000
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: Company Logo (Full Width) */}
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon icon="mdi:image" className="h-5 w-5" />
@@ -597,138 +661,173 @@ const CompanyOnboardPage = () => {
               </CardContent>
             </Card>
 
-            {/* Websites Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon icon="mdi:web" className="h-5 w-5" />
-                  Websites
-                </CardTitle>
-                <CardDescription>
-                  Add your company websites (max {MAX_WEBSITES}). First website will be your primary.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Website list */}
-                {websites.length > 0 && (
+
+            {/* Row 3: Website & Social Links (Left) + Location (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Website & Social Links Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:web" className="h-5 w-5" />
+                    Website & Social Links
+                  </CardTitle>
+                  <CardDescription>
+                    Add your company website and social media profiles (Facebook, Instagram)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Website Input */}
                   <div className="space-y-2">
-                    {websites.map((website, index) => (
+                    <Label className="flex items-center gap-2">
+                      <Icon icon="mdi:web" className="h-4 w-4" />
+                      Company Website
+                    </Label>
+                    <Input
+                      placeholder="https://yourcompany.com"
+                      value={website}
+                      onChange={(e) => {
+                        setWebsite(e.target.value)
+                        setWebsiteError(null)
+                      }}
+                    />
+                    {websiteError && (
+                      <p className="text-sm text-destructive">{websiteError}</p>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Social Links Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Icon icon="mdi:share-variant" className="h-4 w-4" />
+                        Social Media ({socialLinks.length}/2)
+                      </Label>
+                      {socialLinks.length < 2 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddSocialLink}
+                        >
+                          <Icon icon="mdi:plus" className="h-4 w-4 mr-1" />
+                          Add Social
+                        </Button>
+                      )}
+                    </div>
+
+                    {socialLinks.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No social links added. Click "Add Social" to add Facebook or Instagram.
+                      </p>
+                    )}
+
+                    {socialLinks.map((link, index) => (
                       <div key={index} className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
-                          <Icon icon="mdi:link" className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-sm truncate flex-1">{website}</span>
-                          {index === 0 && (
-                            <Badge variant="secondary" className="text-xs flex-shrink-0">Primary</Badge>
-                          )}
-                        </div>
+                        {/* Platform Select */}
+                        <select
+                          value={link.platform}
+                          onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                          className="h-9 w-[130px] rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option
+                            value="facebook"
+                            disabled={usedPlatforms.includes('facebook') && link.platform !== 'facebook'}
+                          >
+                            Facebook
+                          </option>
+                          <option
+                            value="instagram"
+                            disabled={usedPlatforms.includes('instagram') && link.platform !== 'instagram'}
+                          >
+                            Instagram
+                          </option>
+                        </select>
+
+                        {/* URL Input */}
+                        <Input
+                          placeholder={link.platform === 'facebook' ? 'https://facebook.com/yourpage' : 'https://instagram.com/yourpage'}
+                          value={link.url}
+                          onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                          className="flex-1"
+                        />
+
+                        {/* Remove Button */}
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 flex-shrink-0"
-                          onClick={() => handleRemoveWebsite(index)}
+                          onClick={() => handleRemoveSocialLink(index)}
                         >
                           <Icon icon="mdi:close" className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
                   </div>
-                )}
+                </CardContent>
+              </Card>
 
-                {/* Add website input */}
-                {websites.length < MAX_WEBSITES && (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="https://yourcompany.com"
-                        value={newWebsite}
-                        onChange={(e) => {
-                          setNewWebsite(e.target.value)
-                          setWebsiteError(null)
-                        }}
-                        onKeyDown={handleWebsiteKeyDown}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleAddWebsite}
-                        disabled={!newWebsite.trim()}
-                      >
-                        <Icon icon="mdi:plus" className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {websiteError && (
-                      <p className="text-sm text-destructive">{websiteError}</p>
-                    )}
+              {/* Location Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:map-marker" className="h-5 w-5" />
+                    Location
+                  </CardTitle>
+                  <CardDescription>
+                    Where is your company based?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="USA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State / Province</FormLabel>
+                          <FormControl>
+                            <Input placeholder="California" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Los Angeles" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                )}
-
-                {websites.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No websites added yet. Add your company website above.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Location Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon icon="mdi:map-marker" className="h-5 w-5" />
-                  Location
-                </CardTitle>
-                <CardDescription>
-                  Where is your company based?
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input placeholder="USA" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State / Province</FormLabel>
-                        <FormControl>
-                          <Input placeholder="California" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Los Angeles" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Services Section */}
-            <Card>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon icon="mdi:cog" className="h-5 w-5" />
@@ -797,7 +896,7 @@ const CompanyOnboardPage = () => {
             </Card>
 
             {/* Pricing Section */}
-            <Card>
+            <Card className="hidden shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon icon="mdi:currency-usd" className="h-5 w-5" />
@@ -878,7 +977,7 @@ const CompanyOnboardPage = () => {
               </CardContent>
             </Card>
 
-            {/* Submit Button */}
+            {/* Submit Button - Full Width */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 type="button"
@@ -911,7 +1010,7 @@ const CompanyOnboardPage = () => {
           </form>
         </Form>
       </div>
-    </div>
+    </div >
   )
 }
 

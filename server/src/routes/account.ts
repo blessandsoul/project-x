@@ -365,6 +365,21 @@ const accountRoutes: FastifyPluginAsync = async (fastify) => {
       deletion_scheduled_at: deletionScheduledAt,
     });
 
+    // Log the deactivation with reason
+    const clientIp = request.ip || request.headers['x-forwarded-for'] || request.headers['x-real-ip'] || null;
+    await fastify.mysql.query(
+      `INSERT INTO user_deactivation_logs 
+       (user_id, reason, deactivated_at, deactivated_by_ip, scheduled_deletion_at) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        userId,
+        reason?.trim() || null,
+        now,
+        typeof clientIp === 'string' ? clientIp : null,
+        deletionScheduledAt,
+      ]
+    );
+
     // Revoke all sessions
     await sessionService.revokeAllUserSessions(userId);
 
@@ -378,6 +393,7 @@ const accountRoutes: FastifyPluginAsync = async (fastify) => {
       userId,
       deletionScheduledAt: deletionScheduledAt.toISOString(),
       reason: reason?.slice(0, 100) || null,
+      ip: typeof clientIp === 'string' ? clientIp : null,
     }, 'Account deactivated');
 
     return reply.send({
