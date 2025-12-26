@@ -407,7 +407,7 @@ const CompanySettingsPage = () => {
                     {t('company_settings.company_info', 'Company Information')}
                   </CardTitle>
                   <CardDescription>
-                    Basic information about your company
+                    {t('company_settings.company_info_description', 'Basic information about your company')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -470,7 +470,7 @@ const CompanySettingsPage = () => {
                     {t('company_settings.descriptions', 'Company Descriptions')}
                   </CardTitle>
                   <CardDescription>
-                    Describe your company in multiple languages
+                    {t('company_settings.descriptions_description', 'Describe your company in multiple languages')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -538,10 +538,10 @@ const CompanySettingsPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Icon icon="mdi:image" className="h-5 w-5" />
-                    {t('company_settings.logo')}
+                    {t('company_settings.logo', 'Company Logo')}
                   </CardTitle>
                   <CardDescription>
-                    Upload your company logo (max 2 MB, JPEG/PNG/WEBP)
+                    {t('company_settings.logo_description', 'Upload your company logo (max 2 MB, JPEG/PNG/WEBP)')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -562,7 +562,7 @@ const CompanySettingsPage = () => {
                           disabled={isSaving || isDeleting}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
-                          Click to change logo
+                          {t('company_settings.logo_change', 'Click to change logo')}
                         </p>
                       </div>
                     </div>
@@ -575,7 +575,7 @@ const CompanySettingsPage = () => {
                         disabled={isSaving || isDeleting}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
-                        JPEG, PNG, or WEBP up to 2 MB
+                        {t('company_settings.logo_hint', 'JPEG, PNG, or WEBP up to 2 MB')}
                       </p>
                     </div>
                   )}
@@ -587,10 +587,10 @@ const CompanySettingsPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Icon icon="mdi:currency-usd" className="h-5 w-5" />
-                    {t('company_settings.pricing')}
+                    {t('company_settings.pricing', 'Pricing')}
                   </CardTitle>
                   <CardDescription>
-                    Set your pricing structure
+                    {t('company_settings.pricing_description', 'Set your pricing structure')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -671,10 +671,10 @@ const CompanySettingsPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Icon icon="mdi:web" className="h-5 w-5" />
-                    Website & Social Links
+                    {t('company_settings.website_social', 'Website & Social Links')}
                   </CardTitle>
                   <CardDescription>
-                    Add your company website and social media profiles
+                    {t('company_settings.website_social_description', 'Add your company website and social media profiles')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -682,7 +682,7 @@ const CompanySettingsPage = () => {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Icon icon="mdi:web" className="h-4 w-4" />
-                      Company Website
+                      {t('company_settings.website_label', 'Company Website')}
                     </Label>
                     <Input
                       placeholder="https://yourcompany.com"
@@ -699,13 +699,13 @@ const CompanySettingsPage = () => {
                     <Label className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <Icon icon="mdi:share-variant" className="h-4 w-4" />
-                        Social Media Links ({socialLinks.length}/2)
+                        {t('company_settings.social_links_label', 'Social Media Links')} ({socialLinks.length}/2)
                       </span>
                     </Label>
 
                     {socialLinks.length === 0 && (
                       <p className="text-sm text-muted-foreground">
-                        No social links added.
+                        {t('company_settings.no_social_links', 'No social links added.')}
                       </p>
                     )}
 
@@ -776,7 +776,7 @@ const CompanySettingsPage = () => {
                     {t('company_settings.location', 'Location')}
                   </CardTitle>
                   <CardDescription>
-                    Where your company is located
+                    {t('company_settings.location_description', 'Where your company is located')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -810,17 +810,17 @@ const CompanySettingsPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon icon="mdi:briefcase" className="h-5 w-5" />
-                  {t('company_settings.services')}
+                  {t('company_settings.services', 'Services')}
                 </CardTitle>
                 <CardDescription>
-                  Services your company offers
+                  {t('company_settings.services_description', 'Services your company offers')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingServices ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Loading services...</span>
+                    <span className="text-sm">{t('company_settings.loading_services', 'Loading services...')}</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

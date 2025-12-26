@@ -79,6 +79,22 @@
           }
         },
         {
+          "name": "Reactivate Account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"user@example.com\",\n  \"password\": \"yourpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reactivate"]
+            }
+          }
+        },
+        {
           "name": "Get Current User (Me)",
           "request": {
             "method": "GET",
@@ -1534,6 +1550,118 @@
               "raw": "{{baseUrl}}/company/inquiries/1/mark-read",
               "host": ["{{baseUrl}}"],
               "path": ["company", "inquiries", "1", "mark-read"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "VIN Decoder",
+      "description": "Vehicle Identification Number decoding service",
+      "item": [
+        {
+          "name": "Decode VIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"1HGBH41JXMN109186\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vin/decode",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vin", "decode"]
+            }
+          }
+        },
+        {
+          "name": "VIN Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vin/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vin", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicle Data",
+      "description": "Vehicle makes and models reference data",
+      "item": [
+        {
+          "name": "Get Vehicle Makes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicle-makes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicle-makes"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicle-models?make=Toyota",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicle-models"],
+              "query": [
+                { "key": "make", "value": "Toyota" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calculator",
+      "description": "Shipping cost calculator",
+      "item": [
+        {
+          "name": "Calculate Shipping Cost",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyprice\": 5000,\n  \"auction\": \"Copart\",\n  \"vehicletype\": \"Sedan\",\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "calculator"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Quotes for Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auction\": \"Copart\",\n  \"usacity\": \"Los Angeles\",\n  \"vehiclecategory\": \"Sedan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:vehicleId/calculate-quotes?limit=5&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":vehicleId", "calculate-quotes"],
+              "query": [
+                { "key": "limit", "value": "5" },
+                { "key": "offset", "value": "0" },
+                { "key": "currency", "value": "USD", "disabled": true },
+                { "key": "minRating", "value": "4", "disabled": true }
+              ],
+              "variable": [{ "key": "vehicleId", "value": "1" }]
             }
           }
         }

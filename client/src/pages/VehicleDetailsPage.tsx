@@ -928,7 +928,7 @@ const VehicleDetailsPage = () => {
                 {/* Lot number */}
                 {/* Mobile overflow fix: 90px label column on mobile, 130px on md+ */}
                 {vehicle.source_lot_id && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.lot_number', 'Lot number:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-all">{vehicle.source_lot_id}</span>
                   </div>
@@ -937,7 +937,7 @@ const VehicleDetailsPage = () => {
                 {/* VIN */}
                 {/* Mobile overflow fix: 90px label column on mobile, 130px on md+, break-all for long VINs */}
                 {vehicle.vin && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.vin', 'VIN:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-all">{vehicle.vin}</span>
                   </div>
@@ -945,21 +945,21 @@ const VehicleDetailsPage = () => {
 
                 {/* Title code */}
                 {(vehicle as any).document && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.title_code', 'Title code:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{(vehicle as any).document}</span>
                   </div>
                 )}
 
                 {/* Odometer - always show, display 0 if falsy */}
-                <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                   <span className="text-[11px] text-slate-500">{t('vehicle.details.odometer', 'Odometer:')}</span>
                   <span className="text-[11px] font-medium text-slate-900 uppercase truncate">{(vehicle.mileage || 0).toLocaleString()} MI</span>
                 </div>
 
                 {/* Primary damage */}
                 {vehicle.damage_main_damages && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.primary_damage', 'Primary damage:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.damage_main_damages}</span>
                   </div>
@@ -967,21 +967,21 @@ const VehicleDetailsPage = () => {
 
                 {/* Estimated retail value */}
                 {(vehicle as any).retail_value && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.estimated_retail_value', 'Estimated retail value:')}</span>
                     <span className="text-[11px] font-medium text-slate-900">${Number((vehicle as any).retail_value).toLocaleString()}</span>
                   </div>
                 )}
 
                 {/* Cylinders - always show, display 0 if falsy */}
-                <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                   <span className="text-[11px] text-slate-500">{t('vehicle.details.cylinders', 'Cylinders:')}</span>
                   <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.cylinders || 0}</span>
                 </div>
 
                 {/* Color */}
                 {vehicle.color && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.color', 'Color:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.color}</span>
                   </div>
@@ -989,7 +989,7 @@ const VehicleDetailsPage = () => {
 
                 {/* Engine type */}
                 {(vehicle.engine_volume || vehicle.cylinders) && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.engine_type', 'Engine type:')}</span>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[11px] font-medium text-slate-900 uppercase truncate">
@@ -1013,7 +1013,7 @@ const VehicleDetailsPage = () => {
 
                 {/* Transmission */}
                 {vehicle.transmission && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.transmission', 'Transmission:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase break-words">
                       {t(`auction.filters.${vehicle.transmission.toLowerCase().trim()}`, vehicle.transmission)}
@@ -1023,21 +1023,21 @@ const VehicleDetailsPage = () => {
 
                 {/* Drive */}
                 {(vehicle as any).drive && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.drive', 'Drive:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).drive}</span>
                   </div>
                 )}
 
                 {/* Vehicle type */}
-                <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                   <span className="text-[11px] text-slate-500">{t('vehicle.details.vehicle_type', 'Vehicle type:')}</span>
                   <span className="text-[11px] font-medium text-slate-900 uppercase">{t('vehicle.details.vehicle_type_value', 'HARDCODED')}</span>
                 </div>
 
                 {/* Fuel */}
                 {(vehicle as any).engine_fuel && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.fuel', 'Fuel:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 uppercase">
                       {t(`auction.filters.${(vehicle as any).engine_fuel.toLowerCase().trim()}`, (vehicle as any).engine_fuel as string)}
@@ -1046,14 +1046,14 @@ const VehicleDetailsPage = () => {
                 )}
 
                 {/* Keys - always show Yes/No */}
-                <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                   <span className="text-[11px] text-slate-500">{t('vehicle.details.keys', 'Keys:')}</span>
                   <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).has_keys ? t('vehicle.details.yes', 'YES') : t('vehicle.details.no', 'NO')}</span>
                 </div>
 
                 {/* Highlights - only show if run_and_drive is truthy */}
                 {(vehicle as any).run_and_drive && (
-                  <div className="grid grid-cols-[90px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.highlights', 'Highlights:')}</span>
                     <span className="text-[11px] font-medium text-slate-900 truncate">{t('vehicle.details.run_and_drive', 'Run and Drive')}</span>
                   </div>

@@ -525,9 +525,6 @@ const ProfilePage = () => {
             <h1 className="text-2xl font-bold tracking-tight">
               {t('profile.title', 'Profile Settings')}
             </h1>
-            <p className="text-muted-foreground text-sm">
-              {t('profile.description', 'Manage your account settings and preferences')}
-            </p>
           </div>
         </div>
 

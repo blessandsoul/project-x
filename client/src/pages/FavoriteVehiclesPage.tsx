@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import { Table, TableBody } from '@/components/ui/table'
 import { Icon } from '@iconify/react/dist/iconify.js'
 // navigationItems now handled by MainLayout
@@ -142,9 +141,6 @@ const FavoriteVehiclesPage = () => {
                   <Icon icon="mdi:star-outline" className="w-12 h-12 text-muted-foreground/50" />
                   <div className="space-y-1">
                     <h3 className="font-semibold text-lg">{t('auction.no_favorites')}</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto">
-                      {t('auction.no_favorites_description')}
-                    </p>
                   </div>
                   <Button variant="outline" onClick={() => navigate({ pathname: '/auction-listings' })}>
                     {t('auction.browse_auctions')}
