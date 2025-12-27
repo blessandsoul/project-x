@@ -84,6 +84,13 @@ function AppRoutes() {
     </Suspense>
   )
 
+  // Helper to wrap lazy components WITHOUT animation (for performance-critical pages)
+  const NoAnimationRoute = ({ children }: { children: ReactNode }) => (
+    <Suspense fallback={<PageLoader />}>
+      {children}
+    </Suspense>
+  )
+
   return (
     <>
       <ScrollToTop />
@@ -94,7 +101,7 @@ function AppRoutes() {
             {/* Public Pages */}
             <Route path="/" element={<LazyRoute><HomePage /></LazyRoute>} />
             <Route path="/catalog" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
-            <Route path="/companies" element={<LazyRoute><CompaniesPage /></LazyRoute>} />
+            <Route path="/companies" element={<NoAnimationRoute><CompaniesPage /></NoAnimationRoute>} />
             <Route path="/company/:id" element={<LazyRoute><CompanyProfilePage /></LazyRoute>} />
             <Route path="/auction-listings" element={<LazyRoute><AuctionListingsPage /></LazyRoute>} />
             <Route path="/vin" element={<LazyRoute><CarfaxPage /></LazyRoute>} />

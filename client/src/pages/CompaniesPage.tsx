@@ -1,54 +1,115 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/company/EmptyState';
-import { Image } from '@/components/ui/image';
+import { SearchFilterHeader } from '@/components/company/SearchFilterHeader';
+import { CompanyList } from '@/components/company/CompanyList';
 
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
 import { cn } from '@/lib/utils';
 
-const PAGE_SIZE = 12;
+const DEFAULT_LIMIT = 20;
 
 const CompaniesPage = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get URL params
+  const searchQuery = searchParams.get('search') || '';
+  const isVip = searchParams.get('vip') === 'true';
+  const limit = Number(searchParams.get('limit')) || DEFAULT_LIMIT;
 
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [totalCompanies, setTotalCompanies] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(searchQuery);
 
+  // Memoized load companies function
   const loadCompanies = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { companies: data } = await searchCompaniesFromApi({ limit: 100 });
+      const { companies: data, total } = await searchCompaniesFromApi({
+        limit,
+        search: searchQuery || undefined,
+        isVip: isVip || undefined,
+      });
       setCompanies(data);
+      setTotalCompanies(total);
     } catch (err) {
       console.error('[CompaniesPage] Failed to load companies', err);
       setError(t('companies.error.load', 'Failed to load companies. Please try again.'));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, limit, searchQuery, isVip]);
 
   useEffect(() => {
     void loadCompanies();
   }, [loadCompanies]);
 
-  const totalPages = Math.ceil(companies.length / PAGE_SIZE);
-  const paginatedCompanies = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return companies.slice(start, start + PAGE_SIZE);
-  }, [companies, page]);
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
 
-  const handleRetry = () => {
+  // Memoized paginated companies
+  const paginatedCompanies = useMemo(() => {
+    const start = (page - 1) * limit;
+    return companies.slice(start, start + limit);
+  }, [companies, page, limit]);
+
+  const totalPages = useMemo(() => Math.ceil(companies.length / limit), [companies.length, limit]);
+
+  // Memoized handlers
+  const handleRetry = useCallback(() => {
     void loadCompanies();
-  };
+  }, [loadCompanies]);
+
+  const handleSearchSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    const newParams = new URLSearchParams(searchParams);
+    if (searchInput.trim()) {
+      newParams.set('search', searchInput.trim());
+    } else {
+      newParams.delete('search');
+    }
+    setSearchParams(newParams);
+    setPage(1);
+  }, [searchInput, searchParams, setSearchParams]);
+
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInput(value);
+  }, []);
+
+  const handleVipToggle = useCallback((checked: boolean) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (checked) {
+      newParams.set('vip', 'true');
+    } else {
+      newParams.delete('vip');
+    }
+    setSearchParams(newParams);
+    setPage(1);
+  }, [searchParams, setSearchParams]);
+
+  const handleLimitChange = useCallback((newLimit: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('limit', String(newLimit));
+    setSearchParams(newParams);
+    setPage(1);
+  }, [searchParams, setSearchParams]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -58,23 +119,28 @@ const CompaniesPage = () => {
           <h1 className="text-xl font-bold text-slate-900">
             {t('navigation.companies')}
           </h1>
-
         </div>
       </div>
 
       <main className="w-full max-w-[1400px] mx-auto px-4 py-6">
-        {/* Results Header */}
-        {!isLoading && !error && companies.length > 0 && (
-          <div className="flex items-center justify-between bg-white p-3 border border-slate-200 mb-4">
-            <p className="text-[12px] font-medium text-slate-600">
-              {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{companies.length}</span> {t('catalog.results.of')}
-            </p>
-          </div>
+        {/* Filters & Search Bar - Memoized Component */}
+        {!isLoading && !error && (
+          <SearchFilterHeader
+            searchInput={searchInput}
+            onSearchInputChange={handleSearchInputChange}
+            onSearchSubmit={handleSearchSubmit}
+            isVip={isVip}
+            onVipToggle={handleVipToggle}
+            limit={limit}
+            onLimitChange={handleLimitChange}
+            totalCompanies={companies.length}
+            displayedCount={paginatedCompanies.length}
+          />
         )}
 
         {/* Loading State */}
         {isLoading && (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 xl:gap-4 grid-cols-1 md:grid-cols-2 min-[1400px]:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-md border border-slate-200 bg-white shadow-sm px-4 py-3 space-y-3">
                 <div className="flex items-center gap-3">
@@ -130,14 +196,10 @@ const CompaniesPage = () => {
           </div>
         )}
 
-        {/* Companies Grid */}
+        {/* Companies List - Memoized Component */}
         {!isLoading && !error && companies.length > 0 && (
           <>
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-              {paginatedCompanies.map((company) => (
-                <CompanyCard key={company.id} company={company} />
-              ))}
-            </div>
+            <CompanyList companies={paginatedCompanies} />
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -145,10 +207,7 @@ const CompaniesPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setPage((p) => Math.max(1, p - 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
                   disabled={page <= 1}
                   className={cn(
                     'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
@@ -167,12 +226,7 @@ const CompaniesPage = () => {
                       <button
                         key={p}
                         type="button"
-                        onClick={() => {
-                          if (!isActive) {
-                            setPage(p);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }
-                        }}
+                        onClick={() => !isActive && handlePageChange(p)}
                         aria-current={isActive ? 'page' : undefined}
                         className={cn(
                           'h-7 min-w-[28px] px-2 text-[11px] font-medium transition-all border flex items-center justify-center',
@@ -190,10 +244,7 @@ const CompaniesPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setPage((p) => Math.min(totalPages, p + 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
                   className={cn(
                     'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
@@ -212,102 +263,5 @@ const CompaniesPage = () => {
     </div>
   );
 };
-
-interface CompanyCardProps {
-  company: Company;
-}
-
-function capitalize(str: string | undefined | null): string {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-
-function CompanyCard({ company }: CompanyCardProps) {
-  const { t } = useTranslation();
-
-  const isOnline = company.rating > 4.5;
-  const cityDisplay = capitalize(company.location?.city) || t('catalog.card.default_city', 'Tbilisi');
-
-  return (
-    <Link
-      to={`/company/${company.id}`}
-      className={cn(
-        'relative flex flex-col rounded-md border border-slate-200 bg-white shadow-sm px-4 py-3 space-y-3',
-        'transition-all duration-200 hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5',
-        'focus:outline-none focus:ring-2 focus:ring-primary/50'
-      )}
-    >
-      {/* TOP: Logo + Name + City */}
-      <div className="flex items-center gap-3">
-        <div className="h-12 w-12 xl:h-14 xl:w-14 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100">
-          <Image
-            src={company.logo || '/car-logos/toyota.png'}
-            alt={`${company.name} logo`}
-            className="h-full w-full"
-            fallbackSrc="/car-logos/toyota.png"
-            loading="eager"
-            objectFit="contain"
-          />
-        </div>
-
-        <div className="flex flex-col min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-primary leading-tight line-clamp-1 capitalize">
-            {company.name}
-          </h3>
-          <div className="flex items-center gap-1 text-[10px] xl:text-[11px] text-muted-foreground">
-            <Icon icon="mdi:map-marker" className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{cityDisplay}</span>
-            {company.vipStatus && (
-              <span className="inline-flex items-center gap-0.5 ml-1 text-[8px] font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded">
-                <Icon icon="mdi:crown" className="w-2 h-2" />
-                {t('catalog.card.vip', 'VIP')}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Description */}
-      {company.description && (
-        <p className="text-[11px] xl:text-[12px] text-muted-foreground line-clamp-2 leading-relaxed">
-          {company.description}
-        </p>
-      )}
-
-      {/* Rating */}
-      <div className="flex items-center justify-between text-[10px] xl:text-[11px]">
-        <div className="flex items-center gap-1">
-          <Icon icon="mdi:star" className="h-3 w-3 text-amber-500" />
-          <span className="font-semibold text-[11px] xl:text-[12px] text-foreground">
-            {company.rating}
-          </span>
-          <span className="text-muted-foreground">({company.reviewCount})</span>
-        </div>
-      </div>
-
-      {/* BOTTOM: Status + Details Button */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 text-[10px] xl:text-[11px] text-muted-foreground">
-          <span
-            className={cn(
-              'h-2 w-2 rounded-full flex-shrink-0',
-              isOnline ? 'bg-green-500' : 'bg-slate-300'
-            )}
-          />
-          <span className={isOnline ? 'text-green-600' : ''}>
-            {isOnline ? t('catalog.card.online_now') : t('catalog.card.offline', 'Offline')}
-          </span>
-        </div>
-
-        <div className="ml-auto">
-          <span className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] xl:text-[11px] font-semibold text-white bg-primary hover:bg-primary/90 rounded-md transition-colors">
-            {t('catalog.card.view_details', 'View Details')}
-            <Icon icon="mdi:arrow-right" className="h-3 w-3" />
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 export default CompaniesPage;

@@ -454,6 +454,7 @@ const QuoteBreakdownModal = ({
 // Copart-style Gallery - exactly like screenshot
 const CopartGallery = ({ photos }: { photos: any[] }) => {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   if (!photos.length) {
     return <div className="aspect-[4/3] w-full bg-slate-200 flex items-center justify-center text-slate-400">No Photos</div>
@@ -463,55 +464,101 @@ const CopartGallery = ({ photos }: { photos: any[] }) => {
   const handleNext = () => setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)
 
   return (
-    <div className="space-y-3">
-      {/* Main Image */}
-      <div className="relative bg-card rounded-2xl overflow-hidden border border-border/70 shadow-sm">
-        <img
-          src={photos[activeIndex]?.url}
-          alt="Vehicle"
-          className="w-full aspect-[4/3] object-cover"
-        />
+    <>
+      <div className="space-y-3">
+        {/* Main Image */}
+        <div className="relative bg-card rounded-2xl overflow-hidden border border-border/70 shadow-sm">
+          <img
+            src={photos[activeIndex]?.url}
+            alt="Vehicle"
+            className="w-full aspect-[4/3] object-cover cursor-pointer"
+            onClick={() => setIsModalOpen(true)}
+          />
 
-        {/* Navigation arrows */}
-        <button
-          onClick={handlePrev}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
-        >
-          <Icon icon="mdi:chevron-left" className="w-5 h-5 text-foreground/80" />
-        </button>
-        <button
-          onClick={handleNext}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
-        >
-          <Icon icon="mdi:chevron-right" className="w-5 h-5 text-foreground/80" />
-        </button>
+          {/* Navigation arrows */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+          >
+            <Icon icon="mdi:chevron-left" className="w-5 h-5 text-foreground/80" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+          >
+            <Icon icon="mdi:chevron-right" className="w-5 h-5 text-foreground/80" />
+          </button>
 
-        {/* Photo counter */}
-        <div className="absolute bottom-3 right-3 bg-background text-foreground text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 border border-border/60 shadow-sm">
-          <Icon icon="mdi:camera" className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="tabular-nums">{activeIndex + 1}/{photos.length}</span>
+          {/* Photo counter */}
+          <div className="absolute bottom-3 right-3 bg-background text-foreground text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 border border-border/60 shadow-sm">
+            <Icon icon="mdi:camera" className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="tabular-nums">{activeIndex + 1}/{photos.length}</span>
+          </div>
+        </div>
+
+        {/* Thumbnails */}
+        {/* Mobile overflow fix: 3 cols on tiny screens (<410px), 5 cols on sm, 7 cols on md+ */}
+        <div className="copart-gallery-thumbs grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-1.5 min-w-0">
+          {photos.slice(0, 14).map((photo, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={cn(
+                "relative aspect-[4/3] overflow-hidden rounded-lg border transition-all bg-muted",
+                activeIndex === idx
+                  ? "border-primary ring-1 ring-primary/70"
+                  : "border-transparent opacity-80 hover:opacity-100"
+              )}
+            >
+              <img src={photo.url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Thumbnails */}
-      {/* Mobile overflow fix: 3 cols on tiny screens (<410px), 5 cols on sm, 7 cols on md+ */}
-      <div className="copart-gallery-thumbs grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-1.5 min-w-0">
-        {photos.slice(0, 14).map((photo, idx) => (
+      {/* Full-Screen Image Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          {/* Close button */}
           <button
-            key={idx}
-            onClick={() => setActiveIndex(idx)}
-            className={cn(
-              "relative aspect-[4/3] overflow-hidden rounded-lg border transition-all bg-muted",
-              activeIndex === idx
-                ? "border-primary ring-1 ring-primary/70"
-                : "border-transparent opacity-80 hover:opacity-100"
-            )}
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Close"
           >
-            <img src={photo.url} alt="" className="h-full w-full object-cover" />
+            <Icon icon="mdi:close" className="w-5 h-5 text-gray-900" />
           </button>
-        ))}
-      </div>
-    </div>
+
+          {/* Main image */}
+          <img
+            src={photos[activeIndex]?.url}
+            alt="Vehicle"
+            className="max-w-full max-h-full object-contain"
+          />
+
+          {/* Navigation arrows */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Previous image"
+          >
+            <Icon icon="mdi:chevron-left" className="w-6 h-6 text-gray-900" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Next image"
+          >
+            <Icon icon="mdi:chevron-right" className="w-6 h-6 text-gray-900" />
+          </button>
+
+          {/* Photo counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-900 text-sm px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+            <Icon icon="mdi:camera" className="w-4 h-4" />
+            <span className="tabular-nums font-medium">{activeIndex + 1} / {photos.length}</span>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -531,6 +578,12 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const shouldReduceMotion = useReducedMotion()
+
+  // Drag-to-scroll state
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
     let isMounted = true
@@ -571,6 +624,42 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     toggleWatch(vehicleId)
   }, [isAuthenticated, navigate, toggleWatch])
 
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return
+    setIsDragging(true)
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
+    setScrollLeft(scrollContainerRef.current.scrollLeft)
+  }
+
+  const handleMouseLeave = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollContainerRef.current.offsetLeft
+    const walk = (x - startX) * 2
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk
+  }
+
+  // Global mouseup listener to stop dragging even when mouse is released outside the container
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    if (isDragging) {
+      window.addEventListener('mouseup', handleGlobalMouseUp)
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging])
+
   // Note: Desktop autoplay removed to avoid unexpected jumping/scrolling
 
   if (isLoading) {
@@ -603,7 +692,17 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
       </div>
 
       {/* Horizontal scrolling carousel for similar vehicles */}
-      <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+      <div
+        ref={scrollContainerRef}
+        className={cn(
+          "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide select-none",
+          isDragging ? "snap-none cursor-grabbing" : "snap-x snap-mandatory cursor-grab"
+        )}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
         {similarItems.map((item) => (
           <div key={item.id} className="flex-shrink-0 w-[240px] min-[460px]:w-[280px] min-[500px]:w-[340px] sm:w-[380px] md:w-[420px] lg:w-[400px] snap-start">
             <SimilarVehicleCard

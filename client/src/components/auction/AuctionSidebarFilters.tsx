@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +18,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { FilterSection } from '@/components/filters/FiltersSidebarLayout';
 
@@ -1270,25 +1271,59 @@ export function AuctionSidebarFilters({
       {/* Sale Date */}
       <FilterSection title={t('auction.filters.sale_date')} defaultOpen={false}>
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <Input
-              type="date"
-              value={date || ''}
-              onChange={(e) => onDateChange?.(e.target.value || undefined)}
-              className="h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none"
-            />
-            {date && (
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600"
-                onClick={() => onDateChange?.(undefined)}
-                title={t('common.clear')}
+                variant="outline"
+                className={cn(
+                  "h-7 w-full justify-start text-left text-[10px] px-2 bg-white border-slate-300 rounded-none font-normal",
+                  !date && "text-muted-foreground"
+                )}
               >
-                <Icon icon="mdi:close" className="w-3.5 h-3.5" />
+                <CalendarIcon className="mr-1.5 h-3 w-3" />
+                {date ? (
+                  new Date(date).toLocaleDateString('ka-GE', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })
+                ) : (
+                  <span>{t('auction.filters.select_date')}</span>
+                )}
               </Button>
-            )}
-          </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date ? new Date(date) : undefined}
+                onSelect={(selectedDate) => {
+                  if (selectedDate) {
+                    // Format date manually to avoid timezone conversion issues
+                    const year = selectedDate.getFullYear();
+                    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(selectedDate.getDate()).padStart(2, '0');
+                    const isoDate = `${year}-${month}-${day}`;
+                    onDateChange?.(isoDate);
+                  } else {
+                    onDateChange?.(undefined);
+                  }
+                }}
+                className="rounded-md border"
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {date && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-full text-[10px] text-slate-400 hover:text-slate-600"
+              onClick={() => onDateChange?.(undefined)}
+            >
+              <Icon icon="mdi:close" className="w-3 h-3 mr-1" />
+              {t('common.clear')}
+            </Button>
+          )}
           <div className="space-y-1">
             {[
               { value: 'today', label: t('auction.sale_date.today'), getDate: () => new Date() },

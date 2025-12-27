@@ -11,7 +11,7 @@
  * 4. 401 responses trigger automatic refresh via apiClient interceptor
  */
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { apiClient, apiAuthorizedMutation, API_BASE_URL } from '@/lib/apiClient'
@@ -769,23 +769,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [t, clearAuthState])
 
-  const value: AuthContextValue = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    isInitialized,
-    userRole,
-    companyId,
-    login,
-    reactivateAccount,
-    register,
-    logout,
-    updateUser,
-    refreshProfile,
-    updateProfile,
-    deleteAccount,
-    uploadAvatar,
-  }
+  const value: AuthContextValue = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      isInitialized,
+      userRole,
+      companyId,
+      login,
+      reactivateAccount,
+      register,
+      logout,
+      updateUser,
+      refreshProfile,
+      updateProfile,
+      deleteAccount,
+      uploadAvatar,
+    }),
+    [
+      user,
+      isLoading,
+      isInitialized,
+      userRole,
+      companyId,
+      login,
+      reactivateAccount,
+      register,
+      logout,
+      updateUser,
+      refreshProfile,
+      updateProfile,
+      deleteAccount,
+      uploadAvatar,
+    ],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

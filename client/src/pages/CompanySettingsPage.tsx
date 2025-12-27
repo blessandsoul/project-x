@@ -531,140 +531,7 @@ const CompanySettingsPage = () => {
               </Card>
             </div>
 
-            {/* Row 2: Company Logo (Left) + Pricing (Right) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Company Logo Section */}
-              <Card className="shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Icon icon="mdi:image" className="h-5 w-5" />
-                    {t('company_settings.logo', 'Company Logo')}
-                  </CardTitle>
-                  <CardDescription>
-                    {t('company_settings.logo_description', 'Upload your company logo (max 2 MB, JPEG/PNG/WEBP)')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {(logoPreviewUrl || currentLogoUrl) ? (
-                    <div className="flex items-start gap-4">
-                      <div className="relative">
-                        <img
-                          src={logoPreviewUrl || currentLogoUrl || ''}
-                          alt="Company logo"
-                          className="w-24 h-24 object-contain rounded-lg border bg-muted"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoChange}
-                          disabled={isSaving || isDeleting}
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {t('company_settings.logo_change', 'Click to change logo')}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        disabled={isSaving || isDeleting}
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {t('company_settings.logo_hint', 'JPEG, PNG, or WEBP up to 2 MB')}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Pricing Section */}
-              <Card className="shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Icon icon="mdi:currency-usd" className="h-5 w-5" />
-                    {t('company_settings.pricing', 'Pricing')}
-                  </CardTitle>
-                  <CardDescription>
-                    {t('company_settings.pricing_description', 'Set your pricing structure')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="basePrice">{t('company_settings.base_price')}</Label>
-                      <Input
-                        id="basePrice"
-                        type="number"
-                        value={basePrice}
-                        onChange={(e) => setBasePrice(Number(e.target.value))}
-                        min={0}
-                        step={0.01}
-                        disabled={isSaving || isDeleting}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="pricePerMile">{t('company_settings.price_per_mile')}</Label>
-                      <Input
-                        id="pricePerMile"
-                        type="number"
-                        value={pricePerMile}
-                        onChange={(e) => setPricePerMile(Number(e.target.value))}
-                        min={0}
-                        step={0.01}
-                        disabled={isSaving || isDeleting}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="customsFee">{t('company_settings.customs_fee')}</Label>
-                      <Input
-                        id="customsFee"
-                        type="number"
-                        value={customsFee}
-                        onChange={(e) => setCustomsFee(Number(e.target.value))}
-                        min={0}
-                        step={0.01}
-                        disabled={isSaving || isDeleting}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceFee">{t('company_settings.service_fee')}</Label>
-                      <Input
-                        id="serviceFee"
-                        type="number"
-                        value={serviceFee}
-                        onChange={(e) => setServiceFee(Number(e.target.value))}
-                        min={0}
-                        step={0.01}
-                        disabled={isSaving || isDeleting}
-                      />
-                    </div>
-
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="brokerFee">{t('company_settings.broker_fee')}</Label>
-                      <Input
-                        id="brokerFee"
-                        type="number"
-                        value={brokerFee}
-                        onChange={(e) => setBrokerFee(Number(e.target.value))}
-                        min={0}
-                        step={0.01}
-                        disabled={isSaving || isDeleting}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Row 3: Website & Social Links (Left) + Location (Right) */}
+            {/* Row 2: Website & Social Links (Left) + Location (Right) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Website & Social Links Section */}
               <Card className="shadow-sm hover:shadow-md transition-shadow">
@@ -805,44 +672,96 @@ const CompanySettingsPage = () => {
               </Card>
             </div>
 
-            {/* Row 4: Services (Full Width) */}
-            <Card className="shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon icon="mdi:briefcase" className="h-5 w-5" />
-                  {t('company_settings.services', 'Services')}
-                </CardTitle>
-                <CardDescription>
-                  {t('company_settings.services_description', 'Services your company offers')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingServices ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">{t('company_settings.loading_services', 'Loading services...')}</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {availableServices.map((service) => (
-                      <div key={service.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`service-${service.id}`}
-                          checked={services.includes(service.name)}
-                          onCheckedChange={(checked) =>
-                            handleServiceToggle(service.name, checked as boolean)
-                          }
+            {/* Row 3: Company Logo (Left) + Services (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Logo Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:image" className="h-5 w-5" />
+                    {t('company_settings.logo', 'Company Logo')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('company_settings.logo_description', 'Upload your company logo (max 2 MB, JPEG/PNG/WEBP)')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(logoPreviewUrl || currentLogoUrl) ? (
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <img
+                          src={logoPreviewUrl || currentLogoUrl || ''}
+                          alt="Company logo"
+                          className="w-24 h-24 object-contain rounded-lg border bg-muted"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
                           disabled={isSaving || isDeleting}
                         />
-                        <Label htmlFor={`service-${service.id}`} className="font-normal cursor-pointer">
-                          {service.name}
-                        </Label>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {t('company_settings.logo_change', 'Click to change logo')}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    </div>
+                  ) : (
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        disabled={isSaving || isDeleting}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {t('company_settings.logo_hint', 'JPEG, PNG, or WEBP up to 2 MB')}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Services Section */}
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon icon="mdi:briefcase" className="h-5 w-5" />
+                    {t('company_settings.services', 'სერვისები')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('company_settings.services_description', 'სერვისები რომლებსაც თქვენი კომპანია სთავაზობს')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingServices ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">{t('company_settings.loading_services', 'Loading services...')}</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {availableServices.map((service) => (
+                        <div key={service.id} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`service-${service.id}`}
+                            checked={services.includes(service.name)}
+                            onCheckedChange={(checked) =>
+                              handleServiceToggle(service.name, checked as boolean)
+                            }
+                            disabled={isSaving || isDeleting}
+                          />
+                          <Label htmlFor={`service-${service.id}`} className="font-normal cursor-pointer">
+                            {service.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Action Buttons */}
             <Card className="shadow-sm">
