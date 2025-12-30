@@ -38,7 +38,9 @@ const CompanyCatalogPage = () => {
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
 
   // Calculator state for showing prices in company rows
-  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  // Map of companyId -> price for per-company pricing
+  const [companyPrices, setCompanyPrices] = useState<Map<number, number>>(new Map());
+  const [defaultPrice, setDefaultPrice] = useState<number | null>(null);
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [hasCalculation, setHasCalculation] = useState(false);
 
@@ -274,13 +276,22 @@ const CompanyCatalogPage = () => {
 
   // Calculator event handlers
   const handleCalculationComplete = useCallback((result: CalculatorResult, formValues: CalculatorFormValues) => {
-    // Extract transportation_total from nested data object or root level
-    const price = result.data?.transportation_total
+    // Build a map of companyId -> price from the quotes array
+    const pricesMap = new Map<number, number>();
+    if (result.quotes && Array.isArray(result.quotes)) {
+      for (const quote of result.quotes) {
+        pricesMap.set(quote.companyId, quote.totalPrice);
+      }
+    }
+    setCompanyPrices(pricesMap);
+
+    // Set fallback default price for companies without custom calculator
+    const fallbackPrice = result.defaultPrice
+      ?? result.data?.transportation_total
       ?? result.transportation_total
-      ?? result.shipping_cost
-      ?? result.total_price
       ?? null;
-    setCalculatedPrice(price);
+    setDefaultPrice(fallbackPrice);
+
     setHasCalculation(true);
     setIsCalculatingPrice(false);
 
@@ -299,7 +310,8 @@ const CompanyCatalogPage = () => {
   }, []);
 
   const handleCalculationClear = useCallback(() => {
-    setCalculatedPrice(null);
+    setCompanyPrices(new Map());
+    setDefaultPrice(null);
     setHasCalculation(false);
     setIsCalculatingPrice(false);
   }, []);
@@ -396,7 +408,7 @@ const CompanyCatalogPage = () => {
                   onToggleCompare={() => toggleComparison(company.id)}
                   hasAuctionBranch={hasCalculation}
                   isLoadingShipping={isCalculatingPrice}
-                  calculatedShippingPrice={calculatedPrice ?? undefined}
+                  calculatedShippingPrice={companyPrices.get(company.id) ?? defaultPrice ?? undefined}
                 />
               ))}
             </div>
@@ -515,7 +527,8 @@ const CompanyCatalogPage = () => {
       updateUrlFromFilters,
       hasCalculation,
       isCalculatingPrice,
-      calculatedPrice,
+      companyPrices,
+      defaultPrice,
     ],
   );
 

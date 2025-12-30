@@ -1666,6 +1666,190 @@
           }
         }
       ]
+    },
+    {
+      "name": "Admin - Calculator Management",
+      "description": "Admin endpoints for managing company calculator configurations - Requires admin role",
+      "item": [
+        {
+          "name": "Get Calculator Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "43" }]
+            },
+            "description": "Get the current calculator configuration for a company"
+          }
+        },
+        {
+          "name": "Update Calculator Config",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calculator_type\": \"custom_api\",\n  \"calculator_api_url\": \"http://localhost:3000/testing/calculator/simple\",\n  \"calculator_config\": {\n    \"timeout\": 5000,\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"city\",\n        \"vehiclecategory\": \"vehicleType\",\n        \"destinationport\": \"port\",\n        \"auction\": \"auction\",\n        \"buyprice\": \"buyPrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"totalPrice\",\n        \"distanceMiles\": \"distanceMiles\",\n        \"currency\": \"currency\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "43" }]
+            },
+            "description": "Update calculator configuration for a company. Use calculator_type: 'default' to reset to Auto Market Logistic API."
+          }
+        },
+        {
+          "name": "Test Calculator Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calculator_api_url\": \"http://localhost:3000/testing/calculator/nested\",\n  \"calculator_config\": {\n    \"timeout\": 5000,\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"origin\",\n        \"vehiclecategory\": \"vehicle\",\n        \"destinationport\": \"destination\",\n        \"auction\": \"auctionHouse\",\n        \"buyprice\": \"purchasePrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"data.quote.pricing.total_usd\",\n        \"distanceMiles\": \"data.quote.route.distance.miles\",\n        \"currency\": \"data.currency\"\n      }\n    }\n  },\n  \"test_request\": {\n    \"usacity\": \"Dallas (TX)\",\n    \"destinationport\": \"POTI\",\n    \"vehiclecategory\": \"Sedan\",\n    \"auction\": \"Copart\",\n    \"buyprice\": 5000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator", "test"],
+              "variable": [{ "key": "id", "value": "43" }]
+            },
+            "description": "Test a calculator configuration without saving. Returns detailed request/response info and recommendations."
+          }
+        },
+        {
+          "name": "Reset Calculator to Default",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "43" }]
+            },
+            "description": "Reset company to use the default Auto Market Logistic calculator"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Testing - Mock Calculator",
+      "description": "Mock calculator endpoints for testing the adapter pattern (development only)",
+      "item": [
+        {
+          "name": "List Mock Endpoints",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator"]
+            },
+            "description": "Get list of all available mock calculator endpoints"
+          }
+        },
+        {
+          "name": "Simple Format",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Dallas (TX)\",\n  \"vehicleType\": \"Sedan\",\n  \"port\": \"POTI\",\n  \"auction\": \"Copart\",\n  \"buyPrice\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator/simple",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator", "simple"]
+            },
+            "description": "Mock API with flat response structure and standard field names"
+          }
+        },
+        {
+          "name": "Nested Response",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": \"Dallas (TX)\",\n  \"vehicle\": \"Sedan\",\n  \"destination\": \"POTI\",\n  \"auctionHouse\": \"Copart\",\n  \"purchasePrice\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator/nested",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator", "nested"]
+            },
+            "description": "Mock API with deeply nested response structure (tests dot-notation extraction)"
+          }
+        },
+        {
+          "name": "Different Fields + Static",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from_city\": \"Dallas (TX)\",\n  \"car_type\": \"Sedan\",\n  \"to_port\": \"POTI\",\n  \"sale_location\": \"Copart\",\n  \"cost\": 5000,\n  \"customer_id\": \"PLATFORM_TEST_001\",\n  \"request_type\": \"instant_quote\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator/different-fields",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator", "different-fields"]
+            },
+            "description": "Mock API with completely different field names and required static fields"
+          }
+        },
+        {
+          "name": "With Authentication",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-API-Key", "value": "test-secret-key-12345" },
+              { "key": "X-Customer-ID", "value": "PLATFORM_USER" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup\": \"Dallas (TX)\",\n  \"delivery\": \"POTI\",\n  \"vehicle_category\": \"Sedan\",\n  \"seller\": \"Copart\",\n  \"value\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator/with-auth",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator", "with-auth"]
+            },
+            "description": "Mock API that requires authentication headers (X-API-Key and X-Customer-ID)"
+          }
+        },
+        {
+          "name": "Minimal Response",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"src\": \"Dallas (TX)\",\n  \"dst\": \"POTI\",\n  \"type\": \"Sedan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testing/calculator/minimal",
+              "host": ["{{baseUrl}}"],
+              "path": ["testing", "calculator", "minimal"]
+            },
+            "description": "Mock API with minimal response (only price, no distance or currency)"
+          }
+        }
+      ]
     }
   ]
 }

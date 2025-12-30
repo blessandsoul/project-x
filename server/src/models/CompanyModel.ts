@@ -122,7 +122,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -133,6 +133,7 @@ export class CompanyModel extends BaseModel {
     const row = rows[0];
     row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
     row.services = safeJsonParse(row.services, 'services', row.id);
+    row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     return row as Company;
   }
 
@@ -140,13 +141,14 @@ export class CompanyModel extends BaseModel {
     const safeLimit = Math.floor(limit);
     const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       [],
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return rows as Company[];
@@ -169,13 +171,14 @@ export class CompanyModel extends BaseModel {
     const placeholders = uniqueIds.map(() => '?').join(', ');
 
     const rows = await this.executeQuery(
-      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
       uniqueIds,
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return rows as Company[];
@@ -276,6 +279,19 @@ export class CompanyModel extends BaseModel {
     if (updates.established_year !== undefined) {
       fields.push('established_year = ?');
       values.push(updates.established_year);
+    }
+    // Calculator adapter configuration fields
+    if (updates.calculator_type !== undefined) {
+      fields.push('calculator_type = ?');
+      values.push(updates.calculator_type);
+    }
+    if (updates.calculator_api_url !== undefined) {
+      fields.push('calculator_api_url = ?');
+      values.push(updates.calculator_api_url);
+    }
+    if (updates.calculator_config !== undefined) {
+      fields.push('calculator_config = ?');
+      values.push(updates.calculator_config ? JSON.stringify(updates.calculator_config) : null);
     }
 
     if (fields.length === 0) {
@@ -696,7 +712,7 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.owner_user_id, c.is_active, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description_geo, c.description_eng, c.description_rus, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.owner_user_id, c.is_active, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.calculator_type, c.calculator_api_url, c.calculator_config, c.description_geo, c.description_eng, c.description_rus, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count
@@ -710,6 +726,7 @@ export class CompanyModel extends BaseModel {
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return { items: rows as Company[], total };
@@ -717,7 +734,7 @@ export class CompanyModel extends BaseModel {
 
   async findByOwnerUserId(ownerUserId: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
       [ownerUserId],
     );
 
@@ -728,6 +745,7 @@ export class CompanyModel extends BaseModel {
     const row = rows[0];
     row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
     row.services = safeJsonParse(row.services, 'services', row.id);
+    row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     return row as Company;
   }
 
@@ -778,13 +796,14 @@ export class CompanyModel extends BaseModel {
     const safeLimit = Math.floor(limit);
     const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE is_active = 1 ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE is_active = 1 ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       [],
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return rows as Company[];

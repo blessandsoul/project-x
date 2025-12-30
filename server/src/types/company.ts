@@ -1,3 +1,5 @@
+import type { CalculatorConfig, CalculatorType } from './calculatorAdapterTypes.js';
+
 export interface Company {
   id: number;
   owner_user_id: number | null;
@@ -11,6 +13,12 @@ export interface Company {
   broker_fee: number;
   insurance: number | null;
   final_formula: any | null;
+
+  // Calculator adapter configuration
+  calculator_type?: CalculatorType;
+  calculator_api_url?: string | null;
+  calculator_config?: CalculatorConfig | null;
+
   description_geo: string | null;
   description_eng: string | null;
   description_rus: string | null;
@@ -83,6 +91,10 @@ export interface CompanyUpdate {
   contact_email?: string | null;
   website?: string | null;
   established_year?: number | null;
+  // Calculator adapter configuration
+  calculator_type?: CalculatorType;
+  calculator_api_url?: string | null;
+  calculator_config?: CalculatorConfig | null;
 }
 
 // Structured Social Links Types

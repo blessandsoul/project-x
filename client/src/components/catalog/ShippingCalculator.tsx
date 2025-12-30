@@ -26,21 +26,6 @@ interface PortsResponse {
   data: string[];
 }
 
-interface CalculatorRequest {
-  usacity: string;
-  destinationport: string;
-  buyprice: number;
-  vehicletype: 'standard' | 'heavy';
-  vehiclecategory:
-    | 'Sedan'
-    | 'Bike'
-    | 'Small SUV'
-    | 'Big SUV'
-    | 'Pickup'
-    | 'Van'
-    | 'Big Van';
-  auction: string;
-}
 
 export interface CalculatorResult {
   success?: boolean;
@@ -48,6 +33,16 @@ export interface CalculatorResult {
     transportation_total?: number;
     currency?: string;
   };
+  // New per-company quotes from /api/calculator/quotes
+  quotes?: Array<{
+    companyId: number;
+    companyName: string;
+    totalPrice: number;
+    deliveryTimeDays: number | null;
+    calculatorType: 'default' | 'custom_api' | 'formula';
+  }>;
+  distanceMiles?: number;
+  defaultPrice?: number;
   // Legacy fields for backwards compatibility
   total_price?: number;
   shipping_cost?: number;
@@ -241,11 +236,10 @@ export const ShippingCalculator = ({
       return;
     }
 
-    // Build payload
-    const payload: CalculatorRequest = {
+    // Build payload for /api/calculator/quotes (per-company quotes)
+    const payload = {
       usacity: city.trim(),
       destinationport: destinationPort.trim(),
-      buyprice: 1, // Always 1 as per requirements
       vehicletype: vehicleType,
       vehiclecategory: vehicleCategory,
       auction: 'Copart', // Default auction for calculator
@@ -254,7 +248,8 @@ export const ShippingCalculator = ({
     try {
       setIsCalculating(true);
       onCalculationStart?.();
-      const response = await apiPost<CalculatorResult>('/api/calculator', payload);
+      // Use the new /api/calculator/quotes endpoint for per-company prices
+      const response = await apiPost<CalculatorResult>('/api/calculator/quotes', payload);
       setResult(response);
       onCalculationComplete?.(response, { city, destinationPort, vehicleType, vehicleCategory });
     } catch (err) {

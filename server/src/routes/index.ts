@@ -27,6 +27,12 @@ import { servicesRoutes } from './services.js';
 // import { inquiryRoutes } from './inquiry.js';
 // import { companyInquiryRoutes } from './companyInquiry.js';
 
+// Testing routes (development only)
+import { mockCalculatorRoutes } from './testing.js';
+
+// Admin routes
+import { adminCalculatorRoutes } from './adminCalculator.js';
+
 /**
  * Register all API routes
  *
@@ -90,6 +96,18 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
     // Will be enabled when inquiries feature is ready.
     // await fastify.register(inquiryRoutes);
     // await fastify.register(companyInquiryRoutes);
+
+    // ---------------------------------------------------------------------------
+    // Testing Routes (development only)
+    // ---------------------------------------------------------------------------
+    // Mock calculator endpoints for testing the adapter pattern
+    await fastify.register(mockCalculatorRoutes);
+
+    // ---------------------------------------------------------------------------
+    // Admin Routes
+    // ---------------------------------------------------------------------------
+    // Admin-only endpoints for platform management
+    await fastify.register(adminCalculatorRoutes);
 
     fastify.log.debug('All routes registered');
 }

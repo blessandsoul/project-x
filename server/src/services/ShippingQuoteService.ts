@@ -27,6 +27,11 @@ import { ValidationError, CalculatorApiError } from '../types/errors.js';
 import { Vehicle } from '../types/vehicle.js';
 import { Company } from '../types/company.js';
 import { CalculatorService } from './CalculatorService.js';
+import {
+  CalculatorAdapterFactory,
+  StandardCalculatorRequest,
+  StandardCalculatorResponse,
+} from './adapters/index.js';
 
 /**
  * Calculator API request body structure
@@ -69,13 +74,15 @@ interface QuoteComputationResult {
 export class ShippingQuoteService {
   private fastify: FastifyInstance;
   private calculatorService: CalculatorService;
-  
+  private calculatorAdapterFactory: CalculatorAdapterFactory;
+
   // Redis cache TTL for calculator responses (24 hours)
   private readonly CALCULATOR_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.calculatorService = new CalculatorService(fastify);
+    this.calculatorAdapterFactory = new CalculatorAdapterFactory(fastify);
   }
 
   /**
@@ -285,21 +292,21 @@ export class ShippingQuoteService {
     }
 
     this.fastify.log.info(
-      { 
+      {
         request,
-        requestSummary: `buyprice=${request.buyprice}, auction=${request.auction}, usacity=${request.usacity}, vehicletype=${request.vehicletype}` 
-      }, 
+        requestSummary: `buyprice=${request.buyprice}, auction=${request.auction}, usacity=${request.usacity}, vehicletype=${request.vehicletype}`
+      },
       'Calling external calculator API'
     );
 
     const result = await this.calculatorService.calculate(request);
 
     this.fastify.log.info(
-      { 
+      {
         success: result.success,
         data: result.data,
         error: result.error,
-      }, 
+      },
       'Calculator API response received'
     );
 
@@ -382,9 +389,9 @@ export class ShippingQuoteService {
     // Extract distance from calculator response if available
     // The calculator may return distance_miles in its response
     const distanceMiles = calculatorResponse?.distance_miles ||
-                          calculatorResponse?.distanceMiles ||
-                          calculatorResponse?.distance ||
-                          0;
+      calculatorResponse?.distanceMiles ||
+      calculatorResponse?.distance ||
+      0;
 
     const quotes: ComputedQuote[] = [];
 
@@ -392,7 +399,7 @@ export class ShippingQuoteService {
     // Handle both direct response { transportation_total, currency }
     // and nested response { data: { transportation_total, currency } } (legacy cache)
     const responseData = calculatorResponse?.data || calculatorResponse;
-    
+
     const transportationTotal = this.toNumber(
       responseData?.transportation_total ||
       responseData?.transportationTotal ||
@@ -457,9 +464,12 @@ export class ShippingQuoteService {
   /**
    * Compute quotes using a pre-built calculator request.
    * 
-   * This method accepts a CalculatorRequestBody that has already been
-   * normalized and validated by CalculatorRequestBuilder. It calls the
-   * external calculator API and returns quotes for all companies.
+   * This method uses the Adapter Pattern to support per-company calculator APIs.
+   * Each company can have its own calculator (configured via calculator_type,
+   * calculator_api_url, and calculator_config fields).
+   * 
+   * Execution is parallel using Promise.allSettled() for better performance.
+   * If one company's calculator fails, other companies still get quotes.
    * 
    * Used by POST /vehicles/:vehicleId/calculate-quotes which accepts
    * auction and usacity from the client.
@@ -480,94 +490,101 @@ export class ShippingQuoteService {
         calculatorInput,
         companyCount: companies.length,
       },
-      'Computing quotes using pre-built calculator input',
+      'Computing quotes using adapter pattern (per-company calculators)',
     );
 
-    // Call calculator API with the pre-built request
-    let calculatorResponse: any;
-    try {
-      calculatorResponse = await this.callCalculator(calculatorInput);
-    } catch (error) {
-      this.fastify.log.error(
-        { calculatorInput, error },
-        'Failed to call calculator API',
-      );
-      throw error;
-    }
+    // Convert legacy CalculatorRequest to StandardCalculatorRequest
+    const standardRequest: StandardCalculatorRequest = {
+      buyprice: calculatorInput.buyprice,
+      auction: calculatorInput.auction,
+      vehicletype: calculatorInput.vehicletype,
+      destinationport: calculatorInput.destinationport || 'POTI',
+      vehiclecategory: calculatorInput.vehiclecategory || 'Sedan',
+      ...(calculatorInput.usacity && { usacity: calculatorInput.usacity }),
+    };
 
-    // Extract distance from calculator response if available
-    const distanceMiles = calculatorResponse?.distance_miles ||
-                          calculatorResponse?.distanceMiles ||
-                          calculatorResponse?.distance ||
-                          0;
+    // Call each company's calculator in parallel
+    const calculatorPromises = companies.map(async (company) => {
+      const adapter = this.calculatorAdapterFactory.getAdapter(company);
+      const result = await adapter.calculate(standardRequest, company);
+      return { company, result };
+    });
 
-    // Extract transportation_total from calculator response
-    // Handle both direct response and nested response structures
-    const responseData = calculatorResponse?.data || calculatorResponse;
-    
-    const transportationTotal = this.toNumber(
-      responseData?.transportation_total ||
-      responseData?.transportationTotal ||
-      responseData?.shipping_total ||
-      responseData?.total ||
-      0,
-      'transportation_total',
-    );
-
-    const currency = responseData?.currency || 'USD';
-
-    if (transportationTotal <= 0) {
-      this.fastify.log.warn(
-        { calculatorInput, calculatorResponse, responseData },
-        'Calculator API returned zero or invalid transportation_total'
-      );
-    }
+    // Wait for all calculators (some may fail, others succeed)
+    const settledResults = await Promise.allSettled(calculatorPromises);
 
     const quotes: ComputedQuote[] = [];
+    let distanceMiles = 0;
+    let successCount = 0;
+    let failureCount = 0;
 
-    // Process each company - for now all companies use the same calculator API
-    // In the future, different companies may have different pricing APIs
-    for (const company of companies) {
-      try {
-        // Get delivery time from company formula if available
-        const formulaOverrides =
-          company.final_formula && typeof company.final_formula === 'object'
-            ? (company.final_formula as any)
-            : null;
+    // Process results
+    for (const settled of settledResults) {
+      if (settled.status === 'fulfilled') {
+        const { company, result } = settled.value;
 
-        const deliveryTimeDays: number | null = formulaOverrides?.delivery_time_days ?? null;
+        if (result.success && result.totalPrice > 0) {
+          // Get delivery time from company formula if available
+          const formulaOverrides =
+            company.final_formula && typeof company.final_formula === 'object'
+              ? (company.final_formula as any)
+              : null;
 
-        // Simple breakdown - just the calculator response
-        const breakdown = {
-          transportation_total: transportationTotal,
-          currency,
-          distance_miles: distanceMiles,
-          formula_source: 'calculator_api',
-        };
+          const deliveryTimeDays: number | null = formulaOverrides?.delivery_time_days ?? null;
 
-        quotes.push({
-          companyId: company.id,
-          companyName: company.name,
-          totalPrice: transportationTotal,
-          deliveryTimeDays,
-          breakdown,
-        });
-      } catch (error) {
+          // Use distance from first successful result
+          if (distanceMiles === 0 && result.distanceMiles > 0) {
+            distanceMiles = result.distanceMiles;
+          }
+
+          quotes.push({
+            companyId: company.id,
+            companyName: company.name,
+            totalPrice: result.totalPrice,
+            deliveryTimeDays,
+            breakdown: {
+              transportation_total: result.totalPrice,
+              currency: result.currency,
+              distance_miles: result.distanceMiles,
+              formula_source: company.calculator_type || 'default',
+              ...result.breakdown,
+            },
+          });
+
+          successCount++;
+        } else {
+          // Calculator returned but with error or zero price
+          this.fastify.log.warn(
+            {
+              companyId: company.id,
+              companyName: company.name,
+              error: result.error,
+              totalPrice: result.totalPrice,
+            },
+            'Calculator returned invalid result for company',
+          );
+          failureCount++;
+        }
+      } else {
+        // Promise rejected (e.g., network error)
         this.fastify.log.error(
-          { companyId: company.id, companyName: company.name, error },
-          'Failed to compute quote for company',
+          {
+            error: settled.reason,
+          },
+          'Calculator promise rejected for company',
         );
+        failureCount++;
       }
     }
 
     this.fastify.log.info(
-      { 
-        transportationTotal, 
-        currency, 
+      {
+        successCount,
+        failureCount,
         quoteCount: quotes.length,
         distanceMiles,
       },
-      'Computed quotes successfully'
+      'Computed quotes using adapter pattern',
     );
 
     return {
@@ -622,7 +639,7 @@ export class ShippingQuoteService {
     // Extract transportation_total from calculator response
     // Handle both direct and nested response structures
     const responseData = calculatorResponse?.data || calculatorResponse;
-    
+
     const transportationTotal = this.toNumber(
       responseData?.transportation_total ||
       responseData?.transportationTotal ||
@@ -681,9 +698,9 @@ export class ShippingQuoteService {
 
       // Extract distance from calculator response
       const distance = response?.distance_miles ||
-                       response?.distanceMiles ||
-                       response?.distance ||
-                       0;
+        response?.distanceMiles ||
+        response?.distance ||
+        0;
 
       if (distance > 0) {
         return Math.round(distance);
