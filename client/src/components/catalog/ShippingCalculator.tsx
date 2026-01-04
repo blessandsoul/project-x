@@ -152,7 +152,7 @@ export const ShippingCalculator = ({
     const loadCities = async () => {
       try {
         setIsLoadingCities(true);
-        const response = await apiGet<CitiesResponse>('/api/cities');
+        const response = await apiGet<CitiesResponse>('/cities');
         if (!isCancelled && response.success) {
           setCities(response.data);
         }
@@ -179,7 +179,7 @@ export const ShippingCalculator = ({
     const loadPorts = async () => {
       try {
         setIsLoadingPorts(true);
-        const response = await apiGet<PortsResponse>('/api/ports');
+        const response = await apiGet<PortsResponse>('/ports');
         if (!isCancelled && response.success) {
           setPorts(response.data);
         }
@@ -249,7 +249,7 @@ export const ShippingCalculator = ({
       setIsCalculating(true);
       onCalculationStart?.();
       // Use the new /api/calculator/quotes endpoint for per-company prices
-      const response = await apiPost<CalculatorResult>('/api/calculator/quotes', payload);
+      const response = await apiPost<CalculatorResult>('/calculator/quotes', payload);
       setResult(response);
       onCalculationComplete?.(response, { city, destinationPort, vehicleType, vehicleCategory });
     } catch (err) {

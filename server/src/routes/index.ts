@@ -8,6 +8,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';
 import { accountRoutes } from './account.js';
@@ -32,6 +34,9 @@ import { mockCalculatorRoutes } from './testing.js';
 
 // Admin routes
 import { adminCalculatorRoutes } from './adminCalculator.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Register all API routes
@@ -110,4 +115,21 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
     await fastify.register(adminCalculatorRoutes);
 
     fastify.log.debug('All routes registered');
+}
+
+/**
+ * Register SPA fallback route (MUST be called AFTER all other routes)
+ * This enables React Router to work correctly on page refresh
+ */
+export async function registerSpaFallback(fastify: FastifyInstance): Promise<void> {
+    const publicPath = path.join(__dirname, '..', '..', 'public');
+
+    // Wildcard route to catch all GET requests that didn't match any route
+    // Serves index.html for client-side routing (React Router)
+    fastify.get('/*', async (request, reply) => {
+        // Serve index.html for SPA routing
+        return reply.sendFile('index.html', publicPath);
+    });
+
+    fastify.log.debug('SPA fallback route registered');
 }

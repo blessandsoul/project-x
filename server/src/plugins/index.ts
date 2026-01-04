@@ -211,6 +211,28 @@ export async function registerPlugins(fastify: FastifyInstance): Promise<void> {
     });
 
     // ---------------------------------------------------------------------------
+    // Static file serving (public directory - client application)
+    // ---------------------------------------------------------------------------
+    // Serve client application from public folder
+    // This allows serving the built client app from the same server as the API
+    await fastify.register(fastifyStatic, {
+        root: path.join(__dirname, '..', '..', 'public'),
+        prefix: '/',
+        decorateReply: false, // Don't decorate reply since we already did it above
+        // Enable wildcard to serve index.html for all non-matched routes (SPA fallback)
+        wildcard: false, // We'll handle SPA fallback manually
+        // Serve index.html for all non-API routes (SPA fallback)
+        setHeaders: (res, _path) => {
+            // Cache HTML files for a short time, other assets longer
+            if (_path.endsWith('.html')) {
+                res.setHeader('Cache-Control', 'no-cache');
+            } else if (isProd) {
+                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            }
+        },
+    });
+
+    // ---------------------------------------------------------------------------
     // Security: Rate limiting
     // ---------------------------------------------------------------------------
     await fastify.register(rateLimit, {

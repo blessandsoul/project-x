@@ -89,7 +89,14 @@ await registerPlugins(fastify);
 // ---------------------------------------------------------------------------
 // Register routes
 // ---------------------------------------------------------------------------
-await registerRoutes(fastify);
+await fastify.register(registerRoutes, { prefix: '/api/v1' });
+
+// ---------------------------------------------------------------------------
+// SPA Fallback - Serve index.html for all non-API routes
+// ---------------------------------------------------------------------------
+// Import and register SPA fallback (MUST be after API routes)
+const { registerSpaFallback } = await import('./routes/index.js');
+await registerSpaFallback(fastify);
 
 // ---------------------------------------------------------------------------
 // Register cron jobs (FX rates, cities sync, etc.)

@@ -32,7 +32,7 @@ const vehicleModelsRoutes: FastifyPluginAsync = async (fastify) => {
    *   ]
    * }
    */
-  fastify.get('/api/vehicle-models', {
+  fastify.get('/vehicle-models', {
     schema: {
       querystring: {
         type: 'object',

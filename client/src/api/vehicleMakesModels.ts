@@ -38,7 +38,7 @@ export async function fetchMakesByTransportType(
   // All makes are returned regardless of category filter
   try {
     const response = await apiGet<VehicleMakesResponse>(
-      '/api/vehicle-makes'
+      '/vehicle-makes'
     );
 
     if (response.success) {
@@ -69,7 +69,7 @@ export async function fetchModelsByMake(
   categoryFilter: CategoryFilter
 ): Promise<VehicleModel[]> {
   try {
-    let url = `/api/vehicle-models?makeId=${makeId}`;
+    let url = `/vehicle-models?makeId=${makeId}`;
 
     // Add vehicleType filter based on category
     if (categoryFilter === 'v') {

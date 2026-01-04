@@ -14,7 +14,7 @@ const calculatorRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/calculator
   // Calculate shipping costs using external calculator API
   // Rate limited: 30 requests per minute
-  fastify.post('/api/calculator', {
+  fastify.post('/calculator', {
     preHandler: createRateLimitHandler(fastify, RATE_LIMITS.calculator),
     schema: {
       body: {
@@ -75,7 +75,7 @@ const calculatorRoutes: FastifyPluginAsync = async (fastify) => {
    *   defaultPrice: number // Price from default calculator for display
    * }
    */
-  fastify.post('/api/calculator/quotes', {
+  fastify.post('/calculator/quotes', {
     preHandler: createRateLimitHandler(fastify, RATE_LIMITS.calculator),
     schema: {
       body: {

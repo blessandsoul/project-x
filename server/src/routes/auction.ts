@@ -9,7 +9,7 @@ const auctionRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/auction/active-lots
   // Returns the latest cached active lots fetched by the hourly job.
   // Cached for 5 minutes (updated hourly by cron)
-  fastify.get('/api/auction/active-lots', async (request, reply) => {
+  fastify.get('/auction/active-lots', async (request, reply) => {
     const result = await withCache(
       fastify,
       'cache:auction:active-lots',

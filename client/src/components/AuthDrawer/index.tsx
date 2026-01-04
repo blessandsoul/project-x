@@ -77,11 +77,9 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
     }
 
     try {
-      const role = accountType;
-      const extraCompanyName = accountType === 'company' ? companyName : undefined;
-      const extraCompanyPhone = accountType === 'company' ? companyPhone : undefined;
-
-      await register(name, registerEmail, registerPassword, role, extraCompanyName, extraCompanyPhone);
+      // Register function only accepts email, username, password
+      // Role and company info are handled separately via onboarding
+      await register(registerEmail, name, registerPassword);
 
       handleClose();
       navigate(`/onboarding/${accountType}`, { replace: true });

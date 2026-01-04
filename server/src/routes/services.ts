@@ -30,7 +30,7 @@ const servicesRoutes: FastifyPluginAsync = async (fastify) => {
      *   ]
      * }
      */
-    fastify.get('/api/services', async (request, reply) => {
+    fastify.get('/services', async (request, reply) => {
         const result = await withVersionedCache(
             fastify,
             'services',

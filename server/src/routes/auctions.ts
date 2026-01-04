@@ -8,7 +8,7 @@ const auctionsRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/auctions
   // Returns all auctions from the database
   // Cached for 1 hour (rarely changes, synced every 10 days)
-  fastify.get('/api/auctions', async (request, reply) => {
+  fastify.get('/auctions', async (request, reply) => {
     const result = await withVersionedCache(
       fastify,
       'auctions',

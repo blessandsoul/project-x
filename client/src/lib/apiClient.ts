@@ -23,8 +23,8 @@ import axios, {
 import { getCsrfToken, getCsrfTokenSync } from './csrf'
 
 export const API_BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:3000'
-  : 'https://api.trendingnow.ge'
+  ? 'http://localhost:3000/api/v1'
+  : '/api/v1' // Relative URL for same-domain deployment
 
 /**
  * Endpoints that should NOT trigger refresh on 401

@@ -8,7 +8,7 @@ const citiesRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/cities
   // Returns all cities from the database
   // Cached for 1 hour (rarely changes, synced daily)
-  fastify.get('/api/cities', async (request, reply) => {
+  fastify.get('/cities', async (request, reply) => {
     const result = await withVersionedCache(
       fastify,
       'cities',

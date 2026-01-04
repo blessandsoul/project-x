@@ -27,7 +27,7 @@ const vehicleMakesRoutes: FastifyPluginAsync = async (fastify) => {
    *   ]
    * }
    */
-  fastify.get('/api/vehicle-makes', async (request, reply) => {
+  fastify.get('/vehicle-makes', async (request, reply) => {
     const result = await withVersionedCache(
       fastify,
       'makes',

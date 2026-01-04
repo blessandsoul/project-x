@@ -1,0 +1,1372 @@
+{
+  "common": {
+    "user": "مستخدم",
+    "back": "رجوع",
+    "verified": "موثّق",
+    "view_all": "عرض الكل",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "stars": "نجوم",
+    "days": "أيام",
+    "official": "رسمي",
+    "from": "من",
+    "to": "إلى",
+    "all": "الكل",
+    "filters": "الفلاتر",
+    "reset": "إعادة تعيين",
+    "show_results": "عرض النتائج",
+    "clear_all": "مسح الكل",
+    "retry": "إعادة المحاولة",
+    "reset_filters": "إعادة تعيين الفلاتر",
+    "compare": "مقارنة",
+    "details": "التفاصيل",
+    "sort_by": "ترتيب حسب:",
+    "make": "الماركة",
+    "model": "الموديل",
+    "select_make": "اختر الماركة",
+    "select_model": "اختر الموديل",
+    "price": "السعر",
+    "year": "السنة",
+    "fuel": "الوقود",
+    "drive": "الدفع",
+    "fuel_gas": "بنزين",
+    "fuel_diesel": "ديزل",
+    "fuel_hybrid": "هجين",
+    "fuel_electric": "كهربائي",
+    "fuel_flexible": "مرن",
+    "cars": "سيارات",
+    "motorcycles": "دراجات نارية",
+    "vans": "شاحنات",
+    "miles_short": "ميل",
+    "view_photos": "عرض الصور",
+    "badges": {
+      "new": "جديد",
+      "hot": "شائع"
+    },
+    "drive_types": {
+      "fwd": "دفع أمامي",
+      "rwd": "دفع خلفي",
+      "awd": "4x4",
+      "4wd": "4x4",
+      "full": "4x4"
+    },
+    "page": "صفحة",
+    "prev": "السابق",
+    "next": "التالي",
+    "client": "عميل",
+    "greeting": {
+      "morning": "صباح الخير",
+      "afternoon": "مساء الخير",
+      "evening": "مساء الخير"
+    },
+    "offer": "عرض",
+    "reviews": "مراجعات",
+    "great_thanks": "شكراً جزيلاً!"
+  },
+  "navigation": {
+    "home": "الرئيسية",
+    "logistics": "الخدمات اللوجستية",
+    "catalog": "الكتالوج",
+    "auctionListings": "السيارات",
+    "carfax": "فحص VIN",
+    "companies": "الشركات",
+    "dashboard": "لوحة التحكم"
+  },
+  "auth": {
+    "header": {
+      "account": "حسابك",
+      "subtitle": "سجّل الدخول أو أنشئ حساباً لإدارة عمليات الاستيراد."
+    },
+    "login": {
+      "title": "تسجيل الدخول",
+      "subtitle": "سجّل الدخول للوصول إلى لوحة التحكم.",
+      "new_here": "جديد هنا؟",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "loading": "جاري تسجيل الدخول...",
+      "no_account": "ليس لديك حساب؟",
+      "register_link": "إنشاء حساب",
+      "error": {
+        "required": "يرجى تعبئة جميع الحقول.",
+        "generic": "تعذر تسجيل الدخول. حاول مرة أخرى."
+      }
+    },
+    "register": {
+      "title": "إنشاء حساب",
+      "subtitle": "أنشئ حساباً لبدء استخدام Trusted Importers.",
+      "name": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "loading": "جاري إنشاء الحساب...",
+      "submit": "إنشاء حساب",
+      "has_account": "لديك حساب بالفعل؟",
+      "login_link": "تسجيل الدخول",
+      "dealer_info": "يمكن لحسابات الوكلاء عرض المركبات وإدارة المخزون. التحقق مطلوب.",
+      "error": {
+        "required": "يرجى تعبئة جميع الحقول المطلوبة.",
+        "generic": "تعذر إنشاء الحساب. حاول مرة أخرى."
+      }
+    },
+    "account_type": "نوع الحساب",
+    "roles": {
+      "user": {
+        "title": "مشتري",
+        "desc": "للمستخدمين الأفراد"
+      },
+      "dealer": {
+        "title": "وكيل",
+        "desc": "للوكلاء والبائعين"
+      },
+      "company": {
+        "title": "شركة",
+        "desc": "للشركات اللوجستية"
+      }
+    },
+    "company_legal_name": "الاسم القانوني للشركة",
+    "contact_phone": "هاتف التواصل",
+    "placeholders": {
+      "name": "اسمك",
+      "email": "you@example.com",
+      "password": "••••••••",
+      "phone": "+995...",
+      "company_name": "اسم الشركة"
+    },
+    "social": {
+      "continue_with": "أو المتابعة عبر",
+      "google": "Google",
+      "facebook": "Facebook"
+    },
+    "error": {
+      "profile_load": "تعذر تحميل الملف الشخصي. يُرجى تسجيل الدخول مرة أخرى."
+    }
+  },
+  "calculator": {
+    "title": "حاسبة الشحن",
+    "helper_text": "سيظهر السعر في قائمة الشركات بالأسفل.",
+    "city": "المدينة",
+    "select_city": "اختر المدينة...",
+    "destination_port": "ميناء الوصول",
+    "select_port": "اختر الميناء...",
+    "vehicle_type": "نوع المركبة",
+    "select_vehicle_type": "اختر النوع...",
+    "vehicle_types": {
+      "standard": "عادي",
+      "heavy": "ثقيل"
+    },
+    "vehicle_category": "فئة المركبة",
+    "select_vehicle_category": "اختر الفئة...",
+    "vehicle_categories": {
+      "Sedan": "سيدان",
+      "Bike": "دراجة نارية",
+      "Small SUV": "SUV صغير",
+      "Big SUV": "SUV كبير",
+      "Pickup": "بيك أب",
+      "Van": "فان",
+      "Big Van": "فان كبير"
+    },
+    "calculate": "احسب",
+    "calculating": "جاري الحساب...",
+    "price_shown_in_list": "سيظهر السعر في قائمة الشركات بالأسفل.",
+    "errors": {
+      "city_required": "يُرجى اختيار المدينة",
+      "city_too_long": "اسم المدينة طويل جداً (30 حرفاً كحد أقصى)",
+      "port_required": "يُرجى اختيار ميناء الوصول",
+      "port_too_long": "اسم الميناء طويل جداً (30 حرفاً كحد أقصى)",
+      "vehicle_type_required": "يُرجى اختيار نوع المركبة",
+      "vehicle_category_required": "يُرجى اختيار فئة المركبة",
+      "calculation_failed": "فشل الحساب. يُرجى المحاولة مرة أخرى."
+    },
+    "info": {
+      "title": "كيف يعمل",
+      "description": "استخدم هذه الآلة الحاسبة لتقدير تكاليف الشحن والاستيراد لسيارتك من الولايات المتحدة إلى جورجيا.",
+      "point1": "اختر مدينة الاستلام وميناء الوصول",
+      "point2": "اختر نوع وفئة المركبة",
+      "point3": "قارن الأسعار من شركات الاستيراد المختلفة",
+      "disclaimer": "الأسعار تقديرية وقد تختلف بناءً على الظروف الفعلية."
+    }
+  },
+  "header": {
+    "sign_in": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "menu": "القائمة",
+    "profile": "الملف الشخصي",
+    "sign_out": "تسجيل الخروج",
+    "language": "اللغة",
+    "open_profile_menu": "فتح قائمة الملف الشخصي",
+    "avatar_alt": "صورة المستخدم"
+  },
+  "profile": {
+    "title": "إعدادات الملف الشخصي",
+    "description": "إدارة إعدادات حسابك وتفضيلاتك",
+    "not_found": "لم يتم العثور على المستخدم",
+    "login_again": "يرجى تسجيل الدخول للوصول إلى ملفك الشخصي",
+    "back_to_login": "العودة إلى تسجيل الدخول",
+    "loading": "تحميل الملف الشخصي...",
+    "save_changes": "حفظ التغييرات",
+    "saving": "حفظ...",
+    "avatar": {
+      "title": "صورة الملف الشخصي",
+      "description": "قم بتحميل صورة الملف الشخصي. الحد الأقصى 5MB، JPEG/PNG/WebP.",
+      "upload": "تحميل الصورة",
+      "save": "حفظ الصورة",
+      "delete": "حذف",
+      "deleting": "حذف...",
+      "uploading": "تحميل...",
+      "hint": "موصى به: صورة مربعة، على الأقل 200x200 بكسل",
+      "upload_success": "تم تحميل صورة الملف الشخصي بنجاح",
+      "upload_error": "فشل تحميل الصورة. يرجى المحاولة مرة أخرى.",
+      "delete_success": "تم حذف صورة الملف الشخصي بنجاح",
+      "delete_error": "فشل حذف الصورة. يرجى المحاولة مرة أخرى."
+    },
+    "account": {
+      "title": "معلومات الحساب",
+      "description": "تحديث اسم المستخدم وعنوان البريد الإلكتروني",
+      "update_success": "تم تحديث معلومات الحساب",
+      "update_error": "فشل تحديث معلومات الحساب"
+    },
+    "username": "اسم المستخدم",
+    "username_placeholder": "أدخل اسم المستخدم",
+    "username_hint": "3-50 حرفاً. الحروف والأرقام والشرطة السفلية والشرطات فقط.",
+    "email": "البريد الإلكتروني",
+    "email_placeholder": "أدخل البريد الإلكتروني",
+    "password": {
+      "title": "تغيير كلمة المرور",
+      "description": "تحديث كلمة المرور. سيتم تسجيل خروجك من الأجهزة الأخرى.",
+      "current": "كلمة المرور الحالية",
+      "new": "كلمة مرور جديدة",
+      "confirm": "تأكيد كلمة المرور الجديدة",
+      "requirements": "على الأقل 10 أحرف مع أحرف كبيرة وصغيرة ورقم",
+      "change": "تحديث كلمة المرور",
+      "changing": "تغيير...",
+      "change_success": "تم تغيير كلمة المرور بنجاح. سيتم تسجيل خروجك من الأجهزة الأخرى.",
+      "change_error": "فشل تغيير كلمة المرور"
+    },
+    "delete": {
+      "title": "إلغاء تنشيط الحساب",
+      "description": "إلغاء تنشيط حسابك مؤقتًا. لديك 30 يومًا لإعادة التنشيط عن طريق تسجيل الدخول، وبعد ذلك سيتم حذف حسابك وبياناتك نهائيًا.",
+      "warning_title": "مهم: فترة سماح 30 يومًا",
+      "warning_1": "سيتم إلغاء تنشيط حسابك فورًا",
+      "warning_2": "لديك 30 يومًا لإعادة التنشيط عن طريق تسجيل الدخول",
+      "warning_3": "بعد 30 يومًا، سيتم حذف جميع البيانات نهائيًا",
+      "warning_4": "يمكنك إعادة التنشيط في أي وقت خلال 30 يومًا عن طريق تسجيل الدخول",
+      "password_label": "التأكيد بكلمة المرور",
+      "reason_label": "سبب المغادرة (اختياري)",
+      "reason_placeholder": "أخبرنا لماذا تغادر...",
+      "reason_hint": "ملاحظاتك تساعدنا على تحسين خدمتنا",
+      "button": "إلغاء تنشيط حسابي",
+      "dialog_title": "هل أنت متأكد من إلغاء التنشيط؟",
+      "dialog_description": "سيتم إلغاء تنشيط حسابك وجدولته للحذف الدائم في 30 يومًا. يمكنك استعادة حسابك خلال هذه الفترة عن طريق تسجيل الدخول.",
+      "confirm": "نعم، إلغاء تنشيط حسابي",
+      "deleting": "إلغاء التنشيط...",
+      "success": "تم إلغاء تنشيط الحساب. يمكنك إعادة التنشيط خلال 30 يومًا عن طريق تسجيل الدخول.",
+      "error": "فشل إلغاء تنشيط الحساب",
+      "grace_period_info": "بعد إلغاء التنشيط، لديك 30 يومًا لإعادة التنشيط ببساطة عن طريق تسجيل الدخول ببريدك الإلكتروني وكلمة المرور."
+    }
+  },
+  "company_settings": {
+    "title": "إعدادات الشركة",
+    "description": "إدارة ملف الشركة والأسعار",
+    "no_company": "لم يتم العثور على الشركة",
+    "no_company_description": "ليس لديك شركة بعد. قم بإنشاء واحدة للبدء.",
+    "create_company": "إنشاء شركة",
+    "company_info": "معلومات الشركة",
+    "company_info_description": "المعلومات الأساسية عن شركتك",
+    "descriptions": "وصف الشركة",
+    "descriptions_description": "صف شركتك بعدة لغات",
+    "logo": "شعار الشركة",
+    "logo_description": "قم بتحميل شعار الشركة (الحد الأقصى 2 MB، JPEG/PNG/WEBP)",
+    "logo_change": "انقر لتغيير الشعار",
+    "logo_hint": "JPEG أو PNG أو WEBP حتى 2 MB",
+    "pricing": "التسعير",
+    "pricing_description": "حدد هيكل التسعير الخاص بك",
+    "website_social": "الموقع الإلكتروني وروابط التواصل الاجتماعي",
+    "website_social_description": "أضف موقع شركتك وملفات التواصل الاجتماعي",
+    "website_label": "موقع الشركة الإلكتروني",
+    "social_links_label": "روابط وسائل التواصل الاجتماعي",
+    "no_social_links": "لم يتم إضافة روابط التواصل الاجتماعي.",
+    "add_social_link": "إضافة رابط",
+    "location": "الموقع",
+    "location_description": "أين تقع شركتك",
+    "services": "الخدمات",
+    "services_description": "الخدمات التي تقدمها شركتك",
+    "loading_services": "تحميل الخدمات...",
+    "name": "اسم الشركة",
+    "name_placeholder": "أدخل اسم الشركة",
+    "phone": "رقم الهاتف",
+    "phone_placeholder": "+1 234 567 8900",
+    "contact_email": "البريد الإلكتروني للتواصل",
+    "email_placeholder": "contact@company.com",
+    "established_year": "سنة التأسيس",
+    "description_geo": "الوصف (الجورجية)",
+    "description_geo_placeholder": "აღწერა ქართულად...",
+    "description_eng": "الوصف (الإنجليزية)",
+    "description_eng_placeholder": "Description in English...",
+    "description_rus": "الوصف (الروسية)",
+    "description_rus_placeholder": "Описание на русском...",
+    "base_price": "السعر الأساسي",
+    "price_per_mile": "السعر لكل ميل",
+    "customs_fee": "رسوم الجمارك",
+    "service_fee": "رسوم الخدمة",
+    "broker_fee": "رسوم الوسيط",
+    "country": "البلد",
+    "country_placeholder": "مثال: جورجيا",
+    "city": "المدينة",
+    "city_placeholder": "مثال: تبليسي",
+    "save": "حفظ التغييرات",
+    "saving": "جاري الحفظ...",
+    "success": "تم تحديث إعدادات الشركة بنجاح",
+    "delete_company": "حذف الشركة",
+    "deleting": "جاري الحذف...",
+    "delete_confirm_title": "حذف الشركة؟",
+    "delete_confirm_description": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بيانات الشركة نهائيًا.",
+    "delete_confirm": "نعم، احذف الشركة",
+    "delete_success": "تم حذف الشركة بنجاح",
+    "error": {
+      "load": "فشل تحميل إعدادات الشركة",
+      "save": "فشل حفظ إعدادات الشركة",
+      "delete": "فشل حذف الشركة",
+      "delete_link": "فشل حذف رابط التواصل الاجتماعي"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "TrustedImporters.Ge",
+      "subtitle": "اكتشف التكلفة الحقيقية للاستيراد من أمريكا إلى جورجيا",
+      "description": "أدخل رقم VIN أو ميزانية المزاد لمعرفة التكلفة التقديرية الكاملة والانتقال إلى الشركات الموثوقة بخطوة واحدة.",
+      "search_placeholder": "ابحث في المزادات حسب الماركة أو الموديل أو السنة",
+      "calculate_btn": "احسب",
+      "verified_companies": "{{count}} شركة موثقة",
+      "fixed_prices": "أسعار ثابتة",
+      "official_contracts": "عقود رسمية"
+    },
+    "price_calculator": {
+      "widget_title": "حاسبة الأسعار",
+      "auction_price": "سعر المزاد",
+      "engine_volume": "حجم المحرك",
+      "shipping_poti": "الشحن إلى بوتي",
+      "est_customs": "الجمارك التقديرية",
+      "broker_fees": "رسوم الوسيط",
+      "total_estimated": "الإجمالي التقديري"
+    },
+    "benefits": {
+      "title": "لماذا منصتنا",
+      "subtitle": "نقدم أفضل خدمة لاستيراد السيارات",
+      "items": {
+        "verified": {
+          "title": "شركات موثقة",
+          "description": "جميع الشركات تخضع لعملية تحقق وفحص صارمة."
+        },
+        "transparent": {
+          "title": "أسعار شفافة",
+          "description": "لا رسوم خفية. ترى بالضبط ما تدفعه."
+        },
+        "reviews": {
+          "title": "تقييمات حقيقية",
+          "description": "اقرأ تجارب وتقييمات العملاء الحقيقية."
+        },
+        "support": {
+          "title": "دعم 24/7",
+          "description": "فريقنا مستعد لمساعدتك في أي وقت."
+        }
+      }
+    },
+    "testimonials": {
+      "title": "ماذا يقول العملاء",
+      "error": "فشل تحميل التقييمات",
+      "filters": {
+        "all": "الكل",
+        "speed": "السرعة",
+        "price": "السعر",
+        "quality": "الجودة",
+        "docs": "المستندات"
+      },
+      "stats": {
+        "satisfaction": "الرضا",
+        "quality": "الجودة"
+      },
+      "empty": {
+        "title": "لم يتم العثور على تقييمات",
+        "description": "لم يترك أحد تقييماً بعد."
+      },
+      "view_catalog_btn": "عرض الكتالوج",
+      "card": {
+        "client_since": "عميل منذ {{year}}",
+        "bought": "اشترى"
+      }
+    },
+    "blog": {
+      "title": "مقالات مفيدة",
+      "description": "تعرف على معلومات مفيدة حول استيراد السيارات",
+      "empty": {
+        "title": "لم يتم العثور على مقالات",
+        "description": "لم يتم نشر أي مقالات بعد."
+      },
+      "view_catalog_btn": "عرض الكتالوج",
+      "takeaways_title": "النقاط الرئيسية",
+      "read_time": "{{minutes}} دقيقة قراءة",
+      "read_article": "اقرأ المقال",
+      "posts": {
+        "blog.post1.title": "كيف تختار السيارة المناسبة في المزاد",
+        "blog.post1.description": "دليل كامل لاختيار سيارة في المزاد، نصائح وحيل من مستوردين ذوي خبرة.",
+        "blog.post1.tag": "دليل",
+        "blog.post1.takeaways": {
+          "1": "تحقق من تاريخ السيارة عبر VIN",
+          "2": "ضع في اعتبارك التكاليف الإضافية",
+          "3": "اختر شركة موثوقة"
+        },
+        "blog.post2.title": "عملية التخليص الجمركي في جورجيا",
+        "blog.post2.description": "كل ما تحتاج معرفته عن التخليص الجمركي للسيارات في جورجيا.",
+        "blog.post2.tag": "الجمارك",
+        "blog.post2.takeaways": {
+          "1": "جهز المستندات المطلوبة",
+          "2": "ضع في اعتبارك حجم المحرك",
+          "3": "تحقق من معدلات الضريبة"
+        },
+        "blog.post3.title": "أفضل 10 موديلات شعبية 2024",
+        "blog.post3.description": "السيارات الأكثر طلباً في جورجيا هذا العام.",
+        "blog.post3.tag": "الاتجاهات",
+        "blog.post3.takeaways": {
+          "1": "تويوتا وهيونداي في الصدارة",
+          "2": "السيارات الكهربائية في نمو",
+          "3": "فئة SUV شعبية"
+        }
+      }
+    },
+    "how_it_works": {
+      "badge": "كيف يعمل",
+      "title": "استورد سيارتك في 4 خطوات بسيطة",
+      "subtitle": "جعلنا العملية بسيطة قدر الإمكان. فقط اتبع هذه الخطوات واحصل على سيارتك.",
+      "steps": {
+        "search": {
+          "title": "البحث والعثور",
+          "description": "تصفح كتالوج شركات الاستيراد الموثقة وقارن خدماتها وأسعارها."
+        },
+        "compare": {
+          "title": "مقارنة العروض",
+          "description": "راجع العروض التفصيلية والتقييمات والمراجعات للعثور على أفضل صفقة لاحتياجاتك."
+        },
+        "choose": {
+          "title": "اختيار الشركة",
+          "description": "اختر الشركة المفضلة لديك وأرسل طلبك. سيتولون كل شيء."
+        },
+        "import": {
+          "title": "احصل على سيارتك",
+          "description": "تتبع شحنتك واستلم سيارتك عند بابك مع جميع المستندات جاهزة."
+        }
+      }
+    },
+    "copart_hero": {
+      "title": "مزادات سيارات عبر الإنترنت 100%",
+      "subtitle": "مزادات <strong>Copart</strong> و <strong>IAAI</strong> وأسعار شركات الاستيراد — بسرعة وشفافية وبدون مكالمات إضافية",
+      "download_appstore": "حمّل على",
+      "appstore": "App Store",
+      "get_on": "حمّل",
+      "google_play": "Google Play",
+      "buyer_protection": "بحث Copart / IAAI في مكان واحد",
+      "nationwide_delivery": "أسعار حقيقية للاستيراد",
+      "vehicle_history": "حساب تكلفة السيارة",
+      "browse_inventory": "ابدأ البحث",
+      "transparent_prices_title": "أسعار شفافة",
+      "transparent_prices_desc": "لا رسوم مخفية — ترى بالضبط ما تدفعه.",
+      "all_prices_title": "كل الأسعار في مكان واحد",
+      "all_prices_desc": "اطلع على أسعار جميع الشركات في مكان واحد واختر الأنسب لك.",
+      "real_reviews_title": "مراجعات حقيقية",
+      "real_reviews_desc": "اقرأ تجارب وآراء العملاء الحقيقية."
+    },
+    "popular_vehicles": {
+      "title": "السيارات",
+      "title_highlight": "الشائعة",
+      "subtitle": "نظرة سريعة على أكثر السيارات مشاهدة ومزايدة الآن.",
+      "current_bid": "المزايدة الحالية",
+      "buy_now": "اشترِ الآن",
+      "sale": "البيع",
+      "bid_now": "زايد الآن"
+    },
+    "membership": {
+      "title": "خيارات العضوية",
+      "subtitle": "اختر الخطة التي تناسبك. قم بالترقية في أي وقت لفتح المزيد من الميزات.",
+      "tab_individuals": "للأفراد",
+      "tab_business": "الأعمال / مستويات العضوية",
+      "tab_corporate": "الشركات / الطلبات بالجملة",
+      "register_now": "سجل الآن",
+      "plans": {
+        "guest": {
+          "name": "زائر",
+          "price": "مجاني",
+          "features": ["عرض جميع السيارات", "معلومات أساسية", "البحث والتصفية"],
+          "button": "تصفح مجاناً"
+        },
+        "basic": {
+          "name": "أساسي",
+          "price": "$99",
+          "period": "/سنة",
+          "features": [
+            "جميع ميزات الزائر",
+            "المزايدة على السيارات",
+            "الشراء الفوري",
+            "التاريخ الكامل"
+          ],
+          "button": "احصل على الأساسي"
+        },
+        "premier": {
+          "name": "بريميير",
+          "price": "$249",
+          "period": "/سنة",
+          "features": [
+            "جميع ميزات الأساسي",
+            "مزايدات غير محدودة",
+            "وصول مبكر",
+            "دعم أولوية 24/7"
+          ],
+          "button": "احصل على بريميير"
+        }
+      }
+    },
+    "vehicle_catalog": {
+      "title": "Copart / IAAI - مزادات مباشرة",
+      "subtitle": "ابحث عن أي نوع سيارة يهمك بسهولة.",
+      "tabs": {
+        "makes": "الماركات",
+        "models": "الموديلات",
+        "types": "الأنواع",
+        "trending": "الرائج"
+      },
+      "see_more": "عرض المزيد",
+      "promo": {
+        "title_line1": "Copart و IAAI",
+        "title_line2": "",
+        "title_line3": "في مكان واحد",
+        "badge": "تشكيلة ضخمة",
+        "button": "عرض الآن"
+      }
+    },
+    "what_is_copart": {
+      "title": "ما هو TrustedImporters.Ge؟",
+      "description1": "منصة تجمع في مكان واحد مستوردي السيارات الموثوقين والمزادات الأمريكية. نساعدك على مقارنة أسعار الشركات وشروطها وتقييمات العملاء بسهولة.",
+      "description2": "TrustedImporters.Ge تبسّط عملية الاستيراد بالكامل — تشاهد التكلفة الإجمالية مباشرة على المنصة وتتواصل فوراً مع الشركة التي تفضّلها.",
+      "learn_more": "اعرف المزيد",
+      "browse_categories": "السيارات",
+      "categories": {
+        "wholesale": "سيارات بالجملة",
+        "trucks": "شاحنات",
+        "motorcycles": "دراجات نارية"
+      },
+      "features": {
+        "search_title": "بحث سهل",
+        "search_desc": "اعثر على الشركات في مكان واحد.",
+        "compare_title": "مقارنة",
+        "compare_desc": "قارن الأسعار والشروط.",
+        "calculate_title": "حساب كامل",
+        "calculate_desc": "شاهد التكلفة الإجمالية مسبقاً.",
+        "reviews_title": "تقييمات موثوقة",
+        "reviews_desc": "تقييمات العملاء الحقيقيين."
+      }
+    },
+    "promo_banners": {
+      "bid_anytime": {
+        "title": "آلاف اللوتات على منصة واحدة",
+        "description": "أكبر تشكيلة من مزادات Copart و IAAI."
+      },
+      "daily_sales": {
+        "title": "أسعار دقيقة وشفافة",
+        "description": "شاهد التكلفة الإجمالية — بدون أي رسوم مخفية."
+      },
+      "no_license": {
+        "title": "كل شيء في مكان واحد",
+        "description": "لا حاجة للبحث في عشرات الشركات — جميع العروض معاً."
+      },
+      "bid_wins": {
+        "title": "شركات موثوقة وتقييمات",
+        "description": "تقييمات العملاء الحقيقيين ستساعدك على اتخاذ القرار الصحيح."
+      },
+      "follow_us": "تابعنا"
+    }
+  },
+  "footer": {
+    "description": "المنصة الرائدة في جورجيا لاستيراد السيارات من أمريكا.",
+    "stats": {
+      "region": "جورجيا، القوقاز",
+      "cars": "+10,000 سيارة",
+      "years": "+5 سنوات خبرة"
+    },
+    "company": "الشركة",
+    "support": "الدعم",
+    "help": "المساعدة",
+    "contact": "اتصل بنا",
+    "connect": "تابعنا",
+    "twitter": "تويتر",
+    "github": "جيت هب",
+    "linkedin": "لينكد إن",
+    "home": "الرئيسية",
+    "catalog": "الكتالوج",
+    "auctionListings": "السيارات",
+    "cta": {
+      "title": "لديك أسئلة؟",
+      "subtitle": "تواصل معنا واحصل على استشارة مجانية",
+      "button": "تواصل معنا"
+    },
+    "copyright": "جميع الحقوق محفوظة.",
+    "privacy": "الخصوصية",
+    "terms": "الشروط"
+  },
+  "catalog": {
+    "title": "كتالوج شركات الاستيراد",
+    "subtitle": "اعثر على أفضل شركة لاستيراد سيارتك من أمريكا إلى جورجيا",
+    "results": {
+      "showing": "عرض",
+      "connector": "من",
+      "of": "شركة",
+      "compare": "مقارنة",
+      "sort_label": "ترتيب حسب:",
+      "empty_title": "لم يتم العثور على شركات",
+      "empty_description": "جرب فلاتر مختلفة أو امسح البحث",
+      "use_calculator_title": "ستظهر الشركات هنا",
+      "use_calculator_hint": "املأ الآلة الحاسبة لرؤية العروض"
+    },
+    "sort": {
+      "rating": "حسب التقييم",
+      "cheapest": "حسب السعر",
+      "newest": "الأحدث"
+    },
+    "filters": {
+      "title": "الفلاتر",
+      "search_placeholder": "ابحث عن شركات...",
+      "country": "الدولة",
+      "country_placeholder": "جورجيا، أمريكا...",
+      "city": "المدينة",
+      "city_placeholder": "المدينة",
+      "rating": "التقييم",
+      "rating_all": "جميع التقييمات",
+      "price": "نطاق السعر",
+      "vip_only": "VIP فقط",
+      "vip_desc": "شركات مميزة مع ضمانات إضافية",
+      "reset": "إعادة تعيين",
+      "apply": "تطبيق",
+      "show_results": "عرض النتائج"
+    },
+    "badges": {
+      "luxury_expert": "خبير الفخامة",
+      "best_economy": "أفضل اقتصاد",
+      "top_rated": "الأعلى تقييماً"
+    },
+    "card": {
+      "add_to_compare": "إضافة للمقارنة",
+      "online_now": "متصل الآن",
+      "service_fee": "رسوم الخدمة",
+      "up_to": "حتى",
+      "view_profile": "عرض الملف",
+      "default_city": "تبليسي",
+      "vip": "VIP",
+      "delivery_time": "التسليم",
+      "rating_label": "التقييم",
+      "shipping_cost": "الشحن",
+      "contact": "تواصل",
+      "offline": "غير متصل",
+      "send_request": "إرسال",
+      "get_quote": "احصل على عرض"
+    },
+    "comparison": {
+      "cancel": "إلغاء",
+      "compare_now": "مقارنة"
+    },
+    "view_details": "التفاصيل"
+  },
+  "companies": {
+    "subtitle": "شركات الخدمات اللوجستية والاستيراد",
+    "error": {
+      "title": "حدث خطأ ما",
+      "load": "فشل تحميل الشركات. يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+      "title": "لم يتم العثور على شركات",
+      "description": "لا توجد شركات متاحة في الوقت الحالي."
+    }
+  },
+  "auction": {
+    "favorite_vehicles": "المركبات المفضلة",
+    "favorite_vehicles_description": "إدارة قائمة المراقبة الخاصة بك وتتبع المركبات التي تهتم بها.",
+    "no_favorites": "لا توجد مركبات مفضلة بعد",
+    "no_favorites_description": "ابدأ بناء قائمة المراقبة الخاصة بك من خلال تصفح المزادات وحفظ المركبات التي تهتم بها.",
+    "browse_auctions": "تصفح المزادات",
+    "active_auctions": "المزادات النشطة",
+    "description": "ابحث عن السيارات في مزادات Copart و IAAI في الوقت الفعلي",
+    "search_placeholder": "ابحث عن الماركة أو الموديل أو VIN...",
+    "real_results": "النتائج",
+    "loading_data": "جاري تحميل البيانات...",
+    "showing_prefix": "يتم عرض",
+    "showing_middle": "من",
+    "showing_suffix": "المركبات",
+    "showing_results": "يتم عرض {{count}} من {{total}} نتيجة",
+    "price_comparison": "مقارنة الأسعار",
+    "no_results": "لم يتم العثور على نتائج",
+    "try_resetting": "جرب تغيير أو إعادة تعيين الفلاتر",
+    "transport_type": "نوع النقل",
+    "brand_and_model": "الماركة والموديل",
+    "exact_year": "السنة بالضبط",
+    "technical_data": "البيانات التقنية",
+    "quads": "دراجات رباعية",
+    "calculate_cost": "حساب التكلفة",
+    "estimated_total": "الإجمالي التقديري",
+    "shipping": "الشحن",
+    "fees": "الرسوم",
+    "customs": "الجمارك",
+    "total_estimate": "الإجمالي التقديري",
+    "retail_value": "سعر التجزئة",
+    "buy_now_label": "اشترِ الآن",
+    "fields": {
+      "odometer": "عداد المسافات",
+      "estimated_retail_value": "القيمة التجزئة التقديرية",
+      "current_bid": "المزايدة الحالية"
+    },
+    "badges": {
+      "clean_title": "عنوان نظيف",
+      "run_drive": "تعمل وتُقاد"
+    },
+    "actions": {
+      "watch": "حفظ",
+      "bid_now": "زايد الآن",
+      "buy_it_now": "اشترِ الآن"
+    },
+    "columns": {
+      "image": "الصورة",
+      "lot_info": "اللوت",
+      "vehicle_info": "المعلومات",
+      "document": "المستند",
+      "bids": "المزايدات"
+    },
+    "document_label": "مستند البيع",
+    "auction_starts": "المزاد يبدأ",
+    "auction_start_date": "تاريخ بدء المزاد",
+    "lot": "اللوت #",
+    "filters": {
+      "title": "الفلاتر",
+      "refine": "تحسين البحث",
+      "apply": "تطبيق الفلاتر",
+      "auction": "المزاد",
+      "fuel": "الوقود",
+      "make": "الماركة",
+      "model": "الموديل",
+      "any_make": "أي ماركة",
+      "any_model": "أي موديل",
+      "category": "الفئة",
+      "year": "السنة",
+      "price": "السعر",
+      "mileage": "المسافة المقطوعة",
+      "odometer": "عداد المسافات",
+      "price_bid": "السعر / المزايدة",
+      "title_type": "المستند",
+      "transmission": "ناقل الحركة",
+      "automatic": "أوتوماتيك",
+      "manual": "يدوي",
+      "fuel_type": "نوع الوقود",
+      "gasoline": "بنزين",
+      "diesel": "ديزل",
+      "hybrid": "هجين",
+      "electric": "كهربائي",
+      "flexible_fuel": "وقود مرن",
+      "drive": "الدفع",
+      "front_wheel": "دفع أمامي",
+      "rear_wheel": "دفع خلفي",
+      "all_wheel": "دفع رباعي",
+      "sale_date": "تاريخ البيع",
+      "source": "المزاد",
+      "buy_now": "اشتري الآن",
+      "buy_now_only": "اشتري الآن فقط",
+      "all_vehicles": "جميع المركبات",
+      "automobiles": "السيارات",
+      "motorcycles": "الدراجات النارية",
+      "cylinders": "الأسطوانات",
+      "location": "الموقع"
+    },
+    "load_more": "تحميل المزيد",
+    "compare": {
+      "title": "مقارنة التكلفة الكلية",
+      "subtitle": "مقارنة التكلفة الكلية للاستيراد من شركات مختلفة جنباً إلى جنب.",
+      "error_title": "فشل تحميل المقارنة",
+      "no_quotes": "لم يتم العثور على عروض أسعار للسيارات المحددة.",
+      "no_quotes_for_vehicle": "لا توجد عروض متاحة لهذه السيارة",
+      "best_badge": "الأفضل",
+      "total_to_georgia": "الإجمالي إلى جورجيا",
+      "distance": "المسافة",
+      "other_offers": "عروض أخرى",
+      "no_other_offers": "لا توجد عروض أخرى"
+    },
+    "sale_date": {
+      "today": "اليوم",
+      "tomorrow": "غداً",
+      "this_week": "هذا الأسبوع",
+      "next_week": "الأسبوع القادم"
+    },
+    "location": {
+      "any": "أي موقع"
+    }
+  },
+  "pages": {
+    "auction": {
+      "more_filters": "فلاتر إضافية"
+    }
+  },
+  "sort": {
+    "none": "افتراضي",
+    "relevance": "الصلة",
+    "price_low": "السعر: من الأقل",
+    "price_high": "السعر: من الأعلى",
+    "year_new": "السنة: من الأحدث للأقدم",
+    "year_old": "السنة: من الأقدم للأحدث",
+    "mileage_low": "المسافة: من الأقل",
+    "mileage_high": "المسافة: من الأعلى",
+    "sold_date_desc": "تاريخ البيع: الأحدث أولاً",
+    "sold_date_asc": "تاريخ البيع: الأقدم أولاً",
+    "best_value": "أفضل قيمة"
+  },
+  "error": {
+    "failed_to_load_data": "فشل تحميل البيانات",
+    "generic": "حدث خطأ"
+  },
+  "vin": {
+    "title": "فحص VIN",
+    "subtitle": "أدخل رمز VIN للحصول على معلومات كاملة عن السيارة",
+    "vin_placeholder": "أدخل VIN المكون من 17 حرفاً...",
+    "check_btn": "فحص",
+    "check_btn_loading": "جاري الفحص...",
+    "vin_hint": "أدخل VIN المكون من 17 حرفاً (الأحرف A-Z ما عدا I، O، Q والأرقام 0-9).",
+    "recent_checks": "عمليات الفحص الأخيرة",
+    "remove_history_tooltip": "إزالة من السجل",
+    "loading_hint": "جاري فك تشفير VIN...",
+    "empty_state_hint": "أدخل رمز VIN أعلاه لعرض معلومات السيارة",
+    "result_title": "تقرير السيارة",
+    "result_empty_data": "لم يتم العثور على بيانات إضافية لهذا VIN.",
+    "photo_credit": "الصورة: {{photographer}}",
+    "tech_specs_title": "المواصفات الفنية",
+    "body_specs_title": "الهيكل والتصنيع",
+    "additional_details": "تفاصيل إضافية",
+    "specs": {
+      "engine": "المحرك",
+      "transmission": "ناقل الحركة",
+      "drive": "الدفع",
+      "fuel": "الوقود"
+    },
+    "est_clearing_cost": "تكلفة التخليص التقديرية",
+    "est_clearing_note": "لسيارة موديل {{year}}",
+    "get_exact_quote": "احصل على عرض سعر دقيق",
+    "importers_match": "{{count}} مستورد متطابق",
+    "verified_importers_desc": "مستوردون موثقون متخصصون في سيارات <strong>{{make}}</strong>",
+    "show_matches": "عرض المستوردين",
+    "high_demand": "طلب مرتفع",
+    "high_demand_desc": "{{count}}+ مستخدم يبحث عن {{model}} هذا الشهر",
+    "buy_safely": "اشترِ بأمان",
+    "check_history": "فحص السجل",
+    "order_inspection": "طلب فحص",
+    "error_vin_required": "رمز VIN مطلوب",
+    "error_vin_length": "يجب أن يتكون VIN من 17 حرفاً بالضبط",
+    "error_decode_failed": "فشل فك تشفير VIN",
+    "fields": {
+      "trim": "الفئة",
+      "series": "السلسلة",
+      "body_class": "نوع الهيكل",
+      "vehicle_type": "نوع المركبة",
+      "engine_cylinders": "أسطوانات المحرك",
+      "engine_displacement": "سعة المحرك",
+      "engine_model": "طراز المحرك",
+      "engine_power": "قدرة المحرك",
+      "fuel_type": "نوع الوقود",
+      "transmission_style": "نوع ناقل الحركة",
+      "transmission_speeds": "عدد السرعات",
+      "drive_type": "نوع الدفع",
+      "doors": "عدد الأبواب",
+      "gvwr": "الوزن الإجمالي المسموح (GVWR)",
+      "manufacturer": "الشركة المصنعة",
+      "plant_country": "دولة التصنيع",
+      "plant_city": "مدينة التصنيع",
+      "plant_state": "الولاية/المنطقة (التصنيع)"
+    }
+  },
+  "vehicle": {
+    "lot": "اللوت",
+    "new_arrival": "وصول جديد",
+    "sale_date": "تاريخ البيع",
+    "upcoming": "قريباً",
+    "ends_in": "ينتهي في:",
+    "started": "بدأ",
+    "no_photos": "لا توجد صور",
+    "share_link": "مشاركة الرابط",
+    "save_vehicle": "حفظ السيارة",
+    "watchlist": {
+      "save": "حفظ",
+      "saved": "تم الحفظ"
+    },
+    "remove_favorites": "إزالة من المفضلة",
+    "condition_report": "تقرير الحالة",
+    "ai_analysis": "تحليل AI",
+    "primary_damage": "الضرر الرئيسي",
+    "secondary_damage": "ثانوي",
+    "ai_repair_estimate": "تقدير إصلاح AI",
+    "retail_value": "القيمة التجزئة",
+    "engine_status": "المحرك",
+    "keys": "المفاتيح",
+    "keys_present": "موجودة",
+    "keys_missing": "مفقودة",
+    "airbags": "الوسائد الهوائية",
+    "odometer": "عداد المسافات",
+    "unlock_report": "فتح التقرير",
+    "unlock_desc": "أعجب بصفحتنا لرؤية تحليل AI التفصيلي للأضرار وتقديرات الإصلاح.",
+    "like_facebook": "إعجاب على Facebook",
+    "verifying": "جاري التحقق...",
+    "price_breakdown": "تفاصيل السعر",
+    "detailed_quote": "عرض سعر مفصل من",
+    "auction_price": "سعر المزاد (اللوت)",
+    "shipping_total": "الشحن الداخلي + البحري",
+    "customs_clearance": "التخليص الجمركي",
+    "broker_fees": "رسوم الخدمة والوسيط",
+    "insurance_optional": "التأمين (اختياري)",
+    "total_estimated": "الإجمالي التقديري",
+    "price_note": "* قد يختلف السعر النهائي قليلاً بناءً على رسوم المزاد وأسعار الصرف.",
+    "market_average": "متوسط السوق",
+    "below_market": "{{percent}}% أقل من السوق",
+    "save_amount": "وفر ${{amount}}",
+    "specs": {
+      "engine": "المحرك",
+      "transmission": "ناقل الحركة",
+      "drive": "الدفع",
+      "mileage": "المسافة المقطوعة",
+      "year": "السنة",
+      "fuel": "الوقود",
+      "vin": "VIN",
+      "copy_vin": "نسخ VIN"
+    },
+    "details": {
+      "title": "تفاصيل السيارة",
+      "share": "مشاركة",
+      "lot_number": "رقم اللوت:",
+      "vin": "VIN:",
+      "title_code": "رمز العنوان:",
+      "odometer": "عداد المسافات:",
+      "primary_damage": "الضرر الرئيسي:",
+      "estimated_retail_value": "القيمة التجزئة التقديرية:",
+      "cylinders": "الأسطوانات:",
+      "color": "اللون:",
+      "engine_type": "نوع المحرك:",
+      "view_engine": "عرض المحرك",
+      "transmission": "ناقل الحركة:",
+      "drive": "الدفع:",
+      "vehicle_type": "نوع المركبة:",
+      "vehicle_type_value": "غير متوفر",
+      "fuel": "الوقود:",
+      "keys": "المفاتيح:",
+      "yes": "نعم",
+      "no": "لا",
+      "highlights": "المميزات:",
+      "run_and_drive": "تعمل وتسير"
+    },
+    "bids": {
+      "last_bid": "آخر مزايدة:",
+      "last_bid_date": "تاريخ آخر مزايدة:",
+      "view_all": "عرض كل المزايدات ({{count}})"
+    },
+    "bid_history": {
+      "title": "سجل المزايدات",
+      "bids_count": "{{count}} مزايدة",
+      "no_bids": "لا توجد مزايدات مسجلة لهذه السيارة",
+      "latest_bid": "آخر مزايدة",
+      "no_date": "لا يوجد تاريخ"
+    },
+    "quotes_section": {
+      "aria_label": "عروض الشحن",
+      "title": "عروض الشحن",
+      "verified_importers": "{{count}} مستورد موثّق",
+      "prices_include_all_fees": "الأسعار تشمل جميع الرسوم",
+      "transportation_price": "سعر النقل",
+      "best": "الأفضل",
+      "rating_na": "غير متوفر",
+      "delivery_days": "{{count}} يوم",
+      "delivery_unknown": "—",
+      "try_again": "حاول مرة أخرى",
+      "unavailable_title": "حساب السعر غير متاح",
+      "unavailable_description": "لا يمكن حساب عروض الشحن لهذه الوجهة.",
+      "request_custom_quote": "طلب عرض سعر مخصص",
+      "empty": "لا توجد عروض متاحة بعد",
+      "footer_note": "مجاناً · بدون التزام · رد خلال 24 ساعة"
+    },
+    "carfax": {
+      "title": "احصل على السجل الكامل",
+      "description": "لا تشترِ بشكل أعمى! تحقق من الحوادث المخفية، التلاعب بعداد المسافات، الأضرار الهيكلية، وسجلات الخدمة.",
+      "get_report": "احصل على تقرير Carfax",
+      "free_with_order": "مجاناً مع الطلب"
+    },
+    "quotes": {
+      "title": "قارن واطلب",
+      "select_companies": "اختر الشركات",
+      "click_to_order": "انقر على صف للطلب، أو اختر عدة للمقارنة.",
+      "select_multiple": "اختر شركات متعددة",
+      "selected": "المحدد",
+      "cancel": "إلغاء",
+      "vip_only": "VIP فقط",
+      "rating_filter": "تقييم 4.5+",
+      "fast_delivery": "توصيل سريع",
+      "company": "الشركة",
+      "delivery": "التوصيل",
+      "total_price": "السعر الإجمالي",
+      "action": "الإجراء",
+      "days": "يوم",
+      "sea_land": "بحر + بر إلى بوتي",
+      "all_inclusive": "شامل الكل",
+      "reviews": "تقييم",
+      "verified": "موثق",
+      "verified_importer": "مستورد موثق",
+      "breakdown": "التفاصيل",
+      "order": "طلب",
+      "no_match": "لا توجد شركات تطابق فلاترك.",
+      "clear_filters": "مسح الفلاتر",
+      "promo_text": "اطلب قبل 26.11 واحصل على <strong>تقرير Carfax مجاني</strong> (بقيمة $40)!"
+    },
+    "similar": {
+      "title": "سيارات مشابهة قد تعجبك"
+    },
+    "price_card": {
+      "estimated_total": "التكلفة الإجمالية التقديرية",
+      "auction_price": "سعر المزاد (تقديري)",
+      "shipping": "الشحن (أمريكا-جورجيا)",
+      "customs": "الجمارك والضرائب",
+      "service_fees": "رسوم الخدمة",
+      "send_request": "إرسال طلب إلى {{count}} شركة",
+      "select_to_order": "اختر الشركات للطلب",
+      "select_hint": "اختر شركة واحدة على الأقل للمتابعة."
+    },
+    "lead_modal": {
+      "title": "طلب شراء سيارة",
+      "description": "إرسال طلب إلى <strong>{{count}} شركة محددة</strong>.",
+      "your_name": "اسمك",
+      "phone": "رقم الهاتف",
+      "contact_method": "طريقة التواصل المفضلة",
+      "whatsapp": "واتساب",
+      "phone_call": "هاتف",
+      "send_request": "إرسال طلب إلى {{count}} شركة",
+      "sending": "جاري الإرسال..."
+    },
+    "unlock_modal": {
+      "title": "فتح الميزات المميزة",
+      "description": "لقد وصلت إلى حد 3 طلبات مجانية. لإرسال حتى 5 طلبات دفعة واحدة، يرجى دعمنا!",
+      "like_project": "1. أعجب بمشروعنا",
+      "i_liked": "أعجبني!",
+      "write_review": "2. اكتب مراجعة سريعة (اختياري)",
+      "review_placeholder": "أخبرنا برأيك...",
+      "unlock_btn": "فتح 5 طلبات"
+    },
+    "success_modal": {
+      "title": "تم إرسال الطلب بنجاح",
+      "description": "تم إرسال طلبك إلى {{count}} من الشركات. سيتواصل معك أحد المدراء قريباً.",
+      "manager_contact": "سيتواصل معك مديرنا قريباً لتأكيد جميع التفاصيل."
+    },
+    "social_proof": {
+      "people_viewing": "يشاهدون",
+      "viewing_now": "يشاهد الآن"
+    },
+    "mobile_cta": {
+      "total_est": "الإجمالي التقديري",
+      "request": "طلب ({{count}})",
+      "select": "اختر"
+    },
+    "not_found": "السيارة غير موجودة"
+  },
+  "sidebar": {
+    "company_name": "Acme Inc.",
+    "quick_create": "إنشاء سريع",
+    "dashboard": "لوحة التحكم",
+    "lifecycle": "دورة الحياة",
+    "analytics": "التحليلات",
+    "projects": "المشاريع",
+    "team": "الفريق",
+    "documents": "المستندات",
+    "data_library": "مكتبة البيانات",
+    "reports": "التقارير",
+    "word_assistant": "مساعد Word",
+    "more": "المزيد",
+    "settings": "الإعدادات",
+    "get_help": "المساعدة",
+    "search": "بحث",
+    "open": "فتح",
+    "share": "مشاركة"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "error": {
+      "load": "فشل تحميل بيانات لوحة التحكم",
+      "quotes": "فشل تحميل العروض",
+      "leads": "فشل تحميل الطلبات"
+    },
+    "roles": {
+      "user": "مستخدم",
+      "dealer": "وكيل",
+      "company": "شركة"
+    },
+    "user": {
+      "welcome_subtitle": "نظرة عامة على نشاطك والتوصيات.",
+      "confirm_clear_favorites": "هل أنت متأكد من مسح المفضلة",
+      "confirm_clear_recent": "هل أنت متأكد من مسح المشاهدات الأخيرة",
+      "guides": {
+        "guide1": "كيفية اختيار سيارة في المزاد",
+        "guide2": "فهم الرسوم الجمركية",
+        "guide3": "العمل مع المستوردين",
+        "title": "أدلة مفيدة"
+      },
+      "offers": {
+        "description": "عرض خاص متاح"
+      },
+      "reminders": {
+        "reviews": "اترك مراجعة للشركات التي شاهدتها مؤخرا",
+        "offers": "تحقق من العروض الجديدة من شركات VIP",
+        "favorites": "أضف شركات إلى المفضلة للوصول السريع"
+      },
+      "quick_search": {
+        "title": "بحث سريع",
+        "nl_prefix": "أحتاج",
+        "any_service": "أي خدمة",
+        "nl_in": "في",
+        "any_location": "أي موقع",
+        "nl_budget": "بميزانية",
+        "submit": "البحث عن شركات"
+      },
+      "actions": {
+        "title": "إجراءات سريعة",
+        "new_search": "بحث جديد",
+        "new_search_desc": "ابحث عن مستوردين يطابقون معاييرك",
+        "fill_brief": "ملء الطلب",
+        "fill_brief_desc": "احصل على عروض مخصصة من الشركات"
+      },
+      "stats": {
+        "requests": "الطلبات",
+        "favorites": "المفضلة",
+        "viewed": "المشاهدات"
+      },
+      "quotes": {
+        "title": "عروضك",
+        "empty": "لا توجد عروض بعد",
+        "create": "إنشاء طلب"
+      },
+      "favorites": {
+        "title": "المفضلة",
+        "empty": "لا توجد مفضلات بعد"
+      },
+      "recent": {
+        "title": "المشاهدات الأخيرة",
+        "empty": "لا توجد مشاهدات أخيرة"
+      }
+    },
+    "dealer": {
+      "welcome_subtitle": "إدارة طلباتك وتتبع الأداء.",
+      "requests": {
+        "status": {
+          "new": "جديد",
+          "processing": "قيد المعالجة",
+          "closed": "مغلق"
+        },
+        "title": "الطلبات الأخيرة",
+        "reply": "رد"
+      },
+      "reminders": {
+        "slow": "بعض الطلبات تنتظر الرد لفترة طويلة",
+        "no_notes": "طلبات جديدة اليوم - لا تنس إضافة ملاحظات"
+      },
+      "tasks": {
+        "task1": "مراجعة الطلبات الجديدة",
+        "task2": "متابعة العملاء المنتظرين",
+        "task3": "تحديث معلومات الأسعار"
+      },
+      "stats": {
+        "today_new": "جديد اليوم",
+        "week_new": "جديد هذا الأسبوع",
+        "in_progress": "قيد التنفيذ",
+        "closed": "مغلق"
+      },
+      "funnel": {
+        "title": "إحصائيات القمع",
+        "profile_views": "مشاهدات الملف",
+        "requests": "الطلبات",
+        "deals": "الصفقات",
+        "views": "المشاهدات"
+      },
+      "requests_title": "الطلبات الأخيرة",
+      "reminders_title": "التذكيرات",
+      "promoted": {
+        "title": "الأكثر ترويجا",
+        "responses": "ردود"
+      },
+      "reviews": {
+        "title": "ملخص المراجعات",
+        "average": "متوسط التقييم",
+        "total": "إجمالي المراجعات",
+        "latest": "أحدث المراجعات"
+      },
+      "traffic": {
+        "title": "إحصائيات الزيارات",
+        "total_views": "إجمالي المشاهدات",
+        "from_search": "من البحث",
+        "from_catalog": "من الكتالوج",
+        "from_offers": "من العروض",
+        "total": "الإجمالي",
+        "search": "البحث",
+        "catalog": "الكتالوج",
+        "offers": "العروض"
+      },
+      "tasks_title": "مهام اليوم",
+      "comparison": {
+        "title": "المقارنة",
+        "leads_delta": "الطلبات",
+        "conversion_delta": "التحويل",
+        "margin_delta": "الهامش",
+        "leads_count": "الطلبات",
+        "conversion": "التحويل",
+        "margin": "الهامش"
+      },
+      "leads": {
+        "today_new": "جديد اليوم",
+        "week_new": "جديد هذا الأسبوع",
+        "in_progress": "قيد التنفيذ",
+        "closed": "مغلق"
+      },
+      "actions": {
+        "title": "إجراءات سريعة",
+        "add_offer": "إضافة عرض",
+        "launch_promo": "إطلاق عرض ترويجي",
+        "update_prices": "تحديث الأسعار"
+      },
+      "top_offers": {
+        "title": "أفضل العروض"
+      }
+    },
+    "company": {
+      "welcome_subtitle": "نظرة عامة على شبكتك وأداء العلامة التجارية.",
+      "segments": {
+        "segment1": "المشترون لأول مرة",
+        "segment2": "العملاء المتكررون",
+        "segment3": "عملاء الأعمال"
+      },
+      "alerts": {
+        "rating": "{{count}} وكلاء لديهم تقييم منخفض",
+        "leads_drop": "انخفض حجم الطلبات هذا الأسبوع"
+      },
+      "actions": {
+        "add_dealer": "إضافة وكيل",
+        "edit_terms": "تعديل الشروط",
+        "disable_location": "تعطيل الموقع"
+      },
+      "goals": {
+        "leads": "هدف الطلبات الشهرية",
+        "rating": "هدف متوسط التقييم",
+        "coverage": "التغطية الجغرافية"
+      },
+      "stats": {
+        "profile_views": "مشاهدات الملف",
+        "active_dealers": "الوكلاء النشطون",
+        "active_companies": "الشركات النشطة"
+      },
+      "brand_health": {
+        "title": "صحة العلامة التجارية",
+        "reviews": "مراجعات"
+      },
+      "service_quality": {
+        "title": "جودة الخدمة",
+        "handled": "معالج",
+        "avg_reply": "متوسط الرد",
+        "handled_label": "معالج",
+        "handled_requests": "الطلبات المعالجة"
+      },
+      "leads_bubble": {
+        "title": "الطلبات الواردة",
+        "subtitle": "طلبات جديدة من المستخدمين",
+        "empty": "لا توجد طلبات بعد"
+      },
+      "risks": {
+        "title": "المخاطر والتنبيهات"
+      },
+      "goals_title": "الأهداف",
+      "dealer_activity": {
+        "title": "نشاط الوكلاء حسب المنطقة",
+        "leads_label": "طلبات"
+      },
+      "campaigns": {
+        "title": "الحملات التسويقية",
+        "impressions": "ظهور",
+        "clicks": "نقرات",
+        "leads": "طلبات"
+      },
+      "segments_title": "شرائح الجمهور",
+      "competitors": {
+        "title": "المنافسون"
+      }
+    }
+  },
+  "company_profile": {
+    "back": "رجوع",
+    "favorites": {
+      "add": "إضافة إلى المفضلة",
+      "remove": "إزالة من المفضلة"
+    },
+    "founded": "تأسست",
+    "service_cost": "تكلفة الخدمة",
+    "reviews_count": "المراجعات",
+    "contact_btn": "اتصال",
+    "email_btn": "البريد الإلكتروني",
+    "website_btn": "الموقع الإلكتروني",
+    "contact": {
+      "title": "التواصل مع الشركة",
+      "description": "أرسل رسالة إلى {{name}}",
+      "name": "اسمك",
+      "email": "بريدك الإلكتروني",
+      "message": "الرسالة",
+      "submit": "إرسال"
+    },
+    "services": {
+      "title": "الخدمات"
+    },
+    "cars": {
+      "title": "السيارات المتوفرة",
+      "mileage": "عداد المسافة"
+    },
+    "reviews": {
+      "title": "المراجعات",
+      "write": "كتابة مراجعة",
+      "your_rating": "تقييمك",
+      "comment_label": "تعليق",
+      "comment_placeholder": "شارك تجربتك...",
+      "submit": "إرسال",
+      "cancel": "إلغاء",
+      "empty": "لا توجد مراجعات بعد",
+      "prev": "السابق",
+      "next": "التالي",
+      "delete_confirm": "هل أنت متأكد أنك تريد حذف هذه المراجعة؟"
+    },
+    "contact_info": {
+      "title": "معلومات التواصل"
+    },
+    "stats": {
+      "title": "إحصائيات الشركة",
+      "rating": "التقييم",
+      "reviews": "المراجعات",
+      "founded": "تأسست",
+      "services": "الخدمات"
+    },
+    "cta": {
+      "title": "جاهز للطلب؟",
+      "description": "تواصل مع الشركة مباشرة للحصول على عرض سعر دقيق.",
+      "button": "إرسال طلب"
+    },
+    "not_found": {
+      "title": "لم يتم العثور على الشركة",
+      "description": "الشركة التي تبحث عنها غير موجودة أو تمت إزالتها.",
+      "back_to_catalog": "العودة إلى الكتالوج"
+    },
+    "error": {
+      "reviews_load": "تعذر تحميل المراجعات",
+      "review_length": "يجب ألا يقل التعليق عن 10 أحرف",
+      "review_submit": "تعذر إرسال المراجعة"
+    }
+  }
+}

@@ -566,7 +566,7 @@ export function AuctionSidebarFilters({
     const loadCities = async () => {
       setIsLoadingCities(true);
       try {
-        const response = await apiGet<{ success: boolean; count: number; data: string[] }>('/api/cities');
+        const response = await apiGet<{ success: boolean; count: number; data: string[] }>('/cities');
         setCities(response.data);
       } catch (error) {
         console.error('Failed to load cities:', error);

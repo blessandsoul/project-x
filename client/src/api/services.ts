@@ -32,7 +32,7 @@ interface ServicesResponse {
  */
 export async function fetchServices(): Promise<Service[]> {
     try {
-        const response = await apiGet<ServicesResponse>('/api/services');
+        const response = await apiGet<ServicesResponse>('/services');
 
         if (response.success) {
             return response.data;

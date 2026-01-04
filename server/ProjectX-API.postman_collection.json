@@ -2,13 +2,13 @@
   "info": {
     "_postman_id": "project-x-api-collection",
     "name": "Project X API",
-    "description": "Complete API collection for Project X - Vehicle Auction Platform\n\nAuthentication: HttpOnly cookie-based auth\nCSRF: Required for unsafe methods (POST/PUT/PATCH/DELETE)",
+    "description": "Complete API collection for Project X - Vehicle Auction Platform\n\nAuthentication: HttpOnly cookie-based auth\nCSRF: Required for unsafe methods (POST/PUT/PATCH/DELETE)\n\nAll routes now use /api/v1 prefix",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000",
+      "value": "http://localhost:3000/api/v1",
       "type": "string"
     },
     {
@@ -23,7 +23,59 @@
       "description": "Authentication endpoints - Cookie-based auth with CSRF protection",
       "item": [
         {
+          "name": "Get CSRF Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.csrfToken) {",
+                  "    pm.collectionVariables.set('csrfToken', jsonData.csrfToken);",
+                  "    console.log('CSRF Token saved:', jsonData.csrfToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "csrf"]
+            }
+          }
+        },
+        {
           "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from cookie",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token extracted from cookie:', csrfCookie);",
+                  "}",
+                  "",
+                  "// Verify cookies are set",
+                  "pm.test('Access token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('accessToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Refresh token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('refreshToken')).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -40,6 +92,41 @@
         },
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from cookie",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token extracted from cookie:', csrfCookie);",
+                  "}",
+                  "",
+                  "// Verify cookies are set",
+                  "pm.test('Access token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('accessToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Refresh token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('refreshToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('CSRF token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('csrf-token')).to.be.true;",
+                  "});",
+                  "",
+                  "// Log user info",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Logged in as:', jsonData.user);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -55,7 +142,35 @@
           }
         },
         {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
           "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract new CSRF token",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token refreshed:', csrfCookie);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
@@ -95,44 +210,6 @@
           }
         },
         {
-          "name": "Get Current User (Me)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "me"]
-            }
-          }
-        },
-        {
-          "name": "Get CSRF Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = pm.response.json();",
-                  "if (jsonData.csrfToken) {",
-                  "    pm.collectionVariables.set('csrfToken', jsonData.csrfToken);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/csrf",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "csrf"]
-            }
-          }
-        },
-        {
           "name": "Get Sessions",
           "request": {
             "method": "GET",
@@ -166,6 +243,323 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "sessions", ":sessionId"],
               "variable": [{ "key": "sessionId", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "description": "Company management and catalog",
+      "item": [
+        {
+          "name": "List All Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "Search Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/search?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "search"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" },
+                { "key": "min_rating", "value": "", "disabled": true },
+                { "key": "is_vip", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "order_by", "value": "rating", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Company by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Onboard Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Shipping Company\",\n  \"companyPhone\": \"+1234567890\",\n  \"contactEmail\": \"contact@company.com\",\n  \"website\": \"https://company.com\",\n  \"country\": \"USA\",\n  \"city\": \"New York\",\n  \"basePrice\": 500,\n  \"pricePerMile\": 1.5,\n  \"customsFee\": 200,\n  \"serviceFee\": 100,\n  \"brokerFee\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/onboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "onboard"]
+            }
+          }
+        },
+        {
+          "name": "Update Company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Company Name\",\n  \"description_eng\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calculator",
+      "description": "Shipping cost calculator",
+      "item": [
+        {
+          "name": "Calculate Shipping Cost",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyprice\": 5000,\n  \"auction\": \"Copart\",\n  \"vehicletype\": \"standard\",\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["calculator"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Quotes for All Companies",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\",\n  \"vehicletype\": \"standard\",\n  \"auction\": \"Copart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calculator/quotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["calculator", "quotes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "description": "Static reference data endpoints",
+      "item": [
+        {
+          "name": "Get Cities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cities",
+              "host": ["{{baseUrl}}"],
+              "path": ["cities"]
+            }
+          }
+        },
+        {
+          "name": "Get Ports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ports",
+              "host": ["{{baseUrl}}"],
+              "path": ["ports"]
+            }
+          }
+        },
+        {
+          "name": "Get Auctions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auctions",
+              "host": ["{{baseUrl}}"],
+              "path": ["auctions"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Makes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-makes",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-makes"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-models?makeId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-models"],
+              "query": [
+                { "key": "makeId", "value": "1" },
+                { "key": "vehicleType", "value": "Automobile", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["services"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "VIN Decoder",
+      "description": "VIN decoding service",
+      "item": [
+        {
+          "name": "Decode VIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"1HGBH41JXMN109186\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vin/decode",
+              "host": ["{{baseUrl}}"],
+              "path": ["vin", "decode"]
+            }
+          }
+        },
+        {
+          "name": "VIN Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vin/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["vin", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auctions",
+      "description": "Auction data endpoints",
+      "item": [
+        {
+          "name": "Get Active Lots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auction/active-lots",
+              "host": ["{{baseUrl}}"],
+              "path": ["auction", "active-lots"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Shipping from Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"123 Main St, Los Angeles, CA\",\n  \"source\": \"copart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auction/calculate-shipping",
+              "host": ["{{baseUrl}}"],
+              "path": ["auction", "calculate-shipping"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "description": "Vehicle search and management",
+      "item": [
+        {
+          "name": "Search Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/search?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "search"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "make", "value": "", "disabled": true },
+                { "key": "model", "value": "", "disabled": true },
+                { "key": "year", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
             }
           }
         }
@@ -235,1051 +629,6 @@
       ]
     },
     {
-      "name": "User",
-      "description": "User profile and favorites management",
-      "item": [
-        {
-          "name": "Avatar",
-          "item": [
-            {
-              "name": "Upload Avatar (POST)",
-              "request": {
-                "method": "POST",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/user/avatar",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "avatar"]
-                }
-              }
-            },
-            {
-              "name": "Upload Avatar (PUT)",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/user/avatar",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "avatar"]
-                }
-              }
-            },
-            {
-              "name": "Get Avatar",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/user/avatar",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "avatar"]
-                }
-              }
-            },
-            {
-              "name": "Delete Avatar",
-              "request": {
-                "method": "DELETE",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/user/avatar",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "avatar"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Favorite Companies",
-          "item": [
-            {
-              "name": "List Favorite Companies",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/user/favorites/companies",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "favorites", "companies"]
-                }
-              }
-            },
-            {
-              "name": "Add Favorite Company",
-              "request": {
-                "method": "POST",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/user/favorites/companies/:companyId",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "favorites", "companies", ":companyId"],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Remove Favorite Company",
-              "request": {
-                "method": "DELETE",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/user/favorites/companies/:companyId",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["user", "favorites", "companies", ":companyId"],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Favorites (Vehicles)",
-      "description": "Vehicle favorites management",
-      "item": [
-        {
-          "name": "List Favorite Vehicles",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/favorites/vehicles?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites", "vehicles"],
-              "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Add Vehicle to Favorites",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/favorites/vehicles/:vehicleId",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites", "vehicles", ":vehicleId"],
-              "variable": [{ "key": "vehicleId", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Remove Vehicle from Favorites",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/favorites/vehicles/:vehicleId",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites", "vehicles", ":vehicleId"],
-              "variable": [{ "key": "vehicleId", "value": "1" }]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Admin - Users",
-      "description": "Admin user management - Requires admin role",
-      "item": [
-        {
-          "name": "List Users",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/admin/users?limit=10&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users"],
-              "query": [
-                { "key": "limit", "value": "10" },
-                { "key": "offset", "value": "0" },
-                { "key": "email", "value": "", "disabled": true },
-                { "key": "username", "value": "", "disabled": true },
-                { "key": "role", "value": "", "disabled": true },
-                { "key": "is_blocked", "value": "", "disabled": true },
-                { "key": "company_id", "value": "", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get User by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Update User",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"role\": \"user\",\n  \"is_blocked\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Delete User",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Companies",
-      "description": "Company management and catalog",
-      "item": [
-        {
-          "name": "Onboard Company",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"My Shipping Company\",\n  \"companyPhone\": \"+1234567890\",\n  \"contactEmail\": \"contact@company.com\",\n  \"website\": \"https://company.com\",\n  \"country\": \"USA\",\n  \"city\": \"New York\",\n  \"description\": \"Professional vehicle shipping services\",\n  \"basePrice\": 500,\n  \"pricePerMile\": 1.5,\n  \"customsFee\": 200,\n  \"serviceFee\": 100,\n  \"brokerFee\": 50\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/companies/onboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies", "onboard"]
-            }
-          }
-        },
-        {
-          "name": "List All Companies",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/companies",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies"]
-            }
-          }
-        },
-        {
-          "name": "Search Companies",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/companies/search?limit=10&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies", "search"],
-              "query": [
-                { "key": "limit", "value": "10" },
-                { "key": "offset", "value": "0" },
-                { "key": "min_rating", "value": "", "disabled": true },
-                { "key": "min_base_price", "value": "", "disabled": true },
-                { "key": "max_base_price", "value": "", "disabled": true },
-                { "key": "country", "value": "", "disabled": true },
-                { "key": "city", "value": "", "disabled": true },
-                { "key": "is_vip", "value": "", "disabled": true },
-                { "key": "search", "value": "", "disabled": true },
-                { "key": "order_by", "value": "rating", "disabled": true },
-                { "key": "order_direction", "value": "desc", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Company by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/companies/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Create Company (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"New Company\",\n  \"base_price\": 500,\n  \"price_per_mile\": 1.5,\n  \"customs_fee\": 200,\n  \"service_fee\": 100,\n  \"broker_fee\": 50\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/companies",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies"]
-            }
-          }
-        },
-        {
-          "name": "Update Company",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Company Name\",\n  \"description\": \"Updated description\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/companies/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Delete Company",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/companies/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["companies", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Logo",
-          "item": [
-            {
-              "name": "Upload Logo (POST)",
-              "request": {
-                "method": "POST",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:id/logo",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":id", "logo"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Upload Logo (PUT)",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:id/logo",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":id", "logo"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Get Logo",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:id/logo",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":id", "logo"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Delete Logo",
-              "request": {
-                "method": "DELETE",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:id/logo",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":id", "logo"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Social Links",
-          "item": [
-            {
-              "name": "Get Social Links",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/social-links",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "social-links"],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Create Social Link",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"url\": \"https://facebook.com/mycompany\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/social-links",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "social-links"],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Update Social Link",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"url\": \"https://twitter.com/mycompany\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/social-links/:id",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["social-links", ":id"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Delete Social Link",
-              "request": {
-                "method": "DELETE",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/social-links/:id",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["social-links", ":id"],
-                  "variable": [{ "key": "id", "value": "1" }]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Reviews",
-          "item": [
-            {
-              "name": "Get Company Reviews",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/reviews?limit=10&offset=0",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "reviews"],
-                  "query": [
-                    { "key": "limit", "value": "10" },
-                    { "key": "offset", "value": "0" }
-                  ],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Create Review",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Excellent service! Highly recommended.\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/reviews",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "reviews"],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Update Review",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated review comment.\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/reviews/:reviewId",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "reviews", ":reviewId"],
-                  "variable": [
-                    { "key": "companyId", "value": "1" },
-                    { "key": "reviewId", "value": "1" }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Delete Review",
-              "request": {
-                "method": "DELETE",
-                "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/reviews/:reviewId",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "reviews", ":reviewId"],
-                  "variable": [
-                    { "key": "companyId", "value": "1" },
-                    { "key": "reviewId", "value": "1" }
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Quotes",
-          "item": [
-            {
-              "name": "Get Company Quotes",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/companies/:companyId/quotes?limit=20&offset=0",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["companies", ":companyId", "quotes"],
-                  "query": [
-                    { "key": "limit", "value": "20" },
-                    { "key": "offset", "value": "0" },
-                    { "key": "currency", "value": "USD", "disabled": true }
-                  ],
-                  "variable": [{ "key": "companyId", "value": "1" }]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Vehicles",
-      "description": "Vehicle search and management",
-      "item": [
-        {
-          "name": "Search Vehicles",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/search?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", "search"],
-              "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "search", "value": "", "disabled": true },
-                { "key": "make", "value": "", "disabled": true },
-                { "key": "model", "value": "", "disabled": true },
-                { "key": "year", "value": "", "disabled": true },
-                { "key": "year_from", "value": "", "disabled": true },
-                { "key": "year_to", "value": "", "disabled": true },
-                { "key": "price_from", "value": "", "disabled": true },
-                { "key": "price_to", "value": "", "disabled": true },
-                { "key": "odometer_from", "value": "", "disabled": true },
-                { "key": "odometer_to", "value": "", "disabled": true },
-                { "key": "title_type", "value": "", "disabled": true },
-                { "key": "transmission", "value": "", "disabled": true },
-                { "key": "fuel", "value": "", "disabled": true },
-                { "key": "drive", "value": "", "disabled": true },
-                { "key": "cylinders", "value": "", "disabled": true },
-                { "key": "location", "value": "", "disabled": true },
-                { "key": "category", "value": "", "disabled": true },
-                { "key": "source", "value": "", "disabled": true },
-                { "key": "buy_now", "value": "", "disabled": true },
-                { "key": "sort", "value": "", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Vehicles",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles?limit=100&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles"],
-              "query": [
-                { "key": "limit", "value": "100" },
-                { "key": "offset", "value": "0" }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Get Similar Vehicles",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:id/similar?limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":id", "similar"],
-              "query": [
-                { "key": "limit", "value": "10" },
-                { "key": "offset", "value": "0", "disabled": true },
-                { "key": "year_range", "value": "2", "disabled": true },
-                { "key": "price_radius", "value": "0.2", "disabled": true }
-              ],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle Photos",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:id/photos",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":id", "photos"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle Full Details",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:id/full",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":id", "full"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Delete Vehicle (Admin)",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Quotes",
-          "item": [
-            {
-              "name": "Calculate Quotes for Vehicle",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"auction\": \"copart\",\n  \"usacity\": \"Los Angeles\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/vehicles/:vehicleId/calculate-quotes?limit=5",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["vehicles", ":vehicleId", "calculate-quotes"],
-                  "query": [
-                    { "key": "limit", "value": "5" },
-                    { "key": "offset", "value": "0", "disabled": true },
-                    { "key": "currency", "value": "USD", "disabled": true },
-                    { "key": "minRating", "value": "", "disabled": true }
-                  ],
-                  "variable": [{ "key": "vehicleId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Get Cheapest Quotes",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/vehicles/:vehicleId/cheapest-quotes?limit=3",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["vehicles", ":vehicleId", "cheapest-quotes"],
-                  "query": [
-                    { "key": "limit", "value": "3" },
-                    { "key": "currency", "value": "USD", "disabled": true }
-                  ],
-                  "variable": [{ "key": "vehicleId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Get Vehicle Quotes",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/vehicles/:vehicleId/quotes",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["vehicles", ":vehicleId", "quotes"],
-                  "query": [
-                    { "key": "currency", "value": "USD", "disabled": true }
-                  ],
-                  "variable": [{ "key": "vehicleId", "value": "1" }]
-                }
-              }
-            },
-            {
-              "name": "Search Quotes for Vehicles",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"make\": \"Ford\",\n  \"model\": \"Escape\",\n  \"year\": 2015,\n  \"limit\": 10,\n  \"offset\": 0\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/vehicles/search-quotes",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["vehicles", "search-quotes"]
-                }
-              }
-            },
-            {
-              "name": "Compare Vehicles",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Content-Type", "value": "application/json" }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"vehicle_ids\": [1, 2, 3],\n  \"quotes_per_vehicle\": 3\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/vehicles/compare",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["vehicles", "compare"]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Quotes (Admin)",
-      "description": "Quote management - Admin only",
-      "item": [
-        {
-          "name": "Create Quote",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"company_id\": 1,\n  \"vehicle_id\": 1\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/quotes",
-              "host": ["{{baseUrl}}"],
-              "path": ["quotes"]
-            }
-          }
-        },
-        {
-          "name": "Update Quote",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"delivery_time_days\": 14\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/quotes/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["quotes", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        },
-        {
-          "name": "Delete Quote",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["quotes", ":id"],
-              "variable": [{ "key": "id", "value": "1" }]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Auctions",
-      "description": "Auction data endpoints",
-      "item": [
-        {
-          "name": "Get Active Lots",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/auction/active-lots",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auction", "active-lots"]
-            }
-          }
-        },
-        {
-          "name": "Calculate Shipping",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"address\": \"123 Main St, Los Angeles, CA\",\n  \"source\": \"copart\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auction/calculate-shipping",
-              "host": ["{{baseUrl}}"],
-              "path": ["auction", "calculate-shipping"]
-            }
-          }
-        },
-        {
-          "name": "Get All Auctions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/auctions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auctions"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Calculator",
-      "description": "Shipping cost calculator",
-      "item": [
-        {
-          "name": "Calculate Shipping Cost",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"buyprice\": 5000,\n  \"auction\": \"Copart\",\n  \"vehicletype\": \"standard\",\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "calculator"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Reference Data",
-      "description": "Static reference data endpoints",
-      "item": [
-        {
-          "name": "Get Cities",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/cities",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cities"]
-            }
-          }
-        },
-        {
-          "name": "Get Ports",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/ports",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "ports"]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle Makes",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vehicle-makes?type=car",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vehicle-makes"],
-              "query": [{ "key": "type", "value": "car" }]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle Models",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vehicle-models?type=car&makeId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vehicle-models"],
-              "query": [
-                { "key": "type", "value": "car" },
-                { "key": "makeId", "value": "1" }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "VIN Decoder",
-      "description": "VIN decoding service",
-      "item": [
-        {
-          "name": "Decode VIN",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"vin\": \"1HGBH41JXMN109186\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/vin/decode",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vin", "decode"]
-            }
-          }
-        },
-        {
-          "name": "VIN Service Health",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vin/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vin", "health"]
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "Health",
       "description": "System health check endpoints",
       "item": [
@@ -1289,8 +638,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
+              "raw": "http://localhost:3000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
               "path": ["health"]
             }
           }
@@ -1301,552 +652,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health/db",
-              "host": ["{{baseUrl}}"],
+              "raw": "http://localhost:3000/health/db",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
               "path": ["health", "db"]
             }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Inquiries (User)",
-      "description": "User inquiry endpoints - Create and manage inquiries with companies",
-      "item": [
-        {
-          "name": "Create Inquiry",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"company_id\": 1,\n  \"vehicle_id\": 1,\n  \"message\": \"Hi, I am interested in shipping this vehicle. What is your best price?\",\n  \"subject\": \"Shipping inquiry for vehicle\",\n  \"quoted_total_price\": 2500.00,\n  \"quoted_currency\": \"USD\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/inquiries",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries"]
-            }
-          }
-        },
-        {
-          "name": "List My Inquiries",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inquiries?limit=20&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries"],
-              "query": [
-                { "key": "limit", "value": "20" },
-                { "key": "offset", "value": "0" },
-                { "key": "status", "value": "pending", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Inquiry by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1"]
-            }
-          }
-        },
-        {
-          "name": "Update Inquiry (Accept/Cancel)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"accepted\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1"]
-            }
-          }
-        },
-        {
-          "name": "Get Inquiry Messages",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1/messages?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1", "messages"],
-              "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "cursor", "value": "100", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Send Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"message\": \"Thank you for your response. Can you provide more details?\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1", "messages"]
-            }
-          }
-        },
-        {
-          "name": "Get Unread Count",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1/unread-count",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1", "unread-count"]
-            }
-          }
-        },
-        {
-          "name": "Mark as Read",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/inquiries/1/mark-read",
-              "host": ["{{baseUrl}}"],
-              "path": ["inquiries", "1", "mark-read"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Inquiries (Company)",
-      "description": "Company inquiry endpoints - Manage inquiries from users (requires company role)",
-      "item": [
-        {
-          "name": "List Company Inquiries",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries?limit=20&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries"],
-              "query": [
-                { "key": "limit", "value": "20" },
-                { "key": "offset", "value": "0" },
-                { "key": "status", "value": "pending", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Company Inquiry Stats",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "stats"]
-            }
-          }
-        },
-        {
-          "name": "Get Company Inquiry by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "1"]
-            }
-          }
-        },
-        {
-          "name": "Update Company Inquiry (Status/Price)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"active\",\n  \"final_price\": 2300.00,\n  \"final_currency\": \"USD\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "1"]
-            }
-          }
-        },
-        {
-          "name": "Get Company Inquiry Messages",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/1/messages?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "1", "messages"],
-              "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "cursor", "value": "100", "disabled": true }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Send Company Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"message\": \"Hello! Thank you for your interest. We can ship this vehicle for $2,300. Delivery time is 14 days.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/1/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "1", "messages"]
-            }
-          }
-        },
-        {
-          "name": "Mark Company Inquiry as Read",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/company/inquiries/1/mark-read",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "inquiries", "1", "mark-read"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "VIN Decoder",
-      "description": "Vehicle Identification Number decoding service",
-      "item": [
-        {
-          "name": "Decode VIN",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"vin\": \"1HGBH41JXMN109186\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/vin/decode",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vin", "decode"]
-            }
-          }
-        },
-        {
-          "name": "VIN Service Health",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vin/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vin", "health"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Vehicle Data",
-      "description": "Vehicle makes and models reference data",
-      "item": [
-        {
-          "name": "Get Vehicle Makes",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vehicle-makes",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vehicle-makes"]
-            }
-          }
-        },
-        {
-          "name": "Get Vehicle Models",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/vehicle-models?make=Toyota",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "vehicle-models"],
-              "query": [
-                { "key": "make", "value": "Toyota" }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Calculator",
-      "description": "Shipping cost calculator",
-      "item": [
-        {
-          "name": "Calculate Shipping Cost",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"buyprice\": 5000,\n  \"auction\": \"Copart\",\n  \"vehicletype\": \"Sedan\",\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "calculator"]
-            }
-          }
-        },
-        {
-          "name": "Calculate Quotes for Vehicle",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"auction\": \"Copart\",\n  \"usacity\": \"Los Angeles\",\n  \"vehiclecategory\": \"Sedan\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/vehicles/:vehicleId/calculate-quotes?limit=5&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["vehicles", ":vehicleId", "calculate-quotes"],
-              "query": [
-                { "key": "limit", "value": "5" },
-                { "key": "offset", "value": "0" },
-                { "key": "currency", "value": "USD", "disabled": true },
-                { "key": "minRating", "value": "4", "disabled": true }
-              ],
-              "variable": [{ "key": "vehicleId", "value": "1" }]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Admin - Calculator Management",
-      "description": "Admin endpoints for managing company calculator configurations - Requires admin role",
-      "item": [
-        {
-          "name": "Get Calculator Config",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "companies", ":id", "calculator"],
-              "variable": [{ "key": "id", "value": "43" }]
-            },
-            "description": "Get the current calculator configuration for a company"
-          }
-        },
-        {
-          "name": "Update Calculator Config",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"calculator_type\": \"custom_api\",\n  \"calculator_api_url\": \"http://localhost:3000/testing/calculator/simple\",\n  \"calculator_config\": {\n    \"timeout\": 5000,\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"city\",\n        \"vehiclecategory\": \"vehicleType\",\n        \"destinationport\": \"port\",\n        \"auction\": \"auction\",\n        \"buyprice\": \"buyPrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"totalPrice\",\n        \"distanceMiles\": \"distanceMiles\",\n        \"currency\": \"currency\"\n      }\n    }\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "companies", ":id", "calculator"],
-              "variable": [{ "key": "id", "value": "43" }]
-            },
-            "description": "Update calculator configuration for a company. Use calculator_type: 'default' to reset to Auto Market Logistic API."
-          }
-        },
-        {
-          "name": "Test Calculator Config",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"calculator_api_url\": \"http://localhost:3000/testing/calculator/nested\",\n  \"calculator_config\": {\n    \"timeout\": 5000,\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"origin\",\n        \"vehiclecategory\": \"vehicle\",\n        \"destinationport\": \"destination\",\n        \"auction\": \"auctionHouse\",\n        \"buyprice\": \"purchasePrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"data.quote.pricing.total_usd\",\n        \"distanceMiles\": \"data.quote.route.distance.miles\",\n        \"currency\": \"data.currency\"\n      }\n    }\n  },\n  \"test_request\": {\n    \"usacity\": \"Dallas (TX)\",\n    \"destinationport\": \"POTI\",\n    \"vehiclecategory\": \"Sedan\",\n    \"auction\": \"Copart\",\n    \"buyprice\": 5000\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/companies/:id/calculator/test",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "companies", ":id", "calculator", "test"],
-              "variable": [{ "key": "id", "value": "43" }]
-            },
-            "description": "Test a calculator configuration without saving. Returns detailed request/response info and recommendations."
-          }
-        },
-        {
-          "name": "Reset Calculator to Default",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "companies", ":id", "calculator"],
-              "variable": [{ "key": "id", "value": "43" }]
-            },
-            "description": "Reset company to use the default Auto Market Logistic calculator"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Testing - Mock Calculator",
-      "description": "Mock calculator endpoints for testing the adapter pattern (development only)",
-      "item": [
-        {
-          "name": "List Mock Endpoints",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator"]
-            },
-            "description": "Get list of all available mock calculator endpoints"
-          }
-        },
-        {
-          "name": "Simple Format",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"city\": \"Dallas (TX)\",\n  \"vehicleType\": \"Sedan\",\n  \"port\": \"POTI\",\n  \"auction\": \"Copart\",\n  \"buyPrice\": 5000\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator/simple",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator", "simple"]
-            },
-            "description": "Mock API with flat response structure and standard field names"
-          }
-        },
-        {
-          "name": "Nested Response",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"origin\": \"Dallas (TX)\",\n  \"vehicle\": \"Sedan\",\n  \"destination\": \"POTI\",\n  \"auctionHouse\": \"Copart\",\n  \"purchasePrice\": 5000\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator/nested",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator", "nested"]
-            },
-            "description": "Mock API with deeply nested response structure (tests dot-notation extraction)"
-          }
-        },
-        {
-          "name": "Different Fields + Static",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"from_city\": \"Dallas (TX)\",\n  \"car_type\": \"Sedan\",\n  \"to_port\": \"POTI\",\n  \"sale_location\": \"Copart\",\n  \"cost\": 5000,\n  \"customer_id\": \"PLATFORM_TEST_001\",\n  \"request_type\": \"instant_quote\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator/different-fields",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator", "different-fields"]
-            },
-            "description": "Mock API with completely different field names and required static fields"
-          }
-        },
-        {
-          "name": "With Authentication",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-API-Key", "value": "test-secret-key-12345" },
-              { "key": "X-Customer-ID", "value": "PLATFORM_USER" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pickup\": \"Dallas (TX)\",\n  \"delivery\": \"POTI\",\n  \"vehicle_category\": \"Sedan\",\n  \"seller\": \"Copart\",\n  \"value\": 5000\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator/with-auth",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator", "with-auth"]
-            },
-            "description": "Mock API that requires authentication headers (X-API-Key and X-Customer-ID)"
-          }
-        },
-        {
-          "name": "Minimal Response",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"src\": \"Dallas (TX)\",\n  \"dst\": \"POTI\",\n  \"type\": \"Sedan\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/testing/calculator/minimal",
-              "host": ["{{baseUrl}}"],
-              "path": ["testing", "calculator", "minimal"]
-            },
-            "description": "Mock API with minimal response (only price, no distance or currency)"
           }
         }
       ]
