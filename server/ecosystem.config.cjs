@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       // Production configuration with cluster mode
-      name: "project-x-server",
+      name: "trusted-importers-server",
       script: "dist/server.js",
       cwd: __dirname,
 
@@ -47,7 +47,7 @@ module.exports = {
     },
     {
       // Development configuration (single instance, fork mode)
-      name: "project-x-server-dev",
+      name: "trusted-importers-server-dev",
       script: "npm",
       args: "run dev",
       cwd: __dirname,
