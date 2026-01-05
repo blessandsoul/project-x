@@ -24,10 +24,22 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "#ffffff",
+          "--normal-text": "#0f172a",
+          "--normal-border": "rgba(26, 39, 68, 0.2)",
+          "--border-radius": "0.75rem",
+          "--success-bg": "#ffffff",
+          "--success-text": "#0f172a",
+          "--success-border": "rgba(26, 39, 68, 0.2)",
+          "--error-bg": "#ffffff",
+          "--error-text": "#0f172a",
+          "--error-border": "rgba(239, 68, 68, 0.3)",
+          "--warning-bg": "#ffffff",
+          "--warning-text": "#0f172a",
+          "--warning-border": "rgba(245, 166, 35, 0.3)",
+          "--info-bg": "#ffffff",
+          "--info-text": "#0f172a",
+          "--info-border": "rgba(26, 39, 68, 0.2)",
         } as React.CSSProperties
       }
       {...props}

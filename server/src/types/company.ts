@@ -1,5 +1,9 @@
+import type { CalculatorConfig, CalculatorType } from './calculatorAdapterTypes.js';
+
 export interface Company {
   id: number;
+  owner_user_id: number | null;
+  is_active: boolean;
   name: string;
   slug: string;
   base_price: number;
@@ -9,7 +13,15 @@ export interface Company {
   broker_fee: number;
   insurance: number | null;
   final_formula: any | null;
-  description: string | null;
+
+  // Calculator adapter configuration
+  calculator_type?: CalculatorType;
+  calculator_api_url?: string | null;
+  calculator_config?: CalculatorConfig | null;
+
+  description_geo: string | null;
+  description_eng: string | null;
+  description_rus: string | null;
   country: string | null;
   city: string | null;
   state: string | null;
@@ -28,15 +40,18 @@ export interface Company {
 
 export interface CompanyCreate {
   name: string;
+  owner_user_id?: number | null;
   slug?: string; // if omitted, will be auto-generated from name
   base_price?: number;
   price_per_mile?: number;
   customs_fee?: number;
   service_fee?: number;
   broker_fee?: number;
-   insurance?: number | null;
+  insurance?: number | null;
   final_formula?: any | null;
-  description?: string | null;
+  description_geo?: string | null;
+  description_eng?: string | null;
+  description_rus?: string | null;
   country?: string | null;
   city?: string | null;
   state?: string | null;
@@ -61,7 +76,9 @@ export interface CompanyUpdate {
   broker_fee?: number;
   insurance?: number | null;
   final_formula?: any | null;
-  description?: string | null;
+  description_geo?: string | null;
+  description_eng?: string | null;
+  description_rus?: string | null;
   country?: string | null;
   city?: string | null;
   state?: string | null;
@@ -74,21 +91,48 @@ export interface CompanyUpdate {
   contact_email?: string | null;
   website?: string | null;
   established_year?: number | null;
+  // Calculator adapter configuration
+  calculator_type?: CalculatorType;
+  calculator_api_url?: string | null;
+  calculator_config?: CalculatorConfig | null;
 }
+
+// Structured Social Links Types
+export type SocialLinkType = 'website' | 'social';
+export type SocialPlatform = 'facebook' | 'instagram';
+
+export const SUPPORTED_SOCIAL_PLATFORMS: SocialPlatform[] = ['facebook', 'instagram'];
 
 export interface CompanySocialLink {
   id: number;
   company_id: number;
+  link_type: SocialLinkType;
+  platform: SocialPlatform | null; // null for website, required for social
   url: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CompanySocialLinkCreate {
   company_id: number;
+  link_type: SocialLinkType;
+  platform?: SocialPlatform | null; // Required if link_type='social'
   url: string;
 }
 
 export interface CompanySocialLinkUpdate {
   url?: string;
+  platform?: SocialPlatform; // Can change platform for social links
+}
+
+// Structured response for GET /companies/:id/social-links
+export interface StructuredSocialLinks {
+  website: { id: number; url: string } | null;
+  social_links: Array<{
+    id: number;
+    platform: SocialPlatform;
+    url: string;
+  }>;
 }
 
 export interface CompanyQuote {

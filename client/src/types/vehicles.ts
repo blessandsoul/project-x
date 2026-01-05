@@ -1,7 +1,5 @@
 export interface VehicleSummary {
   id: number
-  brand_name: string
-  model_name: string
   make: string
   model: string
   year: number
@@ -53,6 +51,7 @@ export interface VehicleDetails extends VehicleSummary {
   city_slug?: string | null
   is_new?: boolean | null
   iaai_360_view?: string | null
+  bids?: VehicleLotBid[]
 }
 
 export interface VehiclePhoto {
@@ -64,31 +63,53 @@ export interface VehiclePhoto {
   thumb_url_middle: string | null
 }
 
+export interface VehicleLotBid {
+  bid: number | null
+  bid_time: string | null
+}
+
 export interface VehicleFullResponse {
-  vehicle: VehicleDetails
+  vehicle: VehicleDetails & { bids?: VehicleLotBid[] }
   photos: VehiclePhoto[]
 }
 
+/**
+ * Quote breakdown from the calculator API.
+ * 
+ * The new calculator API returns a simplified breakdown with just the
+ * transportation total. Legacy fields are kept for backward compatibility
+ * but may not be present in new responses.
+ */
 export interface QuoteBreakdown {
-  base_price: number
-  distance_miles: number
-  price_per_mile: number
-  mileage_cost: number
-  customs_fee: number
-  service_fee: number
-  broker_fee: number
-  retail_value: number
-  insurance_rate: number
-  insurance_fee: number
-  shipping_total: number
-  calc_price: number
-  total_price: number
-  formula_source: string
+  /** Total transportation/shipping cost from calculator API */
+  transportation_total?: number
+  /** Currency code (e.g., "USD") */
+  currency?: string
+  /** Distance in miles (may be 0 if not calculated) */
+  distance_miles?: number
+  /** Source of the calculation formula */
+  formula_source?: string
+
+  // Legacy fields (may not be present in new API responses)
+  base_price?: number
+  price_per_mile?: number
+  mileage_cost?: number
+  customs_fee?: number
+  service_fee?: number
+  broker_fee?: number
+  retail_value?: number
+  insurance_rate?: number
+  insurance_fee?: number
+  shipping_total?: number
+  calc_price?: number
+  total_price?: number
 }
 
 export interface VehicleQuote {
   company_id: number
   company_name: string
+  website?: string | null
+  logoUrl?: string | null
   total_price: number
   delivery_time_days?: number | null
   breakdown: QuoteBreakdown
@@ -117,6 +138,17 @@ export interface SearchQuotesResponse {
   totalPages: number
 }
 
+export type VehicleSortOption =
+  | 'price_asc'
+  | 'price_desc'
+  | 'year_desc'
+  | 'year_asc'
+  | 'mileage_asc'
+  | 'mileage_desc'
+  | 'sold_date_desc'
+  | 'sold_date_asc'
+  | 'best_value'
+
 export interface VehiclesSearchFilters {
   search?: string
   make?: string
@@ -133,8 +165,16 @@ export interface VehiclesSearchFilters {
   price_from?: number
   price_to?: number
   buy_now?: boolean
+  title_type?: string
+  transmission?: string
+  fuel?: string
+  location?: string
+  cylinders?: string
+  /** Exact date filter in YYYY-MM-DD format */
+  date?: string
   limit?: number
   offset?: number
+  sort?: VehicleSortOption
 }
 
 export interface VehicleSearchItem extends VehicleDetails {
@@ -147,6 +187,7 @@ export interface VehicleSearchItem extends VehicleDetails {
   primary_thumb_url: string | null
   vehicle_id?: number
   quotes?: VehicleQuote[]
+  last_bid?: VehicleLotBid | null
 }
 
 export interface SearchVehiclesResponse {

@@ -1,0 +1,29 @@
+MANUAL UPDATE REQUIRED for VehicleDetailsPage.tsx
+
+Replace line 636 (the div opening tag) with the following:
+
+      <div 
+        ref={scrollContainerRef}
+        className={cn(
+          "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide select-none",
+          isDragging ? "snap-none cursor-grabbing" : "snap-x snap-mandatory cursor-grab"
+        )}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
+
+This replaces:
+      <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+
+The drag-to-scroll functionality is now complete with:
+✅ State and ref added (lines 536-539)
+✅ Event handlers added (lines 581-602)
+✅ Only the div needs to be updated manually
+
+This will enable smooth drag-to-scroll with:
+- cursor-grab when idle
+- cursor-grabbing while dragging
+- snap disabled during drag
+- snap enabled when not dragging

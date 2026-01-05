@@ -3,23 +3,20 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 
-import Header from '@/components/Header/index.tsx';
-import Footer from '@/components/Footer';
+// Header and Footer are provided by MainLayout
 import { Button } from '@/components/ui/button';
-import { Toggle } from '@/components/ui/toggle';
 import { EmptyState } from '@/components/company/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CatalogFilters } from '@/components/catalog/CatalogFilters';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
 import { CompanyComparisonModal } from '@/components/comparison/CompanyComparisonModal';
-import type { AuctionLocation } from '@/api/auction';
-import { fetchCopartLocations, fetchIaaiLocations, calculateShipping } from '@/api/auction';
+import { ShippingCalculator, type CalculatorResult, type CalculatorFormValues } from '@/components/catalog/ShippingCalculator';
 
 import type { Company } from '@/types/api';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
-import { navigationItems, footerLinks } from '@/config/navigation';
+// navigationItems/footerLinks now handled by MainLayout
+import { cn } from '@/lib/utils';
 
 // NOTE: Sorting is currently visual-only; backend ordering will be wired later.
 
@@ -33,22 +30,46 @@ const CompanyCatalogPage = () => {
     setPage(1);
   };
 
-  const pageSize = 10; // List view standard
+  const pageSize = 12; // List view standard
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<number[]>([]);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
 
-  const [auctionSource, setAuctionSource] = useState<'all' | 'copart' | 'iaai'>('all');
-  const [auctionBranches, setAuctionBranches] = useState<AuctionLocation[]>([]);
-  const [selectedAuctionBranch, setSelectedAuctionBranch] = useState<string>('');
-  const [shippingQuotes, setShippingQuotes] = useState<Map<number, number>>(new Map());
-  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
-  const [auctionBranchSearch, setAuctionBranchSearch] = useState('');
-  const [selectedPort, setSelectedPort] = useState('poti_georgia');
-  const [branchNeedsAttention, setBranchNeedsAttention] = useState(false);
-  const branchSelectRef = useRef<HTMLButtonElement>(null);
+  // Calculator state for showing prices in company rows
+  // Map of companyId -> price for per-company pricing
+  const [companyPrices, setCompanyPrices] = useState<Map<number, number>>(new Map());
+  const [defaultPrice, setDefaultPrice] = useState<number | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [hasCalculation, setHasCalculation] = useState(false);
+
+  // Calculator URL sync state - parse synchronously to avoid race condition
+  const [calculatorInitialValues] = useState<Partial<CalculatorFormValues> | undefined>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calcCity = params.get('calc_city') ?? '';
+    const calcPort = params.get('calc_port') ?? '';
+    const calcVehicleType = params.get('calc_type') ?? '';
+    const calcVehicleCategory = params.get('calc_category') ?? '';
+
+    if (calcCity && calcPort && calcVehicleType && calcVehicleCategory) {
+      return {
+        city: calcCity,
+        destinationPort: calcPort,
+        vehicleType: calcVehicleType as CalculatorFormValues['vehicleType'],
+        vehicleCategory: calcVehicleCategory as CalculatorFormValues['vehicleCategory'],
+      };
+    }
+    return undefined;
+  });
+  const [calculatorAutoSubmit] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calcCity = params.get('calc_city') ?? '';
+    const calcPort = params.get('calc_port') ?? '';
+    const calcVehicleType = params.get('calc_type') ?? '';
+    const calcVehicleCategory = params.get('calc_category') ?? '';
+    return !!(calcCity && calcPort && calcVehicleType && calcVehicleCategory);
+  });
 
   const [totalFromBackend, setTotalFromBackend] = useState<number | null>(null);
 
@@ -71,7 +92,7 @@ const CompanyCatalogPage = () => {
     minBasePrice: undefined,
     maxBasePrice: undefined,
     isVip: false,
-    orderBy: 'newest',
+    orderBy: 'rating',
   };
 
   const [filters, setFilters] = useState<CatalogFiltersState>(defaultFilters);
@@ -81,96 +102,22 @@ const CompanyCatalogPage = () => {
   const cityDraftRef = useRef<string>('');
   const priceDraftRef = useRef<[number, number]>([0, 0]);
 
-  useEffect(() => {
-    let isCancelled = false;
-
-    const loadBranches = async () => {
-      try {
-        if (auctionSource === 'copart') {
-          const items = await fetchCopartLocations();
-          if (!isCancelled) setAuctionBranches(items);
-        } else if (auctionSource === 'iaai') {
-          const items = await fetchIaaiLocations();
-          if (!isCancelled) setAuctionBranches(items);
-        } else {
-          setAuctionBranches([]);
-        }
-      } catch {
-        if (!isCancelled) setAuctionBranches([]);
-      }
-    };
-
-    void loadBranches();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [auctionSource]);
-
-  useEffect(() => {
-    setAuctionBranchSearch('');
-  }, [auctionSource, auctionBranches]);
-
-  // Calculate shipping quotes when auction branch is selected
-  useEffect(() => {
-    if (!selectedAuctionBranch || auctionSource === 'all') {
-      setShippingQuotes(new Map());
-      return;
-    }
-
-    // selectedAuctionBranch contains the address (used as SelectItem value)
-    const branchAddress = selectedAuctionBranch;
-    if (!branchAddress) {
-      setShippingQuotes(new Map());
-      return;
-    }
-
-    let isCancelled = false;
-    setIsLoadingShipping(true);
-
-    const loadShippingQuotes = async () => {
-      try {
-        const response = await calculateShipping(branchAddress, auctionSource as 'copart' | 'iaai', selectedPort);
-        if (!isCancelled) {
-          const quotesMap = new Map<number, number>();
-          for (const quote of response.quotes) {
-            quotesMap.set(quote.companyId, quote.shippingPrice);
-          }
-          setShippingQuotes(quotesMap);
-        }
-      } catch (error) {
-        console.error('Failed to calculate shipping:', error);
-        if (!isCancelled) {
-          setShippingQuotes(new Map());
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingShipping(false);
-        }
-      }
-    };
-
-    void loadShippingQuotes();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [selectedAuctionBranch, auctionSource, selectedPort]);
 
   const toggleComparison = (id: number) => {
-    setSelectedCompanies(prev => 
-      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
-    );
+    setSelectedCompanies(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(cId => cId !== id);
+      }
+
+      // Limit comparison to maximum 3 companies
+      if (prev.length >= 3) {
+        return prev;
+      }
+
+      return [...prev, id];
+    });
   };
 
-  const filteredAuctionBranches = auctionBranches.filter((branch: AuctionLocation) => {
-    if (!auctionBranchSearch.trim()) return true;
-    const term = auctionBranchSearch.toLowerCase();
-    return (
-      branch.name.toLowerCase().includes(term) ||
-      branch.address.toLowerCase().includes(term)
-    );
-  });
 
   const loadCompanies = useCallback(async (
     nextPage: number,
@@ -191,7 +138,7 @@ const CompanyCatalogPage = () => {
         minBasePrice: typeof options.minBasePrice === 'number' && options.minBasePrice > 0
           ? options.minBasePrice
           : undefined,
-        orderBy: options.orderBy !== 'newest' ? options.orderBy : undefined,
+        orderBy: options.orderBy !== 'rating' ? options.orderBy : undefined,
         maxBasePrice: typeof options.maxBasePrice === 'number' && options.maxBasePrice > 0
           ? options.maxBasePrice
           : undefined,
@@ -234,7 +181,7 @@ const CompanyCatalogPage = () => {
       searchParams.delete('city');
     }
 
-    if (nextFilters.orderBy && nextFilters.orderBy !== 'newest') {
+    if (nextFilters.orderBy && nextFilters.orderBy !== 'rating') {
       searchParams.set('sort', nextFilters.orderBy);
     } else {
       searchParams.delete('sort');
@@ -293,7 +240,7 @@ const CompanyCatalogPage = () => {
     const maxBasePrice = maxPriceParam ? Number(maxPriceParam) : undefined;
     const sortParam = params.get('sort');
     const orderBy: 'rating' | 'cheapest' | 'newest' =
-      sortParam === 'rating' || sortParam === 'cheapest' ? sortParam : 'newest';
+      sortParam === 'newest' || sortParam === 'cheapest' ? sortParam : 'rating';
 
     // Read page from URL
     const pageParam = params.get('page');
@@ -327,150 +274,242 @@ const CompanyCatalogPage = () => {
     [allCompanies],
   );
 
+  // Calculator event handlers
+  const handleCalculationComplete = useCallback((result: CalculatorResult, formValues: CalculatorFormValues) => {
+    // Build a map of companyId -> price from the quotes array
+    const pricesMap = new Map<number, number>();
+    if (result.quotes && Array.isArray(result.quotes)) {
+      for (const quote of result.quotes) {
+        pricesMap.set(quote.companyId, quote.totalPrice);
+      }
+    }
+    setCompanyPrices(pricesMap);
+
+    // Set fallback default price for companies without custom calculator
+    const fallbackPrice = result.defaultPrice
+      ?? result.data?.transportation_total
+      ?? result.transportation_total
+      ?? null;
+    setDefaultPrice(fallbackPrice);
+
+    setHasCalculation(true);
+    setIsCalculatingPrice(false);
+
+    // Update URL with calculator params
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('calc_city', formValues.city);
+    searchParams.set('calc_port', formValues.destinationPort);
+    searchParams.set('calc_type', formValues.vehicleType);
+    searchParams.set('calc_category', formValues.vehicleCategory);
+    const newUrl = `${location.pathname}?${searchParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [location.pathname]);
+
+  const handleCalculationStart = useCallback(() => {
+    setIsCalculatingPrice(true);
+  }, []);
+
+  const handleCalculationClear = useCallback(() => {
+    setCompanyPrices(new Map());
+    setDefaultPrice(null);
+    setHasCalculation(false);
+    setIsCalculatingPrice(false);
+  }, []);
+
   const resultsContent = useMemo(
     () => (
-      <div className="lg:col-span-3 space-y-6">
-        {/* Results Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/60">
-          <p className="text-sm font-medium text-slate-600">
-            {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
-          </p>
+      <>
+        {/* Results Header - Copart style - only show when calculator has been used */}
+        {hasCalculation && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-3 border border-slate-200">
+            <p className="text-[12px] font-medium text-slate-600">
+              {t('catalog.results.showing')} <span className="font-bold text-slate-900">{paginatedCompanies.length}</span> {t('catalog.results.connector')} <span className="font-bold text-slate-900">{totalResults}</span> {t('catalog.results.of')}
+            </p>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Toggle 
-              pressed={isCompareMode} 
-              onPressedChange={setIsCompareMode}
-              variant="outline"
-              aria-label="Toggle compare mode"
-              className="gap-2 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 data-[state=on]:border-blue-200 flex-1 sm:flex-none"
-            >
-              <Icon icon="mdi:compare-horizontal" className="h-4 w-4" />
-              <span className="text-sm font-medium">{t('catalog.results.compare')}</span>
-            </Toggle>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto sm:justify-end">
 
-            <span className="text-sm text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
-            <Select
-              value={filters.orderBy}
-              onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
-                if (value === filters.orderBy) return;
-                const nextFilters: CatalogFiltersState = { ...filters, orderBy: value };
-                setFilters(nextFilters);
-                setPage(1);
-                void loadCompanies(1, nextFilters);
-                updateUrlFromFilters(nextFilters, 1);
-              }}
-            >
-              <SelectTrigger className="w-auto min-w-[130px] sm:w-[180px] bg-white border-slate-200 shadow-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating">{t('catalog.sort.rating')}</SelectItem>
-                <SelectItem value="cheapest">{t('catalog.sort.cheapest')}</SelectItem>
-                <SelectItem value="newest">{t('catalog.sort.newest')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        {/* List Results */}
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="h-32 rounded-xl border border-slate-100 bg-white p-4 flex gap-4 items-center">
-                <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-                <div className="w-32 space-y-2 hidden md:block">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
+              <div className="flex items-center gap-2 sm:gap-3 sm:ml-auto">
+                <span className="text-[11px] text-slate-500 whitespace-nowrap hidden sm:inline">{t('catalog.results.sort_label')}</span>
+                <Select
+                  value={filters.orderBy}
+                  onValueChange={(value: 'rating' | 'cheapest' | 'newest') => {
+                    if (value === filters.orderBy) return;
+                    const nextFilters: CatalogFiltersState = { ...filters, orderBy: value };
+                    setFilters(nextFilters);
+                    setPage(1);
+                    void loadCompanies(1, nextFilters);
+                    updateUrlFromFilters(nextFilters, 1);
+                  }}
+                >
+                  <SelectTrigger className="w-auto min-w-[120px] sm:w-[160px] h-7 text-[11px] bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rating" className="text-[11px]">{t('catalog.sort.rating')}</SelectItem>
+                    <SelectItem value="cheapest" className="text-[11px]">{t('catalog.sort.cheapest')}</SelectItem>
+                    <SelectItem value="newest" className="text-[11px]">{t('catalog.sort.newest')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
               </div>
-            ))}
+            </div>
           </div>
-        ) : totalResults > 0 ? (
-          <div className="flex flex-col space-y-4">
-            {paginatedCompanies.map((company) => (
-              <CompanyListItem 
-                key={company.id} 
-                company={company} 
-                isCompareMode={isCompareMode}
-                isSelected={selectedCompanies.includes(company.id)}
-                onToggleCompare={() => toggleComparison(company.id)}
-                hasAuctionBranch={!!selectedAuctionBranch && auctionSource !== 'all'}
-                isLoadingShipping={isLoadingShipping}
-                calculatedShippingPrice={shippingQuotes.get(company.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState 
-            title={t('catalog.results.empty_title')} 
-            description={t('catalog.results.empty_description')} 
-            icon="mdi:clipboard-text-off-outline"
-            action={<Button onClick={resetAll} variant="outline">{t('catalog.filters.reset')}</Button>}
-          />
         )}
 
-        {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-12">
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => {
-                const nextPage = page - 1;
-                setPage(nextPage);
-                void loadCompanies(nextPage, filters);
-                updateUrlFromFilters(filters, nextPage);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              disabled={page <= 1}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
-            >
-              <Icon icon="mdi:chevron-left" className="h-5 w-5" />
-            </Button>
-            
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPage(p);
-                    void loadCompanies(p, filters);
-                    updateUrlFromFilters(filters, p);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`h-10 w-10 rounded-full text-sm font-medium transition-all ${
-                    p === currentPage 
-                      ? 'bg-slate-900 text-white shadow-md scale-110' 
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {p}
-                </button>
+
+        {/* List Results - grid or list view based on viewMode */}
+        {
+          !hasCalculation ? (
+            <div className="py-16 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t('catalog.results.use_calculator_title', 'Companies will appear here')}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {t('catalog.results.use_calculator_hint', 'Fill in the calculator to see offers')}
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="grid gap-3 xl:gap-4 grid-cols-1">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="rounded-md border border-slate-200 bg-white shadow-sm px-4 py-3 space-y-3">
+                  {/* Compact card skeleton */}
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-12 w-12 xl:h-14 xl:w-14 rounded-2xl shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-12" />
+                    <div className="ml-auto flex gap-1.5">
+                      <Skeleton className="h-7 w-16" />
+                      <Skeleton className="h-7 w-16" />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => {
-                const nextPage = page + 1;
-                setPage(nextPage);
-                void loadCompanies(nextPage, filters);
-                updateUrlFromFilters(filters, nextPage);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              disabled={page >= totalPages}
-              className="rounded-full h-10 w-10 hover:bg-slate-100"
-            >
-              <Icon icon="mdi:chevron-right" className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-      </div>
+          ) : totalResults > 0 ? (
+            <div className="grid gap-3 xl:gap-4 grid-cols-1">
+              {paginatedCompanies.map((company) => (
+                <CompanyListItem
+                  key={company.id}
+                  company={company}
+                  isCompareMode={isCompareMode}
+                  isSelected={selectedCompanies.includes(company.id)}
+                  onToggleCompare={() => toggleComparison(company.id)}
+                  hasAuctionBranch={hasCalculation}
+                  isLoadingShipping={isCalculatingPrice}
+                  calculatedShippingPrice={companyPrices.get(company.id) ?? defaultPrice ?? undefined}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title={t('catalog.results.empty_title')}
+              description={t('catalog.results.empty_description')}
+              icon="mdi:clipboard-text-off-outline"
+              action={<Button onClick={resetAll} variant="outline">{t('catalog.filters.reset')}</Button>}
+            />
+          )
+        }
+
+        {/* Pagination - Copart style */}
+        {
+          !isLoading && totalPages > 1 && (
+            <div className="flex justify-center items-center gap-1 mt-6">
+              {/* Prev */}
+              <Button
+                id="catalog-prev-page"
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (page <= 1) return;
+                  const nextPage = page - 1;
+                  setPage(nextPage);
+                  void loadCompanies(nextPage, filters);
+                  updateUrlFromFilters(filters, nextPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={page <= 1}
+                aria-disabled={page <= 1}
+                className={cn(
+                  'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
+                  page <= 1
+                    ? 'border-slate-200 text-slate-400 bg-transparent cursor-not-allowed'
+                    : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50'
+                )}
+              >
+                <Icon icon="mdi:chevron-left" className="h-4 w-4" />
+              </Button>
+
+              {/* Page numbers */}
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const isActive = p === currentPage;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        if (isActive) return;
+                        setPage(p);
+                        void loadCompanies(p, filters);
+                        updateUrlFromFilters(filters, p);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'h-7 min-w-[28px] px-2 text-[11px] font-medium transition-all border flex items-center justify-center',
+                        isActive
+                          ? 'bg-primary border-primary text-white'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      )}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next */}
+              <Button
+                id="catalog-next-page"
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (page >= totalPages) return;
+                  const nextPage = page + 1;
+                  setPage(nextPage);
+                  void loadCompanies(nextPage, filters);
+                  updateUrlFromFilters(filters, nextPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={page >= totalPages}
+                aria-disabled={page >= totalPages}
+                className={cn(
+                  'h-7 w-7 p-0 flex items-center justify-center text-[11px] transition-all',
+                  page >= totalPages
+                    ? 'border-slate-200 text-slate-400 bg-transparent cursor-not-allowed'
+                    : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50'
+                )}
+              >
+                <Icon icon="mdi:chevron-right" className="h-4 w-4" />
+              </Button>
+            </div>
+          )
+        }
+      </>
     ),
     [
       t,
@@ -486,128 +525,31 @@ const CompanyCatalogPage = () => {
       filters,
       loadCompanies,
       updateUrlFromFilters,
-      selectedAuctionBranch,
-      auctionSource,
-      shippingQuotes,
-      isLoadingShipping,
+      hasCalculation,
+      isCalculatingPrice,
+      companyPrices,
+      defaultPrice,
     ],
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
-      <Header navigationItems={navigationItems} user={null} />
-
-      {/* Breadcrumb-like Header Section */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="max-w-4xl">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-                {t('catalog.title')}
-              </h1>
-              <p className="text-lg text-slate-600 max-w-2xl">
-                {t('catalog.subtitle')}
-              </p>
-            </div>
-
-            <div className="w-full lg:w-auto hidden lg:block">
-              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm">
-                <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                  {t('catalog.filters.auction', 'Auction shipping')}
-                </span>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="sm:w-40">
-                    <Select
-                      value={auctionSource}
-                      onValueChange={(value: 'all' | 'copart' | 'iaai') => {
-                        setAuctionSource(value);
-                        setSelectedAuctionBranch('');
-                        if (value !== 'all') {
-                          setBranchNeedsAttention(true);
-                          setTimeout(() => branchSelectRef.current?.click(), 100);
-                        } else {
-                          setBranchNeedsAttention(false);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('catalog.filters.select_auction', 'Select auction')}</SelectItem>
-                        <SelectItem value="copart">Copart</SelectItem>
-                        <SelectItem value="iaai">IAAI</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex-1 min-w-[180px]">
-                    <Select
-                      value={selectedAuctionBranch ?? ''}
-                      onValueChange={(value) => {
-                        setSelectedAuctionBranch(value);
-                        setBranchNeedsAttention(false);
-                      }}
-                      disabled={auctionSource === 'all' || auctionBranches.length === 0}
-                    >
-                      <SelectTrigger 
-                        ref={branchSelectRef}
-                        className={`bg-white h-9 sm:h-10 w-full ${branchNeedsAttention ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
-                      >
-                        <SelectValue placeholder={t('catalog.filters.select_auction_branch', 'Select branch')} />
-                      </SelectTrigger>
-                      <SelectContent
-                        position="popper"
-                        className="max-h-64 p-0 [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden"
-                      >
-                        <div className="p-2 border-b bg-white sticky top-0 z-10">
-                          <Input
-                            placeholder={t('catalog.filters.search_auction_branch', 'Search branches...')}
-                            value={auctionBranchSearch}
-                            onChange={(e) => setAuctionBranchSearch(e.target.value)}
-                            className="h-8 text-xs bg-white"
-                          />
-                        </div>
-                        <div className="max-h-52 overflow-y-auto">
-                          {filteredAuctionBranches.map((branch) => (
-                            <SelectItem key={branch.address} value={branch.address}>
-                              {branch.name}
-                            </SelectItem>
-                          ))}
-                        </div>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="sm:w-40">
-                    <Select
-                      value={selectedPort}
-                      onValueChange={(value) => {
-                        setSelectedPort(value);
-                      }}
-                    >
-                      <SelectTrigger className="bg-white h-9 sm:h-10 w-full">
-                        <SelectValue placeholder={t('catalog.filters.port', 'Port')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="poti_georgia">Poti, Georgia</SelectItem>
-                        <SelectItem value="klaipeda_lithuania">Klaipeda, Lithuania</SelectItem>
-                        <SelectItem value="odessa_ukraine">Odessa, Ukraine</SelectItem>
-                        <SelectItem value="jebel_ali_uae">Jebel Ali, UAE</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Page Header - Copart style */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="w-full max-w-[1400px] mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold text-slate-900">
+            {t('catalog.title')}
+          </h1>
+          <p className="text-sm text-slate-600 mt-1">
+            {t('catalog.subtitle')}
+          </p>
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8 items-start">
-          {/* Sidebar Filters */}
-          <aside className="lg:col-span-1 lg:sticky lg:top-24 z-30">
+      <main className="w-full max-w-[1400px] mx-auto px-4 py-4">
+        <div className="flex gap-4">
+          {/* Sidebar Filters - Fixed width like auction-listings */}
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 sticky top-4">
             <CatalogFilters
               initialSearch={filters.search}
               initialCountry={filters.country}
@@ -670,7 +612,7 @@ const CompanyCatalogPage = () => {
                   filters.minBasePrice === undefined &&
                   filters.maxBasePrice === undefined &&
                   filters.isVip === false &&
-                  filters.orderBy === 'newest';
+                  filters.orderBy === 'rating';
 
                 if (isAlreadyDefault) {
                   return;
@@ -722,61 +664,190 @@ const CompanyCatalogPage = () => {
                 void loadCompanies(1, nextFilters);
                 updateUrlFromFilters(nextFilters, 1);
               }}
-              auctionSource={auctionSource}
-              onAuctionSourceChange={(value) => {
-                setAuctionSource(value);
-                setSelectedAuctionBranch('');
-              }}
-              auctionBranches={auctionBranches}
-              auctionBranchValue={selectedAuctionBranch}
-              onAuctionBranchChange={(value) => {
-                setSelectedAuctionBranch(value);
-              }}
-              portValue={selectedPort}
-              onPortChange={(value) => {
-                setSelectedPort(value);
-              }}
             />
           </aside>
 
-          {/* Main Content */}
-          {resultsContent}
+          {/* Main Content - Flex grow */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {/* Mobile Filter Button */}
+            <div className="lg:hidden">
+              <CatalogFilters
+                initialSearch={filters.search}
+                initialCountry={filters.country}
+                initialCity={filters.city}
+                initialMinRating={filters.minRating}
+                initialPriceRange={[filters.minBasePrice ?? 0, filters.maxBasePrice ?? 0]}
+                initialIsVip={filters.isVip}
+                onSearchChange={(value) => {
+                  searchDraftRef.current = value;
+                }}
+                onCountryChange={(value) => {
+                  countryDraftRef.current = value;
+                }}
+                onCityChange={(value) => {
+                  cityDraftRef.current = value;
+                }}
+                onPriceRangeChange={(value) => {
+                  priceDraftRef.current = value;
+                }}
+                onApplyFilters={() => {
+                  const effectiveSearch = searchDraftRef.current.trim();
+                  const effectiveCountry = countryDraftRef.current.trim();
+                  const effectiveCity = cityDraftRef.current.trim();
+                  const effectivePrice = priceDraftRef.current;
+                  const nextMinPrice = effectivePrice[0] > 0 ? effectivePrice[0] : undefined;
+                  const nextMaxPrice = effectivePrice[1] > 0 ? effectivePrice[1] : undefined;
+                  const hasChanges =
+                    effectiveSearch !== filters.search ||
+                    effectiveCountry !== filters.country ||
+                    effectiveCity !== filters.city ||
+                    nextMinPrice !== filters.minBasePrice ||
+                    nextMaxPrice !== filters.maxBasePrice;
+                  if (!hasChanges) return;
+                  const nextFilters: CatalogFiltersState = {
+                    ...filters,
+                    search: effectiveSearch,
+                    country: effectiveCountry,
+                    city: effectiveCity,
+                    minBasePrice: nextMinPrice,
+                    maxBasePrice: nextMaxPrice,
+                  };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onResetFilters={() => {
+                  const isAlreadyDefault =
+                    filters.search === '' &&
+                    filters.country === '' &&
+                    filters.city === '' &&
+                    filters.minRating === undefined &&
+                    filters.minBasePrice === undefined &&
+                    filters.maxBasePrice === undefined &&
+                    filters.isVip === false &&
+                    filters.orderBy === 'rating';
+                  if (isAlreadyDefault) return;
+                  searchDraftRef.current = '';
+                  countryDraftRef.current = '';
+                  cityDraftRef.current = '';
+                  priceDraftRef.current = [0, 0];
+                  setFilters(defaultFilters);
+                  setPage(1);
+                  void loadCompanies(1, defaultFilters);
+                  updateUrlFromFilters(defaultFilters, 1);
+                }}
+                onSearchSubmit={(value) => {
+                  const trimmed = value.trim();
+                  searchDraftRef.current = trimmed;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: trimmed };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onMinRatingChange={(value) => {
+                  const normalized = value > 0 ? value : undefined;
+                  const effectiveSearch = searchDraftRef.current ?? filters.search;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: effectiveSearch, minRating: normalized };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+                onVipChange={(value) => {
+                  const effectiveSearch = searchDraftRef.current ?? filters.search;
+                  const nextFilters: CatalogFiltersState = { ...filters, search: effectiveSearch, isVip: value };
+                  setFilters(nextFilters);
+                  setPage(1);
+                  void loadCompanies(1, nextFilters);
+                  updateUrlFromFilters(nextFilters, 1);
+                }}
+              />
+            </div>
+
+            {/* Shipping Calculator Section - Two column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Calculator */}
+              <ShippingCalculator
+                initialValues={calculatorInitialValues}
+                autoSubmit={calculatorAutoSubmit}
+                onCalculationComplete={handleCalculationComplete}
+                onCalculationStart={handleCalculationStart}
+                onCalculationClear={handleCalculationClear}
+              />
+
+              {/* Info Block */}
+              <div className="rounded-md border border-slate-200 bg-white shadow-sm px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon icon="mdi:information-outline" className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold text-primary">
+                    {t('calculator.info.title', 'How It Works')}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t('calculator.info.description', 'Use this calculator to estimate shipping and import costs for your vehicle from the USA to Georgia.')}
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point1', 'Select your pickup city and destination port')}</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point2', 'Choose your vehicle type and category')}</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Icon icon="mdi:check-circle" className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{t('calculator.info.point3', 'Compare prices from multiple import companies')}</span>
+                  </li>
+                </ul>
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  <p className="text-xs text-muted-foreground/80 italic">
+                    {t('calculator.info.disclaimer', 'Prices are indicative estimates and may vary based on actual conditions.')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Results from useMemo */}
+            {resultsContent}
+          </div>
         </div>
       </main>
-      <Footer footerLinks={footerLinks} />
-      
-      {/* Comparison Modal Floating Trigger */}
+
+      {/* Comparison Modal Floating Trigger - Copart style */}
       {selectedCompanies.length > 0 && (
-         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
-            <Button 
-               variant="secondary"
-               size="sm"
-               onClick={() => {
-                 setSelectedCompanies([]);
-                 setIsCompareMode(false);
-               }}
-               className="shadow-sm bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 h-8 rounded-full px-4"
-            >
-               <Icon icon="mdi:close" className="h-4 w-4 mr-1" />
-               {t('catalog.comparison.cancel')}
-            </Button>
-            
-            <Button 
-               onClick={() => setIsComparisonModalOpen(true)} 
-               className="bg-slate-900 hover:bg-blue-600 text-white shadow-xl shadow-blue-900/20 rounded-full px-6 h-14 flex items-center gap-3 transition-all hover:scale-105"
-            >
-               <div className="relative">
-                 <Icon icon="mdi:compare-horizontal" className="h-6 w-6" />
-                 <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full border border-slate-900">
-                   {selectedCompanies.length}
-                 </span>
-               </div>
-               <span className="font-bold text-lg tracking-tight">{t('catalog.comparison.compare_now')}</span>
-            </Button>
-         </div>
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 items-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedCompanies([]);
+              setIsCompareMode(false);
+            }}
+            className="shadow-md bg-white hover:bg-slate-50 text-slate-600 border-slate-300 h-7 text-[11px] px-3"
+          >
+            <Icon icon="mdi:close" className="h-3.5 w-3.5 mr-1" />
+            {t('catalog.comparison.cancel')}
+          </Button>
+
+          <Button
+            onClick={() => setIsComparisonModalOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-white shadow-lg px-4 h-10 flex items-center gap-2 transition-all text-[12px] font-semibold"
+          >
+            <div className="relative">
+              <Icon icon="mdi:compare-horizontal" className="h-5 w-5" />
+              <span className="absolute -top-1.5 -right-1.5 bg-accent text-primary text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+                {selectedCompanies.length}
+              </span>
+            </div>
+            <span>{t('catalog.comparison.compare_now')}</span>
+          </Button>
+        </div>
       )}
 
-      <CompanyComparisonModal 
+      <CompanyComparisonModal
         isOpen={isComparisonModalOpen}
         onClose={() => setIsComparisonModalOpen(false)}
         companies={allCompanies.filter(c => selectedCompanies.includes(c.id))}

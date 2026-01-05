@@ -1,26 +1,23 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@iconify/react'
+import { formatDateTime } from '@/lib/formatDate'
 import confetti from 'canvas-confetti'
+import { motion, useReducedMotion } from 'framer-motion'
 
 // Components
-import Header from '@/components/Header/index.tsx'
-import Footer from '@/components/Footer'
+// VehicleLayout removed - Header/Footer now provided by MainLayout
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+// Card components kept for potential future use
+// import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+// Tooltip components kept for potential future use
+// import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+// Table components kept for potential future use
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,67 +25,90 @@ import { Textarea } from '@/components/ui/textarea'
 
 // Hooks & Utils
 import { useVehicleDetails } from '@/hooks/useVehicleDetails'
+import { useVehicleWatchlist } from '@/hooks/useVehicleWatchlist'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import type { VehicleQuote, VehicleSearchItem } from '@/types/vehicles'
-import { createLeadFromQuotes } from '@/api/leads'
 import { fetchSimilarVehicles } from '@/api/vehicles'
-import { navigationItems, footerLinks } from '@/config/navigation'
-import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard'
+import { SimilarVehicleCard } from '@/components/vehicle/SimilarVehicleCard'
+import VehicleHeaderBar from '@/components/vehicle/VehicleHeaderBar'
+import VehicleQuotesContainer from '@/components/vehicle/VehicleQuotesContainer'
+// import { useInquiryDrawer } from '@/contexts/InquiryDrawerContext' // Disabled - inquiry system not ready
 
 // --- Sub-components ---
 
 const SuccessModal = ({ isOpen, onClose, count }: { isOpen: boolean; onClose: () => void; count: number }) => {
-    const { t } = useTranslation()
-    
-    useEffect(() => {
-        if (isOpen) {
-            const duration = 3 * 1000
-            const animationEnd = Date.now() + duration
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 }
+  const { t } = useTranslation()
 
-            const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
+  useEffect(() => {
+    if (isOpen) {
+      const duration = 3 * 1000
+      const animationEnd = Date.now() + duration
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 }
 
-            const interval: any = setInterval(function() {
-                const timeLeft = animationEnd - Date.now()
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
 
-                if (timeLeft <= 0) {
-                    return clearInterval(interval)
-                }
+      const interval: ReturnType<typeof setInterval> = setInterval(function () {
+        const timeLeft = animationEnd - Date.now()
 
-                const particleCount = 50 * (timeLeft / duration)
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } })
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } })
-            }, 250)
-            
-            return () => clearInterval(interval)
+        if (timeLeft <= 0) {
+          return clearInterval(interval)
         }
-    }, [isOpen])
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md text-center">
-                <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                    <Icon icon="mdi:check-bold" className="h-8 w-8" />
-                </div>
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-center">{t('vehicle.success_modal.title')}</DialogTitle>
-                    <DialogDescription className="text-center pt-2">
-                        {t('vehicle.success_modal.description', { count })}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                    <p className="text-sm text-muted-foreground">
-                        {t('vehicle.success_modal.manager_contact')}
-                    </p>
-                </div>
-                <DialogFooter className="sm:justify-center">
-                    <Button onClick={onClose} className="w-full sm:w-auto min-w-[150px] font-bold bg-emerald-600 hover:bg-emerald-700">
-                        {t('common.great_thanks')}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
+        const particleCount = 50 * (timeLeft / duration)
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } })
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } })
+      }, 250)
+
+      return () => clearInterval(interval)
+    }
+  }, [isOpen])
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[380px]">
+        {/* Success Animation Circle */}
+        <div className="flex justify-center -mt-2 mb-4">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-bounce">
+              <Icon icon="mdi:check-bold" className="h-10 w-10 text-white" />
+            </div>
+            {/* Decorative rings */}
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-200 animate-ping opacity-30" />
+          </div>
+        </div>
+
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{t('vehicle.success_modal.title')}</DialogTitle>
+          <DialogDescription>
+            {t('vehicle.success_modal.description', { count })}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Info Card */}
+        <div className="bg-slate-50 rounded-xl p-4 my-2">
+          <div className="flex items-start gap-3">
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <Icon icon="mdi:headset" className="h-4 w-4 text-blue-600" />
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {t('vehicle.success_modal.manager_contact')}
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-center pt-2">
+          <Button
+            onClick={onClose}
+            className="w-full h-12 rounded-xl font-bold text-base bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25"
+          >
+            <Icon icon="mdi:check-circle" className="h-5 w-5 mr-2" />
+            {t('common.great_thanks')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 /* UNUSED COMPONENTS - Commented out to fix build
@@ -159,114 +179,114 @@ const MarketPriceWidget = ({ price }: { price: number }) => {
 
 // @ts-ignore - Component reserved for future use
 const DamageViewer = ({ vehicle }: { vehicle: any }) => {
-    const { t } = useTranslation()
-    const [isUnlocked, setIsUnlocked] = useState(false)
-    const [isLiking, setIsLiking] = useState(false)
-    
-    const damagePrimary = vehicle?.damage_main_damages || "Front End"
-    const damageSecondary = vehicle?.damage_secondary_damages || "Minor Dents/Scratches"
-    const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
-    const runAndDrive = vehicle?.run_and_drive || "Run & Drive"
-    const estValue = Number(vehicle?.est_retail_value) || 12500
-    
-    const handleUnlock = () => {
-        setIsLiking(true)
-        setTimeout(() => {
-            setIsLiking(false)
-            setIsUnlocked(true)
-        }, 1500)
-    }
-    
-    // Use variables to prevent unused warnings
-    console.debug(isUnlocked, isLiking, handleUnlock, damagePrimary, damageSecondary, hasKeys, runAndDrive, estValue)
+  const { t } = useTranslation()
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [isLiking, setIsLiking] = useState(false)
 
-    return (
-        <div className="bg-card rounded-xl border shadow-sm p-3 sm:p-5 relative overflow-hidden">
-            <div className="flex items-start justify-between mb-4 sm:mb-6">
-                <h3 className="font-medium text-sm flex items-center gap-2">
-                    <Icon icon="mdi:car-info" className="text-muted-foreground" />
-                    {t('vehicle.condition_report')}
-                </h3>
-                <Badge variant="outline" className="font-normal text-[10px] text-muted-foreground">{t('vehicle.ai_analysis')}</Badge>
+  const damagePrimary = vehicle?.damage_main_damages || "HARDCODED"
+  const damageSecondary = vehicle?.damage_secondary_damages || "HARDCODED"
+  const hasKeys = vehicle?.has_keys || vehicle?.has_keys_readable === 'YES'
+  const runAndDrive = vehicle?.run_and_drive || "HARDCODED"
+  const estValue = Number(vehicle?.est_retail_value) || 0
+
+  const handleUnlock = () => {
+    setIsLiking(true)
+    setTimeout(() => {
+      setIsLiking(false)
+      setIsUnlocked(true)
+    }, 1500)
+  }
+
+  // Use variables to prevent unused warnings
+  console.debug(isUnlocked, isLiking, handleUnlock, damagePrimary, damageSecondary, hasKeys, runAndDrive, estValue)
+
+  return (
+    <div className="bg-card rounded-xl border shadow-sm p-3 sm:p-5 relative overflow-hidden">
+      <div className="flex items-start justify-between mb-4 sm:mb-6">
+        <h3 className="font-medium text-sm flex items-center gap-2">
+          <Icon icon="mdi:car-info" className="text-muted-foreground" />
+          {t('vehicle.condition_report')}
+        </h3>
+        <Badge variant="outline" className="font-normal text-[10px] text-muted-foreground">{t('vehicle.ai_analysis')}</Badge>
+      </div>
+
+      <div className={cn("flex flex-row gap-3 sm:gap-8 transition-all duration-500", !isUnlocked && "blur-[2px] sm:blur-md opacity-60 select-none pointer-events-none")}>
+        {/* Left: Visual + Damage Tags - Compact on Mobile */}
+        <div className="flex gap-3 sm:gap-6 flex-shrink-0">
+          {/* SVG Skeleton - Smaller on Mobile */}
+          <div className="relative w-16 h-28 sm:w-24 sm:h-40 flex-shrink-0 opacity-80">
+            <svg viewBox="0 0 100 200" className="w-full h-full text-muted-foreground/30">
+              <path d="M20,40 Q20,10 50,10 Q80,10 80,40 L80,160 Q80,190 50,190 Q20,190 20,160 Z" fill="none" stroke="currentColor" strokeWidth="4" />
+              <rect x="10" y="45" width="10" height="20" rx="2" fill="currentColor" />
+              <rect x="80" y="45" width="10" height="20" rx="2" fill="currentColor" />
+              <rect x="10" y="135" width="10" height="20" rx="2" fill="currentColor" />
+              <rect x="80" y="135" width="10" height="20" rx="2" fill="currentColor" />
+            </svg>
+            {/* Damage Highlight - Minimalist Dot */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
+              </div>
             </div>
-            
-            <div className={cn("flex flex-row gap-3 sm:gap-8 transition-all duration-500", !isUnlocked && "blur-[2px] sm:blur-md opacity-60 select-none pointer-events-none")}>
-                {/* Left: Visual + Damage Tags - Compact on Mobile */}
-                <div className="flex gap-3 sm:gap-6 flex-shrink-0">
-                    {/* SVG Skeleton - Smaller on Mobile */}
-                    <div className="relative w-16 h-28 sm:w-24 sm:h-40 flex-shrink-0 opacity-80">
-                        <svg viewBox="0 0 100 200" className="w-full h-full text-muted-foreground/30">
-                            <path d="M20,40 Q20,10 50,10 Q80,10 80,40 L80,160 Q80,190 50,190 Q20,190 20,160 Z" fill="none" stroke="currentColor" strokeWidth="4" />
-                            <rect x="10" y="45" width="10" height="20" rx="2" fill="currentColor" />
-                            <rect x="80" y="45" width="10" height="20" rx="2" fill="currentColor" />
-                            <rect x="10" y="135" width="10" height="20" rx="2" fill="currentColor" />
-                            <rect x="80" y="135" width="10" height="20" rx="2" fill="currentColor" />
-                        </svg>
-                        {/* Damage Highlight - Minimalist Dot */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
-                                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
-                            </div>
-                        </div>
-                    </div>
+          </div>
 
-                    {/* Damage Details - Compact */}
-                    <div className="space-y-2 sm:space-y-3 pt-1">
-                        <div>
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.primary_damage')}</span>
-                            <div className="text-red-600 font-bold text-xs sm:text-sm flex items-center gap-1 leading-tight">
-                                <Icon icon="mdi:alert-circle" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-                                {damagePrimary}
-                            </div>
-                        </div>
-                        <div>
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.secondary_damage')}</span>
-                            <div className="text-amber-600 font-medium text-[10px] sm:text-xs flex items-center gap-1 leading-tight">
-                                <Icon icon="mdi:alert-outline" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-                                {damageSecondary}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: AI Estimate & Tech Specs - Stacked tightly */}
-                <div className="flex-1 w-full grid grid-cols-1 gap-3 sm:gap-6 border-l border-border/50 pl-3 sm:pl-6">
-                    {/* Estimate Block */}
-                    <div className="space-y-1.5 sm:space-y-3">
-                        <div className="pl-2 sm:pl-3 border-l-2 border-blue-500/50">
-                            <div className="text-[8px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle.ai_repair_estimate')}</div>
-                            <div className="text-sm sm:text-xl font-bold text-foreground tracking-tight">
-                                $800 - $1.2k
-                            </div>
-                        </div>
-                        <div className="bg-muted/20 rounded p-1.5 sm:p-2.5 flex justify-between items-center">
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">{t('vehicle.retail_value')}</span>
-                            <span className="text-[10px] sm:text-xs font-bold">${estValue.toLocaleString()}</span>
-                        </div>
-                    </div>
-                    
-                    {/* Technical Status - 2 cols on mobile too */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
-                        <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.engine_status')}</div>
-                            <div className="text-[10px] sm:text-xs font-medium flex items-center gap-1 text-emerald-600">
-                                <Icon icon="mdi:engine" className="h-3 w-3" />
-                                <span className="truncate">{runAndDrive}</span>
-                            </div>
-                        </div>
-                        <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
-                            <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.keys')}</div>
-                            <div className={cn("text-[10px] sm:text-xs font-medium flex items-center gap-1", hasKeys ? "text-emerald-600" : "text-red-500")}>
-                                <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="h-3 w-3" />
-                                <span className="truncate">{hasKeys ? t('vehicle.keys_present') : t('vehicle.keys_missing')}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          {/* Damage Details - Compact */}
+          <div className="space-y-2 sm:space-y-3 pt-1">
+            <div>
+              <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.primary_damage')}</span>
+              <div className="text-red-600 font-bold text-xs sm:text-sm flex items-center gap-1 leading-tight">
+                <Icon icon="mdi:alert-circle" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                {damagePrimary}
+              </div>
             </div>
+            <div>
+              <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-bold block mb-0.5">{t('vehicle.secondary_damage')}</span>
+              <div className="text-amber-600 font-medium text-[10px] sm:text-xs flex items-center gap-1 leading-tight">
+                <Icon icon="mdi:alert-outline" className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                {damageSecondary}
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Lock Overlay */}
-            {/* 
+        {/* Right: AI Estimate & Tech Specs - Stacked tightly */}
+        <div className="flex-1 w-full grid grid-cols-1 gap-3 sm:gap-6 border-l border-border/50 pl-3 sm:pl-6">
+          {/* Estimate Block */}
+          <div className="space-y-1.5 sm:space-y-3">
+            <div className="pl-2 sm:pl-3 border-l-2 border-blue-500/50">
+              <div className="text-[8px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">{t('vehicle.ai_repair_estimate')}</div>
+              <div className="text-sm sm:text-xl font-bold text-foreground tracking-tight">
+                HARDCODED
+              </div>
+            </div>
+            <div className="bg-muted/20 rounded p-1.5 sm:p-2.5 flex justify-between items-center">
+              <span className="text-[8px] sm:text-[10px] text-muted-foreground">{t('vehicle.retail_value')}</span>
+              <span className="text-[10px] sm:text-xs font-bold">${estValue.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Technical Status - 2 cols on mobile too */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
+            <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
+              <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.engine_status')}</div>
+              <div className="text-[10px] sm:text-xs font-medium flex items-center gap-1 text-emerald-600">
+                <Icon icon="mdi:engine" className="h-3 w-3" />
+                <span className="truncate">{runAndDrive}</span>
+              </div>
+            </div>
+            <div className="bg-muted/10 rounded p-1.5 sm:p-2 border border-transparent hover:border-border transition-colors">
+              <div className="text-[8px] sm:text-[10px] text-muted-foreground mb-0.5">{t('vehicle.keys')}</div>
+              <div className={cn("text-[10px] sm:text-xs font-medium flex items-center gap-1", hasKeys ? "text-emerald-600" : "text-red-500")}>
+                <Icon icon={hasKeys ? "mdi:key-variant" : "mdi:key-variant-off"} className="h-3 w-3" />
+                <span className="truncate">{hasKeys ? t('vehicle.keys_present') : t('vehicle.keys_missing')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lock Overlay */}
+      {/* 
             {!isUnlocked && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] p-4 text-center">
                     <div className="bg-background/95 p-4 sm:p-6 rounded-xl shadow-lg border border-border/50 max-w-xs space-y-3 sm:space-y-4">
@@ -279,7 +299,7 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                         </div>
                         <Button 
                             onClick={handleUnlock} 
-                            className="w-full bg-[#1877F2] hover:bg-[#1864D9] text-white h-8 sm:h-9 text-[10px] sm:text-xs font-medium gap-2"
+                            className="w-full bg-primary hover:bg-[#1864D9] text-white h-8 sm:h-9 text-[10px] sm:text-xs font-medium gap-2"
                             disabled={isLiking}
                         >
                             {isLiking ? (
@@ -298,312 +318,272 @@ const DamageViewer = ({ vehicle }: { vehicle: any }) => {
                 </div>
             )}
             */}
-        </div>
-    )
-}
-
-const QuoteBreakdownModal = ({ 
-    quote, 
-    isOpen, 
-    onClose 
-}: { 
-    quote: VehicleQuote | null; 
-    isOpen: boolean; 
-    onClose: () => void 
-}) => {
-    const { t } = useTranslation()
-    if (!quote) return null
-
-    // Helper to safely format numbers
-    const fmt = (val: number | undefined | null) => val ? `$${Number(val).toLocaleString()}` : '$0'
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Icon icon="mdi:calculator" className="text-primary h-5 w-5" />
-                        {t('vehicle.price_breakdown')}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {t('vehicle.detailed_quote')} <span className="font-semibold text-foreground">{quote.company_name}</span>
-                    </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4 py-2">
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle.auction_price')}</span>
-                            <span className="font-medium">{fmt(quote.breakdown?.base_price)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Icon icon="mdi:truck-delivery" className="h-3 w-3" />
-                                {t('vehicle.shipping_total')}
-                            </span>
-                            <span className="font-medium">{fmt(quote.breakdown?.shipping_total)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Icon icon="mdi:police-badge" className="h-3 w-3" />
-                                {t('vehicle.customs_clearance')}
-                            </span>
-                            <span className="font-medium">{fmt(quote.breakdown?.customs_fee)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed">
-                            <span className="text-muted-foreground">{t('vehicle.broker_fees')}</span>
-                            <span className="font-medium">{fmt(quote.breakdown?.broker_fee)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-dashed text-xs text-muted-foreground">
-                            <span>{t('vehicle.insurance_optional')}</span>
-                            <span>{fmt(quote.breakdown?.insurance_fee)}</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-primary/5 p-3 rounded-lg flex justify-between items-center">
-                        <span className="font-bold text-primary uppercase text-xs tracking-wider">{t('vehicle.total_estimated')}</span>
-                        <span className="font-bold text-xl text-foreground">{fmt(quote.total_price)}</span>
-                    </div>
-                    
-                    <p className="text-[10px] text-muted-foreground text-center">
-                        {t('vehicle.price_note')}
-                    </p>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-const VehicleGallery = ({ photos }: { photos: any[] }) => {
-  const { t } = useTranslation()
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  if (!photos.length) {
-    return <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center text-muted-foreground">{t('vehicle.no_photos')}</div>
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Main Image */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted shadow-sm group">
-        <img
-          src={photos[activeIndex].url}
-          alt="Vehicle"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        {/* Top Actions */}
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-foreground shadow-sm"
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.href)
-                            alert("Link copied!")
-                        }}
-                    >
-                        <Icon icon="mdi:share-variant" className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.share_link')}</TooltipContent>
-            </Tooltip>
-        </div>
-
-        {/* Counter */}
-        <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium z-10">
-          {activeIndex + 1} / {photos.length}
-        </div>
-
-        {/* Navigation Arrows (Desktop) */}
-        <div className="absolute inset-y-0 left-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <button 
-                onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev > 0 ? prev - 1 : photos.length - 1) }}
-                className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
-            >
-                <Icon icon="mdi:chevron-left" className="h-5 w-5" />
-            </button>
-        </div>
-        <div className="absolute inset-y-0 right-0 w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <button 
-                onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0) }}
-                className="bg-white/90 p-1.5 rounded-full shadow-md hover:bg-white text-black transition-transform hover:scale-110"
-            >
-                <Icon icon="mdi:chevron-right" className="h-5 w-5" />
-            </button>
-        </div>
-      </div>
-
-      {/* Thumbnails Strip */}
-      <div className="relative">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-            {photos.map((photo, idx) => (
-            <button
-                key={idx}
-                onClick={() => setActiveIndex(idx)}
-                className={cn(
-                "relative h-16 w-24 sm:h-20 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg border-2 snap-start transition-all",
-                activeIndex === idx 
-                    ? "border-primary ring-2 ring-primary/20" 
-                    : "border-transparent opacity-70 hover:opacity-100"
-                )}
-            >
-                <img src={photo.url} alt="" className="h-full w-full object-cover" />
-            </button>
-            ))}
-        </div>
-      </div>
     </div>
   )
 }
 
-const VehicleSpecs = ({ vehicle }: { vehicle: any }) => {
+const QuoteBreakdownModal = ({
+  quote,
+  isOpen,
+  onClose
+}: {
+  quote: VehicleQuote | null;
+  isOpen: boolean;
+  onClose: () => void
+}) => {
   const { t } = useTranslation()
-  if (!vehicle) return null
+  if (!quote) return null
 
-  const specs = [
-    { icon: 'mdi:engine', label: t('vehicle.specs.engine'), value: vehicle.engine_volume ? `${vehicle.engine_volume}L` : 'N/A' },
-    { icon: 'mdi:car-shift-pattern', label: t('vehicle.specs.transmission'), value: vehicle.transmission || 'Automatic' },
-    { icon: 'mdi:car-traction-control', label: t('vehicle.specs.drive'), value: vehicle.drive || 'FWD' },
-    { icon: 'mdi:counter', label: t('vehicle.specs.mileage'), value: `${vehicle.mileage?.toLocaleString() || '0'} mi` },
-    { icon: 'mdi:calendar', label: t('vehicle.specs.year'), value: vehicle.year },
-    { icon: 'mdi:gas-station', label: t('vehicle.specs.fuel'), value: vehicle.engine_fuel || 'Gasoline' },
-    { icon: 'mdi:barcode', label: t('vehicle.specs.vin'), value: vehicle.vin, copy: true },
+  // Helper to safely format numbers
+  const fmt = (val: number | undefined | null) => val ? `$${Number(val).toLocaleString()}` : '—'
+
+  // New simplified breakdown from calculator API
+  // The API now returns transportation_total as the main price
+  const transportationTotal = quote.breakdown?.transportation_total ?? quote.total_price
+  const currency = quote.breakdown?.currency ?? 'USD'
+
+  // Build breakdown items - show transportation total as the main item
+  // Legacy fields are shown only if present (for backward compatibility)
+  const breakdownItems = [
+    {
+      icon: 'mdi:truck-delivery',
+      label: t('vehicle.shipping_total'),
+      value: transportationTotal,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      isMain: true,
+    },
+    // Legacy fields - only show if present in response
+    ...(quote.breakdown?.customs_fee != null ? [{
+      icon: 'mdi:file-document-check',
+      label: t('vehicle.customs_clearance'),
+      value: quote.breakdown.customs_fee,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
+    }] : []),
+    ...(quote.breakdown?.broker_fee != null ? [{
+      icon: 'mdi:handshake',
+      label: t('vehicle.broker_fees'),
+      value: quote.breakdown.broker_fee,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50'
+    }] : []),
+    ...(quote.breakdown?.insurance_fee != null ? [{
+      icon: 'mdi:shield-check',
+      label: t('vehicle.insurance_optional'),
+      value: quote.breakdown.insurance_fee,
+      color: 'text-slate-500',
+      bgColor: 'bg-slate-50',
+      isOptional: true
+    }] : []),
   ]
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-      {specs.map((spec, idx) => (
-        <div key={idx} className="flex flex-col p-2 sm:p-3 bg-muted/40 hover:bg-muted/60 transition-colors rounded-xl border">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1">
-            <Icon icon={spec.icon} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">{spec.label}</span>
-          </div>
-          <div className="font-semibold text-xs sm:text-sm truncate flex items-center gap-2">
-            {spec.value}
-            {spec.copy && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <button 
-                        onClick={() => {
-                            navigator.clipboard.writeText(String(spec.value))
-                            // Optional: Add toast here
-                        }}
-                        className="text-muted-foreground hover:text-primary hover:bg-primary/10 p-1 rounded transition-colors"
-                    >
-                        <Icon icon="mdi:content-copy" className="h-3 w-3" />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent>{t('vehicle.specs.copy_vin')}</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const QuoteRow = ({ 
-    quote, 
-    isSelected, 
-    onToggle, 
-    priceColor,
-    onViewBreakdown,
-    isMultiSelectMode
-}: { 
-    quote: VehicleQuote; 
-    isSelected: boolean; 
-    onToggle: () => void; 
-    priceColor?: string;
-    onViewBreakdown: (e: React.MouseEvent) => void;
-    isMultiSelectMode: boolean;
-}) => {
-  const { t } = useTranslation()
-  const totalPrice = Number(quote.total_price) || 0
-  const rating = quote.company_rating ?? null
-  const reviews = quote.company_review_count ?? null
+  // Suppress unused variable warning
+  void currency
 
   return (
-    <TableRow 
-        className={cn(
-            "group cursor-pointer transition-colors", 
-            isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
-        )}
-        onClick={onViewBreakdown}
-    >
-      {isMultiSelectMode && (
-        <TableCell className="w-[50px] pr-0">
-            <Checkbox checked={isSelected} onCheckedChange={onToggle} onClick={(e) => e.stopPropagation()} />
-        </TableCell>
-      )}
-      <TableCell>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-base">{quote.company_name}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {rating != null && (
-              <div className="flex items-center text-amber-500">
-                <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-              </div>
-            )}
-            {rating != null && reviews != null && (
-              <span className="text-muted-foreground/60">•</span>
-            )}
-            {reviews != null && (
-              <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-            )}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[420px]">
+        {/* Header Icon */}
+        <div className="flex justify-center -mt-2 mb-2">
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/10 to-primary/10 flex items-center justify-center shadow-sm">
+            <Icon icon="mdi:calculator-variant" className="h-7 w-7 text-primary" />
           </div>
         </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col text-sm">
-          <span className="font-medium">{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-          <span className="text-xs text-muted-foreground">{t('vehicle.quotes.sea_land')}</span>
-        </div>
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex flex-col items-end">
-          <span className={cn("font-bold text-lg", priceColor || "text-foreground")}>
-            ${totalPrice.toLocaleString()}
-          </span>
-          <span className="text-xs text-muted-foreground">{t('vehicle.quotes.all_inclusive')}</span>
-        </div>
-      </TableCell>
-      <TableCell className="text-right">
-         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button 
-                size="sm" 
-                variant={isSelected ? "default" : "outline"}
-                className="h-8 text-xs"
-                onClick={(e) => {
-                    e.stopPropagation()
-                    onToggle()
-                }}
+
+        <DialogHeader>
+          <DialogTitle>{t('vehicle.price_breakdown')}</DialogTitle>
+          <DialogDescription>
+            {t('vehicle.detailed_quote')} <span className="font-semibold text-slate-700">{quote.company_name}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Breakdown Items */}
+        <div className="space-y-3 my-2">
+          {breakdownItems.map((item, index) => (
+            <div
+              key={index}
+              className={cn(
+                "flex items-center justify-between p-3 rounded-xl transition-all",
+                item.isOptional ? "bg-slate-50/50" : "bg-slate-50 hover:bg-slate-100/80"
+              )}
             >
-                {isSelected ? t('vehicle.quotes.selected_btn') : t('vehicle.quotes.select')}
-            </Button>
-         </div>
-      </TableCell>
-    </TableRow>
+              <div className="flex items-center gap-3">
+                <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", item.bgColor)}>
+                  <Icon icon={item.icon} className={cn("h-4.5 w-4.5", item.color)} />
+                </div>
+                <span className={cn(
+                  "text-sm font-medium",
+                  item.isOptional ? "text-slate-400" : "text-slate-700"
+                )}>
+                  {item.label}
+                  {item.isOptional && <span className="text-[10px] ml-1 text-slate-400">(opt)</span>}
+                </span>
+              </div>
+              <span className={cn(
+                "font-bold tabular-nums",
+                item.isOptional ? "text-slate-400 text-sm" : "text-slate-900"
+              )}>
+                {fmt(item.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-500/10 p-4 rounded-xl border border-primary/10">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Icon icon="mdi:sigma" className="h-5 w-5 text-primary" />
+              <span className="font-bold text-primary uppercase text-xs tracking-wider">{t('vehicle.total_estimated')}</span>
+            </div>
+            <span className="font-black text-2xl text-slate-900">{fmt(quote.total_price)}</span>
+          </div>
+        </div>
+
+        {/* Note */}
+        <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5 mt-2">
+          <Icon icon="mdi:information-outline" className="h-3.5 w-3.5" />
+          {t('vehicle.price_note')}
+        </p>
+      </DialogContent>
+    </Dialog>
   )
 }
+
+// Copart-style Gallery - exactly like screenshot
+const CopartGallery = ({ photos }: { photos: any[] }) => {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  if (!photos.length) {
+    return <div className="aspect-[4/3] w-full bg-slate-200 flex items-center justify-center text-slate-400">No Photos</div>
+  }
+
+  const handlePrev = () => setActiveIndex(prev => prev > 0 ? prev - 1 : photos.length - 1)
+  const handleNext = () => setActiveIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)
+
+  return (
+    <>
+      <div className="space-y-3">
+        {/* Main Image */}
+        <div className="relative bg-card rounded-2xl overflow-hidden border border-border/70 shadow-sm">
+          <img
+            src={photos[activeIndex]?.url}
+            alt="Vehicle"
+            className="w-full aspect-[4/3] object-cover cursor-pointer"
+            onClick={() => setIsModalOpen(true)}
+          />
+
+          {/* Navigation arrows */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+          >
+            <Icon icon="mdi:chevron-left" className="w-5 h-5 text-foreground/80" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-background/90 rounded-full flex items-center justify-center hover:bg-background shadow-sm border border-border/60"
+          >
+            <Icon icon="mdi:chevron-right" className="w-5 h-5 text-foreground/80" />
+          </button>
+
+          {/* Photo counter */}
+          <div className="absolute bottom-3 right-3 bg-background text-foreground text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 border border-border/60 shadow-sm">
+            <Icon icon="mdi:camera" className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="tabular-nums">{activeIndex + 1}/{photos.length}</span>
+          </div>
+        </div>
+
+        {/* Thumbnails */}
+        {/* Mobile overflow fix: 3 cols on tiny screens (<410px), 5 cols on sm, 7 cols on md+ */}
+        <div className="copart-gallery-thumbs grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-1.5 min-w-0">
+          {photos.slice(0, 14).map((photo, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={cn(
+                "relative aspect-[4/3] overflow-hidden rounded-lg border transition-all bg-muted",
+                activeIndex === idx
+                  ? "border-primary ring-1 ring-primary/70"
+                  : "border-transparent opacity-80 hover:opacity-100"
+              )}
+            >
+              <img src={photo.url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Full-Screen Image Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          {/* Close button */}
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Close"
+          >
+            <Icon icon="mdi:close" className="w-5 h-5 text-gray-900" />
+          </button>
+
+          {/* Main image */}
+          <img
+            src={photos[activeIndex]?.url}
+            alt="Vehicle"
+            className="max-w-full max-h-full object-contain"
+          />
+
+          {/* Navigation arrows */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Previous image"
+          >
+            <Icon icon="mdi:chevron-left" className="w-6 h-6 text-gray-900" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Next image"
+          >
+            <Icon icon="mdi:chevron-right" className="w-6 h-6 text-gray-900" />
+          </button>
+
+          {/* Photo counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-900 text-sm px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+            <Icon icon="mdi:camera" className="w-4 h-4" />
+            <span className="tabular-nums font-medium">{activeIndex + 1} / {photos.length}</span>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// CopartVehicleInfo component removed - will be replaced with new implementation
+
+// VehicleGallery component kept for potential future use - now using CopartGallery
+
+// VehicleSpecs component kept for potential future use
+// QuoteRow component kept for potential future use - now using inline company cards
 
 const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const { isWatched, toggleWatch } = useVehicleWatchlist()
   const [similarItems, setSimilarItems] = useState<VehicleSearchItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
-  // Desktop Slider State
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const ITEMS_PER_VIEW_DESKTOP = 3
+  const shouldReduceMotion = useReducedMotion()
+
+  // Drag-to-scroll state
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => {
     let isMounted = true
@@ -616,7 +596,8 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
         const response = await fetchSimilarVehicles(baseVehicleId, { limit: 20 })
         if (!isMounted) return
         const items = Array.isArray(response.items) ? response.items : []
-        setSimilarItems(items)
+        // Cap to a maximum of 10 similar vehicles to keep the strip compact
+        setSimilarItems(items.slice(0, 10))
       } catch (err) {
         if (!isMounted) return
         const message = err instanceof Error ? err.message : 'Failed to load similar vehicles'
@@ -635,29 +616,62 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     }
   }, [baseVehicleId])
 
-  // Autoplay for Desktop
+  const handleToggleWatch = useCallback((vehicleId: number) => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    toggleWatch(vehicleId)
+  }, [isAuthenticated, navigate, toggleWatch])
+
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return
+    setIsDragging(true)
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
+    setScrollLeft(scrollContainerRef.current.scrollLeft)
+  }
+
+  const handleMouseLeave = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollContainerRef.current.offsetLeft
+    const walk = (x - startX) * 2
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk
+  }
+
+  // Global mouseup listener to stop dragging even when mouse is released outside the container
   useEffect(() => {
-    if (similarItems.length <= ITEMS_PER_VIEW_DESKTOP) return
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false)
+    }
 
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => 
-        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
-      )
-    }, 5000)
+    if (isDragging) {
+      window.addEventListener('mouseup', handleGlobalMouseUp)
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging])
 
-    return () => clearInterval(interval)
-  }, [similarItems.length])
+  // Note: Desktop autoplay removed to avoid unexpected jumping/scrolling
 
   if (isLoading) {
     return (
-      <div className="space-y-4 pt-8 border-t">
+      <section className="space-y-4 pt-8 border-t">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Skeleton className="h-64 rounded-xl" />
           <Skeleton className="h-64 rounded-xl hidden sm:block" />
           <Skeleton className="h-64 rounded-xl hidden sm:block" />
         </div>
-      </div>
+      </section>
     )
   }
 
@@ -665,84 +679,66 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     return null
   }
 
-  // Desktop Navigation Handlers
-  const handlePrev = () => {
-    setCurrentIndex(prev => Math.max(0, prev - 1))
-  }
-
-  const handleNext = () => {
-    setCurrentIndex(prev => 
-        prev + ITEMS_PER_VIEW_DESKTOP >= similarItems.length ? 0 : prev + 1
-    )
-  }
-
   return (
-    <div className="space-y-4 pt-8 border-t overflow-hidden">
+    <motion.section
+      className="similar-vehicles-section space-y-4 pt-8 border-t overflow-hidden"
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+      whileInView={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
-        
-        {/* Desktop Controls */}
-        {similarItems.length > ITEMS_PER_VIEW_DESKTOP && (
-          <div className="hidden md:flex gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handlePrev} disabled={currentIndex === 0}>
-                  <Icon icon="mdi:chevron-left" className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleNext} disabled={currentIndex + ITEMS_PER_VIEW_DESKTOP >= similarItems.length}>
-                  <Icon icon="mdi:chevron-right" className="h-4 w-4" />
-              </Button>
-          </div>
-        )}
       </div>
 
-      {/* Mobile Slider (Snap Scroll) */}
-      <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
+      {/* Horizontal scrolling carousel for similar vehicles */}
+      <div
+        ref={scrollContainerRef}
+        className={cn(
+          "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide select-none",
+          isDragging ? "snap-none cursor-grabbing" : "snap-x snap-mandatory cursor-grab"
+        )}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
         {similarItems.map((item) => (
-          <div key={item.id} className="min-w-[85vw] snap-center">
-            <AuctionVehicleCard
-                item={item}
-                priority={false}
-                onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+          <div key={item.id} className="flex-shrink-0 w-[240px] min-[460px]:w-[280px] min-[500px]:w-[340px] sm:w-[380px] md:w-[420px] lg:w-[400px] snap-start">
+            <SimilarVehicleCard
+              item={item}
+              priority={false}
+              onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
+              onToggleWatch={() => handleToggleWatch(item.id)}
+              isWatched={isWatched(item.id)}
             />
           </div>
         ))}
       </div>
-
-      {/* Desktop Slider (Transform) */}
-      <div className="hidden md:block relative overflow-hidden">
-        <div 
-            className="flex gap-4 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(calc(-${currentIndex} * (33.333% + 5.33px)))` }}
-        >
-            {similarItems.map((item) => (
-                <div key={item.id} className="w-[calc((100%-32px)/3)] flex-shrink-0">
-                    <AuctionVehicleCard
-                        item={item}
-                        priority={false}
-                        onOpenGallery={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                        onCalculate={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                        onViewDetails={() => navigate({ pathname: `/vehicle/${item.id}` })}
-                    />
-                </div>
-            ))}
-        </div>
-      </div>
-    </div>
+    </motion.section>
   )
 }
 
 // --- Main Page Component ---
 
 const VehicleDetailsPage = () => {
-  const { t } = useTranslation()
+  // TEMPORARY DEBUG: Track renders
+  console.count('VehicleDetailsPage render')
+
+  const { t, i18n } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  // NOTE: Do NOT use useSearchParams - it causes re-renders on ANY query param change
+  // Instead, read initial params directly from window.location.search (only once on mount)
+  const shouldReduceMotion = useReducedMotion()
+  const { isAuthenticated, userRole } = useAuth()
+  const { isWatched, toggleWatch, isLoading: isWatchlistLoading } = useVehicleWatchlist()
 
   // Parse URL params for initial values - use ref to only read once on mount
+  // Using window.location.search instead of useSearchParams to avoid re-renders
   const initialParamsRef = useRef<{ limit: number; rating: number | null } | null>(null)
   if (initialParamsRef.current === null) {
+    const searchParams = new URLSearchParams(window.location.search)
     const urlLimit = searchParams.get('limit')
     const urlRating = searchParams.get('rating')
     const parsedLimit = urlLimit ? parseInt(urlLimit, 10) : 5
@@ -753,53 +749,19 @@ const VehicleDetailsPage = () => {
     }
   }
 
-  const { 
-    vehicle, 
-    photos, 
-    quotes, 
+  const {
+    vehicle,
+    photos,
+    quotes,
     isLoading,
-    isLoadingMore,
-    isRefreshingQuotes,
-    hasMoreQuotes,
-    loadMoreQuotes,
-    quotesLimit,
-    setQuotesLimit: setQuotesLimitInternal,
-    minRating,
-    setMinRating: setMinRatingInternal,
+    priceAvailable,
+    priceUnavailableMessage,
+    // Unused but kept for potential future use
+    minRating: _minRating,
   } = useVehicleDetails(id ? Number(id) : null, {
     initialLimit: initialParamsRef.current.limit,
     initialMinRating: initialParamsRef.current.rating,
   })
-
-  // Sync quotesLimit with URL (without causing re-render)
-  const setQuotesLimit = useCallback((limit: number) => {
-    setQuotesLimitInternal(limit)
-    const newParams = new URLSearchParams(window.location.search)
-    if (limit === 5) {
-      newParams.delete('limit')
-    } else {
-      newParams.set('limit', String(limit))
-    }
-    const newUrl = newParams.toString() 
-      ? `${window.location.pathname}?${newParams.toString()}`
-      : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
-  }, [setQuotesLimitInternal])
-
-  // Sync minRating with URL (without causing re-render)
-  const setMinRating = useCallback((rating: number | null) => {
-    setMinRatingInternal(rating)
-    const newParams = new URLSearchParams(window.location.search)
-    if (rating === null) {
-      newParams.delete('rating')
-    } else {
-      newParams.set('rating', String(rating))
-    }
-    const newUrl = newParams.toString() 
-      ? `${window.location.pathname}?${newParams.toString()}`
-      : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
-  }, [setMinRatingInternal])
 
   // State: Selection & Unlock
   const [isMultiSelectMode, _setIsMultiSelectMode] = useState(false)
@@ -807,10 +769,10 @@ const VehicleDetailsPage = () => {
   const [hasUnlockedExtra, setHasUnlockedExtra] = useState(false)
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
-  
+
   // State: Filters (local UI filters - VIP and Fast are client-side only)
-  const [filterVip, setFilterVip] = useState(false)
-  const [filterFast, setFilterFast] = useState(false)
+  const [filterVip, _setFilterVip] = useState(false)
+  const [filterFast, _setFilterFast] = useState(false)
 
   // State: Lead Modal
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
@@ -827,20 +789,70 @@ const VehicleDetailsPage = () => {
   // State: Mobile CTA Visibility
   const [isCtaVisible, setIsCtaVisible] = useState(true)
 
+  // State: Engine View Modal
+  const [isEngineViewOpen, setIsEngineViewOpen] = useState(false)
+  const [engineVideoPreloaded, setEngineVideoPreloaded] = useState(false)
+
+  // State: Bids Modal
+  const [isBidsModalOpen, setIsBidsModalOpen] = useState(false)
+
+  // Inquiry Drawer (global context) - Disabled - inquiry system not ready
+  // const { openDrawer: openInquiryDrawer } = useInquiryDrawer()
+
+  // Get bids data - sorted by date descending (latest first)
+  const bids = useMemo(() => {
+    const vehicleBids = (vehicle as any)?.bids || []
+    return [...vehicleBids].sort((a: any, b: any) => {
+      const aTime = a?.bid_time ? new Date(a.bid_time).getTime() : 0
+      const bTime = b?.bid_time ? new Date(b.bid_time).getTime() : 0
+
+      // Newest (largest timestamp) should appear first; items without time go last
+      if (!aTime && !bTime) return 0
+      if (!aTime) return 1
+      if (!bTime) return -1
+      return bTime - aTime
+    })
+  }, [vehicle])
+
+  const lastBid = bids[0] || null
+  const lastBidAmount = lastBid?.bid ?? 0
+  const lastBidDate = useMemo(() => {
+    if (!lastBid?.bid_time) return null
+    return formatDateTime(lastBid.bid_time, i18n.language)
+  }, [i18n.language, lastBid?.bid_time])
+
+
+  // Preload engine video in background after page loads
+  useEffect(() => {
+    const engineViewUrl = (vehicle as any)?.engine_view
+    if (!engineViewUrl || engineVideoPreloaded) return
+
+    // Wait for page to be fully loaded, then start preloading video
+    const timeoutId = setTimeout(() => {
+      const video = document.createElement('video')
+      video.preload = 'auto'
+      video.src = engineViewUrl
+      video.load()
+      setEngineVideoPreloaded(true)
+    }, 2000) // 2 second delay after component mounts
+
+    return () => clearTimeout(timeoutId)
+  }, [vehicle, engineVideoPreloaded])
+
   useEffect(() => {
     let lastScrollY = window.scrollY || 0
     const handleScroll = () => {
-        const currentY = window.scrollY || 0
-        const delta = currentY - lastScrollY
-        
-        if (Math.abs(delta) < 10) return
+      const currentY = window.scrollY || 0
+      const delta = currentY - lastScrollY
 
-        if (currentY > 100 && delta > 0) {
-            setIsCtaVisible(false)
-        } else if (delta < 0) {
-            setIsCtaVisible(true)
-        }
-        lastScrollY = currentY
+      if (Math.abs(delta) < 10) return
+
+      if (currentY > 100 && delta > 0) {
+        setIsCtaVisible(false)
+      } else if (delta < 0) {
+        setIsCtaVisible(true)
+      }
+      lastScrollY = currentY
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -851,63 +863,35 @@ const VehicleDetailsPage = () => {
   const FREE_LIMIT = 3
   const PREMIUM_LIMIT = 5
 
-  // Derived: Filtered Quotes (client-side filters only - rating is now server-side)
-  const filteredQuotes = useMemo(() => {
-    let result = [...quotes]
-    
-    if (filterVip) {
-        result = result.filter((_, idx) => idx < 3)
-    }
-
-    if (filterFast) {
-        result = result.filter(q => (q.delivery_time_days || 60) < 45)
-    }
-
-    return result
-  }, [quotes, filterVip, filterFast])
-  
-  // Derived: Is rating filter active
-  const filterRating = minRating !== null
-
   const bestQuote = useMemo(() => {
     if (!quotes.length) return null
     return [...quotes].sort((a, b) => (Number(a.total_price) || 0) - (Number(b.total_price) || 0))[0]
   }, [quotes])
 
-  // Price Stats for Coloring
-  const priceStats = useMemo(() => {
-    if (!quotes.length) return { min: 0, max: 0, avg: 0 }
-    const prices = quotes.map(q => Number(q.total_price) || 0).filter(p => p > 0)
-    if (!prices.length) return { min: 0, max: 0, avg: 0 }
-    return {
-        min: Math.min(...prices),
-        max: Math.max(...prices),
-        avg: prices.reduce((a, b) => a + b, 0) / prices.length
-    }
-  }, [quotes])
+  // Stable handlers for VehicleQuotesContainer (prevent re-renders)
+  const handleOpenBreakdown = useCallback((quote: VehicleQuote) => {
+    setActiveBreakdownQuote(quote)
+  }, [])
 
-  const getPriceColor = (price: number) => {
-    if (price === 0) return 'text-foreground'
-    if (price <= priceStats.min * 1.02) return 'text-emerald-600' // Within 2% of min
-    if (price >= priceStats.max * 0.98) return 'text-red-600' // Within 2% of max
-    return 'text-amber-600'
-  }
+  const handleOpenLeadModal = useCallback(() => {
+    setIsLeadModalOpen(true)
+  }, [])
 
-  // Toggle Logic
+  // Toggle Logic for company selection (used by lead modal)
   const handleToggleSelection = (companyId: number) => {
     setSelectedCompanyIds(prev => {
       const isSelected = prev.includes(companyId)
       if (isSelected) {
-        return prev.filter(id => id !== companyId)
+        return prev.filter(cid => cid !== companyId)
       }
-      
+
       // Limit Check
       const limit = hasUnlockedExtra ? PREMIUM_LIMIT : FREE_LIMIT
       if (prev.length >= limit) {
         if (!hasUnlockedExtra) {
-            setIsUnlockModalOpen(true)
+          setIsUnlockModalOpen(true)
         } else {
-            alert(`You can only select up to ${limit} companies.`)
+          alert(`You can only select up to ${limit} companies.`)
         }
         return prev
       }
@@ -916,17 +900,15 @@ const VehicleDetailsPage = () => {
     })
   }
 
-  const handleRowClick = (quote: VehicleQuote) => {
-    // Always toggle selection - row click opens breakdown modal separately
-    handleToggleSelection(quote.company_id)
-  }
+  // Suppress unused variable warnings - kept for potential future use
+  void handleToggleSelection
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (unlockLiked) {
-        setHasUnlockedExtra(true)
-        setIsUnlockModalOpen(false)
-        alert("Feature Unlocked! You can now select up to 5 companies.")
+      setHasUnlockedExtra(true)
+      setIsUnlockModalOpen(false)
+      alert("Feature Unlocked! You can now select up to 5 companies.")
     }
   }
 
@@ -936,18 +918,10 @@ const VehicleDetailsPage = () => {
 
     setIsSubmitting(true)
     try {
-       await createLeadFromQuotes({
-         vehicleId: Number(id),
-         selectedCompanyIds,
-         name: formName,
-         contact: formPhone,
-         message: `Interested in this vehicle. Please contact me via ${contactMethod}.`,
-         priority: 'price',
-         preferredContactChannel: contactMethod as any
-       })
-       setIsLeadModalOpen(false)
-       if (!isMultiSelectMode) setSelectedCompanyIds([])
-       alert(`Request sent successfully to ${selectedCompanyIds.length} companies!`)
+      // Lead feature removed - show message
+      alert('This feature has been removed. Please contact companies directly.')
+      setIsLeadModalOpen(false)
+      if (!isMultiSelectMode) setSelectedCompanyIds([])
     } catch (err) {
       console.error(err)
       alert("Failed to send request. Please try again.")
@@ -964,339 +938,403 @@ const VehicleDetailsPage = () => {
   const baseTotalPrice = bestQuote ? (Number(bestQuote.total_price)) : (auctionPrice + shippingPrice + customsPrice + brokerFee)
 
   // Allow user to adjust auction price locally for approximate calculations
-  const [manualAuctionPrice, setManualAuctionPrice] = useState<number | null>(null)
+  const [manualAuctionPrice, _setManualAuctionPrice] = useState<number | null>(null)
   const effectiveAuctionPrice = Number.isFinite(manualAuctionPrice as number) && (manualAuctionPrice as number) >= 0
     ? (manualAuctionPrice as number)
     : auctionPrice
   const totalPrice = Math.max(0, baseTotalPrice + (effectiveAuctionPrice - auctionPrice))
 
-  if (isLoading) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><main className="container p-8"><Skeleton className="h-96" /></main></div>
-  if (!vehicle) return <div className="min-h-screen"><Header user={null} navigationItems={navigationItems} /><div className="container p-8">{t('vehicle.not_found')}</div></div>
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Skeleton className="h-96 w-full max-w-4xl" />
+      </div>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="container p-8 text-center">{t('vehicle.not_found')}</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
-      <Header user={null} navigationItems={navigationItems} />
+    <div className="flex-1 flex flex-col bg-slate-50">
+      {/* Container matches header: lg:max-w-[1440px] */}
+      <div className="vehicle-details-container w-full px-4 lg:px-8 lg:max-w-[1440px] mx-auto py-8 lg:py-10">
+        {/* Title Header with Back to Results and Location */}
+        <VehicleHeaderBar
+          year={vehicle.year}
+          make={vehicle.make}
+          model={vehicle.model}
+        />
 
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-24 md:pb-8">
-        {/* Breadcrumbs & Title Section */}
-        <nav className="flex items-center text-sm text-muted-foreground mb-6 overflow-hidden">
-          <button onClick={() => navigate('/')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_home')}</button>
-          <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <button onClick={() => navigate('/catalog')} className="hover:text-primary transition-colors shrink-0">{t('vehicle.breadcrumb_vehicles')}</button>
-          <Icon icon="mdi:chevron-right" className="h-4 w-4 mx-1 shrink-0" />
-          <span className="text-foreground font-medium truncate">{vehicle.year} {vehicle.make} {vehicle.model}</span>
-        </nav>
+        {/* Mobile overflow fix: min-w-0 allows grid to shrink below content width */}
+        <motion.div
+          className="vehicle-main-grid grid md:grid-cols-2 lg:grid-cols-12 gap-5 xl:gap-6 items-start min-h-[60vh] lg:min_h-[70vh] pb-6 min-w-0"
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+          {/* Left Column - Gallery */}
+          {/* Mobile: full width, Tablet (md): 1 of 2 cols, Desktop (lg): col-span-4 */}
+          <div className="md:col-span-1 lg:col-span-4 space-y-4 w-full min-w-0">
+            <CopartGallery photos={photos} />
 
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8 min-w-0">
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h1>
+            {/* 360 View Buttons */}
+            {((vehicle as any).iaai_360_view || (vehicle as any).copart_360_interior_view) && (
+              <div className="flex gap-2">
+                {(vehicle as any).iaai_360_view && (
+                  <a
+                    href={(vehicle as any).iaai_360_view}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                  >
+                    <Icon icon="mdi:rotate-3d-variant" className="w-5 h-5 text-primary" />
+                    <span className="text-[12px] font-medium text-slate-700">360° Exterior</span>
+                  </a>
+                )}
+                {(vehicle as any).copart_360_interior_view && (
+                  <a
+                    href={(vehicle as any).copart_360_interior_view}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                  >
+                    <Icon icon="mdi:car-seat" className="w-5 h-5 text-primary" />
+                    <span className="text-[12px] font-medium text-slate-700">360° Interior</span>
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
 
-                <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 text-xs sm:text-sm">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary font-medium">
-                    <Icon icon="mdi:map-marker" className="h-3.5 w-3.5" />
-                    <span className="truncate max-w-[220px] sm:max-w-xs">
-                      {vehicle.city || vehicle.state || 'USA Auction'}
+          {/* Middle Column - Vehicle Details */}
+          {/* Mobile: full width, Tablet (md): 1 of 2 cols, Desktop (lg): col-span-4 */}
+          <div className="md:col-span-1 lg:col-span-4 space-y-5 w-full min-w-0">
+            {/* Vehicle Details Section */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
+                <h2 className="text-[13px] font-semibold text-slate-900">{t('vehicle.details.title', 'Vehicle details')}</h2>
+              </div>
+
+              {/* Details Rows */}
+              <div className="divide-y divide-slate-100">
+                {/* Lot number */}
+                {/* Mobile overflow fix: 90px label column on mobile, 130px on md+ */}
+                {vehicle.source_lot_id && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.lot_number', 'Lot number:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-all">{vehicle.source_lot_id}</span>
+                  </div>
+                )}
+
+                {/* VIN */}
+                {/* Mobile overflow fix: 90px label column on mobile, 130px on md+, break-all for long VINs */}
+                {vehicle.vin && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.vin', 'VIN:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-all">{vehicle.vin}</span>
+                  </div>
+                )}
+
+                {/* Title code */}
+                {(vehicle as any).document && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.title_code', 'Title code:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{(vehicle as any).document}</span>
+                  </div>
+                )}
+
+                {/* Odometer - always show, display 0 if falsy */}
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <span className="text-[11px] text-slate-500">{t('vehicle.details.odometer', 'Odometer:')}</span>
+                  <span className="text-[11px] font-medium text-slate-900 uppercase truncate">{(vehicle.mileage || 0).toLocaleString()} MI</span>
+                </div>
+
+                {/* Primary damage */}
+                {vehicle.damage_main_damages && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.primary_damage', 'Primary damage:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.damage_main_damages}</span>
+                  </div>
+                )}
+
+                {/* Estimated retail value */}
+                {(vehicle as any).retail_value && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.estimated_retail_value', 'Estimated retail value:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900">${Number((vehicle as any).retail_value).toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Cylinders - always show, display 0 if falsy */}
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <span className="text-[11px] text-slate-500">{t('vehicle.details.cylinders', 'Cylinders:')}</span>
+                  <span className="text-[11px] font-medium text-slate-900 uppercase">{vehicle.cylinders || 0}</span>
+                </div>
+
+                {/* Color */}
+                {vehicle.color && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.color', 'Color:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.color}</span>
+                  </div>
+                )}
+
+                {/* Engine type */}
+                {(vehicle.engine_volume || vehicle.cylinders) && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.engine_type', 'Engine type:')}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] font-medium text-slate-900 uppercase truncate">
+                        {vehicle.engine_volume && vehicle.cylinders
+                          ? `${vehicle.engine_volume}L ${vehicle.cylinders}`
+                          : vehicle.engine_volume
+                            ? `${vehicle.engine_volume}L`
+                            : vehicle.cylinders}
+                      </span>
+                      {(vehicle as any).engine_view && (
+                        <button
+                          onClick={() => setIsEngineViewOpen(true)}
+                          className="text-[11px] text-primary hover:underline shrink-0"
+                        >
+                          {t('vehicle.details.view_engine', 'View engine')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Transmission */}
+                {vehicle.transmission && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.transmission', 'Transmission:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">
+                      {t(`auction.filters.${vehicle.transmission.toLowerCase().trim()}`, vehicle.transmission)}
                     </span>
                   </div>
+                )}
 
-                  {vehicle.source_lot_id && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 text-white font-semibold tracking-wide">
-                      <Icon icon="mdi:ticket-confirmation" className="h-3.5 w-3.5" />
-                      <span className="uppercase text-[10px] sm:text-xs">
-                        {t('vehicle.lot')}: {vehicle.source_lot_id}
-                      </span>
+                {/* Drive */}
+                {(vehicle as any).drive && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.drive', 'Drive:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).drive}</span>
+                  </div>
+                )}
+
+                {/* Vehicle type */}
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <span className="text-[11px] text-slate-500">{t('vehicle.details.vehicle_type', 'Vehicle type:')}</span>
+                  <span className="text-[11px] font-medium text-slate-900 uppercase">{t('vehicle.details.vehicle_type_value', 'HARDCODED')}</span>
+                </div>
+
+                {/* Fuel */}
+                {(vehicle as any).engine_fuel && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.fuel', 'Fuel:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">
+                      {t(`auction.filters.${(vehicle as any).engine_fuel.toLowerCase().trim()}`, (vehicle as any).engine_fuel as string)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Keys - always show Yes/No */}
+                <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                  <span className="text-[11px] text-slate-500">{t('vehicle.details.keys', 'Keys:')}</span>
+                  <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).has_keys ? t('vehicle.details.yes', 'YES') : t('vehicle.details.no', 'NO')}</span>
+                </div>
+
+                {/* Highlights - only show if run_and_drive is truthy */}
+                {(vehicle as any).run_and_drive && (
+                  <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.details.highlights', 'Highlights:')}</span>
+                    <span className="text-[11px] font-medium text-slate-900 truncate">{t('vehicle.details.run_and_drive', 'Run and Drive')}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Price & Aggregator */}
+          {/* Mobile: full width, Tablet (md): full width (2 cols), Desktop (lg): col-span-4 */}
+          <div className="md:col-span-2 lg:col-span-4 space-y-4 w-full min-w-0">
+            {/* Watchlist + Last Bid Info Block */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start justify-between gap-4">
+                {/* Yard + Watchlist (stacked) */}
+                <div className="flex flex-col gap-1">
+                  {(vehicle as any)?.yard_name && (
+                    <span className="text-[12px] font-semibold text-primary uppercase pb-[5px]">
+                      {(vehicle as any).yard_name}
+                    </span>
+                  )}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={isWatchlistLoading}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
+                      }
+                      toggleWatch(vehicle.id)
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 text-[12px] font-semibold border shadow-sm min-w-[100px] justify-center transition-all",
+                      isWatched(vehicle.id)
+                        ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                        : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
+                    )}
+                  >
+                    <Icon
+                      icon={isWatched(vehicle.id) ? "mdi:heart" : "mdi:heart-outline"}
+                      className={cn("w-4 h-4 transition-transform", isWatched(vehicle.id) && "scale-110")}
+                    />
+                    <span className="truncate">
+                      {isWatched(vehicle.id) ? t('vehicle.watchlist.saved', 'Saved') : t('vehicle.watchlist.save', 'Save')}
+                    </span>
+                  </Button>
+                </div>
+
+                {/* Last Bid Info */}
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-slate-500">{t('vehicle.bids.last_bid', 'Last bid:')}</span>
+                    <span className="text-[13px] font-semibold text-slate-900">${lastBidAmount.toLocaleString()}</span>
+                  </div>
+                  {lastBidDate && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-slate-500">{t('vehicle.bids.last_bid_date', 'Last bid date:')}</span>
+                      <span className="text-[11px] font-medium text-slate-700">{lastBidDate}</span>
                     </div>
+                  )}
+                  {bids.length > 0 && (
+                    <button
+                      onClick={() => setIsBidsModalOpen(true)}
+                      className="text-[11px] text-primary hover:underline mt-1"
+                    >
+                      {t('vehicle.bids.view_all', 'View all bids ({{count}})', { count: bids.length })}
+                    </button>
                   )}
                 </div>
               </div>
             </div>
 
-            <VehicleGallery photos={photos} />
-
-            <VehicleSpecs vehicle={vehicle} />
-
-            {/* Transparency Table with Filters */}
-            <div className="bg-card rounded-xl border shadow-sm overflow-hidden" id="quotes-table">
-              <div className="p-4 border-b bg-muted/10 space-y-4">
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <Icon icon="mdi:compare" className="text-primary h-5 w-5" />
-                      {t('vehicle.quotes.title')}
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                      {t('vehicle.quotes.click_to_order')}
-                    </p>
-                  </div>
-
-                  {/* Inline filter buttons and page size selector */}
-                  <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
-                    <Button 
-                      variant={filterRating ? "default" : "outline"} 
-                      size="sm" 
-                      onClick={() => setMinRating(filterRating ? null : 4.5)}
-                      className="h-8 text-xs px-3"
-                    >
-                      {filterRating ? (
-                        <Icon icon="mdi:check" className="mr-1 h-3 w-3" />
-                      ) : (
-                        <Icon icon="mdi:star" className="mr-1 h-3 w-3 text-amber-500" />
-                      )}
-                      {t('vehicle.quotes.rating_filter')}
-                    </Button>
-
-                    {/* Page size selector */}
-                    <div className="flex items-center gap-1 border rounded-md px-2 h-8">
-                      <span className="text-xs text-muted-foreground hidden sm:inline">{t('vehicle.quotes.show')}:</span>
-                      {[5, 10, 15].map((size) => (
-                        <button
-                          key={size}
-                          onClick={() => setQuotesLimit(size)}
-                          className={cn(
-                            "px-2 py-1 text-xs rounded transition-colors",
-                            quotesLimit === size 
-                              ? "bg-primary text-primary-foreground font-medium" 
-                              : "hover:bg-muted"
-                          )}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quotes content wrapper with smooth height transitions */}
-              <div className="relative transition-all duration-300 ease-in-out">
-                {/* Loading overlay */}
-                {isRefreshingQuotes && (
-                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
-                      <span className="text-sm">{t('vehicle.quotes.loading')}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                      <TableHeader>
-                      <TableRow>
-                          {isMultiSelectMode && <TableHead className="w-[50px]"></TableHead>}
-                          <TableHead className="w-[200px]">{t('vehicle.quotes.company')}</TableHead>
-                          <TableHead>{t('vehicle.quotes.delivery')}</TableHead>
-                          <TableHead className="text-right">{t('vehicle.quotes.total_price')}</TableHead>
-                          <TableHead className="text-right w-[100px]">{t('vehicle.quotes.action')}</TableHead>
-                      </TableRow>
-                      </TableHeader>
-                      <TableBody className="transition-all duration-300">
-                      {filteredQuotes.map((quote) => {
-                          const priceColor = getPriceColor(Number(quote.total_price))
-
-                          return (
-                              <QuoteRow 
-                                  key={quote.company_id} 
-                                  quote={quote} 
-                                  isSelected={selectedCompanyIds.includes(quote.company_id)}
-                                  onToggle={() => handleRowClick(quote)}
-                                  priceColor={priceColor}
-                                  onViewBreakdown={(e) => {
-                                      e.stopPropagation()
-                                      setActiveBreakdownQuote(quote)
-                                  }}
-                                  isMultiSelectMode={isMultiSelectMode}
-                              />
-                          )
-                      })}
-                      </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile Card List View */}
-                <div className="md:hidden space-y-0 divide-y">
-                    {filteredQuotes.map((quote) => {
-                        const priceColor = getPriceColor(Number(quote.total_price))
-                        const isSelected = selectedCompanyIds.includes(quote.company_id)
-                        const rating = quote.company_rating ?? null
-                        const reviews = quote.company_review_count ?? null
-
-                        return (
-                          <div 
-                              key={quote.company_id}
-                              className={cn(
-                                  "p-4 active:bg-muted/50 transition-all duration-300",
-                                  isSelected ? "bg-primary/5" : ""
-                              )}
-                              onClick={() => setActiveBreakdownQuote(quote)}
-                          >
-                              <div className="flex justify-between items-start gap-3">
-                                  <div className="flex items-start gap-3">
-                                      {isMultiSelectMode && (
-                                          <Checkbox 
-                                              checked={isSelected} 
-                                              onCheckedChange={() => handleRowClick(quote)} 
-                                              className="mt-1"
-                                          />
-                                      )}
-                                      <div>
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-bold text-sm">{quote.company_name}</span>
-                                          </div>
-                                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                              {rating != null && (
-                                                <div className="flex items-center text-amber-500">
-                                                  <Icon icon="mdi:star" className="h-3 w-3 fill-current" />
-                                                  <span className="ml-0.5 font-medium text-foreground">{rating}</span>
-                                                </div>
-                                              )}
-                                              {rating != null && reviews != null && (
-                                                <span>•</span>
-                                              )}
-                                              {reviews != null && (
-                                                <span>{reviews} {t('vehicle.quotes.reviews')}</span>
-                                              )}
-                                              {rating == null && reviews == null && (
-                                                <span>{quote.delivery_time_days || '45-60'} {t('vehicle.quotes.days')}</span>
-                                              )}
-                                          </div>
-                                      </div>
-                                  </div>
-                                  <div className="text-right">
-                                      <div className={cn("font-bold text-base", priceColor)}>
-                                          ${Number(quote.total_price).toLocaleString()}
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                        )
-                    })}
-                </div>
-
-                {filteredQuotes.length === 0 && !isRefreshingQuotes && (
-                  <div className="p-8 text-center text-muted-foreground animate-fadeIn">
-                      <p>{t('vehicle.quotes.no_match')}</p>
-                      <Button variant="link" onClick={() => { setFilterVip(false); setMinRating(null); setFilterFast(false); }}>{t('vehicle.quotes.clear_filters')}</Button>
-                  </div>
-                )}
-              </div>
-
-              {/* See More Button */}
-              {hasMoreQuotes && filteredQuotes.length > 0 && (
-                <div className="p-4 border-t transition-all duration-300">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={loadMoreQuotes}
-                    disabled={isLoadingMore}
-                  >
-                    {isLoadingMore ? (
-                      <>
-                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
-                        {t('vehicle.quotes.loading')}
-                      </>
-                    ) : (
-                      <>
-                        <Icon icon="mdi:chevron-down" className="mr-2 h-4 w-4" />
-                        {t('vehicle.quotes.see_more')}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* <DamageViewer vehicle={vehicle} /> */}
-
-            <SimilarVehicles baseVehicleId={vehicle.id} />
+            <VehicleQuotesContainer
+              vehicleId={vehicle?.id || 0}
+              auction={vehicle?.source || ''}
+              usacity={vehicle?.yard_name || ''}
+              vehiclecategory={vehicle?.vehicle_type === 'c' ? 'Bike' : 'Sedan'}
+              priceAvailable={priceAvailable}
+              priceUnavailableMessage={priceUnavailableMessage}
+              onOpenBreakdown={handleOpenBreakdown}
+              onOpenLeadModal={handleOpenLeadModal}
+            />
           </div>
+        </motion.div>
 
-          {/* Right Column: Sticky Price Card - Hidden on Mobile, Visible on Tablet+ */}
-          <div className="hidden md:block lg:col-span-1 sticky top-24 space-y-4">
-            <Card className="shadow-lg border-primary/20 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
-              <CardHeader className="pb-4 border-b">
-                <div className="flex justify-between items-start">
-                  <CardDescription className="uppercase text-xs font-bold text-muted-foreground tracking-wider">
-                    {t('vehicle.price_card.estimated_total')}
-                  </CardDescription>
-                  <Badge variant="outline" className="bg-background text-[10px] font-normal">
-                    USD / GEL
-                  </Badge>
-                </div>
-                <CardTitle className="text-4xl font-bold text-foreground flex items-baseline gap-2">
-                  ${totalPrice.toLocaleString()}
-                  <span className="text-lg font-normal text-muted-foreground hidden sm:inline-block">USD</span>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="p-6 space-y-6">
-                {/* Breakdown */}
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center py-1 border-b border-dashed gap-3">
-                    <span className="text-muted-foreground text-sm">{t('vehicle.price_card.auction_price')}</span>
-                    <div className="flex items-center gap-1 group cursor-text">
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        className="h-6 w-14 sm:w-16 text-right text-sm font-medium px-0 bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
-                        value={Number.isFinite(effectiveAuctionPrice) ? effectiveAuctionPrice : ''}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9.]/g, '')
-                          if (!raw) {
-                            setManualAuctionPrice(0)
-                            return
-                          }
-                          const next = Number(raw)
-                          setManualAuctionPrice(Number.isFinite(next) && next >= 0 ? next : 0)
-                        }}
-                      />
-                      <Icon icon="mdi:pencil" className="h-3 w-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                    </div>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.shipping')}</span>
-                    <span>${shippingPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.customs')}</span>
-                    <span>${customsPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">{t('vehicle.price_card.service_fees')}</span>
-                    <span>${brokerFee}</span>
-                  </div>
-                </div>
-
-                {/* CTA - shows when companies are selected */}
-                {selectedCompanyIds.length > 0 && (
-                  <div className="space-y-3 animate-fadeIn">
-                    <Button
-                      className="w-full h-12 text-base font-bold shadow-lg transition-all"
-                      onClick={() => setIsLeadModalOpen(true)}
-                    >
-                      {t('vehicle.price_card.send_request', { count: selectedCompanyIds.length })}
-                    </Button>
-                  </div>
-                )}
-
-                {/** MarketPriceWidget ("below market" / "save" text) intentionally hidden per requirements */}
-                {/* <MarketPriceWidget price={totalPrice || 0} /> */}
-              </CardContent>
-            </Card>
-          </div>
+        {/* Similar Vehicles - Full Width Below */}
+        <div className="mt-8">
+          <SimilarVehicles baseVehicleId={vehicle.id} />
         </div>
-      </main>
-
+      </div>
       {/* Success Modal */}
       <SuccessModal isOpen={isSuccessModalOpen} onClose={() => setIsSuccessModalOpen(false)} count={selectedCompanyIds.length || 1} />
+
+      {/* Engine View Modal */}
+      {(vehicle as any).engine_view && (
+        <Dialog open={isEngineViewOpen} onOpenChange={setIsEngineViewOpen}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>Engine View</DialogTitle>
+              <DialogDescription>
+                {vehicle.year} {vehicle.make} {vehicle.model}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-4">
+              <video
+                src={(vehicle as any).engine_view}
+                controls
+                autoPlay
+                preload="auto"
+                playsInline
+                className="w-full rounded-lg bg-black"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Bids History Modal */}
+      <Dialog open={isBidsModalOpen} onOpenChange={setIsBidsModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('vehicle.bid_history.title', 'Bid History')}</DialogTitle>
+            <DialogDescription>
+              {vehicle.year} {vehicle.make} {vehicle.model} • {t('vehicle.bid_history.bids_count', '{{count}} bid', { count: bids.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-y-auto">
+            {bids.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">
+                {t('vehicle.bid_history.no_bids', 'No bids recorded for this vehicle')}
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {bids.map((bid: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between py-3 px-1">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold",
+                        index === 0
+                          ? "bg-green-100 text-green-700"
+                          : "bg-slate-100 text-slate-600"
+                      )}>
+                        {`#${index + 1}`}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-semibold text-slate-900">
+                          ${(bid.bid ?? 0).toLocaleString()}
+                        </div>
+                        {index === 0 && (
+                          <span className="text-[10px] text-green-600 font-medium uppercase">{t('vehicle.bid_history.latest_bid', 'Latest Bid')}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {bid.bid_time ? (
+                        <>
+                          <div className="text-[11px] text-slate-700">
+                            {formatDateTime(bid.bid_time, i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            {formatDateTime(bid.bid_time, i18n.language, { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">{t('vehicle.bid_history.no_date', 'No date')}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBidsModalOpen(false)}>
+              {t('common.close', 'Close')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile Sticky CTA */}
       <div className={cn(
@@ -1305,108 +1343,200 @@ const VehicleDetailsPage = () => {
         !isCtaVisible && "hidden"
       )}>
         <div>
-           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t('vehicle.mobile_cta.total_est')}</p>
-           <p className="text-xl font-extrabold text-primary leading-none">${totalPrice.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t('vehicle.mobile_cta.total_est')}</p>
+          <p className="text-xl font-extrabold text-primary leading-none">${totalPrice.toLocaleString()}</p>
         </div>
-        <Button 
-            onClick={() => {
-                if (selectedCompanyIds.length > 0) setIsLeadModalOpen(true)
-                else document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
-            }} 
-            size="lg" 
-            className="shadow-lg font-bold px-6"
+        <Button
+          onClick={() => {
+            if (selectedCompanyIds.length > 0) setIsLeadModalOpen(true)
+            else document.getElementById('quotes-table')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          size="lg"
+          className="shadow-lg font-bold px-6"
         >
-           {selectedCompanyIds.length > 0 ? t('vehicle.mobile_cta.request', { count: selectedCompanyIds.length }) : t('vehicle.mobile_cta.select')}
+          {selectedCompanyIds.length > 0 ? t('vehicle.mobile_cta.request', { count: selectedCompanyIds.length }) : t('vehicle.mobile_cta.select')}
         </Button>
       </div>
 
-      {/* Lead Modal */}
+      {/* Lead Modal - Premium Design */}
       <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[420px]">
+          {/* Icon Badge */}
+          <div className="flex justify-center -mt-2 mb-2">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/10 to-emerald-500/10 flex items-center justify-center shadow-sm">
+              <Icon icon="mdi:car-connected" className="h-7 w-7 text-primary" />
+            </div>
+          </div>
+
           <DialogHeader>
-            <DialogTitle>{t('vehicle.lead_modal.title')}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-center">{t('vehicle.lead_modal.title')}</DialogTitle>
+            <DialogDescription className="text-center">
               <span dangerouslySetInnerHTML={{ __html: t('vehicle.lead_modal.description', { count: selectedCompanyIds.length }) }} />
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitLead} className="space-y-4 py-2">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">{t('vehicle.lead_modal.your_name')}</Label>
-                    <Input id="name" placeholder="John Doe" value={formName} onChange={(e) => setFormName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone">{t('vehicle.lead_modal.phone')}</Label>
-                    <Input id="phone" placeholder="+995 555 00 00 00" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} required />
-                </div>
-                
-                <div className="space-y-2">
-                    <Label>{t('vehicle.lead_modal.contact_method')}</Label>
-                    <div className="flex gap-4">
-                        <div onClick={() => setContactMethod('whatsapp')} className={cn("flex items-center space-x-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-muted/50 transition-all", contactMethod === 'whatsapp' ? "border-primary bg-primary/5 ring-1 ring-primary" : "")}>
-                            <Icon icon="mdi:whatsapp" className="h-5 w-5 text-green-600" />
-                            <span className="text-sm font-medium">{t('vehicle.lead_modal.whatsapp')}</span>
-                        </div>
-                        <div onClick={() => setContactMethod('phone')} className={cn("flex items-center space-x-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-muted/50 transition-all", contactMethod === 'phone' ? "border-primary bg-primary/5 ring-1 ring-primary" : "")}>
-                            <Icon icon="mdi:phone" className="h-5 w-5 text-blue-600" />
-                            <span className="text-sm font-medium">{t('vehicle.lead_modal.phone_call')}</span>
-                        </div>
-                    </div>
-                </div>
-             </div>
-             <Button type="submit" className="w-full h-11 font-bold mt-2" disabled={isSubmitting}>
-               {isSubmitting ? t('vehicle.lead_modal.sending') : t('vehicle.lead_modal.send_request', { count: selectedCompanyIds.length })}
-             </Button>
+
+          <form onSubmit={handleSubmitLead} className="space-y-5">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('vehicle.lead_modal.your_name')}
+              </Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                required
+                className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+              />
+            </div>
+
+            {/* Phone Field */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('vehicle.lead_modal.phone')}
+              </Label>
+              <Input
+                id="phone"
+                placeholder="+995 555 00 00 00"
+                value={formPhone}
+                onChange={(e) => setFormPhone(e.target.value)}
+                required
+                className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-base placeholder:text-slate-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+              />
+            </div>
+
+            {/* Contact Method - Modern Toggle Cards */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('vehicle.lead_modal.contact_method')}
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setContactMethod('whatsapp')}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                    contactMethod === 'whatsapp'
+                      ? "border-green-500 bg-green-50 shadow-sm shadow-green-500/20"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <div className={cn(
+                    "h-10 w-10 rounded-full flex items-center justify-center transition-all",
+                    contactMethod === 'whatsapp' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                  )}>
+                    <Icon icon="mdi:whatsapp" className="h-5 w-5" />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-semibold transition-colors",
+                    contactMethod === 'whatsapp' ? "text-green-700" : "text-slate-600"
+                  )}>
+                    {t('vehicle.lead_modal.whatsapp')}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setContactMethod('phone')}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                    contactMethod === 'phone'
+                      ? "border-blue-500 bg-blue-50 shadow-sm shadow-blue-500/20"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <div className={cn(
+                    "h-10 w-10 rounded-full flex items-center justify-center transition-all",
+                    contactMethod === 'phone' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"
+                  )}>
+                    <Icon icon="mdi:phone" className="h-5 w-5" />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-semibold transition-colors",
+                    contactMethod === 'phone' ? "text-blue-700" : "text-slate-600"
+                  )}>
+                    {t('vehicle.lead_modal.phone_call')}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Icon icon="mdi:loading" className="h-5 w-5 animate-spin" />
+                  {t('vehicle.lead_modal.sending')}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Icon icon="mdi:send" className="h-5 w-5" />
+                  {t('vehicle.lead_modal.send_request', { count: selectedCompanyIds.length })}
+                </span>
+              )}
+            </Button>
+
+            {/* Trust Badge */}
+            <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+              <Icon icon="mdi:shield-check" className="h-3.5 w-3.5 text-emerald-500" />
+              {t('vehicle.lead_modal.secure_note', { defaultValue: 'Your data is secure and will only be shared with selected companies' })}
+            </p>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Breakdown Modal */}
-      <QuoteBreakdownModal 
-        quote={activeBreakdownQuote} 
-        isOpen={!!activeBreakdownQuote} 
-        onClose={() => setActiveBreakdownQuote(null)} 
+      <QuoteBreakdownModal
+        quote={activeBreakdownQuote}
+        isOpen={!!activeBreakdownQuote}
+        onClose={() => setActiveBreakdownQuote(null)}
       />
 
       {/* Unlock Modal */}
       <Dialog open={isUnlockModalOpen} onOpenChange={setIsUnlockModalOpen}>
         <DialogContent>
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                    <Icon icon="mdi:lock-open-variant" className="text-primary" />
-                    {t('vehicle.unlock_modal.title')}
-                </DialogTitle>
-                <DialogDescription>
-                    {t('vehicle.unlock_modal.description')}
-                </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUnlockSubmit} className="space-y-4 py-2">
-                <div className="bg-muted/30 p-4 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t('vehicle.unlock_modal.like_project')}</span>
-                        <div className="flex items-center gap-2">
-                            <Checkbox id="like" checked={unlockLiked} onCheckedChange={(c) => setUnlockLiked(c === true)} />
-                            <Label htmlFor="like" className="text-xs">{t('vehicle.unlock_modal.i_liked')}</Label>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <span className="text-sm font-medium">{t('vehicle.unlock_modal.write_review')}</span>
-                        <Textarea 
-                            placeholder={t('vehicle.unlock_modal.review_placeholder')} 
-                            value={unlockReview}
-                            onChange={(e) => setUnlockReview(e.target.value)}
-                            className="h-20 text-xs"
-                        />
-                    </div>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon icon="mdi:lock-open-variant" className="text-primary" />
+              {t('vehicle.unlock_modal.title')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('vehicle.unlock_modal.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUnlockSubmit} className="space-y-4 py-2">
+            <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{t('vehicle.unlock_modal.like_project')}</span>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="like" checked={unlockLiked} onCheckedChange={(c) => setUnlockLiked(c === true)} />
+                  <Label htmlFor="like" className="text-xs">{t('vehicle.unlock_modal.i_liked')}</Label>
                 </div>
-                <DialogFooter>
-                    <Button type="submit" disabled={!unlockLiked} className="w-full">{t('vehicle.unlock_modal.unlock_btn')}</Button>
-                </DialogFooter>
-            </form>
+              </div>
+              <div className="space-y-2">
+                <span className="text-sm font-medium">{t('vehicle.unlock_modal.write_review')}</span>
+                <Textarea
+                  placeholder={t('vehicle.unlock_modal.review_placeholder')}
+                  value={unlockReview}
+                  onChange={(e) => setUnlockReview(e.target.value)}
+                  className="h-20 text-xs"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={!unlockLiked} className="w-full">{t('vehicle.unlock_modal.unlock_btn')}</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
-      <Footer footerLinks={footerLinks} />
+      {/* Inquiry Drawer is now rendered globally via InquiryDrawerProvider */}
+
     </div>
   )
 }

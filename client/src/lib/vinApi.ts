@@ -50,7 +50,7 @@ export async function decodeVin(
   const body: VinDecodeRequest = { vin }
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/vin/decode`, body, {
+    const response = await axios.post(`${API_BASE_URL}/vin/decode`, body, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -120,7 +120,7 @@ export async function decodeVin(
 
 export async function getVinHealth(signal?: AbortSignal): Promise<VinHealthStatus> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/vin/health`, {
+    const response = await axios.get(`${API_BASE_URL}/vin/health`, {
       signal,
     })
 

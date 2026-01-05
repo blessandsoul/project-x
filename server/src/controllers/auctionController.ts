@@ -1,13 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { createRequire } from 'module';
 import { AuctionApiService } from '../services/AuctionApiService.js';
 import { ShippingQuoteService } from '../services/ShippingQuoteService.js';
 import { NotFoundError, ValidationError } from '../types/errors.js';
 import { Company } from '../types/company.js';
-
-const require = createRequire(import.meta.url);
-const copartData: any[] = require('../data/copart.json');
-const iaaData: any[] = require('../data/iaa.json');
 
 interface CalculateShippingRequest {
   address: string;
@@ -47,45 +42,6 @@ export class AuctionController {
       fetched_at: cached.fetchedAt,
       data: cached.data,
     };
-  }
-
-  async getCopartLocations(): Promise<Array<{ name: string; address: string }>> {
-    const locations: Array<{ name: string; address: string }> = [];
-
-    // Copart: name = STATE + NAME
-    for (const stateEntry of copartData || []) {
-      const stateCode = stateEntry?.state;
-      if (!stateCode || !Array.isArray(stateEntry.locations)) continue;
-
-      for (const loc of stateEntry.locations) {
-        if (!loc?.name || !loc?.address || !loc?.zip) continue;
-
-        const name = `${stateCode} ${loc.name}`;
-        const address = `${loc.address}, ${loc.zip}`;
-        locations.push({ name, address });
-      }
-    }
-
-    return locations;
-  }
-
-  async getIaaiLocations(): Promise<Array<{ name: string; address: string }>> {
-    const locations: Array<{ name: string; address: string }> = [];
-
-    // IAAI: name = NAME
-    for (const stateEntry of iaaData || []) {
-      if (!Array.isArray(stateEntry.locations)) continue;
-
-      for (const loc of stateEntry.locations) {
-        if (!loc?.name || !loc?.address || !loc?.zip) continue;
-
-        const name = String(loc.name);
-        const address = `${loc.address}, ${loc.zip}`;
-        locations.push({ name, address });
-      }
-    }
-
-    return locations;
   }
 
   /**

@@ -109,31 +109,179 @@ This endpoint is intentionally minimal and does **not** include photos. Use `/ve
 
 **Description:**
 
-Search vehicles by filters suitable for frontend search UI. Supports make/model/year range, price/mileage range, fuel type, category, drive, and pagination. Returns a paginated list with basic vehicle info and a single thumbnail per vehicle.
+Search vehicles by filters suitable for frontend search UI. Supports make/model/year range, price/odometer range, fuel type, transmission, drive, title type, cylinders, sale date, and pagination. Returns a paginated list with vehicle info and a single thumbnail per vehicle.
+
+All query parameters are validated with Zod before processing. Invalid values return a `400 Bad Request` with validation error details.
 
 **Method:** `GET`
 
 **Query params:**
 
-- `make`, `model`, `year`, `year_from`, `year_to`, `price_from`, `price_to`, `mileage_from`, `mileage_to`, `fuel_type`, `category`, `drive`, `source`, `page`, `limit` – as described in the Search Quotes API section; this endpoint uses the same filter semantics but without computing quotes.
-- `buy_now` (optional, boolean-like: `true` / `false`) – when set to `true`, only return vehicles where `buy_it_now` is active (e.g. lot has Buy It Now option). Any other value (or omission) means no filter on this field.
-- `search` (optional, string) – combined free-text search over make/model/year.
+#### Basic Filters
 
-  When provided, the backend will try to parse the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+- `make` (optional, string, max 255 chars) – partial match on brand name. Trimmed before matching.
+- `model` (optional, string, max 255 chars) – partial match on model name. Trimmed before matching.
+- `source` (optional, string) – comma-separated list of auction sources. Max 50 characters.
+  - **Allowed values (enum):** `copart`, `iaai`
+  - Accepts multiple values separated by comma (any combination)
+  - Case-insensitive
+  - Example: `source=copart` or `source=copart,iaai`
+  - Invalid values return `400 Bad Request`.
+- `category` (optional, string) – vehicle-type code filter. Strictly validated:
+  - `v` — vehicles/cars only
+  - `c` — motorcycles only
+  - `v,c` or `c,v` — both vehicles and motorcycles
+  - Any other value returns `400 Bad Request` with validation error.
+  - If omitted, all vehicle types are returned.
+- `buy_now` (optional, string) – filter for Buy It Now availability. Strictly validated:
+  - **Allowed values:** `true`, `false` (case-insensitive)
+  - When `true`, only return vehicles with active Buy It Now option
+  - When `false` or omitted, no Buy It Now filtering is applied
+  - Any other value returns `400 Bad Request` with validation error.
 
-  - Extracts a year in the range `1950–2099` from the string (if present) and treats it as `year`.
+#### Year Filter
+
+- `year` (optional, number) – exact year match. Must be exactly 4 digits (1900-2099).
+- `year_from` (optional, number) – minimum year (inclusive). Must be exactly 4 digits (1900-2099).
+- `year_to` (optional, number) – maximum year (inclusive). Must be exactly 4 digits (1900-2099).
+
+> **Note:** Invalid year values (e.g., `201`, `20001`) return `400 Bad Request`.
+
+#### Price Filter
+
+- `price_from` (optional, number) – minimum price. Must be 0-500,000.
+- `price_to` (optional, number) – maximum price. Must be 0-500,000.
+
+> **Note:** Price filtering uses the **last bid** from `vehicle_lot_bids` table, with fallback to `calc_price` if no bids exist. When `price_to=500000`, it means "500,000 and more" (no upper bound applied in query). Invalid values return `400 Bad Request`.
+
+#### Odometer Filter
+
+- `odometer_from` (optional, integer) – minimum mileage. Must be 0-250,000.
+- `odometer_to` (optional, integer) – maximum mileage. Must be 0-250,000.
+- `mileage_from`, `mileage_to` (optional) – legacy aliases, same validation as odometer params.
+
+> **Note:** Maps to DB column `mileage`. When `odometer_to=250000`, it means "250,000 and more" (no upper bound applied in query). Invalid values return `400 Bad Request`.
+
+#### Title Type Filter
+
+- `title_type` (optional, string) – comma-separated list of title types. Max 100 characters.
+- **Allowed values (enum):** `clean title`, `nonrepairable`, `salvage title`
+- Accepts multiple values separated by comma
+- Case-insensitive
+- Example: `title_type=clean title,salvage title`
+
+> **Note:** Uses partial matching (LIKE) on DB column `document`. Invalid values return `400 Bad Request`.
+
+#### Transmission Filter
+
+- `transmission` (optional, string) – filter by transmission type. Max 50 characters.
+- **Allowed values (enum):** `auto`, `manual`, or `auto,manual`
+- `auto` – filters only automatic transmission
+- `manual` – filters only manual transmission
+- `auto,manual` – filters both (same as not specifying)
+- Case-insensitive
+
+> **Note:** Invalid values return `400 Bad Request`.
+
+#### Fuel Filter
+
+- `fuel` (optional, string) – comma-separated list of fuel types. Max 100 characters.
+- **Allowed values (enum):** `petrol`, `diesel`, `electric`, `flexible`, `hybrid`
+- Accepts multiple values separated by comma (any combination)
+- Case-insensitive
+- Example: `fuel=petrol,diesel,hybrid`
+- `fuel_type` (optional) – legacy single-value filter (partial match).
+
+> **Note:** Filters on DB columns `engine_fuel` and `engine_fuel_rus`. Invalid values return `400 Bad Request`.
+
+#### Drive Filter
+
+- `drive` (optional, string) – comma-separated list of drive types. Max 100 characters.
+- **Allowed values (enum):** `front`, `rear`, `full`
+- Accepts multiple values separated by comma (any combination)
+- Case-insensitive
+- Example: `drive=front,full`
+
+> **Special rule:** When `full` is selected, it matches DB values containing `full`, `full/front`, or `full/rear`. Invalid values return `400 Bad Request`.
+
+#### Location Filter
+
+- `location` (optional, string) – city/yard name to filter by. Max 100 characters.
+- Case-insensitive matching against the `yard_name` column with spaces removed.
+- Example: `location=Los Angeles`
+
+> **Note:** Available cities can be fetched from `/api/cities` endpoint. Both the filter value and `yard_name` are compared lowercase with spaces removed for flexible matching.
+
+#### Cylinders Filter
+
+- `cylinders` (optional, string) – comma-separated list.
+- **Allowed values:** `0`, `1`, `2`, `3`, `4`, `5`, `6`, `8`, `10`, `12`, `U`
+- Example: `cylinders=4,6,8`
+
+> **Note:** Values are kept as strings (not numbers). `U` = Unknown.
+
+#### Sale Date Filter
+
+- `sold_from` (optional, string) – minimum sale date.
+- `sold_to` (optional, string) – maximum sale date.
+- **Accepted formats:** `YYYY-MM-DD` or `YYYY-MM-DD HH:mm:ss`
+- Example: `sold_from=2024-01-01&sold_to=2024-12-31`
+
+> **Note:** Combines DB columns `sold_at_date` and `sold_at_time` for filtering.
+
+#### Exact Date Filter
+
+- `date` (optional, string) – filter vehicles by exact sale date.
+- **Format:** Strict `YYYY-MM-DD` (e.g., `2025-11-13`)
+- Example: `date=2025-11-13`
+- Returns only vehicles where `sold_at_date` equals the given date.
+- Validation:
+  - Must match regex `^\d{4}-\d{2}-\d{2}$`
+  - Must be a valid calendar date (e.g., `2025-02-31` is rejected)
+  - Invalid values return `400 Bad Request` with a clear error message
+
+> **Note:** This filter is useful for finding vehicles sold on a specific day. It uses `DATE(sold_at_date) = ?` for comparison, handling both DATE and DATETIME column types.
+
+#### Pagination & Sorting
+
+- `page` (optional, number, default: 1) – page number, must be ≥ 1.
+- `limit` (optional, number, default: 20, max: 250) – items per page.
+- `sort` (optional, string) – sorting order:
+
+| Value            | Description                | Use Case                          |
+| ---------------- | -------------------------- | --------------------------------- |
+| `price_asc`      | Price low → high           | Find cheapest vehicles            |
+| `price_desc`     | Price high → low           | Browse premium vehicles           |
+| `year_desc`      | Year newest → oldest       | Find newest models                |
+| `year_asc`       | Year oldest → newest       | Find classic/older vehicles       |
+| `mileage_asc`    | Mileage low → high         | Find low-mileage vehicles         |
+| `mileage_desc`   | Mileage high → low         | Find high-mileage deals           |
+| `sold_date_desc` | Recently sold first        | See latest auction results        |
+| `sold_date_asc`  | Oldest sold first          | Historical analysis               |
+| `best_value`     | Best price + mileage combo | **Recommended** – Find best deals |
+| _(default)_      | Most recently added        | New listings first                |
+
+> **Note:** Price-based sorting (`price_asc`, `price_desc`, `best_value`) uses the **last bid** from `vehicle_lot_bids` table, with fallback to `calc_price` if no bids exist.
+
+> **Tip:** Use `best_value` to find vehicles with the best combination of low price and low mileage. This is ideal for users looking for the best deals.
+
+#### Free-Text Search
+
+- `search` (optional, string) – combined free-text search over make/model/year or VIN/lot ID.
+
+  The backend parses the `search` string into `make`, `model`, and `year` **only if those fields are not already passed explicitly**:
+
+  - Extracts a year in the range `1950–2099` from the string (if present).
   - Uses the first remaining word as `make`.
-  - Uses the remaining words (if any) joined with spaces as `model`.
+  - Uses the remaining words joined with spaces as `model`.
+  - If the string looks like a VIN (alphanumeric, ≥11 chars), searches by VIN.
+  - If the string is purely numeric, searches by lot ID.
 
   Examples:
 
   - `GET /vehicles/search?search=Toyota` → `make="Toyota"`.
-  - `GET /vehicles/search?search=Toyota Corolla` → `make="Toyota"`, `model="Corolla"`.
   - `GET /vehicles/search?search=Toyota Corolla 2018` → `make="Toyota"`, `model="Corolla"`, `year=2018`.
-
-  Explicit query params always win over values derived from `search`. For example:
-
-  - `GET /vehicles/search?search=Toyota Corolla 2018&make=Honda&year=2020` → `make="Honda"`, `model="Corolla"`, `year=2020`.
+  - `GET /vehicles/search?search=1HGBH41JXMN109186` → searches by VIN.
 
 **Response 200 JSON:**
 
@@ -142,8 +290,8 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
   "items": [
     {
       "id": 123,
-      "brand_name": "Toyota",
-      "model_name": "Corolla",
+      "vin": "1HGBH41JXMN109186",
+      "source_lot_id": "12345678",
       "make": "Toyota",
       "model": "Corolla",
       "year": 2018,
@@ -153,12 +301,20 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
       "retail_value": 20000,
       "calc_price": 7300,
       "buy_it_now_price": 7600,
-      "buy_it_now": 7500,
-      "fuel_type": "Gasoline",
+      "buy_it_now": 1,
+      "engine_fuel": "petrol",
+      "engine_volume": 2.0,
       "category": "Sedan",
-      "drive": "FWD",
-      "primary_photo_url": "https://.../full.jpg", // first full-size photo or null
-      "primary_thumb_url": "https://.../thumb_min.jpg" // first thumbnail, ideal for lists
+      "drive": "front",
+      "document": "clean title",
+      "transmission": "auto",
+      "cylinders": "4",
+      "sold_at_date": "2024-06-15",
+      "sold_at_time": "14:30:00",
+      "sold_at": "2024-06-15 14:30:00",
+      "primary_photo_url": "https://.../full.jpg",
+      "primary_thumb_url": "https://.../thumb_min.jpg",
+      "last_bid": { "bid": 7300, "bid_time": "2024-06-15T14:30:00.000Z" }
     }
   ],
   "total": 1234,
@@ -168,7 +324,76 @@ Search vehicles by filters suitable for frontend search UI. Supports make/model/
 }
 ```
 
+**Response Fields:**
+
+| Field               | Type   | Description                     |
+| ------------------- | ------ | ------------------------------- |
+| `id`                | number | Vehicle ID                      |
+| `vin`               | string | Vehicle Identification Number   |
+| `source_lot_id`     | string | Lot ID from auction source      |
+| `make`              | string | Brand name                      |
+| `model`             | string | Model name                      |
+| `year`              | number | Model year                      |
+| `mileage`           | number | Odometer reading                |
+| `yard_name`         | string | Auction yard location           |
+| `source`            | string | Auction source (copart/iaai)    |
+| `retail_value`      | number | Estimated retail value          |
+| `calc_price`        | number | Current auction price           |
+| `buy_it_now_price`  | number | Buy It Now price (if available) |
+| `buy_it_now`        | number | Buy It Now flag (1 = active)    |
+| `engine_fuel`       | string | Fuel type                       |
+| `engine_volume`     | number | Engine displacement             |
+| `category`          | string | Vehicle category/type           |
+| `drive`             | string | Drive type (front/rear/full)    |
+| `document`          | string | Title/document type             |
+| `transmission`      | string | Transmission type               |
+| `cylinders`         | string | Number of cylinders             |
+| `sold_at_date`      | string | Sale date (YYYY-MM-DD)          |
+| `sold_at_time`      | string | Sale time (HH:mm:ss)            |
+| `sold_at`           | string | Combined sale datetime          |
+| `primary_photo_url` | string | Full-size photo URL             |
+| `primary_thumb_url` | string | Thumbnail URL                   |
+| `last_bid`          | object | Most recent bid (null if none)  |
+
+**last_bid Object Fields:**
+
+| Field      | Type   | Description                          |
+| ---------- | ------ | ------------------------------------ |
+| `bid`      | number | Bid amount in USD (null if unknown)  |
+| `bid_time` | string | ISO 8601 timestamp of bid (nullable) |
+
+> **Note:** For full bid history, use `GET /vehicles/:id` which returns all bids in the `bids` array.
+
 > **UI hint:** Use `primary_thumb_url` for catalog/list thumbnails, and `primary_photo_url` when you need a larger image preview.
+
+**Example Requests:**
+
+```bash
+# Basic search by make and year range
+GET /vehicles/search?make=bmw&year_from=2018&year_to=2022
+
+# Filter by odometer and title type
+GET /vehicles/search?odometer_from=10000&odometer_to=80000&title_type=clean title
+
+# Multi-value filters
+GET /vehicles/search?transmission=auto,manual&fuel=petrol,diesel&drive=front,full
+
+# Filter by cylinders and sort by price
+GET /vehicles/search?cylinders=4,6,8&sort=price_asc
+
+# Filter by sale date range
+GET /vehicles/search?sold_from=2024-01-01&sold_to=2024-06-30
+
+# Filter by exact date (vehicles sold on a specific day)
+GET /vehicles/search?date=2025-11-13
+
+# Combined filters with pagination
+GET /vehicles/search?make=toyota&fuel=hybrid&page=2&limit=50
+```
+
+**Error Responses:**
+
+- `400 Bad Request` – Invalid query parameters (Zod validation failed).
 
 ---
 
@@ -185,16 +410,48 @@ Return a single vehicle by ID with core fields needed for quotes.
 
 **Response 200 JSON:**
 
-- `id`
-- `brand_name`
-- `model_name`
-- `make`
-- `model`
-- `year`
-- `yard_name`
-- `source`
-- `retail_value`
-- `calc_price`
+```jsonc
+{
+  "id": 123,
+  "brand_name": "Toyota",
+  "model_name": "Corolla",
+  "make": "Toyota",
+  "model": "Corolla",
+  "year": 2018,
+  "yard_name": "Dallas, TX",
+  "source": "copart",
+  "retail_value": 20000,
+  "calc_price": 7300,
+  "bids": [
+    { "bid": 7300, "bid_time": "2024-06-15T14:30:00.000Z" },
+    { "bid": 7100, "bid_time": "2024-06-15T14:25:00.000Z" },
+    { "bid": 6800, "bid_time": "2024-06-15T14:20:00.000Z" }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field          | Type   | Description                            |
+| -------------- | ------ | -------------------------------------- |
+| `id`           | number | Vehicle ID                             |
+| `brand_name`   | string | Brand name                             |
+| `model_name`   | string | Model name                             |
+| `make`         | string | Brand name (alias)                     |
+| `model`        | string | Model name (alias)                     |
+| `year`         | number | Model year                             |
+| `yard_name`    | string | Auction yard location                  |
+| `source`       | string | Auction source (copart/iaai)           |
+| `retail_value` | number | Estimated retail value                 |
+| `calc_price`   | number | Current auction price                  |
+| `bids`         | array  | Full bid history (sorted by time DESC) |
+
+**bids Array Item Fields:**
+
+| Field      | Type   | Description                          |
+| ---------- | ------ | ------------------------------------ |
+| `bid`      | number | Bid amount in USD (null if unknown)  |
+| `bid_time` | string | ISO 8601 timestamp of bid (nullable) |
 
 **Error responses:**
 
@@ -326,7 +583,7 @@ List the authenticated user's favorite vehicles with pagination.
 
 **Method:** `GET`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Query params:**
 
@@ -356,7 +613,7 @@ List the authenticated user's favorite vehicles with pagination.
 
 **Error responses:**
 
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 
@@ -368,7 +625,7 @@ Add a vehicle to the user's favorites.
 
 **Method:** `POST`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Path params:**
 
@@ -385,7 +642,7 @@ Add a vehicle to the user's favorites.
 **Error responses:**
 
 - `400 Bad Request` – invalid vehicle ID.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 
@@ -397,7 +654,7 @@ Remove a vehicle from the user's favorites.
 
 **Method:** `DELETE`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Path params:**
 
@@ -408,7 +665,7 @@ Remove a vehicle from the user's favorites.
 **Error responses:**
 
 - `400 Bad Request` – invalid vehicle ID.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 
 ---
 
@@ -472,10 +729,14 @@ Return a combined object with vehicle core data + photos.
 
 ## Quote Calculation API (Per Vehicle)
 
+> **IMPORTANT:** All quote price calculations now use `POST /api/calculator` as the
+> single source of truth. See `docs/calculator-api.md` for full details on the
+> calculator-based architecture.
+
 ### POST `/vehicles/:vehicleId/calculate-quotes`
 
 **Description:**
-Calculate quotes for **all companies** for a single vehicle and **persist** them into `company_quotes`. Returns the created quotes plus distance.
+Calculate shipping quotes for **all companies** for a single vehicle. Client provides auction and city; server normalizes and calls calculator API.
 
 **Method:** `POST`
 
@@ -483,34 +744,50 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
 
 - `vehicleId` – numeric vehicle ID.
 
+**Request body (required):**
+
+```json
+{
+  "auction": "copart", // Required: auction source (will be normalized)
+  "usacity": "Permian Basin (TX)" // Required: US city (will be smart-matched)
+}
+```
+
 **Query params (optional):**
 
-- `currency` – `"usd"` (default) or `"gel"`. Controls the currency of returned
-  `total_price` values and `breakdown.total_price`.
-
-**Request body:**
-
-- Currently no body fields are required; path param is enough.
+- `currency` – `"usd"` (default) or `"gel"`. Controls the currency of returned `total_price` values.
+- `limit` – number of quotes per page (default 5, max 50).
+- `offset` – pagination offset.
+- `minRating` – minimum company rating filter (0-5).
 
 #### Validation rules
 
 | Field       | Location | Required | Type   | Constraints                                 |
 | ----------- | -------- | -------- | ------ | ------------------------------------------- |
 | `vehicleId` | path     | yes      | number | Integer, `>= 1`                             |
+| `auction`   | body     | yes      | string | 1-50 chars, e.g., "copart", "iaai"          |
+| `usacity`   | body     | yes      | string | 1-100 chars, US city name                   |
 | `currency`  | query    | no       | string | 3-letter code; backend supports `usd`/`gel` |
 
 **Processing steps:**
 
-1. Load vehicle via `VehicleModel.findById(vehicleId)`.
-2. Load companies via `CompanyModel.findAll` (up to 1000).
-3. Compute distance from `vehicle.yard_name` to Poti, Georgia using `ShippingQuoteService` (yards table + cache + Geoapify fallback).
-4. For each company, compute quote using:
-   - `base_price`, `price_per_mile`, `customs_fee`, `service_fee`, `broker_fee`.
-   - `distance_miles`.
-   - Vehicle `retail_value` (insurance) and `calc_price` (vehicle cost).
-5. Insert one row into `company_quotes` per company.
+1. **Normalize auction**: `"copart"` → `"Copart"`, `"iaai"` → `"IAAI"` (must match `/api/auctions`).
+2. **Smart-match city**: `"Permian Basin (TX)"` → canonical city from `/api/cities`.
+3. **Build calculator request** with strict defaults:
+   - `buyprice`: 1 (always)
+   - `vehicletype`: "standard"
+   - `vehiclecategory`: "Sedan"
+   - `destinationport`: "POTI"
+4. Call `POST /api/calculator` with normalized values.
+5. Return quotes for all companies (NOT persisted to database).
 
-**Response 201 JSON:**
+> **Important:** The calculator API is case-sensitive. All values are normalized
+> by `CalculatorRequestBuilder` before calling.
+
+**Response 200 JSON (success):**
+
+> **Note:** `total_price` is the **shipping/transportation cost only**.
+> Vehicle price is NOT included since the user already knows their bid amount.
 
 ```jsonc
 {
@@ -521,39 +798,55 @@ Calculate quotes for **all companies** for a single vehicle and **persist** them
   "mileage": 85000,
   "yard_name": "Dallas, TX",
   "source": "copart",
-  "distance_miles": 7800,
+  "distance_miles": 0,
+  "price_available": true,
   "quotes": [
     {
       "company_id": 42,
       "company_name": "ACME Shipping",
-      "total_price": 12345.67, // vehicle + shipping + insurance, in requested currency
-      "delivery_time_days": 35, // optional per-company override
+      "total_price": 1230,
+      "delivery_time_days": 35,
       "breakdown": {
-        "base_price": 500,
-        "distance_miles": 7800,
-        "price_per_mile": 0.5,
-        "mileage_cost": 3900,
-        "customs_fee": 300,
-        "service_fee": 200,
-        "broker_fee": 150,
-        "retail_value": 20000,
-        "insurance_rate": 0.01,
-        "insurance_fee": 200,
-        "shipping_total": 5050,
-        "calc_price": 7300,
-        "total_price": 12350,
-        "formula_source": "default" // or "final_formula"
-      }
+        "transportation_total": 1230,
+        "currency": "USD",
+        "distance_miles": 0,
+        "formula_source": "calculator_api"
+      },
+      "company_rating": 4.5,
+      "company_review_count": 12
     }
-  ]
+  ],
+  "total": 5,
+  "limit": 5,
+  "offset": 0,
+  "totalPages": 1
+}
+```
+
+**Response 200 JSON (city not matched - price unavailable):**
+
+If the city cannot be matched to a supported location, the response indicates
+price is not available instead of returning an error:
+
+```jsonc
+{
+  "vehicle_id": 123,
+  "price_available": false,
+  "message": "Could not match city \"Some Unknown City\" to a supported location. Price calculation is not available for this location.",
+  "unmatched_city": "Some Unknown City",
+  "quotes": [],
+  "total": 0,
+  "limit": 5,
+  "offset": 0,
+  "totalPages": 0
 }
 ```
 
 **Error responses:**
 
-- `404 Not Found` — vehicle not found.
-- `400 Bad Request` — invalid `vehicleId` path parameter.
-- `422 Unprocessable Entity` (via `ValidationError`) — no companies configured or unable to compute distance.
+- `404 Not Found` — Vehicle not found.
+- `400 Bad Request` — Invalid `vehicleId` path parameter or missing required body fields.
+- `502 Bad Gateway` — Calculator API error (external service unavailable).
 
 ---
 
@@ -861,20 +1154,28 @@ Constraints:
 
 ## Summary of Filters vs Columns
 
-| Request field  | Internal filter key | Column(s) used                                       |
-| -------------- | ------------------- | ---------------------------------------------------- |
-| `make`         | `make`              | `vehicles.brand_name`                                |
-| `model`        | `model`             | `vehicles.model_name`                                |
-| `year`         | `year`              | `vehicles.year`                                      |
-| `year_from`    | `yearFrom`          | `vehicles.year >=`                                   |
-| `year_to`      | `yearTo`            | `vehicles.year <=`                                   |
-| `mileage_from` | `mileageFrom`       | `vehicles.mileage >=`                                |
-| `mileage_to`   | `mileageTo`         | `vehicles.mileage <=`                                |
-| `fuel_type`    | `fuelType`          | `vehicles.engine_fuel` OR `vehicles.engine_fuel_rus` |
-| `category`     | `category`          | `vehicles.vehicle_type`                              |
-| `drive`        | `drive`             | `vehicles.drive`                                     |
-| `price_from`   | `priceFrom`         | in-memory filter on `total_price` (quotes)           |
-| `price_to`     | `priceTo`           | in-memory filter on `total_price` (quotes)           |
+| Request field   | Internal filter key | Column(s) used                                       |
+| --------------- | ------------------- | ---------------------------------------------------- |
+| `make`          | `make`              | `vehicles.brand_name`                                |
+| `model`         | `model`             | `vehicles.model_name`                                |
+| `year`          | `year`              | `vehicles.year`                                      |
+| `year_from`     | `yearFrom`          | `vehicles.year >=`                                   |
+| `year_to`       | `yearTo`            | `vehicles.year <=`                                   |
+| `odometer_from` | `mileageFrom`       | `vehicles.mileage >=`                                |
+| `odometer_to`   | `mileageTo`         | `vehicles.mileage <=`                                |
+| `mileage_from`  | `mileageFrom`       | `vehicles.mileage >=` (legacy alias)                 |
+| `mileage_to`    | `mileageTo`         | `vehicles.mileage <=` (legacy alias)                 |
+| `title_type`    | `titleTypes`        | `vehicles.document` (IN clause, multi-value)         |
+| `transmission`  | `transmissionTypes` | `vehicles.transmission` (IN clause, multi-value)     |
+| `fuel`          | `fuelTypes`         | `vehicles.engine_fuel` OR `engine_fuel_rus` (multi)  |
+| `fuel_type`     | `fuelType`          | `vehicles.engine_fuel` OR `engine_fuel_rus` (legacy) |
+| `drive`         | `driveTypes`        | `vehicles.drive` (multi-value, special `full` logic) |
+| `cylinders`     | `cylinderTypes`     | `vehicles.cylinders` (IN clause, multi-value)        |
+| `sold_from`     | `soldFrom`          | `vehicles.sold_at_date` + `sold_at_time >=`          |
+| `sold_to`       | `soldTo`            | `vehicles.sold_at_date` + `sold_at_time <=`          |
+| `category`      | `category`          | `vehicles.vehicle_type`                              |
+| `price_from`    | `priceFrom`         | `vehicles.calc_price >=`                             |
+| `price_to`      | `priceTo`           | `vehicles.calc_price <=`                             |
 
 ---
 

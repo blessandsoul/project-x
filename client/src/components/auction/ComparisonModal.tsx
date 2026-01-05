@@ -38,21 +38,23 @@ export function ComparisonModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="bg-background w-fit max-w-[95vw] max-h-[90vh] rounded-xl shadow-2xl overflow-y-auto flex flex-col border border-border/50 m-auto"
+            className="bg-white w-fit max-w-[95vw] max-h-[90vh] rounded-xl shadow-2xl shadow-primary/10 overflow-y-auto flex flex-col border-2 border-primary/20 m-auto relative"
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Accent top border */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-sub to-accent rounded-t-xl z-10" />
             {/* Header */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-muted/30 shrink-0">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-white shrink-0">
               <div className="space-y-1">
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2">
                   <Icon icon="mdi:compare" className="w-6 h-6 text-primary" />

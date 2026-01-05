@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply, FastifyError } from 'fastify';
 import {
   AppError,
   ValidationError,
@@ -17,6 +17,11 @@ import {
  * Converts various error types to consistent HTTP responses with
  * appropriate status codes and error messages.
  *
+ * SECURITY: This handler ensures that:
+ * - All validation/schema errors return HTTP 400 (never 500)
+ * - Database errors are masked and never expose internal details
+ * - Stack traces are only shown in development
+ *
  * Features:
  * - Structured error responses
  * - Custom error class handling
@@ -25,20 +30,92 @@ import {
  * - Development vs production error details
  */
 
+/**
+ * Check if error is a Fastify validation error (from JSON schema validation)
+ * These errors occur when request params, query, or body fail schema validation
+ */
+function isFastifyValidationError(error: Error | FastifyError): boolean {
+  const fastifyError = error as FastifyError;
+  
+  // Fastify schema validation errors have specific codes
+  if (fastifyError.code === 'FST_ERR_VALIDATION') {
+    return true;
+  }
+  
+  // Check for validation property (Fastify adds this for schema errors)
+  if ('validation' in fastifyError && Array.isArray((fastifyError as any).validation)) {
+    return true;
+  }
+  
+  // Check for validationContext (params, querystring, body, headers)
+  if ('validationContext' in fastifyError) {
+    return true;
+  }
+  
+  // Check statusCode - Fastify sets 400 for validation errors
+  if (fastifyError.statusCode === 400) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Check if error is a database-related error that should be masked
+ */
+function isDatabaseError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  const errorPatterns = [
+    'er_',           // MySQL error codes (ER_DUP_ENTRY, ER_NO_SUCH_TABLE, etc.)
+    'econnrefused',  // Connection refused
+    'enotfound',     // DNS lookup failed
+    'etimedout',     // Connection timeout
+    'sql',           // SQL-related errors
+    'mysql',         // MySQL-specific errors
+    'prisma',        // Prisma ORM errors
+    'database',      // Generic database errors
+    'query',         // Query errors
+    'connection',    // Connection errors
+  ];
+  
+  return errorPatterns.some(pattern => message.includes(pattern));
+}
+
 const errorHandlerPlugin = fp(async (fastify) => {
   /**
    * Global error handler
    *
    * Processes all errors thrown during request handling and
    * converts them to appropriate HTTP responses.
+   *
+   * SECURITY PRIORITY ORDER:
+   * 1. Fastify schema validation errors → 400 (MUST be first to catch malformed input)
+   * 2. Custom application errors → appropriate status code
+   * 3. JWT errors → 401
+   * 4. Database errors → 500 with masked message
+   * 5. All other errors → 500 with masked message
    */
-  fastify.setErrorHandler((error: Error, request: FastifyRequest, reply: FastifyReply) => {
+  fastify.setErrorHandler((error: Error | FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+    // If a response was already sent (e.g. by auth/preValidation), never try to send again.
+    // This can happen under scanners/proxies that trigger edge cases or aborts.
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
+
     let statusCode = 500;
     let errorCode = 'INTERNAL_ERROR';
     let message = 'Internal server error';
 
+    // SECURITY: Handle Fastify schema validation errors FIRST
+    // This catches malformed path params, query strings, and bodies
+    // Examples: /admin/users/10%3B, /companies/%27, etc.
+    if (isFastifyValidationError(error)) {
+      statusCode = 400;
+      errorCode = 'INVALID_REQUEST';
+      message = 'Invalid request parameters';
+    }
     // Handle custom application errors
-    if (error instanceof AppError) {
+    else if (error instanceof AppError) {
       statusCode = error.statusCode;
       errorCode = error.errorCode;
       message = error.message;
@@ -54,22 +131,11 @@ const errorHandlerPlugin = fp(async (fastify) => {
       errorCode = 'TOKEN_EXPIRED';
       message = 'Authentication token has expired';
     }
-    // Handle validation errors (from fastify schemas)
-    else if (error.name === 'ValidationError' || error.message.includes('validation')) {
-      statusCode = 400;
-      errorCode = 'VALIDATION_ERROR';
-      message = 'Request validation failed';
-    }
-    // Handle database errors
-    else if (error.message.includes('ER_DUP_ENTRY')) {
-      statusCode = 409;
-      errorCode = 'DUPLICATE_ENTRY';
-      message = 'Resource already exists';
-    }
-    else if (error.message.includes('ER_NO_SUCH_TABLE')) {
-      statusCode = 500;
-      errorCode = 'DATABASE_ERROR';
-      message = 'Database configuration error';
+    // Handle rate limit errors - return 429 instead of 500
+    else if (error.message.includes('Rate limit exceeded')) {
+      statusCode = 429;
+      errorCode = 'RATE_LIMIT_EXCEEDED';
+      message = error.message;
     }
     // Handle Fastify JSON body parse errors explicitly to avoid generic 500s
     else if (error.message.includes('Body is not valid JSON')) {
@@ -77,11 +143,25 @@ const errorHandlerPlugin = fp(async (fastify) => {
       errorCode = 'BAD_REQUEST_BODY';
       message = 'Body is not valid JSON but content-type is application/json';
     }
-    // Handle other known errors
+    // Handle other known client errors
     else if (error.name === 'SyntaxError') {
       statusCode = 400;
       errorCode = 'BAD_REQUEST';
       message = 'Invalid request format';
+    }
+    // SECURITY: Handle database errors - NEVER expose internal details
+    else if (isDatabaseError(error)) {
+      // Check for specific known cases that have user-friendly messages
+      if (error.message.includes('ER_DUP_ENTRY')) {
+        statusCode = 409;
+        errorCode = 'DUPLICATE_ENTRY';
+        message = 'Resource already exists';
+      } else {
+        // All other database errors get a generic 500 response
+        statusCode = 500;
+        errorCode = 'INTERNAL_ERROR';
+        message = 'An internal error occurred. Please try again later.';
+      }
     }
 
     // Log error details for debugging

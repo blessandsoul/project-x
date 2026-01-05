@@ -144,11 +144,11 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
   }
 
   const SpecRow = ({ label, value, index }: { label: string; value: unknown, index: number }) => (
-    <div className={`flex justify-between py-2 px-3 ${index % 2 === 0 ? 'bg-muted/30' : 'bg-transparent'} border-b border-border/20 last:border-0`}>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className={`flex justify-between py-2 px-3 ${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} border-b border-slate-100 last:border-0`}>
+      <dt className="text-xs font-medium text-slate-500 uppercase tracking-wider">
         {formatVinFieldKey(label, t)}
       </dt>
-      <dd className="text-xs sm:text-sm font-semibold text-foreground text-right pl-4">
+      <dd className="text-xs sm:text-sm font-semibold text-slate-900 text-right pl-4">
         {formatVinFieldValue(value)}
       </dd>
     </div>
@@ -160,43 +160,43 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       {/* Left Column: Main Content */}
       <div className="lg:col-span-2 space-y-6">
-        <Card className="w-full overflow-hidden border-none shadow-2xl bg-card ring-1 ring-border/50 relative">
+        <Card className="w-full overflow-hidden border border-slate-200 shadow-lg bg-white relative">
         
-          {/* Feature 3: Car Photo Background (Unsplash) */}
+          {/* Car Photo Background */}
           {carImage && (
-            <div className="absolute inset-0 h-64 w-full z-0">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background z-10" />
+            <div className="absolute inset-0 h-56 w-full z-0">
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/40 to-white z-10" />
                 <img 
                     src={carImage.url} 
                     alt={vehicleTitle} 
-                    className="w-full h-full object-cover opacity-50"
+                    className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-2 right-2 z-20 text-[10px] text-muted-foreground/50">
+                <div className="absolute bottom-2 right-2 z-20 text-[10px] text-white/50">
                     {t('vin.photo_credit', { photographer: carImage.photographer })}
                 </div>
             </div>
           )}
 
           {/* Hero Header */}
-          <div className="relative z-10 pt-8 pb-6 px-6">
-            <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+          <div className="relative z-10 pt-6 pb-6 px-6">
+            <div className="flex flex-col md:flex-row items-start justify-between gap-4">
                 <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground bg-background/80 backdrop-blur">
+                        <Badge variant="outline" className="font-mono text-[10px] text-slate-600 bg-white/90 border-slate-300">
                             VIN: {vin}
                         </Badge>
-                        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20">
+                        <Badge className="bg-accent text-slate-900 hover:bg-accent/90 border-none font-semibold">
                             <Icon icon="mdi:check-decagram" className="mr-1 h-3 w-3" />
                             {t('common.verified')}
                         </Badge>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground leading-tight drop-shadow-sm">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-tight drop-shadow-md">
                         {vehicleTitle}
                     </h2>
                     {highlights.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                             {highlights.map(h => (
-                                <Badge key={h} className="bg-primary/90 hover:bg-primary text-primary-foreground border-none shadow-sm px-2.5 py-0.5 text-xs">
+                                <Badge key={h} className="bg-slate-900 hover:bg-slate-800 text-white border-none shadow-sm px-2.5 py-0.5 text-xs">
                                     {h}
                                 </Badge>
                             ))}
@@ -208,83 +208,83 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                         <img 
                             src={logoPath} 
                             alt={make} 
-                            className="h-16 w-16 md:h-24 md:w-24 object-contain opacity-90 mix-blend-multiply dark:mix-blend-screen filter drop-shadow-lg"
+                            className="h-14 w-14 md:h-20 md:w-20 object-contain"
                             onError={() => setLogoError(true)}
                         />
                     ) : (
-                        <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-muted/50 flex items-center justify-center">
-                            <Icon icon="mdi:car" className="h-8 w-8 text-muted-foreground" />
+                        <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Icon icon="mdi:car" className="h-7 w-7 text-slate-400" />
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Dashboard Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+            {/* Dashboard Stats - Clean solid cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-500">
                         <Icon icon="mdi:engine-outline" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.engine')}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">{t('vin.specs.engine')}</span>
                     </div>
-                    <span className="text-sm font-bold truncate" title={quickStats.engine}>{quickStats.engine}</span>
+                    <span className="text-sm font-bold text-slate-900 truncate" title={quickStats.engine}>{quickStats.engine}</span>
                 </div>
-                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-500">
                         <Icon icon="mdi:transmission-box" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.transmission')}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">{t('vin.specs.transmission')}</span>
                     </div>
-                    <span className="text-sm font-bold truncate" title={quickStats.transmission}>{quickStats.transmission}</span>
+                    <span className="text-sm font-bold text-slate-900 truncate" title={quickStats.transmission}>{quickStats.transmission}</span>
                 </div>
-                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-500">
                         <Icon icon="mdi:car-traction-control" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.drive')}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">{t('vin.specs.drive')}</span>
                     </div>
-                    <span className="text-sm font-bold truncate" title={quickStats.drive}>{quickStats.drive}</span>
+                    <span className="text-sm font-bold text-slate-900 truncate" title={quickStats.drive}>{quickStats.drive}</span>
                 </div>
-                <div className="bg-background/60 backdrop-blur-md p-3 rounded-xl border shadow-sm flex flex-col gap-1 hover:bg-background/80 transition-colors">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-500">
                         <Icon icon="mdi:gas-station-outline" className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('vin.specs.fuel')}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">{t('vin.specs.fuel')}</span>
                     </div>
-                    <span className="text-sm font-bold truncate" title={quickStats.fuel}>{quickStats.fuel}</span>
+                    <span className="text-sm font-bold text-slate-900 truncate" title={quickStats.fuel}>{quickStats.fuel}</span>
                 </div>
             </div>
           </div>
           
-          <CardContent className="p-0 relative z-10 bg-card">
+          <CardContent className="p-0 relative z-10 bg-white">
             {entries.length === 0 ? (
               <div className="text-center py-12 px-6">
-                <Icon icon="mdi:alert-circle-outline" className="mx-auto h-12 w-12 text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">
+                <Icon icon="mdi:alert-circle-outline" className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+                <p className="text-slate-500">
                   {t('vin.result_empty_data', 'No additional data returned for this VIN.')}
                 </p>
               </div>
             ) : (
               <div className="flex flex-col">
                 {/* Split View for Specs */}
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-t border-b">
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-t border-b border-slate-200">
                     {/* Left Col: Technical */}
                     <div className="p-0">
-                        <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
-                            <Icon icon="mdi:cog-outline" className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">{t('vin.tech_specs_title')}</h3>
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                            <Icon icon="mdi:cog-outline" className="h-4 w-4 text-slate-600" />
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">{t('vin.tech_specs_title')}</h3>
                         </div>
                         <dl>
                             {technicalSpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
-                            {technicalSpecs.length === 0 && <div className="p-4 text-xs text-muted-foreground italic">No technical specs available.</div>}
+                            {technicalSpecs.length === 0 && <div className="p-4 text-xs text-slate-400 italic">No technical specs available.</div>}
                         </dl>
                     </div>
 
                     {/* Right Col: Body & Mfg */}
                     <div className="p-0">
-                        <div className="px-4 py-3 bg-muted/10 border-b flex items-center gap-2">
-                            <Icon icon="mdi:car-info" className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">{t('vin.body_specs_title')}</h3>
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                            <Icon icon="mdi:car-info" className="h-4 w-4 text-slate-600" />
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">{t('vin.body_specs_title')}</h3>
                         </div>
                         <dl>
                             {bodySpecs.map(([k, v], i) => <SpecRow key={k} label={k} value={v} index={i} />)}
-                            {bodySpecs.length === 0 && <div className="p-4 text-xs text-muted-foreground italic">No body specs available.</div>}
+                            {bodySpecs.length === 0 && <div className="p-4 text-xs text-slate-400 italic">No body specs available.</div>}
                         </dl>
                     </div>
                 </div>
@@ -295,16 +295,16 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                         <Button
                             variant="ghost"
                             onClick={() => setShowAllDetails(!showAllDetails)}
-                            className="w-full justify-between bg-muted/5 hover:bg-muted/10 h-12 rounded-none px-6 border-b"
+                            className="w-full justify-between bg-slate-50 hover:bg-slate-100 h-12 rounded-none px-6 border-b border-slate-200"
                         >
-                            <span className="font-semibold text-sm flex items-center gap-2 text-muted-foreground">
+                            <span className="font-semibold text-sm flex items-center gap-2 text-slate-600">
                                 <Icon icon="mdi:clipboard-list-outline" className="h-4 w-4" />
                                 {t('vin.additional_details')}
-                                <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5">{otherSpecs.length}</Badge>
+                                <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5 border-slate-300 text-slate-600">{otherSpecs.length}</Badge>
                             </span>
                             <Icon
                                 icon="mdi:chevron-down"
-                                className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${showAllDetails ? 'rotate-180' : ''}`}
+                                className={`h-5 w-5 text-slate-500 transition-transform duration-200 ${showAllDetails ? 'rotate-180' : ''}`}
                             />
                         </Button>
 
@@ -315,15 +315,15 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="overflow-hidden bg-muted/5"
+                            className="overflow-hidden bg-slate-50"
                             >
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 p-6">
                                     {otherSpecs.map(([k, value]) => (
-                                        <div key={k} className="flex flex-col py-1 border-b border-border/10">
-                                            <dt className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate" title={formatVinFieldKey(k, t)}>
+                                        <div key={k} className="flex flex-col py-1 border-b border-slate-100">
+                                            <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate" title={formatVinFieldKey(k, t)}>
                                                 {formatVinFieldKey(k, t)}
                                             </dt>
-                                            <dd className="text-xs font-medium text-foreground break-words">
+                                            <dd className="text-xs font-medium text-slate-800 break-words">
                                                 {formatVinFieldValue(value)}
                                             </dd>
                                         </div>
@@ -341,23 +341,23 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
       </div>
 
       {/* Right Column: Widgets & CTA (Sticky on Desktop) */}
-      <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+      <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
           
-          {/* Feature 1: Estimated Cost Widget */}
+          {/* Feature 1: Estimated Cost Widget - Yellow accent */}
           {estimatedImportCost && (
-             <Card className="border-none shadow-xl bg-primary text-primary-foreground overflow-hidden relative">
-                 <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <Icon icon="mdi:calculator" className="h-24 w-24" />
+             <Card className="border-none shadow-lg bg-accent text-slate-900 overflow-hidden relative">
+                 <div className="absolute top-0 right-0 p-6 opacity-20">
+                    <Icon icon="mdi:calculator" className="h-20 w-20" />
                  </div>
-                 <CardContent className="p-6 relative z-10 space-y-4">
+                 <CardContent className="p-5 relative z-10 space-y-4">
                     <div>
-                        <h3 className="text-sm font-medium opacity-90 uppercase tracking-wider">{t('vin.est_clearing_cost')}</h3>
+                        <h3 className="text-xs font-semibold opacity-80 uppercase tracking-wider">{t('vin.est_clearing_cost')}</h3>
                         <div className="text-4xl font-extrabold mt-1">
                             ${estimatedImportCost.toLocaleString()}
                         </div>
                         <p className="text-xs opacity-70 mt-1">{t('vin.est_clearing_note', { year })}</p>
                     </div>
-                    <Button variant="secondary" className="w-full font-bold shadow-sm" onClick={handleGoToCatalog}>
+                    <Button className="w-full font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md" onClick={handleGoToCatalog}>
                         <Icon icon="mdi:calculator-variant" className="mr-2 h-4 w-4" />
                         {t('vin.get_exact_quote')}
                     </Button>
@@ -366,39 +366,39 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
           )}
 
           {/* Feature 2: Personalized Matching */}
-          <Card className="border-none shadow-lg">
-              <CardContent className="p-6 space-y-4">
+          <Card className="border border-slate-200 shadow-sm bg-white">
+              <CardContent className="p-5 space-y-4">
                   <div className="flex items-center gap-3">
                        <div className="flex -space-x-2 overflow-hidden">
                             {[1,2,3].map(i => (
-                                <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-background bg-muted flex items-center justify-center">
-                                    <Icon icon="mdi:account" className="h-4 w-4 text-muted-foreground" />
+                                <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-slate-100 flex items-center justify-center">
+                                    <Icon icon="mdi:account" className="h-4 w-4 text-slate-500" />
                                 </div>
                             ))}
                        </div>
-                       <div className="text-sm font-medium">
-                           <span className="text-primary font-bold">{t('vin.importers_match', { count: 12 })}</span>
+                       <div className="text-sm font-semibold text-slate-900">
+                           {t('vin.importers_match', { count: 12 })}
                        </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                      <Trans i18nKey="vin.verified_importers_desc" values={{ make }} components={{ strong: <strong /> }} />
+                  <p className="text-xs text-slate-500">
+                      <Trans i18nKey="vin.verified_importers_desc" values={{ make }} components={{ strong: <strong className="text-slate-700" /> }} />
                   </p>
-                  <Button onClick={handleGoToCatalog} size="lg" className="w-full font-bold shadow-md">
+                  <Button onClick={handleGoToCatalog} size="lg" className="w-full font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">
                       {t('vin.show_matches')}
                       <Icon icon="mdi:arrow-right" className="ml-2 h-4 w-4" />
                   </Button>
               </CardContent>
           </Card>
 
-          {/* Feature 4: Market Demand (Social Proof) */}
-          <Card className="border-none shadow-sm bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/20">
+          {/* Feature 4: Market Demand (Social Proof) - Orange accent */}
+          <Card className="border border-orange-200 shadow-sm bg-orange-50">
               <CardContent className="p-4 flex items-start gap-3">
-                  <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full text-orange-600 dark:text-orange-400">
+                  <div className="bg-orange-100 p-2 rounded-full text-orange-600">
                       <Icon icon="mdi:fire" className="h-5 w-5" />
                   </div>
                   <div>
-                      <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300">{t('vin.high_demand')}</h4>
-                      <p className="text-xs text-orange-700/80 dark:text-orange-400/80 mt-0.5">
+                      <h4 className="text-sm font-bold text-orange-800">{t('vin.high_demand')}</h4>
+                      <p className="text-xs text-orange-700/80 mt-0.5">
                           {t('vin.high_demand_desc', { count: 45, model })}
                       </p>
                   </div>
@@ -406,24 +406,20 @@ export const VinDecodeResultCard: FC<VinDecodeResultCardProps> = ({ vin, data })
           </Card>
 
           {/* Feature 5: Risk Mitigation */}
-          <Card className="border-none shadow-sm">
+          <Card className="border border-slate-200 shadow-sm bg-white">
               <CardContent className="p-4 space-y-3">
-                  <h4 className="text-sm font-bold flex items-center gap-2">
-                      <Icon icon="mdi:shield-check" className="h-4 w-4 text-green-600" />
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Icon icon="mdi:shield-check" className="h-4 w-4 text-slate-700" />
                       {t('vin.buy_safely')}
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                      <Button variant="outline" size="sm" className="justify-start h-auto py-2">
-                          <Icon icon="mdi:file-document-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <div className="flex flex-col items-start text-xs">
-                              <span className="font-medium">{t('vin.check_history')}</span>
-                          </div>
+                      <Button variant="outline" size="sm" className="justify-start h-auto py-2 border-slate-200 hover:bg-slate-50">
+                          <Icon icon="mdi:file-document-outline" className="mr-2 h-4 w-4 text-slate-500" />
+                          <span className="font-medium text-xs text-slate-700">{t('vin.check_history')}</span>
                       </Button>
-                      <Button variant="outline" size="sm" className="justify-start h-auto py-2">
-                          <Icon icon="mdi:eye-outline" className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <div className="flex flex-col items-start text-xs">
-                              <span className="font-medium">{t('vin.order_inspection')}</span>
-                          </div>
+                      <Button variant="outline" size="sm" className="justify-start h-auto py-2 border-slate-200 hover:bg-slate-50">
+                          <Icon icon="mdi:eye-outline" className="mr-2 h-4 w-4 text-slate-500" />
+                          <span className="font-medium text-xs text-slate-700">{t('vin.order_inspection')}</span>
                       </Button>
                   </div>
               </CardContent>

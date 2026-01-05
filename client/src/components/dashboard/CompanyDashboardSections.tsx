@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -54,7 +53,7 @@ type CompanyNetworkStats = {
 
 type CompanyDealerActivityItem = {
   state: string
-  leads: number
+  count: number
 }
 
 type CompanyBrandHealth = {
@@ -72,7 +71,6 @@ type CompanyCampaign = {
   name: string
   impressions: number
   clicks: number
-  leads: number
 }
 
 type CompanyAudienceSegment = {
@@ -91,7 +89,7 @@ type CompanyCompetitor = {
 type CompanyAlert = {
   id: string
   text: string
-  type: 'rating' | 'leads'
+  type: 'rating'
 }
 
 type CompanyNetworkAction = {
@@ -106,29 +104,7 @@ type CompanyGoal = {
   progressPercent: number
 }
 
-export type CompanyLeadBubble = {
-  id: string
-  leadId: number
-  status: 'NEW' | 'OFFER_SENT' | 'WON' | 'LOST' | 'EXPIRED'
-  invitedAt: string
-  expiresAt: string | null
-  priority: 'price' | 'speed' | 'premium_service' | null
-  vehicle: {
-    id: string | number
-    title: string
-    year: number
-    imageUrl: string
-  }
-  summary: {
-    budgetUsdMin: number | null
-    budgetUsdMax: number | null
-    desiredDurationDays: number | null
-    maxAcceptableDurationDays: number | null
-  }
-}
-
 type CompanyDashboardSectionsProps = {
-  companyLeads: CompanyLeadBubble[]
   companyNetworkStats: CompanyNetworkStats
   companyDealerActivityByState: CompanyDealerActivityItem[]
   companyBrandHealth: CompanyBrandHealth
@@ -143,7 +119,6 @@ type CompanyDashboardSectionsProps = {
 }
 
 export function CompanyDashboardSections({
-  companyLeads,
   companyNetworkStats,
   companyDealerActivityByState,
   companyBrandHealth,
@@ -163,25 +138,6 @@ export function CompanyDashboardSections({
 
   const animatedAvgReplyMinutes = useAnimatedValue(companyServiceQuality.avgReplyMinutes)
   const animatedHandledPercent = useAnimatedValue(companyServiceQuality.handledPercent)
-
-  const newLeadsCount = useMemo(
-    () => companyLeads.filter((lead) => lead.status === 'NEW').length,
-    [companyLeads],
-  )
-
-  const formatExpiresIn = (expiresAt: string | null): string | null => {
-    if (!expiresAt) return null
-    const expiresDate = new Date(expiresAt)
-    const now = new Date()
-    const diffMs = expiresDate.getTime() - now.getTime()
-    if (Number.isNaN(diffMs)) return null
-    if (diffMs <= 0) return t('dashboard.company.leads_bubble.expired')
-    const diffMinutesTotal = Math.floor(diffMs / (60 * 1000))
-    const hours = Math.floor(diffMinutesTotal / 60)
-    const minutes = diffMinutesTotal % 60
-    if (hours <= 0) return t('dashboard.company.leads_bubble.minutes_left', { count: minutes })
-    return t('dashboard.company.leads_bubble.hours_left', { hours, minutes })
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -211,80 +167,8 @@ export function CompanyDashboardSections({
            </div>
         </motion.div>
 
-        {/* 2. Incoming Leads */}
+        {/* 2. Goals & Activity */}
         <motion.div {...getSectionMotionProps(1)}>
-          <Card className="shadow-sm">
-            <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
-               <div className="space-y-0.5">
-                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                   <Icon icon="mdi:inbox-arrow-down" className="h-4 w-4 text-primary" />
-                   {t('dashboard.company.leads_bubble.title')}
-                 </CardTitle>
-                 <p className="text-[10px] text-muted-foreground">{t('dashboard.company.leads_bubble.subtitle')}</p>
-               </div>
-               <div className="flex items-center gap-2">
-                 {newLeadsCount > 0 && (
-                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary animate-pulse">
-                     {newLeadsCount} NEW
-                   </span>
-                 )}
-                 <Button asChild variant="ghost" size="sm" className="h-6 text-xs">
-                   <Link to="/company/leads">{t('common.view_all')}</Link>
-                 </Button>
-               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {companyLeads.length === 0 ? (
-                 <div className="p-8 text-center text-muted-foreground">
-                   <p className="text-sm">{t('dashboard.company.leads_bubble.empty')}</p>
-                 </div>
-              ) : (
-                 <div className="divide-y">
-                    {companyLeads.slice(0, 5).map(lead => {
-                       const expiresLabel = formatExpiresIn(lead.expiresAt)
-                       return (
-                         <div key={lead.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-3 hover:bg-accent/30 transition-colors group">
-                            <div className="flex items-center gap-3">
-                               <div className="h-10 w-10 shrink-0 rounded-md bg-muted overflow-hidden">
-                                  <img src={lead.vehicle.imageUrl} alt={lead.vehicle.title} className="h-full w-full object-cover" />
-                               </div>
-                               <div>
-                                  <p className="text-sm font-medium leading-none mb-1">{lead.vehicle.year} {lead.vehicle.title}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                     <span>
-                                        {lead.summary.budgetUsdMin ? `$${lead.summary.budgetUsdMin.toLocaleString()}` : 'N/A'} - {lead.summary.budgetUsdMax ? `$${lead.summary.budgetUsdMax.toLocaleString()}` : 'N/A'}
-                                     </span>
-                                     {lead.priority && (
-                                        <span className="inline-flex items-center rounded bg-secondary px-1 py-0.5 text-[10px] font-medium text-secondary-foreground uppercase">
-                                          {lead.priority}
-                                        </span>
-                                     )}
-                                  </div>
-                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                               <div className="flex flex-col items-end">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground" data-status={lead.status}>
-                                    {lead.status}
-                                  </span>
-                                  {expiresLabel && <span className="text-[10px] text-red-500 font-medium">{expiresLabel}</span>}
-                               </div>
-                               <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                                  <Link to={`/company/leads/${lead.id}`}>{t('common.view')}</Link>
-                               </Button>
-                            </div>
-                         </div>
-                       )
-                    })}
-                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* 3. Goals & Activity */}
-        <motion.div {...getSectionMotionProps(2)}>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="shadow-sm">
                  <CardHeader className="px-4 py-3 border-b">
@@ -319,7 +203,7 @@ export function CompanyDashboardSections({
                     {companyDealerActivityByState.map((item) => (
                        <div key={item.state} className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
                           <span className="font-medium">{item.state}</span>
-                          <span className="text-muted-foreground">{item.leads} {t('dashboard.company.dealer_activity.leads_label')}</span>
+                          <span className="text-muted-foreground">{item.count}</span>
                        </div>
                     ))}
                  </CardContent>
@@ -394,8 +278,7 @@ export function CompanyDashboardSections({
                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                               <span><span className="font-medium">{camp.impressions}</span> imp</span>
                               <span><span className="font-medium">{camp.clicks}</span> clk</span>
-                              <span className="text-primary font-medium">{camp.leads} leads</span>
-                           </div>
+                                                         </div>
                         </li>
                      ))}
                   </ul>

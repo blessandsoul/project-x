@@ -1,6 +1,16 @@
 import { FastifyInstance } from 'fastify';
 import { BaseModel } from './BaseModel.js';
 import { Vehicle, VehiclePhoto } from '../types/vehicle.js';
+import {
+  normalizeLocationName,
+  buildLocationLikePatterns,
+  scoreLocationMatch,
+} from '../utils/locationMatcher.js';
+import {
+  toCanonicalBrandKey,
+  toCanonicalModelKey,
+  canonicalizeVehicle,
+} from '../utils/vehicleCanonicalizer.js';
 
 export class VehicleModel extends BaseModel {
   private fastify: FastifyInstance;
@@ -8,6 +18,51 @@ export class VehicleModel extends BaseModel {
   constructor(fastify: FastifyInstance) {
     super(fastify);
     this.fastify = fastify;
+  }
+
+  /**
+   * Build ORDER BY clause based on sort parameter.
+   * Supported values:
+   * - price_asc: calc_price ASC (low to high)
+   * - price_desc: calc_price DESC (high to low)
+   * - year_desc: year DESC (newest first)
+   * - year_asc: year ASC (oldest first)
+   * - mileage_asc: mileage ASC (low to high)
+   * - mileage_desc: mileage DESC (high to low)
+   * - sold_date_desc: sold_at_date DESC (recently sold first)
+   * - sold_date_asc: sold_at_date ASC (oldest sold first)
+   * - best_value: low price + low mileage combined score
+   * Default: id DESC (most recently added)
+   */
+  private getSortClause(
+    sort?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc' | 'sold_date_desc' | 'sold_date_asc' | 'best_value',
+  ): string {
+    // Price sorting uses last_bid (from vehicle_lot_bids) with fallback to calc_price
+    // The last_bid_value alias is defined in the SELECT clause
+    switch (sort) {
+      case 'price_asc':
+        return 'COALESCE(last_bid_value, calc_price, 999999999) ASC, id DESC';
+      case 'price_desc':
+        return 'COALESCE(last_bid_value, calc_price, 0) DESC, id DESC';
+      case 'year_desc':
+        return 'year DESC, id DESC';
+      case 'year_asc':
+        return 'year ASC, id DESC';
+      case 'mileage_asc':
+        return 'mileage ASC, id DESC';
+      case 'mileage_desc':
+        return 'mileage DESC, id DESC';
+      case 'sold_date_desc':
+        return 'sold_at_date DESC, sold_at_time DESC, id DESC';
+      case 'sold_date_asc':
+        return 'sold_at_date ASC, sold_at_time ASC, id DESC';
+      case 'best_value':
+        // Normalized score: lower price (last_bid or calc_price) + lower mileage = better value
+        // Using COALESCE to handle NULLs, putting them last
+        return 'COALESCE(last_bid_value, calc_price, 999999999) + COALESCE(mileage, 999999999) * 0.1 ASC, id DESC';
+      default:
+        return 'id DESC';
+    }
   }
 
   /**
@@ -56,8 +111,8 @@ export class VehicleModel extends BaseModel {
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
     const rows = await this.executeQuery(
-      'SELECT id, brand_name, model_name, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ? OFFSET ?',
-      [safeLimit, safeOffset],
+      `SELECT id, brand_name AS make, model_name AS model, year, yard_name, source, retail_value FROM vehicles ORDER BY id DESC LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}`,
+      [],
     );
 
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -73,7 +128,7 @@ export class VehicleModel extends BaseModel {
    * - priceFrom/priceTo: inclusive range on calc_price
    * - mileageFrom/mileageTo: inclusive range on mileage
    * - fuelType: partial match on engine_fuel / engine_fuel_rus
-   * - category: partial match on vehicle_type
+   * - category: exact match on vehicle_type code ('v' vehicles, 'c' motorcycles)
    * - drive: partial match on drive
    */
   async searchByFilters(
@@ -88,15 +143,27 @@ export class VehicleModel extends BaseModel {
       mileageFrom?: number;
       mileageTo?: number;
       fuelType?: string;
-      category?: string;
+      fuelTypes?: string[];
+      categoryCodes?: ('v' | 'c')[];
       drive?: string;
+      driveTypes?: string[];
       source?: string;
+      sourceTypes?: string[];
       buyNow?: boolean;
       vin?: string;
       sourceLotId?: string;
+      titleTypes?: string[];
+      transmissionTypes?: string[];
+      cylinderTypes?: string[];
+      soldFrom?: string;
+      soldTo?: string;
+      location?: string;
+      fuzzyLocation?: boolean;
+      date?: string;
     },
     limit: number = 50,
     offset: number = 0,
+    sort?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc' | 'sold_date_desc' | 'sold_date_asc' | 'best_value',
   ): Promise<Vehicle[]> {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 250 ? limit : 50;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
@@ -104,13 +171,19 @@ export class VehicleModel extends BaseModel {
     const conditions: string[] = [];
     const params: any[] = [];
 
+    // Canonical make matching: exact match on pre-computed canonical_brand
     if (filters.make) {
-      conditions.push('brand_name LIKE ?');
-      params.push(`%${filters.make}%`);
+      const canonicalBrandKey = toCanonicalBrandKey(filters.make);
+      conditions.push('canonical_brand = ?');
+      // Also try fuzzy fallback for vehicles without canonical data
+      // conditions.push('(canonical_brand = ? OR LOWER(REPLACE(REPLACE(brand_name, \'-\', \' \'), \'_\', \' \')) LIKE ?)');
+      params.push(canonicalBrandKey);
     }
+    // Canonical model matching: exact match on pre-computed canonical_model_key
     if (filters.model) {
-      conditions.push('model_name LIKE ?');
-      params.push(`%${filters.model}%`);
+      const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
+      conditions.push('canonical_model_key = ?');
+      params.push(canonicalModelKey);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
@@ -124,19 +197,28 @@ export class VehicleModel extends BaseModel {
       conditions.push('year <= ?');
       params.push(filters.yearTo);
     }
+    // Price filtering uses last_bid (from vehicle_lot_bids) with fallback to calc_price
     if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
-      conditions.push('calc_price >= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) >= ?`);
       params.push(filters.priceFrom);
     }
-    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
-      conditions.push('calc_price <= ?');
+    // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) <= ?`);
       params.push(filters.priceTo);
     }
     if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
       conditions.push('mileage >= ?');
       params.push(filters.mileageFrom);
     }
-    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo)) {
+    // When mileageTo is 250000, it means "250000 and more" - don't apply upper bound
+    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo) && filters.mileageTo < 250000) {
       conditions.push('mileage <= ?');
       params.push(filters.mileageTo);
     }
@@ -145,9 +227,11 @@ export class VehicleModel extends BaseModel {
       const pattern = `%${filters.fuelType}%`;
       params.push(pattern, pattern);
     }
-    if (filters.category) {
-      conditions.push('vehicle_type LIKE ?');
-      params.push(`%${filters.category}%`);
+    // Category codes filter (v = vehicles/cars, c = motorcycles)
+    if (filters.categoryCodes && filters.categoryCodes.length > 0) {
+      const placeholders = filters.categoryCodes.map(() => '?').join(', ');
+      conditions.push(`vehicle_type IN (${placeholders})`);
+      params.push(...filters.categoryCodes);
     }
     if (filters.drive) {
       conditions.push('drive LIKE ?');
@@ -157,8 +241,14 @@ export class VehicleModel extends BaseModel {
       conditions.push('source = ?');
       params.push(filters.source);
     }
+    // Multi-value source filter
+    if (filters.sourceTypes && filters.sourceTypes.length > 0) {
+      const placeholders = filters.sourceTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(source) IN (${placeholders})`);
+      params.push(...filters.sourceTypes.map((s) => s.toLowerCase()));
+    }
     if (filters.buyNow) {
-      conditions.push('buy_it_now = 1');
+      conditions.push('buy_it_now IS NOT NULL AND buy_it_now > 0');
     }
     if (filters.vin) {
       conditions.push('vin LIKE ?');
@@ -169,6 +259,100 @@ export class VehicleModel extends BaseModel {
       params.push(filters.sourceLotId);
     }
 
+    // Multi-value drive filter with special handling for 'full'
+    if (filters.driveTypes && filters.driveTypes.length > 0) {
+      const driveConditions: string[] = [];
+      for (const driveType of filters.driveTypes) {
+        if (driveType === 'full') {
+          // 'full' should match 'full', 'full/front', 'full/rear'
+          driveConditions.push('(LOWER(drive) = ? OR LOWER(drive) LIKE ? OR LOWER(drive) LIKE ?)');
+          params.push('full', 'full/%', '%/full');
+        } else {
+          driveConditions.push('LOWER(drive) = ?');
+          params.push(driveType.toLowerCase());
+        }
+      }
+      conditions.push(`(${driveConditions.join(' OR ')})`);
+    }
+
+    // Title type filter (document column) - uses LIKE for partial matching
+    // e.g. "clean title" matches "CLEAN TITLE - GA", "SALVAGE TITLE - TX", etc.
+    if (filters.titleTypes && filters.titleTypes.length > 0) {
+      const titleConditions: string[] = [];
+      for (const titleType of filters.titleTypes) {
+        titleConditions.push('LOWER(document) LIKE ?');
+        params.push(`%${titleType.toLowerCase()}%`);
+      }
+      conditions.push(`(${titleConditions.join(' OR ')})`);
+    }
+
+    // Transmission filter
+    if (filters.transmissionTypes && filters.transmissionTypes.length > 0) {
+      const placeholders = filters.transmissionTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(transmission) IN (${placeholders})`);
+      params.push(...filters.transmissionTypes.map((t) => t.toLowerCase()));
+    }
+
+    // Multi-value fuel filter
+    if (filters.fuelTypes && filters.fuelTypes.length > 0) {
+      const fuelConditions: string[] = [];
+      for (const fuel of filters.fuelTypes) {
+        fuelConditions.push('(LOWER(engine_fuel) = ? OR LOWER(engine_fuel_rus) = ?)');
+        params.push(fuel.toLowerCase(), fuel.toLowerCase());
+      }
+      conditions.push(`(${fuelConditions.join(' OR ')})`);
+    }
+
+    // Cylinders filter (kept as strings)
+    if (filters.cylinderTypes && filters.cylinderTypes.length > 0) {
+      const placeholders = filters.cylinderTypes.map(() => '?').join(', ');
+      conditions.push(`UPPER(cylinders) IN (${placeholders})`);
+      params.push(...filters.cylinderTypes.map((c) => c.toUpperCase()));
+    }
+
+    // Sale date filter (combines sold_at_date and sold_at_time)
+    if (filters.soldFrom) {
+      const parts = filters.soldFrom.split(' ');
+      const datePart = parts[0];
+      const timePart = parts[1] || '00:00:00';
+      conditions.push('(sold_at_date > ? OR (sold_at_date = ? AND (sold_at_time IS NULL OR sold_at_time >= ?)))');
+      params.push(datePart, datePart, timePart);
+    }
+    if (filters.soldTo) {
+      const parts = filters.soldTo.split(' ');
+      const datePart = parts[0];
+      const timePart = parts[1] || '23:59:59';
+      conditions.push('(sold_at_date < ? OR (sold_at_date = ? AND (sold_at_time IS NULL OR sold_at_time <= ?)))');
+      params.push(datePart, datePart, timePart);
+    }
+
+    // Location filter (matches yard_name)
+    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
+    if (filters.location) {
+      if (filters.fuzzyLocation) {
+        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
+        const likePatterns = buildLocationLikePatterns(filters.location);
+        if (likePatterns.length > 0) {
+          // Use OR for multiple patterns to get candidate matches
+          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
+          conditions.push(`(${likeConditions})`);
+          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
+        }
+      } else {
+        // Exact matching (legacy behavior): lowercase with spaces removed
+        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      }
+    }
+
+    // Exact date filter (sold_at_date = date)
+    // If sold_at_date is a DATE column, direct comparison works.
+    // If it's DATETIME, use DATE(sold_at_date) = ?
+    if (filters.date) {
+      conditions.push('DATE(sold_at_date) = ?');
+      params.push(filters.date);
+    }
+
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
@@ -176,8 +360,6 @@ export class VehicleModel extends BaseModel {
         id,
         vin,
         source_lot_id,
-        brand_name,
-        model_name,
         brand_name AS make,
         model_name AS model,
         year,
@@ -188,9 +370,22 @@ export class VehicleModel extends BaseModel {
         calc_price,
         buy_it_now_price,
         buy_it_now,
-        engine_fuel AS fuel_type,
+        engine_fuel,
+        engine_volume,
         vehicle_type AS category,
         drive,
+        document,
+        transmission,
+        cylinders,
+        sold_at_date,
+        sold_at_time,
+        CASE
+          WHEN sold_at_date IS NOT NULL AND sold_at_time IS NOT NULL
+          THEN CONCAT(sold_at_date, ' ', sold_at_time)
+          WHEN sold_at_date IS NOT NULL
+          THEN CONCAT(sold_at_date, ' 00:00:00')
+          ELSE NULL
+        END AS sold_at,
         (
           SELECT vp.url
           FROM vehicle_photos vp
@@ -204,14 +399,19 @@ export class VehicleModel extends BaseModel {
           WHERE vp.vehicle_id = vehicles.id
           ORDER BY vp.id ASC
           LIMIT 1
-        ) AS primary_thumb_url
+        ) AS primary_thumb_url,
+        (
+          SELECT vlb.bid
+          FROM vehicle_lot_bids vlb
+          WHERE vlb.vehicle_id = vehicles.id
+          ORDER BY vlb.bid_time DESC
+          LIMIT 1
+        ) AS last_bid_value
       FROM vehicles
       ${where}
-      ORDER BY id DESC
-      LIMIT ? OFFSET ?
+      ORDER BY ${this.getSortClause(sort)}
+      LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}
     `;
-
-    params.push(safeLimit, safeOffset);
 
     const rows = await this.executeQuery(query, params);
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -232,23 +432,38 @@ export class VehicleModel extends BaseModel {
     mileageFrom?: number;
     mileageTo?: number;
     fuelType?: string;
-    category?: string;
+    fuelTypes?: string[];
+    categoryCodes?: ('v' | 'c')[];
     drive?: string;
+    driveTypes?: string[];
     source?: string;
+    sourceTypes?: string[];
     buyNow?: boolean;
     vin?: string;
+    titleTypes?: string[];
+    transmissionTypes?: string[];
+    cylinderTypes?: string[];
+    soldFrom?: string;
+    soldTo?: string;
     sourceLotId?: string;
+    location?: string;
+    fuzzyLocation?: boolean;
+    date?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
 
+    // Canonical make matching: exact match on pre-computed canonical_brand
     if (filters.make) {
-      conditions.push('brand_name LIKE ?');
-      params.push(`%${filters.make}%`);
+      const canonicalBrandKey = toCanonicalBrandKey(filters.make);
+      conditions.push('canonical_brand = ?');
+      params.push(canonicalBrandKey);
     }
+    // Canonical model matching: exact match on pre-computed canonical_model_key
     if (filters.model) {
-      conditions.push('model_name LIKE ?');
-      params.push(`%${filters.model}%`);
+      const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
+      conditions.push('canonical_model_key = ?');
+      params.push(canonicalModelKey);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
@@ -262,19 +477,28 @@ export class VehicleModel extends BaseModel {
       conditions.push('year <= ?');
       params.push(filters.yearTo);
     }
+    // Price filtering uses last_bid (from vehicle_lot_bids) with fallback to calc_price
     if (typeof filters.priceFrom === 'number' && Number.isFinite(filters.priceFrom)) {
-      conditions.push('calc_price >= ?');
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) >= ?`);
       params.push(filters.priceFrom);
     }
-    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo)) {
-      conditions.push('calc_price <= ?');
+    // When priceTo is 500000, it means "500000 and more" - don't apply upper bound
+    if (typeof filters.priceTo === 'number' && Number.isFinite(filters.priceTo) && filters.priceTo < 500000) {
+      conditions.push(`COALESCE(
+        (SELECT vlb.bid FROM vehicle_lot_bids vlb WHERE vlb.vehicle_id = vehicles.id ORDER BY vlb.bid_time DESC LIMIT 1),
+        calc_price
+      ) <= ?`);
       params.push(filters.priceTo);
     }
     if (typeof filters.mileageFrom === 'number' && Number.isFinite(filters.mileageFrom)) {
       conditions.push('mileage >= ?');
       params.push(filters.mileageFrom);
     }
-    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo)) {
+    // When mileageTo is 250000, it means "250000 and more" - don't apply upper bound
+    if (typeof filters.mileageTo === 'number' && Number.isFinite(filters.mileageTo) && filters.mileageTo < 250000) {
       conditions.push('mileage <= ?');
       params.push(filters.mileageTo);
     }
@@ -283,9 +507,11 @@ export class VehicleModel extends BaseModel {
       const pattern = `%${filters.fuelType}%`;
       params.push(pattern, pattern);
     }
-    if (filters.category) {
-      conditions.push('vehicle_type LIKE ?');
-      params.push(`%${filters.category}%`);
+    // Category codes filter (v = vehicles/cars, c = motorcycles)
+    if (filters.categoryCodes && filters.categoryCodes.length > 0) {
+      const placeholders = filters.categoryCodes.map(() => '?').join(', ');
+      conditions.push(`vehicle_type IN (${placeholders})`);
+      params.push(...filters.categoryCodes);
     }
     if (filters.drive) {
       conditions.push('drive LIKE ?');
@@ -295,6 +521,15 @@ export class VehicleModel extends BaseModel {
       conditions.push('source = ?');
       params.push(filters.source);
     }
+    // Multi-value source filter
+    if (filters.sourceTypes && filters.sourceTypes.length > 0) {
+      const placeholders = filters.sourceTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(source) IN (${placeholders})`);
+      params.push(...filters.sourceTypes.map((s) => s.toLowerCase()));
+    }
+    if (filters.buyNow) {
+      conditions.push('buy_it_now IS NOT NULL AND buy_it_now > 0');
+    }
     if (filters.vin) {
       conditions.push('vin LIKE ?');
       params.push(`%${filters.vin}%`);
@@ -302,6 +537,96 @@ export class VehicleModel extends BaseModel {
     if (filters.sourceLotId) {
       conditions.push('source_lot_id = ?');
       params.push(filters.sourceLotId);
+    }
+
+    // Multi-value drive filter with special handling for 'full'
+    if (filters.driveTypes && filters.driveTypes.length > 0) {
+      const driveConditions: string[] = [];
+      for (const driveType of filters.driveTypes) {
+        if (driveType === 'full') {
+          driveConditions.push('(LOWER(drive) = ? OR LOWER(drive) LIKE ? OR LOWER(drive) LIKE ?)');
+          params.push('full', 'full/%', '%/full');
+        } else {
+          driveConditions.push('LOWER(drive) = ?');
+          params.push(driveType.toLowerCase());
+        }
+      }
+      conditions.push(`(${driveConditions.join(' OR ')})`);
+    }
+
+    // Title type filter (document column) - uses LIKE for partial matching
+    // e.g. "clean title" matches "CLEAN TITLE - GA", "SALVAGE TITLE - TX", etc.
+    if (filters.titleTypes && filters.titleTypes.length > 0) {
+      const titleConditions: string[] = [];
+      for (const titleType of filters.titleTypes) {
+        titleConditions.push('LOWER(document) LIKE ?');
+        params.push(`%${titleType.toLowerCase()}%`);
+      }
+      conditions.push(`(${titleConditions.join(' OR ')})`);
+    }
+
+    // Transmission filter
+    if (filters.transmissionTypes && filters.transmissionTypes.length > 0) {
+      const placeholders = filters.transmissionTypes.map(() => '?').join(', ');
+      conditions.push(`LOWER(transmission) IN (${placeholders})`);
+      params.push(...filters.transmissionTypes.map((t) => t.toLowerCase()));
+    }
+
+    // Multi-value fuel filter
+    if (filters.fuelTypes && filters.fuelTypes.length > 0) {
+      const fuelConditions: string[] = [];
+      for (const fuel of filters.fuelTypes) {
+        fuelConditions.push('(LOWER(engine_fuel) = ? OR LOWER(engine_fuel_rus) = ?)');
+        params.push(fuel.toLowerCase(), fuel.toLowerCase());
+      }
+      conditions.push(`(${fuelConditions.join(' OR ')})`);
+    }
+
+    // Cylinders filter
+    if (filters.cylinderTypes && filters.cylinderTypes.length > 0) {
+      const placeholders = filters.cylinderTypes.map(() => '?').join(', ');
+      conditions.push(`UPPER(cylinders) IN (${placeholders})`);
+      params.push(...filters.cylinderTypes.map((c) => c.toUpperCase()));
+    }
+
+    // Sale date filter
+    if (filters.soldFrom) {
+      const parts = filters.soldFrom.split(' ');
+      const datePart = parts[0];
+      const timePart = parts[1] || '00:00:00';
+      conditions.push('(sold_at_date > ? OR (sold_at_date = ? AND (sold_at_time IS NULL OR sold_at_time >= ?)))');
+      params.push(datePart, datePart, timePart);
+    }
+    if (filters.soldTo) {
+      const parts = filters.soldTo.split(' ');
+      const datePart = parts[0];
+      const timePart = parts[1] || '23:59:59';
+      conditions.push('(sold_at_date < ? OR (sold_at_date = ? AND (sold_at_time IS NULL OR sold_at_time <= ?)))');
+      params.push(datePart, datePart, timePart);
+    }
+
+    // Location filter (matches yard_name)
+    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
+    if (filters.location) {
+      if (filters.fuzzyLocation) {
+        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
+        const likePatterns = buildLocationLikePatterns(filters.location);
+        if (likePatterns.length > 0) {
+          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
+          conditions.push(`(${likeConditions})`);
+          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
+        }
+      } else {
+        // Exact matching (legacy behavior): lowercase with spaces removed
+        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
+        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
+      }
+    }
+
+    // Exact date filter (sold_at_date = date)
+    if (filters.date) {
+      conditions.push('DATE(sold_at_date) = ?');
+      params.push(filters.date);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -387,8 +712,6 @@ export class VehicleModel extends BaseModel {
     const query = `
       SELECT
         id,
-        brand_name,
-        model_name,
         brand_name AS make,
         model_name AS model,
         year,
@@ -421,10 +744,8 @@ export class VehicleModel extends BaseModel {
       ORDER BY
         RAND(),
         id DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}
     `;
-
-    params.push(limit, offset);
 
     const rows = await this.executeQuery(query, params);
     const items = Array.isArray(rows) ? (rows as Vehicle[]) : [];
@@ -456,34 +777,8 @@ export class VehicleModel extends BaseModel {
   async upsertFromAuctionLots(lots: any[]): Promise<void> {
     if (!Array.isArray(lots) || !lots.length) return;
 
-    // 1) Deduplicate brands and models so we don't upsert the same
-    //    brand/model thousands of times.
-    const brandMap = new Map<any, any>();
-    const modelMap = new Map<any, any>();
-
-    for (const lot of lots) {
-      const model = lot.model || null;
-      const brand = model?.brand || null;
-
-      if (brand && brand.id != null && !brandMap.has(brand.id)) {
-        brandMap.set(brand.id, brand);
-      }
-      if (model && model.id != null && !modelMap.has(model.id)) {
-        modelMap.set(model.id, model);
-      }
-    }
-
-    const brandUpserts = Array.from(brandMap.values()).map((brand) =>
-      this.upsertBrandFromAuction(brand),
-    );
-    const modelUpserts = Array.from(modelMap.values()).map((model) =>
-      this.upsertModelFromAuction(model),
-    );
-
-    await Promise.all([...brandUpserts, ...modelUpserts]);
-
-    // 2) Process vehicles/photos/bids in parallel batches to speed up
-    //    ingestion while avoiding overwhelming the DB.
+    // Process vehicles/photos/bids in parallel batches to speed up
+    // ingestion while avoiding overwhelming the DB.
     const configuredConcurrency = process.env.AUCTION_INGEST_CONCURRENCY
       ? Number.parseInt(process.env.AUCTION_INGEST_CONCURRENCY, 10)
       : NaN;
@@ -525,61 +820,16 @@ export class VehicleModel extends BaseModel {
     }
   }
 
-  private async upsertBrandFromAuction(brand: any): Promise<void> {
-    const query = `
-      INSERT INTO brands (id, slug, name, popular, count, created_at, updated_at, markabrand_ru)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        slug = VALUES(slug),
-        name = VALUES(name),
-        popular = VALUES(popular),
-        count = VALUES(count),
-        created_at = VALUES(created_at),
-        updated_at = VALUES(updated_at),
-        markabrand_ru = VALUES(markabrand_ru)
-    `;
-
-    await this.executeCommand(query, [
-      brand.id,
-      brand.slug,
-      brand.name,
-      brand.popular ?? 0,
-      brand.count ?? 0,
-      brand.created_at ?? null,
-      brand.updated_at ?? null,
-      brand.markabrand_ru ?? null,
-    ]);
-  }
-
-  private async upsertModelFromAuction(model: any): Promise<void> {
-    const query = `
-      INSERT INTO models (id, clean_model_id, brand_id, slug, name, clean_model_name, clean_model_slug, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        clean_model_id = VALUES(clean_model_id),
-        brand_id = VALUES(brand_id),
-        slug = VALUES(slug),
-        name = VALUES(name),
-        clean_model_name = VALUES(clean_model_name),
-        clean_model_slug = VALUES(clean_model_slug),
-        created_at = VALUES(created_at),
-        updated_at = VALUES(updated_at)
-    `;
-
-    await this.executeCommand(query, [
-      model.id,
-      model.clean_model_id ?? null,
-      model.brand_id,
-      model.slug,
-      model.name,
-      model.clean_model_name ?? null,
-      model.clean_model_slug ?? null,
-      model.created_at ?? null,
-      model.updated_at ?? null,
-    ]);
-  }
-
   private async upsertVehicleFromAuction(lot: any): Promise<number> {
+    // Extract brand and model names
+    const brandName = lot.brand_name ?? (lot.model?.brand?.name ?? null);
+    const modelName = lot.model_name ?? lot.model?.name ?? null;
+
+    // Calculate canonical values for deterministic search
+    const canonical = brandName && modelName
+      ? canonicalizeVehicle(brandName, modelName)
+      : { canonical_brand: null, canonical_model_key: null };
+
     const query = `
       INSERT INTO vehicles (
         id,
@@ -652,6 +902,8 @@ export class VehicleModel extends BaseModel {
         engine_fuel_rus,
         brand_name,
         model_name,
+        canonical_brand,
+        canonical_model_key,
         has_keys_readable,
         run_and_drive,
         calc_price,
@@ -659,7 +911,7 @@ export class VehicleModel extends BaseModel {
         sold_at_time,
         timezone_rus
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
       ON DUPLICATE KEY UPDATE
         number = VALUES(number),
@@ -731,6 +983,8 @@ export class VehicleModel extends BaseModel {
         engine_fuel_rus = VALUES(engine_fuel_rus),
         brand_name = VALUES(brand_name),
         model_name = VALUES(model_name),
+        canonical_brand = VALUES(canonical_brand),
+        canonical_model_key = VALUES(canonical_model_key),
         has_keys_readable = VALUES(has_keys_readable),
         run_and_drive = VALUES(run_and_drive),
         calc_price = VALUES(calc_price),
@@ -808,8 +1062,10 @@ export class VehicleModel extends BaseModel {
       lot.relative_link ?? null,
       lot.clear_link ?? null,
       lot.engine_fuel_rus ?? null,
-      lot.brand_name ?? (lot.model?.brand?.name ?? null),
-      lot.model_name ?? lot.model?.name ?? null,
+      brandName,
+      modelName,
+      canonical.canonical_brand,
+      canonical.canonical_model_key,
       lot.has_keys_readable ?? null,
       lot.run_and_drive ?? null,
       lot.calc_price ?? null,
@@ -914,5 +1170,44 @@ export class VehicleModel extends BaseModel {
 
     const insert = `${baseInsert} ${values.join(', ')}`;
     await this.executeCommand(insert, params);
+  }
+
+  /**
+   * Fetch bid histories for multiple vehicles at once.
+   * Returns a map of vehicle_id -> array of bids (sorted by bid_time DESC).
+   */
+  async getBidsForVehicles(vehicleIds: number[]): Promise<Map<number, { bid: number | null; bid_time: string | null }[]>> {
+    const result = new Map<number, { bid: number | null; bid_time: string | null }[]>();
+
+    if (!vehicleIds.length) {
+      return result;
+    }
+
+    const placeholders = vehicleIds.map(() => '?').join(', ');
+    const query = `
+      SELECT vehicle_id, bid, bid_time
+      FROM vehicle_lot_bids
+      WHERE vehicle_id IN (${placeholders})
+      ORDER BY vehicle_id, bid_time DESC
+    `;
+
+    const rows = await this.executeQuery(query, vehicleIds);
+
+    if (!Array.isArray(rows)) {
+      return result;
+    }
+
+    for (const row of rows as { vehicle_id: number; bid: number | null; bid_time: Date | null }[]) {
+      const vehicleId = row.vehicle_id;
+      if (!result.has(vehicleId)) {
+        result.set(vehicleId, []);
+      }
+      result.get(vehicleId)!.push({
+        bid: row.bid,
+        bid_time: row.bid_time ? row.bid_time.toISOString() : null,
+      });
+    }
+
+    return result;
   }
 }

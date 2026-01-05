@@ -295,9 +295,16 @@ Create a new company with pricing configuration. Companies are required before a
 | `description`    | no       | string \| null | Max 2000 characters                                         |
 | `phone_number`   | no       | string \| null | 7–20 characters, digits/spaces/`+`/`-`/`(` `)` only         |
 
-**Default pricing formula (when `final_formula` is not used):**
+**Pricing Architecture:**
 
-For a given company and vehicle with distance `D` miles and vehicle retail value and calc_price:
+> **IMPORTANT:** All quote price calculations now use `POST /api/calculator` as the
+> single source of truth. See `docs/calculator-api.md` for full details.
+
+The company pricing fields (`base_price`, `price_per_mile`, `customs_fee`, `service_fee`,
+`broker_fee`, `final_formula`) are still stored in the database for reference and display
+purposes, but **actual quote calculations are performed by the external Calculator API**.
+
+**Legacy formula (preserved for reference only):**
 
 ```text
 mileage_cost  = price_per_mile * D
@@ -308,7 +315,8 @@ insurance_fee  = retail_value * 0.01
 // total_price = vehicle calc_price + shipping_total + insurance_fee
 ```
 
-If `final_formula` is present and is an object, those fields override the company base values (e.g. use `final_formula.base_price` instead of `base_price`).
+The legacy calculation code is preserved in `src/services/legacyShippingQuoteService.ts`
+for historical reference but is not used in production.
 
 **Response 201 JSON:**
 
@@ -388,7 +396,7 @@ Upload or replace a company's logo image. The logo is processed and stored on di
 
 **Method:** `POST`
 
-**Authentication:** Required (JWT)
+**Authentication:** Required (cookie auth)
 
 **Authorization:** Admin or company owner only
 
@@ -421,7 +429,7 @@ Upload or replace a company's logo image. The logo is processed and stored on di
 **Error responses:**
 
 - `400 Bad Request` – no file provided or not an image.
-- `401 Unauthorized` – missing/invalid token.
+- `401 Unauthorized` – missing/invalid cookie auth.
 - `403 Forbidden` – not authorized to upload logo for this company.
 - `404 Not Found` – company does not exist.
 

@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { useTranslation } from 'react-i18next'
 
-const BENEFITS = [
+export const BENEFITS = [
   {
     id: 'verified',
     icon: 'mdi:shield-check',

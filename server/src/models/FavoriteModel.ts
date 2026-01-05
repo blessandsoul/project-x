@@ -1,17 +1,34 @@
 import { FastifyInstance } from 'fastify';
 import { BaseModel } from './BaseModel.js';
 import { Vehicle } from '../types/vehicle.js';
+import { NotFoundError } from '../types/errors.js';
 
 export class FavoriteModel extends BaseModel {
   constructor(fastify: FastifyInstance) {
     super(fastify);
   }
 
-  async addFavorite(userId: number, vehicleId: number): Promise<void> {
-    await this.executeCommand(
+  async addFavorite(userId: number, vehicleId: number): Promise<boolean> {
+    // Verify vehicle exists before adding to favorites
+    const rows = await this.executeQuery(
+      'SELECT id FROM vehicles WHERE id = ? LIMIT 1',
+      [vehicleId],
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new NotFoundError('Vehicle');
+    }
+
+    const result = await this.executeCommand(
       'INSERT IGNORE INTO user_favorite_vehicles (user_id, vehicle_id, created_at) VALUES (?, ?, NOW())',
       [userId, vehicleId],
     );
+
+    const affected = (result && typeof (result as any).affectedRows === 'number')
+      ? (result as any).affectedRows
+      : 0;
+
+    return affected > 0;
   }
 
   async removeFavorite(userId: number, vehicleId: number): Promise<void> {
@@ -25,17 +42,17 @@ export class FavoriteModel extends BaseModel {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 250 ? limit : 20;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
+    // MySQL 8.0 doesn't support placeholders in LIMIT/OFFSET, use template literals
     const query = `
       SELECT
         v.id,
-        v.brand_name,
-        v.model_name,
         v.brand_name AS make,
         v.model_name AS model,
         v.year,
         v.mileage,
         v.yard_name,
         v.source,
+        v.source_lot_id,
         v.retail_value,
         v.calc_price,
         v.engine_fuel AS fuel_type,
@@ -59,10 +76,10 @@ export class FavoriteModel extends BaseModel {
       JOIN vehicles v ON v.id = uf.vehicle_id
       WHERE uf.user_id = ?
       ORDER BY uf.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}
     `;
 
-    const rows = await this.executeQuery(query, [userId, safeLimit, safeOffset]);
+    const rows = await this.executeQuery(query, [userId]);
     return Array.isArray(rows) ? (rows as Vehicle[]) : [];
   }
 

@@ -7,7 +7,7 @@ interface FooterLink {
 }
 
 interface FooterProps {
-  footerLinks: FooterLink[];
+  footerLinks?: FooterLink[];
   onNavigate?: (href: string) => void;
 }
 

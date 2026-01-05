@@ -55,3 +55,15 @@ export class DatabaseError extends AppError {
     super(message, 500, 'DATABASE_ERROR');
   }
 }
+
+export class ExternalApiError extends AppError {
+  constructor(message: string = 'External API request failed') {
+    super(message, 502, 'EXTERNAL_API_ERROR');
+  }
+}
+
+export class CalculatorApiError extends AppError {
+  constructor(message: string = 'Calculator API request failed') {
+    super(message, 502, 'CALCULATOR_API_ERROR');
+  }
+}

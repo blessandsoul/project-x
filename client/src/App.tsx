@@ -1,12 +1,13 @@
 import { useEffect, useRef, type ReactNode, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { MobileStickyCta } from '@/components/home/MobileStickyCta'
 import { PageLoader } from '@/components/ui/page-loader'
-import HomePage from './pages/HomePage.tsx'
-import { RequireAuth, RequireGuest } from '@/app/RequireAuth'
+import { RequireAuth, RequireGuest, RequireNoCompany, RequireCompany } from '@/app/RequireAuth'
+import MainLayout from '@/layouts/MainLayout'
+// import { InquiryDrawerProvider } from '@/contexts/InquiryDrawerContext' // Disabled - inquiry system not ready
 
-// Lazy load pages for better performance (Code Splitting)
+// Lazy load ALL pages for better performance (Code Splitting)
+const HomePage = lazy(() => import('./pages/HomePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CompanyCatalogPage = lazy(() => import('./pages/CompanyCatalogPage'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage'))
@@ -17,6 +18,12 @@ const CarfaxPage = lazy(() => import('./pages/CarfaxPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const VehicleDetailsPage = lazy(() => import('./pages/VehicleDetailsPage'))
+const FavoriteVehiclesPage = lazy(() => import('./pages/FavoriteVehiclesPage'))
+const SessionsPage = lazy(() => import('./pages/SessionsPage'))
+const CompanyOnboardPage = lazy(() => import('./pages/company/CompanyOnboardPage'))
+const CompanySettingsPage = lazy(() => import('./pages/CompanySettingsPage'))
+const CompaniesPage = lazy(() => import('./pages/CompaniesPage'))
+// MessagesPage removed - using InquiryDrawer globally instead
 
 function ScrollToTop() {
   const location = useLocation()
@@ -77,113 +84,170 @@ function AppRoutes() {
     </Suspense>
   )
 
+  // Helper to wrap lazy components WITHOUT animation (for performance-critical pages)
+  const NoAnimationRoute = ({ children }: { children: ReactNode }) => (
+    <Suspense fallback={<PageLoader />}>
+      {children}
+    </Suspense>
+  )
+
   return (
     <>
       <ScrollToTop />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          {/* HomePage loaded eagerly for LCP */}
-          <Route path="/" element={renderWithTransition(<HomePage />)} />
-          
-          <Route
-            path="/login"
-            element={
-              <RequireGuest>
-                <LazyRoute><LoginPage /></LazyRoute>
-              </RequireGuest>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <RequireGuest>
-                <LazyRoute><RegisterPage /></LazyRoute>
-              </RequireGuest>
-            }
-          />
-          <Route
-            path="/catalog"
-            element={<LazyRoute><CompanyCatalogPage /></LazyRoute>}
-          />
-          <Route
-            path="/companies"
-            element={<LazyRoute><CompanyCatalogPage /></LazyRoute>}
-          />
-          <Route
-            path="/company/:id"
-            element={<LazyRoute><CompanyProfilePage /></LazyRoute>}
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <LazyRoute><DashboardPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireAuth>
-                <LazyRoute><ProfilePage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/user"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/dealer"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/onboarding/company"
-            element={
-              <RequireAuth>
-                <LazyRoute><OnboardingPage /></LazyRoute>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/auction-listings"
-            element={<LazyRoute><AuctionListingsPage /></LazyRoute>}
-          />
-          <Route
-            path="/vin"
-            element={<LazyRoute><CarfaxPage /></LazyRoute>}
-          />
-          <Route
-            path="/vehicle/:id"
-            element={<LazyRoute><VehicleDetailsPage /></LazyRoute>}
-          />
+          {/* All routes wrapped in MainLayout for consistent Header/Footer */}
+          <Route element={<MainLayout />}>
+            {/* Public Pages */}
+            <Route path="/" element={<LazyRoute><HomePage /></LazyRoute>} />
+            <Route path="/catalog" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
+            <Route path="/companies" element={<NoAnimationRoute><CompaniesPage /></NoAnimationRoute>} />
+            <Route path="/company/:id" element={<LazyRoute><CompanyProfilePage /></LazyRoute>} />
+            <Route path="/auction-listings" element={<LazyRoute><AuctionListingsPage /></LazyRoute>} />
+            <Route path="/vin" element={<LazyRoute><CarfaxPage /></LazyRoute>} />
+            <Route path="/vehicle/:id" element={<LazyRoute><VehicleDetailsPage /></LazyRoute>} />
+
+            {/* Auth Pages (Guest Only) */}
+            <Route
+              path="/login"
+              element={
+                <RequireGuest>
+                  <LazyRoute><LoginPage /></LazyRoute>
+                </RequireGuest>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <RequireGuest>
+                  <LazyRoute><RegisterPage /></LazyRoute>
+                </RequireGuest>
+              }
+            />
+
+            {/* Protected Pages (Auth Required) */}
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <LazyRoute><DashboardPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <LazyRoute><ProfilePage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/favorite-vehicles"
+              element={
+                <RequireAuth>
+                  <LazyRoute><FavoriteVehiclesPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/sessions"
+              element={
+                <RequireAuth>
+                  <LazyRoute><SessionsPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            {/* /messages route removed - drawer opens from header menu */}
+
+            {/* Company Onboarding (2-step: user must be auth'd but NOT have a company) */}
+            <Route
+              path="/company/onboard"
+              element={
+                <RequireNoCompany>
+                  <LazyRoute><CompanyOnboardPage /></LazyRoute>
+                </RequireNoCompany>
+              }
+            />
+            <Route
+              path="/company/settings"
+              element={
+                <RequireCompany>
+                  <LazyRoute><CompanySettingsPage /></LazyRoute>
+                </RequireCompany>
+              }
+            />
+
+            {/* Onboarding Routes */}
+            <Route
+              path="/onboarding"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/user"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/dealer"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/onboarding/company"
+              element={
+                <RequireAuth>
+                  <LazyRoute><OnboardingPage /></LazyRoute>
+                </RequireAuth>
+              }
+            />
+          </Route>
         </Routes>
       </AnimatePresence>
-      <MobileStickyCta />
     </>
   )
 }
 
+function useSanitizeUrlToken() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const url = new URL(window.location.href)
+    const sensitiveParams = ['token', 'auth', 'key', 'secret', 'password', 'code']
+    let hasRemovedParams = false
+
+    for (const param of sensitiveParams) {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param)
+        hasRemovedParams = true
+      }
+    }
+
+    if (hasRemovedParams) {
+      window.history.replaceState({}, document.title, url.pathname + url.search + url.hash)
+    }
+  }, [])
+}
+
 function App() {
+  useSanitizeUrlToken()
+
   return (
     <Router>
+      {/* InquiryDrawerProvider disabled - inquiry system not ready */}
+      {/* <InquiryDrawerProvider> */}
       <AppRoutes />
+      {/* </InquiryDrawerProvider> */}
     </Router>
   )
 }

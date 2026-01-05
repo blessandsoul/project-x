@@ -15,17 +15,8 @@ export interface UserFavoriteCompanyRef {
   added_at: string
 }
 
-export interface UserRecentCompanyRef {
-  company_id: number
-  viewed_at: string
-}
-
 export interface UserFavoritesResponse {
   items: UserFavoriteCompanyRef[]
-}
-
-export interface UserRecentCompaniesResponse {
-  items: UserRecentCompanyRef[]
 }
 
 export interface UserQuotesItem {
@@ -60,15 +51,6 @@ export async function fetchUserFavoritesMock(): Promise<UserFavoritesResponse> {
     items: [
       { company_id: 1, added_at: new Date().toISOString() },
       { company_id: 2, added_at: new Date().toISOString() },
-    ],
-  }
-}
-
-export async function fetchUserRecentCompaniesMock(): Promise<UserRecentCompaniesResponse> {
-  return {
-    items: [
-      { company_id: 3, viewed_at: new Date().toISOString() },
-      { company_id: 4, viewed_at: new Date().toISOString() },
     ],
   }
 }

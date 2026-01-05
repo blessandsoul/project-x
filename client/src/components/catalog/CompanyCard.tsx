@@ -146,7 +146,7 @@ export const CompanyCard = memo(({ company, className }: CompanyCardProps) => {
           </div>
 
           <Button 
-            className="bg-slate-900 text-white hover:bg-blue-600 shadow-md hover:shadow-blue-200 transition-all duration-300 rounded-xl font-semibold px-6"
+            className="bg-slate-900 text-white hover:bg-primary shadow-md hover:shadow-primary/20 transition-all duration-300 rounded-xl font-semibold px-6"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/company/${company.id}`);

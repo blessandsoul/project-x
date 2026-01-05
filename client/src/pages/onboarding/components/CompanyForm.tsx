@@ -17,7 +17,7 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Icon } from "@iconify/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SERVICES } from "@/constants/onboarding"
+import { fetchServices, type Service } from "@/api/services"
 import { useOnboardingForm } from "@/hooks/useOnboardingForm"
 import { API_BASE_URL } from "@/lib/apiClient"
 import { useTranslation } from "react-i18next"
@@ -33,6 +33,10 @@ export function CompanyForm() {
   const [, setInitialSocialLinks] = useState<string[]>([])
   const { isAuthenticated, userRole, companyId } = useAuth();
   const navigate = useNavigate()
+
+  // Services state (fetched from API)
+  const [availableServices, setAvailableServices] = useState<Service[]>([])
+  const [isLoadingServices, setIsLoadingServices] = useState(true)
 
   const companyFormSchema = z.object({
     name: z.string().min(2, t('onboarding.company.validation.name_length')),
@@ -177,7 +181,7 @@ export function CompanyForm() {
           service_fee: Number(company.service_fee) || 0,
           broker_fee: Number(company.broker_fee) || 0,
           insurance: company.insurance != null ? Number(company.insurance) || 0 : 0,
-          description: company.description || "",
+          description: company.description_eng || company.description_geo || company.description_rus || "",
           country: company.country || "",
           city: company.city || "",
           phone_number: company.phone_number || "",
@@ -201,6 +205,32 @@ export function CompanyForm() {
       isMounted = false
     }
   }, [isAuthenticated, userRole, companyId, form])
+
+  // Fetch services from API on mount
+  useEffect(() => {
+    let mounted = true
+
+    async function loadServices() {
+      try {
+        const services = await fetchServices()
+        if (mounted) {
+          setAvailableServices(services)
+        }
+      } catch (err) {
+        console.error('[CompanyForm] Failed to load services:', err)
+      } finally {
+        if (mounted) {
+          setIsLoadingServices(false)
+        }
+      }
+    }
+
+    loadServices()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   async function onSubmit(data: CompanyFormValues) {
     if (!companyId) {
@@ -247,9 +277,16 @@ export function CompanyForm() {
       const newSocialLinks = socialLinks.filter((link) => !link.id)
 
       if (newSocialLinks.length > 0) {
+        // Auto-detect platform from URL for backward compatibility
+        const detectPlatform = (url: string): 'facebook' | 'instagram' => {
+          const lowerUrl = url.toLowerCase()
+          if (lowerUrl.includes('instagram.com')) return 'instagram'
+          return 'facebook' // default
+        }
+
         await Promise.all(
           newSocialLinks.map((link) =>
-            createCompanySocialLinkFromApi(companyId, link.url.trim()),
+            createCompanySocialLinkFromApi(companyId, 'social', link.url.trim(), detectPlatform(link.url)),
           ),
         )
       }
@@ -343,7 +380,7 @@ export function CompanyForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
+              <FormField
                 control={form.control}
                 name="contact_email"
                 render={({ field }) => (
@@ -372,7 +409,7 @@ export function CompanyForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
+              <FormField
                 control={form.control}
                 name="country"
                 render={({ field }) => (
@@ -385,7 +422,7 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="city"
                 render={({ field }) => (
@@ -399,9 +436,9 @@ export function CompanyForm() {
                 )}
               />
             </div>
-            
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
                 control={form.control}
                 name="website"
                 render={({ field }) => (
@@ -414,7 +451,7 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="established_year"
                 render={({ field }) => (
@@ -483,7 +520,7 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="service_fee"
                 render={({ field }) => (
@@ -496,7 +533,7 @@ export function CompanyForm() {
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="broker_fee"
                 render={({ field }) => (
@@ -532,106 +569,113 @@ export function CompanyForm() {
                   <div className="mb-4">
                     <FormLabel className="text-base">{t('onboarding.company.services')}</FormLabel>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SERVICES.map((svc) => (
-                      <FormField
-                        key={svc}
-                        control={form.control}
-                        name="services"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={svc}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(svc)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), svc])
-                                      : field.onChange(
+                  {isLoadingServices ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Loading services...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableServices.map((svc) => (
+                        <FormField
+                          key={svc.id}
+                          control={form.control}
+                          name="services"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={svc.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(svc.name)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), svc.name])
+                                        : field.onChange(
                                           field.value?.filter(
-                                            (value) => value !== svc
+                                            (value) => value !== svc.name
                                           )
                                         )
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {svc}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {svc.name}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <div className="space-y-2">
-                <FormLabel>Social Links</FormLabel>
-                {form.watch("social_links")?.map((_, index) => (
-                    <FormField
-                        key={index}
-                        control={form.control}
-                        name={`social_links.${index}.url`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <div className="flex items-center gap-2">
-                                  <FormControl>
-                                      <Input placeholder="https://social.com/..." {...field} />
-                                  </FormControl>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={async () => {
-                                      const current = form.getValues("social_links") || [];
-                                      const link = current[index];
+              <FormLabel>Social Links</FormLabel>
+              {form.watch("social_links")?.map((_, index) => (
+                <FormField
+                  key={index}
+                  control={form.control}
+                  name={`social_links.${index}.url`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input placeholder="https://social.com/..." {...field} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            const current = form.getValues("social_links") || [];
+                            const link = current[index];
 
-                                      form.setValue(
-                                        "social_links",
-                                        current.filter((_, i) => i !== index),
-                                      );
+                            form.setValue(
+                              "social_links",
+                              current.filter((_, i) => i !== index),
+                            );
 
-                                      const url = (link?.url ?? "").trim();
-                                      if (url) {
-                                        setInitialSocialLinks((prev) => prev.filter((item) => item !== url));
-                                      }
+                            const url = (link?.url ?? "").trim();
+                            if (url) {
+                              setInitialSocialLinks((prev) => prev.filter((item) => item !== url));
+                            }
 
-                                      if (link && link.id) {
-                                        try {
-                                          await deleteCompanySocialLinkFromApi(link.id);
-                                        } catch (error) {
-                                          console.error('[CompanyOnboarding] Failed to delete social link', error);
-                                          toast.error(t('onboarding.company.failure'));
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ))}
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        const current = form.getValues("social_links") || [];
-                        form.setValue("social_links", [...current, { url: "" }]);
-                    }}
-                >
-                    Add Social Link
-                </Button>
+                            if (link && link.id) {
+                              try {
+                                await deleteCompanySocialLinkFromApi(link.id);
+                              } catch (error) {
+                                console.error('[CompanyOnboarding] Failed to delete social link', error);
+                                toast.error(t('onboarding.company.failure'));
+                              }
+                            }
+                          }}
+                        >
+                          <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const current = form.getValues("social_links") || [];
+                  form.setValue("social_links", [...current, { url: "" }]);
+                }}
+              >
+                Add Social Link
+              </Button>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading || isPrefilling}>

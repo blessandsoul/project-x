@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useReducedMotion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import Header from '@/components/Header/index.tsx'
+// Header is provided by MainLayout
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   Breadcrumb,
@@ -15,19 +15,19 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { DealerDashboardSections } from '@/components/dashboard/DealerDashboardSections'
-import { CompanyDashboardSections, type CompanyLeadBubble } from '@/components/dashboard/CompanyDashboardSections'
+import { CompanyDashboardSections } from '@/components/dashboard/CompanyDashboardSections'
 import { UserDashboardSections } from '@/components/dashboard/UserDashboardSections'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { navigationItems } from '@/config/navigation'
+// navigationItems now handled by MainLayout
 import { mockCompanies } from '@/mocks/_mockData'
 import type { UserRole, Company } from '@/types/api'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
 import { useCompanySearch } from '@/hooks/useCompanySearch'
-import { fetchUserLeadOffers, type UserLeadOffer } from '@/api/userLeads'
-import { fetchCompanyLeads } from '@/api/companyLeads'
+import { Icon } from '@iconify/react'
+import { Card, CardContent } from '@/components/ui/card'
 
 export default function DashboardPage() {
   const { t } = useTranslation()
@@ -40,7 +40,7 @@ export default function DashboardPage() {
     recentlyViewed.includes(String(company.id)),
   )
   const shouldReduceMotion = useReducedMotion()
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, companyId, userRole } = useAuth()
   const [localRole, setLocalRole] = useState<UserRole>('user')
   const role: UserRole = (user?.role as UserRole | undefined) ?? localRole
   const navigate = useNavigate()
@@ -50,115 +50,9 @@ export default function DashboardPage() {
   const [quickGeography, setQuickGeography] = useState<string>('')
   const [quickBudget, setQuickBudget] = useState<'low' | 'medium' | 'high' | ''>('')
 
-  const [userLeadOffers, setUserLeadOffers] = useState<UserLeadOffer[]>([])
-  const [isUserLeadOffersLoading, setIsUserLeadOffersLoading] = useState(false)
-  const [userLeadOffersError, setUserLeadOffersError] = useState<string | null>(null)
-
-  const [companyLeads, setCompanyLeads] = useState<CompanyLeadBubble[]>([])
-  const [, setIsCompanyLeadsLoading] = useState(false)
-  const [, setCompanyLeadsError] = useState<string | null>(null)
 
   const isDashboardLoading = false
   const dashboardError: string | null = null
-
-  useEffect(() => {
-    if (role !== 'user') {
-      return
-    }
-
-    let isMounted = true
-
-    const loadUserLeadOffers = async () => {
-      setIsUserLeadOffersLoading(true)
-      setUserLeadOffersError(null)
-
-      try {
-        const offers = await fetchUserLeadOffers()
-        if (!isMounted) return
-        setUserLeadOffers(offers)
-      } catch (error) {
-        if (!isMounted) return
-        // eslint-disable-next-line no-console
-        console.error('[dashboard] fetchUserLeadOffers:error', error)
-        setUserLeadOffersError(t('dashboard.error.quotes'))
-      } finally {
-        if (isMounted) {
-          setIsUserLeadOffersLoading(false)
-        }
-      }
-    }
-
-    loadUserLeadOffers()
-
-    return () => {
-      isMounted = false
-    }
-  }, [role, t])
-
-  useEffect(() => {
-    if (role !== 'company') {
-      return
-    }
-
-    let isMounted = true
-
-    const loadCompanyLeads = async () => {
-      setIsCompanyLeadsLoading(true)
-      setCompanyLeadsError(null)
-
-      try {
-        const apiLeads = await fetchCompanyLeads()
-
-        if (!isMounted) return
-
-        const mapped: CompanyLeadBubble[] = apiLeads.map((item, index) => {
-          const priority = item.leadSummary.priority ?? null
-
-          return {
-            id: String(item.leadCompanyId ?? `${item.leadId}-${index}`),
-            leadId: item.leadId,
-            status: item.status,
-            invitedAt: item.invitedAt,
-            expiresAt: item.expiresAt,
-            priority,
-            vehicle: {
-              id: item.vehicle.id,
-              title: item.vehicle.title,
-              year: item.vehicle.year,
-              imageUrl: item.vehicle.mainImageUrl,
-            },
-            summary: {
-              budgetUsdMin: item.leadSummary.budgetUsdMin
-                ? Number.parseFloat(item.leadSummary.budgetUsdMin)
-                : null,
-              budgetUsdMax: item.leadSummary.budgetUsdMax
-                ? Number.parseFloat(item.leadSummary.budgetUsdMax)
-                : null,
-              desiredDurationDays: null,
-              maxAcceptableDurationDays: null,
-            },
-          }
-        })
-
-        setCompanyLeads(mapped)
-      } catch (error) {
-        if (!isMounted) return
-        // eslint-disable-next-line no-console
-        console.error('[dashboard] fetchCompanyLeads:error', error)
-        setCompanyLeadsError(t('dashboard.error.leads'))
-      } finally {
-        if (isMounted) {
-          setIsCompanyLeadsLoading(false)
-        }
-      }
-    }
-
-    loadCompanyLeads()
-
-    return () => {
-      isMounted = false
-    }
-  }, [role, t])
 
   const handleQuickSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -194,9 +88,9 @@ export default function DashboardPage() {
     () => ({
       viewedCount: recentlyViewed.length,
       favoritesCount: favorites.length,
-      requestsCount: userLeadOffers.length,
+      requestsCount: 0,
     }),
-    [favorites.length, recentlyViewed.length, userLeadOffers.length],
+    [favorites.length, recentlyViewed.length],
   )
 
   const mockGuides = useMemo(
@@ -263,7 +157,7 @@ export default function DashboardPage() {
     [favorites.length, mockOffers.length, recentlyViewedCompanies.length, t],
   )
 
-  const dealerLeadsStats = useMemo(
+  const dealerStats = useMemo(
     () => ({
       todayNew: 5,
       weekNew: 24,
@@ -293,18 +187,18 @@ export default function DashboardPage() {
     [t],
   )
 
-  const dealerLeadReminders = useMemo(
+  const dealerReminders = useMemo(
     () => {
       const reminders: { id: string; text: string }[] = []
 
-      if (dealerLeadsStats.inProgress > 3) {
+      if (dealerStats.inProgress > 3) {
         reminders.push({
           id: 'dealer-reminder-slow',
           text: t('dashboard.dealer.reminders.slow'),
         })
       }
 
-      if (dealerLeadsStats.todayNew > 0 && dealerLeadsStats.inProgress === 0) {
+      if (dealerStats.todayNew > 0 && dealerStats.inProgress === 0) {
         reminders.push({
           id: 'dealer-reminder-no-notes',
           text: t('dashboard.dealer.reminders.no_notes'),
@@ -313,7 +207,7 @@ export default function DashboardPage() {
 
       return reminders
     },
-    [dealerLeadsStats.inProgress, dealerLeadsStats.todayNew, t],
+    [dealerStats.inProgress, dealerStats.todayNew, t],
   )
 
   const dealerTopPromoted = useMemo(
@@ -374,7 +268,7 @@ export default function DashboardPage() {
 
   const dealerComparisonStats = useMemo(
     () => ({
-      leadsDeltaPercent: 12,
+      deltasPercent: 12,
       conversionDeltaPercent: -3,
       marginDeltaPercent: 5,
     }),
@@ -401,10 +295,10 @@ export default function DashboardPage() {
       })
 
       return Array.from(byState.entries())
-        .map(([state, leads]) => ({ state, leads }))
-        .sort((a, b) => b.leads - a.leads)
+        .map(([state, count]) => ({ state, count }))
+        .sort((a, b) => b.count - a.count)
         .slice(0, 5)
-      },
+    },
     [],
   )
 
@@ -445,14 +339,12 @@ export default function DashboardPage() {
         name: 'Q2 Brand Awareness',
         impressions: 42000,
         clicks: 3100,
-        leads: 140,
       },
       {
         id: 'camp-2',
         name: 'Summer Import Promo',
         impressions: 28000,
         clicks: 2100,
-        leads: 95,
       },
     ],
     [],
@@ -492,7 +384,7 @@ export default function DashboardPage() {
 
   const companyAlerts = useMemo(
     () => {
-      const alerts: { id: string; text: string; type: 'rating' | 'leads' }[] = []
+      const alerts: { id: string; text: string; type: 'rating' }[] = []
 
       const lowRated = mockCompanies.filter((company) => company.rating < 4)
       if (lowRated.length > 0) {
@@ -502,12 +394,6 @@ export default function DashboardPage() {
           type: 'rating',
         })
       }
-
-      alerts.push({
-        id: 'alert-leads-drop',
-        text: t('dashboard.company.alerts.leads_drop'),
-        type: 'leads',
-      })
 
       return alerts
     },
@@ -592,10 +478,10 @@ export default function DashboardPage() {
     if (role === 'dealer') {
       return (
         <DealerDashboardSections
-          dealerLeadsStats={dealerLeadsStats}
+          dealerStats={dealerStats}
           dealerFunnelStats={dealerFunnelStats}
           dealerRequests={dealerRequests}
-          dealerLeadReminders={dealerLeadReminders}
+          dealerReminders={dealerReminders}
           dealerTopPromoted={dealerTopPromoted}
           dealerReviewsSummary={dealerReviewsSummary}
           dealerTrafficStats={dealerTrafficStats}
@@ -609,7 +495,6 @@ export default function DashboardPage() {
     if (role === 'company') {
       return (
         <CompanyDashboardSections
-          companyLeads={companyLeads}
           companyNetworkStats={companyNetworkStats}
           companyDealerActivityByState={companyDealerActivityByState}
           companyBrandHealth={companyBrandHealth}
@@ -631,9 +516,6 @@ export default function DashboardPage() {
         favoriteCompanies={favoriteCompanies}
         recentlyViewedCompanies={recentlyViewedCompanies}
         activityStats={activityStats}
-        userLeadOffers={userLeadOffers}
-        userLeadOffersLoading={isUserLeadOffersLoading}
-        userLeadOffersError={userLeadOffersError}
         mockGuides={mockGuides}
         mockOffers={mockOffers}
         mockReminders={mockReminders}
@@ -654,11 +536,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        user={null}
-        navigationItems={navigationItems}
-      />
+    <div className="flex-1 flex flex-col">
       <SidebarProvider>
         <AppSidebar className="top-14" />
         <SidebarInset>
@@ -700,6 +578,29 @@ export default function DashboardPage() {
                 {role === 'dealer' && t('dashboard.dealer.welcome_subtitle')}
                 {role === 'company' && t('dashboard.company.welcome_subtitle')}
               </p>
+
+              {/* Company Onboarding CTA - Show if user is authenticated and has no company */}
+              {user && !companyId && (userRole === 'user' || userRole === null) && (
+                <Card className="mt-4 border-primary/20 bg-primary/5">
+                  <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4">
+                    <div className="flex-shrink-0 p-3 rounded-full bg-primary/10">
+                      <Icon icon="mdi:truck-fast" className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm">Start Your Logistics Company</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Create your company profile and start offering shipping services on Trusted Importers.
+                      </p>
+                    </div>
+                    <Button asChild size="sm" className="flex-shrink-0">
+                      <Link to="/company/onboard">
+                        <Icon icon="mdi:plus" className="h-4 w-4 mr-1" />
+                        Create Company
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Dev: role switcher for quickly viewing different dashboards */}

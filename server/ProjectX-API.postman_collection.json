@@ -1,0 +1,666 @@
+{
+  "info": {
+    "_postman_id": "project-x-api-collection",
+    "name": "Project X API",
+    "description": "Complete API collection for Project X - Vehicle Auction Platform\n\nAuthentication: HttpOnly cookie-based auth\nCSRF: Required for unsafe methods (POST/PUT/PATCH/DELETE)\n\nAll routes now use /api/v1 prefix",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints - Cookie-based auth with CSRF protection",
+      "item": [
+        {
+          "name": "Get CSRF Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.csrfToken) {",
+                  "    pm.collectionVariables.set('csrfToken', jsonData.csrfToken);",
+                  "    console.log('CSRF Token saved:', jsonData.csrfToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "csrf"]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from cookie",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token extracted from cookie:', csrfCookie);",
+                  "}",
+                  "",
+                  "// Verify cookies are set",
+                  "pm.test('Access token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('accessToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Refresh token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('refreshToken')).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"testuser\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from cookie",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token extracted from cookie:', csrfCookie);",
+                  "}",
+                  "",
+                  "// Verify cookies are set",
+                  "pm.test('Access token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('accessToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Refresh token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('refreshToken')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('CSRF token cookie is set', function() {",
+                  "    pm.expect(pm.cookies.has('csrf-token')).to.be.true;",
+                  "});",
+                  "",
+                  "// Log user info",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Logged in as:', jsonData.user);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"user@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract new CSRF token",
+                  "var csrfCookie = pm.cookies.get('csrf-token');",
+                  "if (csrfCookie) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfCookie);",
+                  "    console.log('CSRF Token refreshed:', csrfCookie);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Reactivate Account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"user@example.com\",\n  \"password\": \"yourpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reactivate"]
+            }
+          }
+        },
+        {
+          "name": "Get Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Revoke All Sessions",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Revoke Session by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions/:sessionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "sessions", ":sessionId"],
+              "variable": [{ "key": "sessionId", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "description": "Company management and catalog",
+      "item": [
+        {
+          "name": "List All Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "Search Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/search?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "search"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" },
+                { "key": "min_rating", "value": "", "disabled": true },
+                { "key": "is_vip", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "order_by", "value": "rating", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Company by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Onboard Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Shipping Company\",\n  \"companyPhone\": \"+1234567890\",\n  \"contactEmail\": \"contact@company.com\",\n  \"website\": \"https://company.com\",\n  \"country\": \"USA\",\n  \"city\": \"New York\",\n  \"basePrice\": 500,\n  \"pricePerMile\": 1.5,\n  \"customsFee\": 200,\n  \"serviceFee\": 100,\n  \"brokerFee\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/onboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "onboard"]
+            }
+          }
+        },
+        {
+          "name": "Update Company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Company Name\",\n  \"description_eng\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calculator",
+      "description": "Shipping cost calculator",
+      "item": [
+        {
+          "name": "Calculate Shipping Cost",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyprice\": 5000,\n  \"auction\": \"Copart\",\n  \"vehicletype\": \"standard\",\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["calculator"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Quotes for All Companies",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usacity\": \"Los Angeles\",\n  \"destinationport\": \"POTI\",\n  \"vehiclecategory\": \"Sedan\",\n  \"vehicletype\": \"standard\",\n  \"auction\": \"Copart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calculator/quotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["calculator", "quotes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "description": "Static reference data endpoints",
+      "item": [
+        {
+          "name": "Get Cities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cities",
+              "host": ["{{baseUrl}}"],
+              "path": ["cities"]
+            }
+          }
+        },
+        {
+          "name": "Get Ports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ports",
+              "host": ["{{baseUrl}}"],
+              "path": ["ports"]
+            }
+          }
+        },
+        {
+          "name": "Get Auctions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auctions",
+              "host": ["{{baseUrl}}"],
+              "path": ["auctions"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Makes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-makes",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-makes"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-models?makeId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-models"],
+              "query": [
+                { "key": "makeId", "value": "1" },
+                { "key": "vehicleType", "value": "Automobile", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["services"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "VIN Decoder",
+      "description": "VIN decoding service",
+      "item": [
+        {
+          "name": "Decode VIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"1HGBH41JXMN109186\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vin/decode",
+              "host": ["{{baseUrl}}"],
+              "path": ["vin", "decode"]
+            }
+          }
+        },
+        {
+          "name": "VIN Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vin/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["vin", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auctions",
+      "description": "Auction data endpoints",
+      "item": [
+        {
+          "name": "Get Active Lots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auction/active-lots",
+              "host": ["{{baseUrl}}"],
+              "path": ["auction", "active-lots"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Shipping from Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"123 Main St, Los Angeles, CA\",\n  \"source\": \"copart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auction/calculate-shipping",
+              "host": ["{{baseUrl}}"],
+              "path": ["auction", "calculate-shipping"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "description": "Vehicle search and management",
+      "item": [
+        {
+          "name": "Search Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/search?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "search"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "make", "value": "", "disabled": true },
+                { "key": "model", "value": "", "disabled": true },
+                { "key": "year", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account",
+      "description": "Account management endpoints - Requires cookie auth + CSRF",
+      "item": [
+        {
+          "name": "Update Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newemail@example.com\",\n  \"username\": \"newusername\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account",
+              "host": ["{{baseUrl}}"],
+              "path": ["account"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newsecurepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"yourpassword\",\n  \"reason\": \"Optional reason for deactivation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "deactivate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "System health check endpoints",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Database Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/health/db",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["health", "db"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

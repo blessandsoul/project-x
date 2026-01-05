@@ -1,24 +1,21 @@
-export interface Brand {
+/**
+ * VehicleMake - Represents a vehicle make from the vehicle_makes table
+ */
+export interface VehicleMake {
   id: number;
-  slug: string;
   name: string;
-  popular: number;
-  count: number;
-  created_at: Date | null;
-  updated_at: Date | null;
-  markabrand_ru: string | null;
+  is_valid: boolean;
 }
 
-export interface Model {
+/**
+ * VehicleModel - Represents a vehicle model from the vehicle_models table
+ */
+export interface VehicleModelEntity {
   id: number;
-  clean_model_id: number | null;
-  brand_id: number;
-  slug: string;
+  make_id: number;
   name: string;
-  clean_model_name: string | null;
-  clean_model_slug: string | null;
-  created_at: Date | null;
-  updated_at: Date | null;
+  vehicle_type: string | null;
+  is_valid: boolean;
 }
 
 export interface VehiclePhoto {
@@ -52,15 +49,9 @@ export interface Vehicle {
   source_lot_id: string | null;
   vin: string;
 
-  // Brand / model
-  brand_id?: number | null;
-  brand_name: string; // mapped from vehicles.brand_name
-  model_id: number;
-  model_name: string; // mapped from vehicles.model_name
-
-  // Backwards compatible fields used by existing code
-  make: string; // alias of brand_name
-  model: string; // alias of model_name
+  // Make / Model (stored as strings on the vehicles table)
+  make: string;
+  model: string;
 
   // Specs
   year: number;
@@ -74,6 +65,14 @@ export interface Vehicle {
   transmission?: string | null;
   cylinders?: string | null;
   category?: string | null;
+
+  // Title / document info
+  document?: string | null;
+  sale_title_type?: string | null;
+
+  // Sale date fields
+  sold_at_date?: string | null;
+  sold_at_time?: string | null;
 
   // Primary image for list/search views
   primary_photo_url?: string | null;
@@ -115,8 +114,8 @@ export interface Vehicle {
 }
 
 export interface VehicleWithRelations extends Vehicle {
-  brand?: Brand | null;
-  model_entity?: Model | null;
+  make_entity?: VehicleMake | null;
+  model_entity?: VehicleModelEntity | null;
   photos: VehiclePhoto[];
   bids: VehicleLotBid[];
 }

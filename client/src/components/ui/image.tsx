@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 
@@ -24,12 +24,21 @@ export function Image({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(src);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setCurrentSrc(src);
     setError(false);
     setIsLoading(true);
   }, [src]);
+
+  // Handle cached images that load synchronously
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setIsLoading(false);
+    }
+  }, [currentSrc]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -65,6 +74,7 @@ export function Image({
       )}
       
       <img
+        ref={imgRef}
         src={currentSrc}
         alt={alt}
         loading={loading}

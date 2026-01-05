@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { VinController } from '../controllers/vinController.js';
 import { ValidationError } from '../types/errors.js';
+import { withCache, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
 
 /**
  * VIN Routes
@@ -25,7 +26,7 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
    * Response: VIN decoder response with vehicle information
    * Status: 200 (OK) on success, 400 (Bad Request) for invalid VIN format
    */
-  fastify.post('/api/vin/decode', {
+  fastify.post('/vin/decode', {
     schema: {
       body: {
         type: 'object',
@@ -48,8 +49,16 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
     },
   }, async (request, reply) => {
     const { vin } = request.body as { vin: string };
+    const normalizedVin = vin.toUpperCase();
 
-    const result = await vinController.decodeVIN(vin);
+    // VIN data is immutable - cache for 24 hours
+    const cacheKey = buildCacheKey('vin', normalizedVin);
+    const result = await withCache(
+      fastify,
+      cacheKey,
+      CACHE_TTL.IMMUTABLE,
+      () => vinController.decodeVIN(normalizedVin),
+    );
 
     if (result.success) {
       return reply.send(result);
@@ -68,7 +77,7 @@ const vinRoutes: FastifyPluginAsync = async (fastify) => {
    * Response: Service health status
    * Status: 200 (OK) with health information
    */
-  fastify.get('/api/vin/health', {
+  fastify.get('/vin/health', {
     config: {
       rateLimit: {
         max: 30,

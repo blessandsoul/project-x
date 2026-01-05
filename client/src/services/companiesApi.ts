@@ -1,5 +1,6 @@
-import axios, { type AxiosError } from 'axios'
+import axios from 'axios'
 import { API_BASE_URL, apiAuthorizedMutation, apiAuthorizedGet } from '@/lib/apiClient'
+import { getCsrfToken } from '@/lib/csrf'
 import type { Company } from '@/types/api'
 
 export type ApiCompanyReview = {
@@ -26,8 +27,12 @@ export type CompanyReviewsResponse = {
 type ApiCompanySocialLink = {
   id: number | string
   company_id?: number
+  link_type?: 'website' | 'social'
+  platform?: 'facebook' | 'instagram' | null
   url?: string | null
   label?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 const SOCIAL_ICON_BY_HOST: Record<string, string> = {
@@ -55,7 +60,9 @@ export type ApiCompany = {
   broker_fee: number | string
   insurance?: number | string | null
   final_formula: Record<string, unknown> | null
-  description: string | null
+  description_geo: string | null
+  description_eng: string | null
+  description_rus: string | null
   services?: string[] | null
   phone_number: string | null
   contact_email?: string | null
@@ -181,7 +188,9 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
     slug: slugCandidate,
     name: apiCompany.name,
     logo: resolveLogoUrl(apiCompany.logo_url ?? apiCompany.logo ?? null),
-    description: apiCompany.description ?? '',
+    description_geo: apiCompany.description_geo ?? '',
+    description_eng: apiCompany.description_eng ?? '',
+    description_rus: apiCompany.description_rus ?? '',
     services: extractServices(apiCompany.services),
     base_price: basePrice,
     price_per_mile: pricePerMile,
@@ -221,6 +230,17 @@ function mapApiCompanyToUiCompany(apiCompany: ApiCompany): Company {
     },
     // @ts-ignore: Mock data compatibility
     socialLinks: normalizeSocialLinks(apiCompany.social_links),
+    social_links: Array.isArray(apiCompany.social_links)
+      ? apiCompany.social_links.map(link => ({
+        id: typeof link.id === 'number' ? link.id : 0,
+        company_id: typeof link.company_id === 'number' ? link.company_id : apiCompany.id,
+        link_type: link.link_type || 'social',
+        platform: link.platform || undefined,
+        url: link.url || '',
+        created_at: typeof link.created_at === 'string' ? link.created_at : new Date().toISOString(),
+        updated_at: typeof link.updated_at === 'string' ? link.updated_at : new Date().toISOString(),
+      }))
+      : undefined,
     establishedYear: establishedYear,
     reviews: [],
   }
@@ -233,15 +253,18 @@ export async function uploadCompanyLogoFromApi(
   const formData = new FormData()
   formData.append('file', file)
 
-  const token = window.localStorage.getItem('projectx_auth_token')
+  // Get CSRF token for protected mutation endpoint
+  const csrfToken = await getCsrfToken()
 
+  // Use axios with withCredentials for cookie-based auth (no localStorage token)
   const response = await axios.post<{ logoUrl: string; originalLogoUrl: string }>(
     `${API_BASE_URL}/companies/${companyId}/logo`,
     formData,
     {
+      withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'X-CSRF-Token': csrfToken,
       },
     },
   )
@@ -273,7 +296,9 @@ export type UpdateCompanyPayload = {
   service_fee?: number
   broker_fee?: number
   price_per_mile?: number
-  description?: string | null
+  description_geo?: string | null
+  description_eng?: string | null
+  description_rus?: string | null
   country?: string | null
   city?: string | null
   phone_number?: string | null
@@ -296,6 +321,19 @@ export async function updateCompanyFromApi(
   return response
 }
 
+export async function updateCompanySocialLinkFromApi(
+  socialLinkId: string | number,
+  updates: { url?: string; platform?: 'facebook' | 'instagram' },
+): Promise<ApiCompanySocialLink> {
+  const response = await apiAuthorizedMutation<ApiCompanySocialLink>(
+    'PUT',
+    `/social-links/${socialLinkId}`,
+    updates,
+  )
+
+  return response
+}
+
 export async function deleteCompanySocialLinkFromApi(
   socialLinkId: string | number,
 ): Promise<void> {
@@ -308,12 +346,23 @@ export async function deleteCompanySocialLinkFromApi(
 
 export async function createCompanySocialLinkFromApi(
   companyId: string | number,
+  linkType: 'website' | 'social',
   url: string,
+  platform?: 'facebook' | 'instagram',
 ): Promise<ApiCompanySocialLink> {
+  const payload: { link_type: string; url: string; platform?: string } = {
+    link_type: linkType,
+    url,
+  }
+
+  if (linkType === 'social' && platform) {
+    payload.platform = platform
+  }
+
   const response = await apiAuthorizedMutation<ApiCompanySocialLink>(
     'POST',
     `/companies/${companyId}/social-links`,
-    { url },
+    payload,
   )
 
   return response
@@ -443,7 +492,7 @@ export async function searchCompaniesFromApi(
 
 export async function fetchCompanyByIdFromApi(id: string | number): Promise<Company | null> {
   try {
-    const response = await axios.get<ApiCompany>(`${API_BASE_URL}/companies/${id}`) 
+    const response = await axios.get<ApiCompany>(`${API_BASE_URL}/companies/${id}`)
 
     return mapApiCompanyToUiCompany(response.data)
   } catch (error) {
@@ -518,15 +567,6 @@ export type UpdateCompanyReviewPayload = {
   comment?: string | null
 }
 
-export type LeadFromQuotesPayload = {
-  vehicleId: number
-  selectedCompanyIds: number[]
-  name: string
-  contact: string
-  message: string
-  priority: 'price'
-}
-
 export async function createCompanyReviewFromApi(payload: CreateCompanyReviewPayload): Promise<ApiCompanyReview> {
   const requestBody: { rating: number; comment?: string | null } = {
     rating: payload.rating,
@@ -548,37 +588,6 @@ export async function createCompanyReviewFromApi(payload: CreateCompanyReviewPay
   })
 
   return response
-}
-
-export async function createLeadFromQuotes(payload: LeadFromQuotesPayload): Promise<void> {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/leads/from-quotes`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    console.log('[CompaniesAPI] Successfully created lead from quotes', {
-      status: response.status,
-    })
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError
-
-      console.error('[CompaniesAPI] Failed to create lead from quotes', {
-        status: axiosError.response?.status,
-        statusText: axiosError.response?.statusText,
-        data: axiosError.response?.data,
-        message: axiosError.message,
-      })
-    } else {
-      console.error('[CompaniesAPI] Failed to create lead from quotes', {
-        error,
-      })
-    }
-
-    throw error
-  }
 }
 
 export async function updateCompanyReviewFromApi(
@@ -623,4 +632,14 @@ export async function deleteCompanyReviewFromApi(
     companyId,
     reviewId,
   })
+}
+
+export async function deleteCompanyFromApi(companyId: string | number): Promise<void> {
+  await apiAuthorizedMutation<unknown>(
+    'DELETE',
+    `/companies/${companyId}`,
+    undefined as any,
+  )
+
+  console.log('[CompaniesAPI] Successfully deleted company', { companyId })
 }

@@ -1,159 +1,43 @@
-# Dashboard & User Activity API
+# User Activity API
 
-This document describes shared dashboard-related endpoints used by user/company dashboards and other pages (catalog, company detail).
+This document describes user activity endpoints for favorites.
 
-Currently implemented endpoints:
+Authentication is **cookie-only** (HttpOnly cookies). See `server/docs/auth-cookie-only.md`.
 
-- `GET /dashboard/summary`
-- `GET /user/favorites`
-- `POST /user/favorites/:companyId`
-- `DELETE /user/favorites/:companyId`
-- `GET /user/recent-companies`
-- `POST /user/recent-companies`
+CSRF: Any unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) requires the `X-CSRF-Token` header.
 
 ---
 
-## 1. GET /dashboard/summary
+## Currently Implemented Endpoints
 
-Role-aware top-level KPI metrics for dashboard SectionCards.
+### Favorite Companies
 
-- **Method:** `GET`
-- **URL:** `/dashboard/summary`
-- **Auth:** Required (JWT)
+| Method | Path                                   | Auth   | CSRF | Description             |
+| ------ | -------------------------------------- | ------ | ---- | ----------------------- |
+| GET    | `/user/favorites/companies`            | Cookie | -    | List favorite companies |
+| POST   | `/user/favorites/companies/:companyId` | Cookie | ✅   | Add to favorites        |
+| DELETE | `/user/favorites/companies/:companyId` | Cookie | ✅   | Remove from favorites   |
 
-### 1.1 Request
+### Favorite Vehicles
 
-No body or query params. Uses `request.user` from JWT:
-
-- `id` (number)
-- `role` (string) – expected values: `"user" | "dealer" | "company" | "admin"`
-
-### 1.2 Response (200 OK)
-
-```jsonc
-{
-  "role": "company",
-  "kpis": [
-    {
-      "key": "company.leads.total",
-      "label": "Total Leads",
-      "value": 42,
-      "trend": "flat"
-    },
-    {
-      "key": "company.leads.new",
-      "label": "New Leads",
-      "value": 5,
-      "trend": "flat"
-    },
-    {
-      "key": "company.offers.sent",
-      "label": "Offers Sent",
-      "value": 12,
-      "trend": "flat"
-    },
-    {
-      "key": "company.deals.won",
-      "label": "Deals Won",
-      "value": 3,
-      "trend": "flat"
-    }
-  ]
-}
-```
-
-Schema:
-
-```yaml
-# API Endpoint: GET /dashboard/summary
-# Summary: Role-aware top-level KPI metrics for dashboards.
-
-200:
-  type: object
-  properties:
-    role:
-      type: string
-      enum: ["user", "dealer", "company", "admin"]
-    kpis:
-      type: array
-      items:
-        type: object
-        properties:
-          key:
-            type: string
-          label:
-            type: string
-          value:
-            type: number
-          trend:
-            type: string
-            enum: ["up", "down", "flat"]
-```
-
-### 1.3 Role-specific behavior
-
-The backend derives KPIs based on `request.user.role`.
-
-#### role = "company"
-
-- Looks up `company_id` from `users.company_id`.
-- Computes aggregates from `lead_companies` for that `company_id`:
-  - `company.leads.total` – count where `status IN ('NEW', 'OFFER_SENT', 'WON', 'LOST')`.
-  - `company.leads.new` – count where `status = 'NEW'`.
-  - `company.offers.sent` – count where `status = 'OFFER_SENT'`.
-  - `company.deals.won` – count where `status = 'WON'`.
-- All `trend` values are currently `"flat"` (no historical comparison yet).
-
-#### role in { "user", "dealer", "admin" }
-
-Treats these as end-users for now.
-
-- Uses `leads.user_id = request.user.id` to compute:
-  - `user.leads.total` – total leads created by this user.
-- Uses `user_favorite_vehicles.user_id` to compute:
-  - `user.favorites.vehicles` – count of favorite vehicles.
-- Uses `user_favorite_companies.user_id` to compute:
-  - `user.favorites.companies` – count of favorite companies.
-
-Example response for a regular user:
-
-```jsonc
-{
-  "role": "user",
-  "kpis": [
-    {
-      "key": "user.leads.total",
-      "label": "Total Leads",
-      "value": 2,
-      "trend": "flat"
-    },
-    {
-      "key": "user.favorites.vehicles",
-      "label": "Favorite Vehicles",
-      "value": 5,
-      "trend": "flat"
-    },
-    {
-      "key": "user.favorites.companies",
-      "label": "Favorite Companies",
-      "value": 1,
-      "trend": "flat"
-    }
-  ]
-}
-```
+| Method | Path                             | Auth   | CSRF | Description                        |
+| ------ | -------------------------------- | ------ | ---- | ---------------------------------- |
+| GET    | `/favorites/vehicles`            | Cookie | -    | List favorite vehicles (paginated) |
+| POST   | `/favorites/vehicles/:vehicleId` | Cookie | ✅   | Add to favorites                   |
+| DELETE | `/favorites/vehicles/:vehicleId` | Cookie | ✅   | Remove from favorites              |
 
 ---
 
-## 2. User favorite companies
+## 1. Favorite Companies
 
-These endpoints manage **favorite companies per user**. They are separate from the existing vehicle favorites (`/favorites/vehicles`).
+These endpoints manage **favorite companies per user**.
 
-### 2.1 GET /user/favorites
+### 1.1 GET /user/favorites/companies
 
 - **Method:** `GET`
-- **URL:** `/user/favorites`
-- **Auth:** Required (JWT)
+- **URL:** `/user/favorites/companies`
+- **Auth:** Required (cookie auth)
+- **CSRF:** Not required (safe GET)
 
 Returns a list of favorite company IDs for the authenticated user.
 
@@ -176,11 +60,12 @@ Notes:
 - Backed by `user_favorite_companies (user_id, company_id, created_at)`.
 - No pagination for now; frontend can handle small lists.
 
-### 2.2 POST /user/favorites/:companyId
+### 1.2 POST /user/favorites/companies/:companyId
 
 - **Method:** `POST`
-- **URL:** `/user/favorites/:companyId`
-- **Auth:** Required (JWT)
+- **URL:** `/user/favorites/companies/:companyId`
+- **Auth:** Required (cookie auth)
+- **CSRF:** Required (`X-CSRF-Token` header)
 - **Params:**
   - `companyId` – integer > 0
 - **Body:** none
@@ -188,18 +73,26 @@ Notes:
 **Response 201:**
 
 ```json
-{ "success": true }
+{ "success": true, "status": "created" }
+```
+
+**Response 200** (already exists):
+
+```json
+{ "success": true, "status": "already_exists" }
 ```
 
 Behavior:
 
 - Idempotent: uses `INSERT IGNORE` to avoid duplicates.
+- Company must exist or returns 404.
 
-### 2.3 DELETE /user/favorites/:companyId
+### 1.3 DELETE /user/favorites/companies/:companyId
 
 - **Method:** `DELETE`
-- **URL:** `/user/favorites/:companyId`
-- **Auth:** Required (JWT)
+- **URL:** `/user/favorites/companies/:companyId`
+- **Auth:** Required (cookie auth)
+- **CSRF:** Required (`X-CSRF-Token` header)
 
 **Response 204:**
 
@@ -208,82 +101,55 @@ Behavior:
 Behavior:
 
 - Removes the `(user_id, company_id)` pair from `user_favorite_companies`.
+- Idempotent: returns 204 even if row didn't exist.
 
 ---
 
-## 3. User recently viewed companies
+## 2. Favorite Vehicles
 
-Server-side history of which companies a user recently viewed.
+See `user-api.md` for full documentation. Summary:
 
-### 3.1 POST /user/recent-companies
+### 2.1 GET /favorites/vehicles
 
-- **Method:** `POST`
-- **URL:** `/user/recent-companies`
-- **Auth:** Required (JWT)
+- **Auth:** Cookie
+- **CSRF:** Not required
+- **Query:** `page`, `limit` (paginated)
+- **Response:** `{ items, total, limit, page, totalPages }`
 
-**Request body:**
+### 2.2 POST /favorites/vehicles/:vehicleId
 
-```jsonc
-{
-  "company_id": 10
-}
-```
+- **Auth:** Cookie
+- **CSRF:** Required
+- **Response 201:** `{ success: true, status: "created" }`
+- **Response 200:** `{ success: true, status: "already_exists" }`
 
-- `company_id` (number, required, > 0)
+### 2.3 DELETE /favorites/vehicles/:vehicleId
 
-**Response 201:**
-
-```json
-{ "success": true }
-```
-
-Behavior:
-
-- Inserts a new row into `user_recent_companies (user_id, company_id, viewed_at)`.
-- No deduplication logic yet; frontend can control how often this is called.
-
-### 3.2 GET /user/recent-companies
-
-- **Method:** `GET`
-- **URL:** `/user/recent-companies`
-- **Auth:** Required (JWT)
-- **Query params:**
-  - `limit` (integer, optional; default 20, max 100 enforced in code)
-
-**Response 200:**
-
-```jsonc
-{
-  "items": [
-    {
-      "id": 5,
-      "user_id": 1,
-      "company_id": 10,
-      "viewed_at": "2025-11-19T13:05:00.000Z"
-    }
-  ]
-}
-```
-
-Notes:
-
-- Ordered by `viewed_at DESC`.
-- Limited to `limit` items.
+- **Auth:** Cookie
+- **CSRF:** Required
+- **Response 204:** No content
 
 ---
 
-## 4. Frontend wiring notes
-
-- **SectionCards / top KPI cards**
-
-  - Use `GET /dashboard/summary`.
-  - Map `kpis` array directly to cards; keys are stable (`company.leads.total`, `user.favorites.companies`, etc.).
+## 3. Frontend Wiring Notes
 
 - **Favorites row (companies)**
 
-  - Use `GET /user/favorites`.
+  - Use `GET /user/favorites/companies`.
   - Use returned `company_id` list to fetch full company tiles via `/companies` or `/companies/search`.
 
-- **Recently viewed companies row**
-  - Use `POST /user/recent-companies` when a company detail page is opened.
-  - Use `GET /user/recent-companies` to show recent history, then fetch company details as needed.
+- **Favorites row (vehicles)**
+  - Use `GET /favorites/vehicles` for paginated vehicle list with full details.
+
+---
+
+## Removed Endpoints
+
+The following endpoints have been removed:
+
+- ~~`GET /dashboard/summary`~~ — Removed
+- ~~`GET /user/recent-companies`~~ — Removed
+- ~~`POST /user/recent-companies`~~ — Removed
+- ~~`GET /user/favorites`~~ — Renamed to `/user/favorites/companies`
+- ~~`POST /user/favorites/:companyId`~~ — Renamed to `/user/favorites/companies/:companyId`
+- ~~`DELETE /user/favorites/:companyId`~~ — Renamed to `/user/favorites/companies/:companyId`

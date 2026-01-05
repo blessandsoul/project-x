@@ -8,9 +8,11 @@ export class CompanyReviewModel extends BaseModel {
   }
 
   async getByCompanyId(companyId: number, limit: number, offset: number): Promise<CompanyReview[]> {
+    const safeLimit = Math.floor(limit);
+    const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.company_id = ? ORDER BY r.created_at DESC LIMIT ? OFFSET ?',
-      [companyId, limit, offset],
+      `SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.company_id = ? ORDER BY r.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [companyId],
     );
     return rows as CompanyReview[];
   }

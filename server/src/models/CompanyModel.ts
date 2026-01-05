@@ -45,6 +45,7 @@ export class CompanyModel extends BaseModel {
   async create(companyData: CompanyCreate): Promise<Company> {
     const {
       name,
+      owner_user_id = null,
       slug,
       base_price = 0,
       price_per_mile = 0,
@@ -53,7 +54,9 @@ export class CompanyModel extends BaseModel {
       broker_fee = 0,
       insurance = null,
       final_formula = null,
-      description = null,
+      description_geo = null,
+      description_eng = null,
+      description_rus = null,
       country = null,
       city = null,
       state = null,
@@ -82,8 +85,9 @@ export class CompanyModel extends BaseModel {
       (broker_fee ?? 0);
 
     const result = await this.executeCommand(
-      'INSERT INTO companies (name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, cheapest_score, final_formula, description, phone_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO companies (owner_user_id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, cheapest_score, final_formula, description_geo, description_eng, description_rus, country, city, state, services, phone_number, contact_email, website, established_year, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
+        owner_user_id,
         name,
         computedSlug,
         base_price,
@@ -94,8 +98,17 @@ export class CompanyModel extends BaseModel {
         insurance,
         cheapestScore,
         final_formula ? JSON.stringify(final_formula) : null,
-        description,
+        description_geo,
+        description_eng,
+        description_rus,
+        country,
+        city,
+        state,
+        services ? JSON.stringify(services) : null,
         phone_number,
+        contact_email,
+        website,
+        established_year,
       ],
     );
 
@@ -109,7 +122,7 @@ export class CompanyModel extends BaseModel {
 
   async findById(id: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id = ?',
       [id],
     );
 
@@ -120,18 +133,22 @@ export class CompanyModel extends BaseModel {
     const row = rows[0];
     row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
     row.services = safeJsonParse(row.services, 'services', row.id);
+    row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     return row as Company;
   }
 
   async findAll(limit: number = 20, offset: number = 0): Promise<Company[]> {
+    const safeLimit = Math.floor(limit);
+    const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      'SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset],
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [],
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return rows as Company[];
@@ -154,13 +171,14 @@ export class CompanyModel extends BaseModel {
     const placeholders = uniqueIds.map(() => '?').join(', ');
 
     const rows = await this.executeQuery(
-      `SELECT id, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, description, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE id IN (${placeholders})`,
       uniqueIds,
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return rows as Company[];
@@ -202,9 +220,17 @@ export class CompanyModel extends BaseModel {
       fields.push('final_formula = ?');
       values.push(updates.final_formula ? JSON.stringify(updates.final_formula) : null);
     }
-    if (updates.description !== undefined) {
-      fields.push('description = ?');
-      values.push(updates.description);
+    if (updates.description_geo !== undefined) {
+      fields.push('description_geo = ?');
+      values.push(updates.description_geo);
+    }
+    if (updates.description_eng !== undefined) {
+      fields.push('description_eng = ?');
+      values.push(updates.description_eng);
+    }
+    if (updates.description_rus !== undefined) {
+      fields.push('description_rus = ?');
+      values.push(updates.description_rus);
     }
     if (updates.country !== undefined) {
       fields.push('country = ?');
@@ -254,6 +280,19 @@ export class CompanyModel extends BaseModel {
       fields.push('established_year = ?');
       values.push(updates.established_year);
     }
+    // Calculator adapter configuration fields
+    if (updates.calculator_type !== undefined) {
+      fields.push('calculator_type = ?');
+      values.push(updates.calculator_type);
+    }
+    if (updates.calculator_api_url !== undefined) {
+      fields.push('calculator_api_url = ?');
+      values.push(updates.calculator_api_url);
+    }
+    if (updates.calculator_config !== undefined) {
+      fields.push('calculator_config = ?');
+      values.push(updates.calculator_config ? JSON.stringify(updates.calculator_config) : null);
+    }
 
     if (fields.length === 0) {
       return this.findById(id);
@@ -299,22 +338,97 @@ export class CompanyModel extends BaseModel {
 
   async getSocialLinksByCompanyId(companyId: number): Promise<CompanySocialLink[]> {
     const rows = await this.executeQuery(
-      'SELECT id, company_id, url FROM company_social_links WHERE company_id = ?',
+      'SELECT id, company_id, link_type, platform, url, created_at, updated_at FROM company_social_links WHERE company_id = ?',
       [companyId],
     );
     return rows as CompanySocialLink[];
   }
 
+  /**
+   * Get structured social links for API response
+   * Returns: { website: {...} | null, social_links: [...] }
+   */
+  async getStructuredSocialLinks(companyId: number): Promise<{
+    website: { id: number; url: string } | null;
+    social_links: Array<{ id: number; platform: string; url: string }>;
+  }> {
+    const links = await this.getSocialLinksByCompanyId(companyId);
+
+    const websiteLink = links.find(l => l.link_type === 'website');
+    const socialLinks = links.filter(l => l.link_type === 'social');
+
+    return {
+      website: websiteLink ? { id: websiteLink.id, url: websiteLink.url } : null,
+      social_links: socialLinks.map(s => ({
+        id: s.id,
+        platform: s.platform || 'facebook',
+        url: s.url,
+      })),
+    };
+  }
+
+  async getSocialLinkById(id: number): Promise<CompanySocialLink | null> {
+    const rows = await this.executeQuery(
+      'SELECT id, company_id, link_type, platform, url, created_at, updated_at FROM company_social_links WHERE id = ?',
+      [id],
+    );
+    return rows.length ? (rows[0] as CompanySocialLink) : null;
+  }
+
+  /**
+   * Create social link with validation:
+   * - Only 1 website per company
+   * - Max 2 social links per company
+   * - Platform required for social links
+   * - Platform must be 'facebook' or 'instagram'
+   * - No duplicate platforms allowed
+   */
   async createSocialLink(data: CompanySocialLinkCreate): Promise<CompanySocialLink> {
-    const { company_id, url } = data;
+    const { company_id, link_type, platform, url } = data;
+
+    // Validation for social links
+    if (link_type === 'social') {
+      if (!platform) {
+        throw new Error('Platform is required for social links');
+      }
+
+      const allowedPlatforms = ['facebook', 'instagram'];
+      if (!allowedPlatforms.includes(platform)) {
+        throw new Error('Unsupported social platform. Only facebook and instagram are allowed.');
+      }
+    }
+
+    // Check existing links for this company
+    const existing = await this.getSocialLinksByCompanyId(company_id);
+
+    if (link_type === 'website') {
+      const hasWebsite = existing.some(l => l.link_type === 'website');
+      if (hasWebsite) {
+        throw new Error('Company already has a website');
+      }
+    } else {
+      // Check social link limits
+      const socialLinks = existing.filter(l => l.link_type === 'social');
+      if (socialLinks.length >= 2) {
+        throw new Error('Company already has maximum 2 social links');
+      }
+
+      // Check for duplicate platform
+      const duplicatePlatform = socialLinks.some(l => l.platform === platform);
+      if (duplicatePlatform) {
+        throw new Error('Social platform already exists');
+      }
+    }
+
+    // Insert the new link
     const result = await this.executeCommand(
-      'INSERT INTO company_social_links (company_id, url) VALUES (?, ?)',
-      [company_id, url],
+      'INSERT INTO company_social_links (company_id, link_type, platform, url) VALUES (?, ?, ?, ?)',
+      [company_id, link_type, link_type === 'website' ? null : platform, url],
     );
 
     const id = (result as any).insertId;
     const rows = await this.executeQuery(
-      'SELECT id, company_id, url FROM company_social_links WHERE id = ?',
+      'SELECT id, company_id, link_type, platform, url, created_at, updated_at FROM company_social_links WHERE id = ?',
       [id],
     );
     return rows[0] as CompanySocialLink;
@@ -329,9 +443,19 @@ export class CompanyModel extends BaseModel {
       values.push(updates.url);
     }
 
+    if (updates.platform !== undefined) {
+      // Validate platform
+      const allowedPlatforms = ['facebook', 'instagram'];
+      if (!allowedPlatforms.includes(updates.platform)) {
+        throw new Error('Unsupported social platform. Only facebook and instagram are allowed.');
+      }
+      fields.push('platform = ?');
+      values.push(updates.platform);
+    }
+
     if (fields.length === 0) {
       const rows = await this.executeQuery(
-        'SELECT id, company_id, url FROM company_social_links WHERE id = ?',
+        'SELECT id, company_id, link_type, platform, url, created_at, updated_at FROM company_social_links WHERE id = ?',
         [id],
       );
       return rows.length ? (rows[0] as CompanySocialLink) : null;
@@ -344,7 +468,7 @@ export class CompanyModel extends BaseModel {
     );
 
     const rows = await this.executeQuery(
-      'SELECT id, company_id, url FROM company_social_links WHERE id = ?',
+      'SELECT id, company_id, link_type, platform, url, created_at, updated_at FROM company_social_links WHERE id = ?',
       [id],
     );
     return rows.length ? (rows[0] as CompanySocialLink) : null;
@@ -502,7 +626,7 @@ export class CompanyModel extends BaseModel {
     const safeLimit = Number.isFinite(limit) && limit > 0 && limit <= 100 ? limit : 20;
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
 
-    const whereClauses: string[] = [];
+    const whereClauses: string[] = ['c.is_active = 1']; // Only show active companies
     const queryParams: any[] = [];
 
     if (typeof minRating === 'number' && Number.isFinite(minRating)) {
@@ -588,31 +712,111 @@ export class CompanyModel extends BaseModel {
     }
 
     const rows = await this.executeQuery(
-      `SELECT c.id, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.description, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
+      `SELECT c.id, c.owner_user_id, c.is_active, c.name, c.slug, c.base_price, c.price_per_mile, c.customs_fee, c.service_fee, c.broker_fee, c.insurance, c.final_formula, c.calculator_type, c.calculator_api_url, c.calculator_config, c.description_geo, c.description_eng, c.description_rus, c.country, c.city, c.state, c.rating, c.is_vip, c.subscription_free, c.subscription_ends_at, c.services, c.phone_number, c.contact_email, c.website, c.established_year, c.cheapest_score, c.created_at, c.updated_at
        FROM companies c
         LEFT JOIN (
           SELECT company_id, COUNT(*) AS review_count
           FROM company_reviews
           GROUP BY company_id
        ) r ON r.company_id = c.id
-       ${whereSql} ${orderSql} LIMIT ? OFFSET ?`,
-      [...queryParams, safeLimit, safeOffset],
+       ${whereSql} ${orderSql} LIMIT ${Math.floor(safeLimit)} OFFSET ${Math.floor(safeOffset)}`,
+      queryParams,
     );
 
     for (const row of rows) {
       row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
       row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
     }
 
     return { items: rows as Company[], total };
   }
 
-  async findGeneralLeadCompanyIds(): Promise<number[]> {
+  async findByOwnerUserId(ownerUserId: number): Promise<Company | null> {
     const rows = await this.executeQuery(
-      'SELECT id FROM companies WHERE receives_general_leads = 1',
+      'SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE owner_user_id = ?',
+      [ownerUserId],
+    );
+
+    if (!rows || rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0];
+    row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+    row.services = safeJsonParse(row.services, 'services', row.id);
+    row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
+    return row as Company;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Account Deactivation Cascade Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Deactivate all companies owned by a user
+   *
+   * Sets is_active = 0 for all companies where owner_user_id matches.
+   * Called when a company user deactivates their account.
+   *
+   * @param userId - User ID whose companies should be deactivated
+   * @returns Number of companies affected
+   */
+  async deactivateByOwnerId(userId: number): Promise<number> {
+    const result = await this.executeCommand(
+      'UPDATE companies SET is_active = 0, updated_at = NOW() WHERE owner_user_id = ?',
+      [userId],
+    );
+    return (result as any).affectedRows ?? 0;
+  }
+
+  /**
+   * Reactivate all companies owned by a user
+   *
+   * Sets is_active = 1 for all companies where owner_user_id matches.
+   * Called when a company user reactivates their account.
+   *
+   * @param userId - User ID whose companies should be reactivated
+   * @returns Number of companies affected
+   */
+  async reactivateByOwnerId(userId: number): Promise<number> {
+    const result = await this.executeCommand(
+      'UPDATE companies SET is_active = 1, updated_at = NOW() WHERE owner_user_id = ?',
+      [userId],
+    );
+    return (result as any).affectedRows ?? 0;
+  }
+
+  /**
+   * Find all active companies (for public listings)
+   *
+   * Only returns companies where is_active = 1
+   */
+  async findAllActive(limit: number = 20, offset: number = 0): Promise<Company[]> {
+    const safeLimit = Math.floor(limit);
+    const safeOffset = Math.floor(offset);
+    const rows = await this.executeQuery(
+      `SELECT id, owner_user_id, is_active, name, slug, base_price, price_per_mile, customs_fee, service_fee, broker_fee, insurance, final_formula, calculator_type, calculator_api_url, calculator_config, description_geo, description_eng, description_rus, country, city, state, rating, is_vip, subscription_free, subscription_ends_at, services, phone_number, contact_email, website, established_year, created_at, updated_at FROM companies WHERE is_active = 1 ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       [],
     );
 
-    return rows.map((row: { id: number }) => row.id);
+    for (const row of rows) {
+      row.final_formula = safeJsonParse(row.final_formula, 'final_formula', row.id);
+      row.services = safeJsonParse(row.services, 'services', row.id);
+      row.calculator_config = safeJsonParse(row.calculator_config, 'calculator_config', row.id);
+    }
+
+    return rows as Company[];
+  }
+
+  /**
+   * Count all active companies
+   */
+  async countAllActive(): Promise<number> {
+    const rows = await this.executeQuery(
+      'SELECT COUNT(*) AS cnt FROM companies WHERE is_active = 1',
+      [],
+    );
+    return rows.length ? (rows[0] as { cnt: number }).cnt : 0;
   }
 }

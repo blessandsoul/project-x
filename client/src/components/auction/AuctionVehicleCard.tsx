@@ -1,29 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useTranslation } from 'react-i18next';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import { cn } from '@/lib/utils';
+
+// Shared mobile detection to avoid multiple resize listeners
+// Treat widths below 768px as "mobile" for the compact list layout
+let mobileState = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+const listeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  let resizeTimeout: ReturnType<typeof setTimeout>;
+  window.addEventListener('resize', () => {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const newState = window.innerWidth < 768;
+      if (newState !== mobileState) {
+        mobileState = newState;
+        listeners.forEach(listener => listener());
+      }
+    }, 100);
+  });
+}
+
+function useMobileDetect(): boolean {
+  const subscribe = useCallback((callback: () => void) => {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  }, []);
+
+  const getSnapshot = useCallback(() => mobileState, []);
+  const getServerSnapshot = useCallback(() => false, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
 
 interface AuctionVehicleCardProps {
   item: VehicleSearchItem;
   isSelected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
-  onOpenGallery: () => void;
-  onCalculate: () => void;
-  onViewDetails: () => void;
+  onCalculate?: () => void;
+  onViewDetails?: () => void;
   showCompareCheckbox?: boolean;
   priority?: boolean;
+  onToggleWatch?: () => void;
+  isWatched?: boolean;
+  /** 
+   * 'default' = full interactive card
+   * 'preview' = non-interactive preview for hero device screens (no buttons, no hover effects)
+   */
+  variant?: 'default' | 'preview';
+  /**
+   * Force mobile or desktop layout regardless of screen size
+   * Useful for device screen previews
+   */
+  forceLayout?: 'mobile' | 'desktop';
+  /**
+   * Hide odometer section (useful for similar vehicles)
+   */
+  hideOdometer?: boolean;
+  /**
+   * Context determines styling variant:
+   * 'similar' = used in similar vehicles carousel (horizontal layout preserved)
+   * 'listing' = used in auction listings grid (vertical layout: image on top, data below)
+   */
+  context?: 'similar' | 'listing';
 }
 
 const formatMoney = (
@@ -40,35 +85,70 @@ export function AuctionVehicleCard({
   item,
   isSelected = false,
   onToggleSelect,
-  onOpenGallery,
-  onCalculate,
+  onCalculate: _onCalculate,
   onViewDetails,
   showCompareCheckbox = false,
   priority = false,
+  onToggleWatch,
+  isWatched = false,
+  variant = 'default',
+  forceLayout,
+  hideOdometer = false,
+  context = 'listing',
 }: AuctionVehicleCardProps) {
-  const { t } = useTranslation();
-  const [isMobile, setIsMobile] = useState(false);
+  const { t, i18n } = useTranslation();
+  const isGeorgian = i18n.language?.startsWith('ka');
+  const localeList = [
+    'ka',
+    'ka-GE',
+    i18n.language || 'en',
+    'en',
+  ];
+  const monthShortKa = ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'];
+  const detectedMobile = useMobileDetect();
 
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Use forceLayout if provided, otherwise use detected mobile state
+  const isMobile = forceLayout ? forceLayout === 'mobile' : detectedMobile;
+  const isPreview = variant === 'preview';
 
   const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
 
-  // Price calculation
-  let priceRaw: number | null = null;
-  if (item.calc_price != null) {
+  // Last bid from API (preferred) or fallback to calc_price
+  const lastBid = item.last_bid;
+  let displayPrice: number = 0;
+  let bidTime: string | null = null;
+
+  if (lastBid && lastBid.bid != null) {
+    displayPrice = lastBid.bid;
+    bidTime = lastBid.bid_time;
+  } else if (item.calc_price != null) {
     const numericCalc = typeof item.calc_price === 'number' ? item.calc_price : Number(item.calc_price);
-    if (Number.isFinite(numericCalc)) priceRaw = numericCalc;
+    if (Number.isFinite(numericCalc)) displayPrice = Math.max(0, numericCalc);
   }
-  if (priceRaw == null && item.retail_value != null) {
-    const numericRetail = typeof item.retail_value === 'number' ? item.retail_value : Number(item.retail_value);
-    if (Number.isFinite(numericRetail)) priceRaw = numericRetail;
-  }
-  const displayPrice = priceRaw != null && Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+
+  // Format bid time for display
+  const formatBidTime = (isoTime: string | null): string => {
+    if (!isoTime) return '';
+    try {
+      const date = new Date(isoTime);
+      if (isGeorgian) {
+        const month = monthShortKa[date.getMonth()];
+        const day = date.getDate();
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${month} ${day}, ${year}, ${hours}:${minutes}`;
+      }
+      return new Intl.DateTimeFormat(localeList, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+    } catch {
+      return '';
+    }
+  };
 
   // Buy Now price (only when strictly positive)
   let buyNowRaw: number | null = null;
@@ -88,308 +168,367 @@ export function AuctionVehicleCard({
   const buyNowPriceLabel = hasBuyNow ? formatMoney(buyNowRaw) : null;
 
 
-  // Helpers for translation
-  const formatMileage = (mileage: number | null | undefined) => {
-    if (!mileage) return 'N/A';
-    const k = (mileage / 1000).toFixed(0);
-    return `${k}k ${t('common.miles_short')}`;
-  };
-
-  const translateFuel = (fuel: string | null | undefined) => {
-    if (!fuel) return 'N/A';
-    const key = fuel.toLowerCase();
-    if (key.includes('gas') || key.includes('petrol')) return t('common.fuel_gas');
-    if (key.includes('diesel')) return t('common.fuel_diesel');
-    if (key.includes('hybrid')) return t('common.fuel_hybrid');
-    if (key.includes('electric')) return t('common.fuel_electric');
-    return fuel;
-  };
-
-  const translateDrive = (drive: string | null | undefined) => {
-    if (!drive) return 'N/A';
-    const key = drive.toLowerCase();
-    if (key.includes('fwd') || key.includes('front')) return t('common.drive_types.fwd');
-    if (key.includes('rwd') || key.includes('rear')) return t('common.drive_types.rwd');
-    if (key.includes('awd') || key.includes('all')) return t('common.drive_types.awd');
-    if (key.includes('4wd')) return t('common.drive_types.4wd');
-    if (key.includes('full')) return t('common.drive_types.full');
-    return drive;
-  };
-
-
-  // Mobile compact card - horizontal layout to fit 5+ per screen
+  // Mobile card - Copart-style layout for <768px (EXACT match)
   if (isMobile) {
+    // Format odometer like Copart: "70465 miles (E)"
+    const odometerDisplay = item.mileage
+      ? `${item.mileage.toLocaleString()} ${t('common.miles_short')} (E)`
+      : 'N/A';
+
+    const auctionInfo = (() => {
+      if (!item.sold_at_date) return null;
+      try {
+        const auctionDate = new Date(item.sold_at_date);
+        const now = new Date();
+        const isUpcoming = auctionDate > now;
+
+        const dateStr = isGeorgian
+          ? `${monthShortKa[auctionDate.getMonth()]} ${auctionDate.getDate()}, ${auctionDate.getFullYear()}`
+          : new Intl.DateTimeFormat(localeList, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }).format(auctionDate);
+
+        let timeStr = '';
+        if (item.sold_at_time) {
+          const [hours, minutes] = item.sold_at_time.split(':');
+          const hour = parseInt(hours, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          timeStr = `${hour12}:${minutes} ${ampm}`;
+        } else {
+          timeStr = new Intl.DateTimeFormat(localeList, {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }).format(auctionDate);
+        }
+
+        return { date: dateStr, time: timeStr, isUpcoming };
+      } catch {
+        return null;
+      }
+    })();
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
-        className="h-full"
+        className="w-full mb-1.5"
       >
-        <Card className="group relative overflow-hidden rounded-xl border-border/40 bg-card shadow-sm flex flex-row p-0 gap-0">
-          {/* Image - Left side, smaller */}
-          <div className="relative w-28 flex-shrink-0 overflow-hidden bg-muted/20">
-            <button
-              type="button"
-              className="w-full h-full focus:outline-none cursor-zoom-in"
-              onClick={onOpenGallery}
-              aria-label={t('common.view_photos')}
-            >
-              <img
-                src={mainPhotoUrl}
-                alt={`${item.year} ${item.make} ${item.model}`}
-                className="h-full w-full object-cover"
-                loading={priority ? 'eager' : 'lazy'}
-              />
-            </button>
-            {/* Source badge on image */}
-            {item.source && (
-              <Badge
-                className={cn(
-                  "absolute top-1 left-1 text-[8px] px-1.5 py-0 h-4 backdrop-blur-md border-none shadow-sm font-bold",
-                  item.source.toLowerCase() === 'copart' ? "bg-[#0047AB] text-white" :
-                  item.source.toLowerCase() === 'iaai' ? "bg-[#D40000] text-white" :
-                  "bg-black/70 text-white"
-                )}
-              >
-                {item.source.toUpperCase()}
-              </Badge>
-            )}
-            {/* Compare checkbox */}
-            {showCompareCheckbox && (
-              <div className="absolute bottom-1 left-1">
-                <Checkbox
-                  id={`compare-${item.id}`}
-                  checked={isSelected}
-                  onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
-                  className="w-4 h-4 bg-white/90 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                />
-              </div>
-            )}
+        <div className={cn(
+          "auction-card-mobile w-full overflow-hidden bg-white border border-slate-200 shadow-md flex flex-col",
+          context === 'similar' && "similar-vehicle-card force-horizontal-layout",
+          context === 'listing' && "listing-vehicle-card"
+        )}>
+          {/* 1️⃣ HEADER - Title + Lot (Copart-style) */}
+          <div className="auction-card-header px-4 py-3">
+            <h3 className="font-bold text-[16px] leading-snug text-slate-900 uppercase tracking-tight">
+              {item.year} {item.make} {item.model}
+            </h3>
+            <p className="text-[13px] text-slate-600 mt-0.5">
+              {t('auction.lot')} {item.source_lot_id || item.id}
+            </p>
           </div>
 
-          {/* Content - Right side, compact */}
-          <CardContent className="flex flex-row flex-1 p-2 gap-2 min-w-0">
-            {/* Left: Info */}
-            <div className="flex flex-col flex-1 min-w-0 gap-0.5 justify-between h-full">
-              <div>
-                <h3 className="font-semibold text-[15px] leading-tight truncate" title={`${item.year} ${item.make} ${item.model}`}>
-                  {item.year} {item.make} {item.model}
-                </h3>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-0.5">
-                    <Icon icon="mdi:speedometer" className="w-3.5 h-3.5" />
-                    {formatMileage(item.mileage)}
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    <Icon icon="mdi:gas-station" className="w-3.5 h-3.5" />
-                    {translateFuel(item.fuel_type)}
-                  </span>
+          {/* 2️⃣ MIDDLE ROW - Image + Info, layout controlled by CSS based on context */}
+          <div className="auction-card-middle flex items-stretch" style={{ minHeight: context === 'similar' ? '100px' : undefined, maxHeight: context === 'similar' ? '120px' : undefined }}>
+            {/* Car Image - width controlled by CSS */}
+            <div className="auction-card-image relative flex-shrink-0">
+              {isPreview ? (
+                <div className="w-full h-full bg-slate-100 overflow-hidden">
+                  <img
+                    src={mainPhotoUrl}
+                    alt={`${item.year} ${item.make} ${item.model}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    style={{ imageRendering: 'auto' }}
+                  />
                 </div>
-              </div>
-              <span className="text-[15px] font-bold text-primary leading-tight">
-                {formatMoney(displayPrice)}
-              </span>
-            </div>
-            {/* Right: Actions stacked vertically */}
-            <div className="flex flex-col justify-between items-end h-full">
-              {hasBuyNow && buyNowPriceLabel ? (
-                <span className="text-[10px] text-emerald-600 font-semibold text-right leading-tight">
-                  <span className="block">{buyNowPriceLabel}</span>
-                  <span className="text-[9px] font-medium">ახლავე ყიდვა</span>
-                </span>
-              ) : <span />}
-              <button
-                className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors text-[11px] font-semibold min-w-[44px]"
-                onClick={onViewDetails}
-                title={t('common.details')}
-              >
-                {t('common.details')}
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
-  }
-
-  // Desktop card - original layout
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.2 }}
-      className="h-full"
-    >
-      <Card className="group relative h-full overflow-hidden rounded-2xl border-border/40 bg-card shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col p-0 gap-0">
-        {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
-          <button
-            type="button"
-            className="w-full h-full focus:outline-none cursor-zoom-in"
-            onClick={onOpenGallery}
-            aria-label={t('common.view_photos')}
-          >
-            <img
-              src={mainPhotoUrl}
-              alt={`${item.year} ${item.make} ${item.model}`}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              loading={priority ? 'eager' : 'lazy'}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </button>
-
-          {/* Top Actions Overlay */}
-          <div className="absolute top-3 inset-x-3 flex justify-start items-start pointer-events-none">
-            {/* Left: Compare Checkbox */}
-            <div className="pointer-events-auto flex gap-2">
-              {showCompareCheckbox && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-border/50 hover:bg-background transition-colors"
+              ) : (
+                <button
+                  type="button"
+                  className="w-full h-full bg-slate-100 focus:outline-none cursor-pointer overflow-hidden"
+                  onClick={onViewDetails}
+                  aria-label={t('auction.view_vehicle_details')}
                 >
+                  <img
+                    src={mainPhotoUrl}
+                    alt={`${item.year} ${item.make} ${item.model}`}
+                    className="w-full h-full object-cover"
+                    loading={priority ? 'eager' : 'lazy'}
+                  />
+                </button>
+              )}
+              {/* Compare checkbox - hidden in preview */}
+              {showCompareCheckbox && !isPreview && (
+                <div className="absolute top-2 left-2">
                   <Checkbox
                     id={`compare-${item.id}`}
                     checked={isSelected}
                     onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
-                    className="w-4 h-4 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="w-4 h-4 bg-white border-slate-300"
                   />
-                  <label
-                    htmlFor={`compare-${item.id}`}
-                    className="text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none"
-                  >
-                    {t('common.compare')}
-                  </label>
-                </motion.div>
+                </div>
+              )}
+            </div>
+
+            {/* Info - width controlled by CSS */}
+            <div className="auction-card-info flex flex-col justify-start p-3 gap-1 bg-slate-100">
+              {/* Odometer section - hidden if hideOdometer is true */}
+              {!hideOdometer && (
+                <div className="mb-1">
+                  <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.odometer')}</p>
+                  <p className="text-[13px] text-slate-600">{odometerDisplay}</p>
+                </div>
+              )}
+
+              {/* Current Bid section */}
+              <div className="mb-1">
+                <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.current_bid')}:</p>
+                <p className="text-[15px] font-bold text-slate-900">
+                  {formatMoney(displayPrice)} <span className="text-[12px] font-normal text-slate-500">USD</span>
+                </p>
+                {bidTime && (
+                  <p className="text-[10px] text-slate-500">{formatBidTime(bidTime)}</p>
+                )}
+              </div>
+
+              {/* Buy Now section - plain text like Copart, only if exists */}
+              {hasBuyNow && buyNowPriceLabel && (
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">{t('auction.buy_now_label')}:</p>
+                  <p className="text-[15px] font-bold text-slate-900">
+                    {buyNowPriceLabel} <span className="text-[12px] font-normal text-slate-500">USD</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Auction start date (mobile) */}
+              {auctionInfo && (
+                <div className="mt-1 flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <Icon
+                      icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"}
+                      className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`}
+                    />
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
+                      }`}>
+                      {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
+                    </span>
+                  </div>
+                  <div className={`text-[13px] font-bold ${auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+                    }`}>
+                    {auctionInfo.date}
+                  </div>
+                  <div className={`text-[12px] font-semibold ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+                    }`}>
+                    {auctionInfo.time}
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Bottom Image Overlay (Badges) */}
-          <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5 pointer-events-none max-w-[70%]">
-            {(item.yard_name || item.source) && (
-              <>
-                {item.source && (
-                  <Badge
-                    className={cn(
-                      "pointer-events-auto text-[10px] px-2 py-0.5 h-5 backdrop-blur-md border-none shadow-sm font-bold tracking-wide",
-                      item.source.toLowerCase() === 'copart' ? "bg-[#0047AB] text-white" :
-                      item.source.toLowerCase() === 'iaai' ? "bg-[#D40000] text-white" :
-                      "bg-black/70 text-white"
-                    )}
-                  >
-                    {item.source.toUpperCase()}
-                  </Badge>
+          {/* 3️⃣ BOTTOM BUTTONS - Hidden in preview mode */}
+          {!isPreview && (
+            <div className="auction-card-buttons grid grid-cols-3 border-t border-slate-200">
+              {/* DETAILS button - Yellow/Gold */}
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 h-[44px] bg-accent hover:bg-accent/90 text-slate-900 font-semibold text-[13px] transition-colors"
+                onClick={onViewDetails}
+              >
+                <Icon icon="mdi:plus-circle-outline" className="w-4 h-4" />
+                {t('common.details')}
+              </button>
+
+              {/* WATCH button - White background, blue text */}
+              <button
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 h-[44px] font-semibold text-[13px] transition-colors border-l border-slate-200",
+                  isWatched
+                    ? "bg-green-50 text-green-600"
+                    : "bg-white hover:bg-slate-50 text-blue-600"
                 )}
-                {item.yard_name && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="pointer-events-auto text-[10px] px-2 py-0.5 h-5 bg-white/90 text-black backdrop-blur-md border-none shadow-sm max-w-full truncate cursor-help">
-                          {item.yard_name.length > 15 ? `${item.yard_name.slice(0, 15)}...` : item.yard_name}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{item.yard_name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </>
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWatch?.();
+                }}
+              >
+                <Icon icon={isWatched ? "mdi:star" : "mdi:star-outline"} className="w-4 h-4" />
+                {t('auction.actions.watch')}
+              </button>
+
+              {/* BID NOW button - Blue, always visible on mobile */}
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-[13px] transition-colors border-l border-slate-200"
+                onClick={onViewDetails}
+              >
+                {t('auction.actions.bid_now')}
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Desktop card - Copart style
+  const hasCleanTitle = item.sale_title_type?.toLowerCase().includes('clean');
+  const isRunDrive = item.run_and_drive?.toLowerCase().includes('run');
+
+  return (
+    <div className="h-full">
+      <div className="group relative h-full overflow-hidden rounded-2xl bg-white/90 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+        {/* Image Container */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+          <button
+            type="button"
+            className="w-full h-full focus:outline-none cursor-pointer"
+            onClick={onViewDetails}
+          >
+            <img
+              src={mainPhotoUrl}
+              alt={`${item.year} ${item.make} ${item.model}`}
+              className="h-full w-full object-cover"
+              loading={priority ? 'eager' : 'lazy'}
+            />
+          </button>
+
+          {/* Compare Checkbox - hidden in preview */}
+          {showCompareCheckbox && !isPreview && (
+            <div className="absolute top-2 left-2">
+              <Checkbox
+                id={`compare-${item.id}`}
+                checked={isSelected}
+                onCheckedChange={(checked) => onToggleSelect?.(!!checked)}
+                className="w-4 h-4 bg-white border-slate-300"
+              />
+            </div>
+          )}
+
+          {/* Watch button - hidden in preview */}
+          {onToggleWatch && !isPreview && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatch();
+              }}
+              className="absolute top-2 right-2 bg-black/50 p-1 rounded hover:bg-black/70 transition-colors"
+            >
+              <Icon
+                icon={isWatched ? "mdi:heart" : "mdi:heart-outline"}
+                className={cn("w-4 h-4", isWatched ? "text-green-500" : "text-white")}
+              />
+            </button>
+          )}
+
+          {/* Photo count */}
+          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1">
+            <Icon icon="mdi:camera" className="w-3 h-3" />
+            <span>12</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-col flex-1 p-3">
+          {/* Title */}
+          <button onClick={onViewDetails} className="text-left mb-1.5">
+            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-primary leading-snug line-clamp-2">
+              {item.year} {item.make} {item.model}
+            </h3>
+          </button>
+
+          {/* Lot # */}
+          <div className="text-[10px] text-slate-500 mb-1.5">
+            {t('auction.lot')} {item.source_lot_id || item.id}
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-1 mb-2">
+            {hasCleanTitle && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                <Icon icon="mdi:check-circle" className="w-2.5 h-2.5" />
+                {t('auction.badges.clean_title')}
+              </span>
+            )}
+            {isRunDrive && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                <Icon icon="mdi:car" className="w-2.5 h-2.5" />
+                {t('auction.badges.run_drive')}
+              </span>
             )}
           </div>
 
-        </div>
+          {/* Specs */}
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-2">
+            <span className="flex items-center gap-0.5">
+              <Icon icon="mdi:speedometer" className="w-3 h-3" />
+              {item.mileage ? `${(item.mileage / 1000).toFixed(0)}k ${t('common.miles_short')}` : 'N/A'}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <Icon icon="mdi:gas-station" className="w-3 h-3" />
+              {item.fuel_type || t('common.fuel_gas')}
+            </span>
+          </div>
 
-        {/* Content Body */}
-        <CardContent className="flex flex-col flex-1 p-4 gap-3">
-          {/* Header */}
-          <div className="space-y-1">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-lg leading-tight truncate min-w-0 group-hover:text-primary transition-colors" title={`${item.year} ${item.make} ${item.model}`}>
-                {item.year} {item.make} {item.model}
-              </h3>
+          {/* Price & Buttons */}
+          <div className="mt-auto space-y-2">
+            <div>
+              <div className="text-[9px] text-slate-400 uppercase">{t('auction.fields.current_bid')}</div>
+              <div className="text-[16px] font-semibold text-slate-900">
+                {formatMoney(displayPrice)} <span className="text-[9px] font-normal text-slate-400">USD</span>
+              </div>
+              {bidTime && (
+                <div className="text-[9px] text-slate-400">
+                  {formatBidTime(bidTime)}
+                </div>
+              )}
+              {hasBuyNow && buyNowPriceLabel && (
+                <div className="text-[10px] text-green-600 font-semibold">
+                  {t('auction.buy_now_label')}: {buyNowPriceLabel}
+                </div>
+              )}
             </div>
-            {hasBuyNow && (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Badge className="bg-emerald-500/90 text-white border-none h-5 px-2 text-[10px] font-semibold tracking-wide flex items-center gap-1">
-                  <Icon icon="mdi:flash" className="w-3 h-3" />
-                  {t('auction.filters.buy_now_only')}
-                </Badge>
-                {buyNowPriceLabel && (
-                  <span className="text-xs font-semibold text-emerald-700">
-                    {buyNowPriceLabel}
-                  </span>
+
+            {/* Buttons - hidden in preview mode */}
+            {!isPreview && (
+              <div className="flex flex-col gap-1.5">
+                <Button
+                  size="sm"
+                  className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
+                  onClick={onViewDetails}
+                >
+                  {t('auction.actions.bid_now')}
+                </Button>
+                {hasBuyNow ? (
+                  <Button
+                    size="sm"
+                    className="w-full h-7 text-[11px] rounded-full bg-accent hover:bg-accent/90 text-primary font-semibold"
+                    onClick={onViewDetails}
+                  >
+                    {t('auction.actions.buy_it_now')}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-7 text-[11px] rounded-full border-slate-300 text-slate-600 font-medium hover:bg-slate-50"
+                    onClick={onViewDetails}
+                  >
+                    {t('common.details')}
+                  </Button>
                 )}
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {item.run_and_drive ? (
-                <>
-                  <span className={cn("font-medium flex items-center gap-1", item.run_and_drive.toLowerCase().includes('run') ? "text-emerald-600" : "text-orange-600")}>
-                    <Icon icon="mdi:engine" className="w-3.5 h-3.5" />
-                    {item.run_and_drive}
-                  </span>
-                </>
-              ) : (
-                <span className="h-4" /> // Spacer to keep alignment if no status
-              )}
-            </div>
           </div>
-
-          {/* Bottom Section - Specs + Footer (always aligned) */}
-          <div className="mt-auto flex flex-col gap-3">
-            {/* Specs Grid */}
-            <div className="grid grid-cols-3 gap-2 py-2 border-y border-dashed border-border/60">
-            <div className="flex flex-col items-center justify-center text-center gap-0.5">
-              <Icon icon="mdi:speedometer" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium truncate w-full">{formatMileage(item.mileage)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
-              <Icon icon="mdi:gas-station" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{translateFuel(item.fuel_type)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center gap-0.5 border-l border-dashed border-border/60 pl-2">
-              <Icon icon="mdi:car-traction-control" className="w-4 h-4 text-muted-foreground/70" />
-              <span className="text-xs font-medium capitalize truncate w-full">{translateDrive(item.drive)}</span>
-            </div>
-            </div>
-
-            {/* Footer: Price & Actions */}
-            <div className="pt-1 flex items-end justify-between gap-2">
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                {item.calc_price ? t('auction.total_estimate') : t('auction.retail_value')}
-              </span>
-              <span className="text-xl font-extrabold text-primary tracking-tight">
-                {formatMoney(displayPrice)}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full border-border hover:border-primary hover:text-primary transition-colors"
-                onClick={onCalculate}
-                title={t('auction.calculate_cost')}
-              >
-                <Icon icon="mdi:calculator-variant" className="w-4.5 h-4.5" />
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 rounded-full px-5 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                onClick={onViewDetails}
-              >
-                {t('common.details')}
-              </Button>
-            </div>
-          </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }

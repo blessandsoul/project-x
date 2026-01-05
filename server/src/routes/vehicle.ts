@@ -2,7 +2,17 @@ import { FastifyPluginAsync } from 'fastify';
 import { VehicleModel } from '../models/VehicleModel.js';
 import { FavoriteModel } from '../models/FavoriteModel.js';
 import { ValidationError, NotFoundError } from '../types/errors.js';
-import { withCache, buildCacheKeyFromObject, buildCacheKey, CACHE_TTL } from '../utils/cache.js';
+import { withVersionedCache, incrementCacheVersion, CACHE_TTL } from '../utils/cache.js';
+import {
+  vehicleSearchQuerySchema,
+  VehicleSearchFilters,
+} from '../schemas/vehicleSearchSchema.js';
+import {
+  idParamsSchema,
+  positiveIntegerSchema,
+  paginationLimitSchema,
+  paginationOffsetSchema,
+} from '../schemas/commonSchemas.js';
 
 /**
  * Vehicle Routes
@@ -19,53 +29,34 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /vehicles/search
   //
   // Search vehicles by filters suitable for frontend search UI.
-  // Supports make/model/year range, price range, mileage range and
-  // several other fields. Returns paginated results with meta data.
+  // Supports make/model/year range, price range, mileage/odometer range,
+  // title type, transmission, fuel, drive, cylinders, sale date, and more.
+  // Returns paginated results with meta data.
+  //
+  // All query params are validated with Zod before processing.
   // ---------------------------------------------------------------------------
   fastify.get('/vehicles/search', async (request, reply) => {
-    const query = request.query as {
-      make?: string;
-      model?: string;
-      year?: string;
-      year_from?: string;
-      year_to?: string;
-      price_from?: string;
-      price_to?: string;
-      mileage_from?: string;
-      mileage_to?: string;
-      fuel_type?: string;
-      category?: string;
-      drive?: string;
-      source?: string;
-      search?: string;
-      page?: string;
-      limit?: string;
-      buy_now?: string;
-    };
+    // Debug logging for source filter issue
+    if (request.query && typeof request.query === 'object' && 'source' in request.query) {
+      fastify.log.info({ source: request.query.source, queryType: typeof request.query.source }, 'DEBUG: Source filter received');
+    }
 
-    const filters: {
-      make?: string;
-      model?: string;
-      year?: number;
-      yearFrom?: number;
-      yearTo?: number;
-      priceFrom?: number;
-      priceTo?: number;
-      mileageFrom?: number;
-      mileageTo?: number;
-      fuelType?: string;
-      category?: string;
-      drive?: string;
-      source?: string;
-      buyNow?: boolean;
-      vin?: string;
-      sourceLotId?: string;
-    } = {};
+    // Validate query params with Zod
+    const parseResult = vehicleSearchQuerySchema.safeParse(request.query);
+    if (!parseResult.success) {
+      // Zod v4 uses .issues instead of .errors
+      const issues = parseResult.error.issues || [];
+      const messages = issues.map((issue: { message: string }) => issue.message).join(', ');
+      fastify.log.error({ query: request.query, issues }, 'Validation failed for /vehicles/search');
+      throw new ValidationError(messages || 'Invalid query parameters');
+    }
+
+    const query = parseResult.data;
+
+    // Build filters object for model layer
+    const filters: VehicleSearchFilters = {};
 
     // Optional combined search param: search="make model year" or VIN / lot id.
-    // Parsed into make/model/year or vin/sourceLotId when those are not
-    // already provided explicitly. For VIN/lot searches we *only* set
-    // vin/sourceLotId and skip make/model/year derivation.
     if (query.search && query.search.trim().length > 0) {
       const raw = query.search.trim();
 
@@ -79,11 +70,10 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       } else if (looksLikeLotId && !filters.sourceLotId) {
         filters.sourceLotId = compact;
       }
+
       // Only attempt make/model/year derivation when the string does NOT
       // look like a VIN or numeric lot id.
       if (!looksLikeVin && !looksLikeLotId) {
-        // Try to extract a reasonable model year (1950–2100) from the search
-        // string and treat the remaining words as make/model.
         const yearMatch = raw.match(/\b(19[5-9]\d|20[0-9]{2})\b/);
 
         let derivedYear: number | undefined;
@@ -116,124 +106,176 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
+    // Explicit make/model override search-derived values
     if (query.make && query.make.trim().length > 0) {
       filters.make = query.make.trim();
     }
     if (query.model && query.model.trim().length > 0) {
       filters.model = query.model.trim();
     }
-    if (query.year) {
-      const v = Number.parseInt(query.year, 10);
-      if (Number.isFinite(v)) filters.year = v;
+
+    // Year filters
+    if (query.year !== undefined) filters.year = query.year;
+    if (query.year_from !== undefined) filters.yearFrom = query.year_from;
+    if (query.year_to !== undefined) filters.yearTo = query.year_to;
+
+    // Price filters
+    if (query.price_from !== undefined) filters.priceFrom = query.price_from;
+    if (query.price_to !== undefined) filters.priceTo = query.price_to;
+
+    // Odometer/mileage filters (odometer_from/to take precedence, fallback to mileage_from/to)
+    if (query.odometer_from !== undefined) {
+      filters.mileageFrom = query.odometer_from;
+    } else if (query.mileage_from !== undefined) {
+      filters.mileageFrom = query.mileage_from;
     }
-    if (query.year_from) {
-      const v = Number.parseInt(query.year_from, 10);
-      if (Number.isFinite(v)) filters.yearFrom = v;
-    }
-    if (query.year_to) {
-      const v = Number.parseInt(query.year_to, 10);
-      if (Number.isFinite(v)) filters.yearTo = v;
-    }
-    if (query.price_from) {
-      const v = Number.parseFloat(query.price_from);
-      if (Number.isFinite(v)) filters.priceFrom = v;
-    }
-    if (query.price_to) {
-      const v = Number.parseFloat(query.price_to);
-      if (Number.isFinite(v)) filters.priceTo = v;
-    }
-    if (query.mileage_from) {
-      const v = Number.parseInt(query.mileage_from, 10);
-      if (Number.isFinite(v)) filters.mileageFrom = v;
-    }
-    if (query.mileage_to) {
-      const v = Number.parseInt(query.mileage_to, 10);
-      if (Number.isFinite(v)) filters.mileageTo = v;
-    }
-    if (query.fuel_type && query.fuel_type.trim().length > 0) {
-      filters.fuelType = query.fuel_type.trim();
-    }
-    if (query.category && query.category.trim().length > 0) {
-      filters.category = query.category.trim();
-    }
-    if (query.drive && query.drive.trim().length > 0) {
-      filters.drive = query.drive.trim();
-    }
-    if (query.source && query.source.trim().length > 0) {
-      filters.source = query.source.trim();
+    if (query.odometer_to !== undefined) {
+      filters.mileageTo = query.odometer_to;
+    } else if (query.mileage_to !== undefined) {
+      filters.mileageTo = query.mileage_to;
     }
 
-    // Optional flag: buy_now=true → only lots with active buy_it_now
-    if (typeof query.buy_now === 'string' && query.buy_now.toLowerCase() === 'true') {
+    // Title type filter (multi-value)
+    if (query.title_type && query.title_type.length > 0) {
+      filters.titleTypes = query.title_type;
+    }
+
+    // Transmission filter (multi-value)
+    if (query.transmission && query.transmission.length > 0) {
+      filters.transmissionTypes = query.transmission;
+    }
+
+    // Fuel filter (multi-value, new param takes precedence over legacy fuel_type)
+    if (query.fuel && query.fuel.length > 0) {
+      filters.fuelTypes = query.fuel;
+    } else if (query.fuel_type && query.fuel_type.trim().length > 0) {
+      filters.fuelType = query.fuel_type.trim();
+    }
+
+    // Drive filter (multi-value, new param takes precedence over legacy drive)
+    if (query.drive && query.drive.length > 0) {
+      filters.driveTypes = query.drive;
+    }
+
+    // Location filter (city name)
+    if (query.location && query.location.trim().length > 0) {
+      filters.location = query.location.trim();
+    }
+
+    // Fuzzy location matching flag
+    if (query.fuzzy_location === true) {
+      filters.fuzzyLocation = true;
+    }
+
+    // Cylinders filter (multi-value)
+    if (query.cylinders && query.cylinders.length > 0) {
+      filters.cylinderTypes = query.cylinders;
+    }
+
+    // Sale date filter
+    if (query.sold_from) {
+      filters.soldFrom = query.sold_from;
+    }
+    if (query.sold_to) {
+      filters.soldTo = query.sold_to;
+    }
+
+    // Exact date filter (sold_at_date = date)
+    if (query.date) {
+      filters.date = query.date;
+    }
+
+    // Category filter (supports multiple codes: v,c)
+    if (query.category && Array.isArray(query.category) && query.category.length > 0) {
+      filters.categoryCodes = query.category;
+    }
+
+    // Source filter (multi-value, validated against allowed values)
+    if (query.source && query.source.length > 0) {
+      filters.sourceTypes = query.source;
+    }
+
+    // Buy now flag (already validated and transformed to boolean by schema)
+    if (query.buy_now === true) {
       filters.buyNow = true;
     }
 
-    const rawLimit = query.limit ? Number.parseInt(query.limit, 10) : 20;
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+    // Pagination
+    const limit = query.limit;
+    const page = query.page;
+    const offset = (page - 1) * limit;
 
-    const pageParam = query.page ? Number.parseInt(query.page, 10) : 1;
-    const pageFromClient = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-    const offset = (pageFromClient - 1) * limit;
+    // Sort
+    const sort = query.sort;
 
-    // If an Authorization header is present, attempt to authenticate so
-    // we can optionally attach is_favorite flags. If authentication
-    // fails, we treat the request as anonymous (don't block the search).
-    const authHeader = (request.headers as any).authorization;
-    if (authHeader) {
-      try {
-        await (fastify as any).authenticate(request, reply);
-      } catch (authError) {
-        // Check if reply was already sent (e.g., 401 response)
-        if (reply.sent) {
-          return;
-        }
-        // Log the auth failure for debugging but continue as anonymous
-        fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
-        // Ensure request.user is undefined for anonymous access
-        (request as any).user = undefined;
-      }
+    // Attempt optional cookie-based authentication to attach is_favorite flags.
+    // If authentication fails, we treat the request as anonymous (don't block the search).
+    try {
+      await fastify.authenticateCookieOptional(request, reply);
+    } catch (authError) {
+      fastify.log.debug({ error: authError }, 'Optional auth failed, continuing as anonymous');
+      (request as any).user = undefined;
+    }
+    // If authenticate already sent a response (e.g., 401), stop here
+    if (reply.sent) {
+      return;
     }
 
-    // Cache key based on filters (excluding user-specific data like favorites)
-    const cacheKey = buildCacheKeyFromObject('vehicles:search', { ...filters, limit, offset });
-
-    // Try to get cached results (only the base search, not user-specific favorites)
-    const cachedResult = await withCache(
+    // Try to get cached results (versioned, excluding user-specific data like favorites)
+    const cachedResult = await withVersionedCache(
       fastify,
-      cacheKey,
+      'vehicles',
+      ['search', JSON.stringify({ ...filters, limit, offset, sort })],
       CACHE_TTL.SHORT, // 5 minutes
       async () => {
         const total = await vehicleModel.countByFilters(filters);
         if (total === 0) {
           return { items: [], total: 0 };
         }
-        const items = await vehicleModel.searchByFilters(filters, limit, offset);
+        const items = await vehicleModel.searchByFilters(filters, limit, offset, sort);
         return { items, total };
       },
     );
 
     const { items, total } = cachedResult;
     if (total === 0) {
+      if (reply.sent || request.raw.aborted) {
+        return;
+      }
       return reply.send({ items: [], total: 0, limit, page: 1, totalPages: 1 });
     }
 
+    // Fetch bid histories for all vehicles in the result set
+    const vehicleIds = items.map((v: any) => v.id as number);
+    const bidsMap = await vehicleModel.getBidsForVehicles(vehicleIds);
+
+    // Attach only the last (most recent) bid to each vehicle for search results
+    let itemsWithBids = items.map((v: any) => {
+      const allBids = bidsMap.get(v.id) || [];
+      const lastBid = allBids.length > 0 ? allBids[0] : null; // First item is most recent (sorted DESC)
+      return {
+        ...v,
+        last_bid: lastBid,
+      };
+    });
+
     // If user is authenticated, mark which vehicles are already in favorites
-    let itemsWithFavoriteFlag = items;
     const user = (request as any).user as { id: number } | undefined;
-    if (user && Array.isArray(items) && items.length > 0) {
-      const vehicleIds = items.map((v: any) => v.id as number);
+    if (user && Array.isArray(itemsWithBids) && itemsWithBids.length > 0) {
       const favoriteIds = await favoriteModel.getFavoritesForUserAndVehicles(user.id, vehicleIds);
       const favoriteSet = new Set(favoriteIds);
-      itemsWithFavoriteFlag = items.map((v: any) => ({
+      itemsWithBids = itemsWithBids.map((v: any) => ({
         ...v,
         is_favorite: favoriteSet.has(v.id),
       }));
     }
 
-    const page = Math.floor(offset / limit) + 1;
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
-    return reply.send({ items: itemsWithFavoriteFlag, total, limit, page, totalPages });
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
+    return reply.send({ items: itemsWithBids, total, limit, page, totalPages });
   });
 
   // ---------------------------------------------------------------------------
@@ -243,13 +285,22 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // `limit` and `offset` as query parameters to page through results.
   // Only core summary fields are returned (id, make, model, year, yard_name, source).
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles', async (request, reply) => {
-    const { limit, offset } = request.query as { limit?: string; offset?: string };
+  fastify.get('/vehicles', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 1000, default: 100 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: limit and offset are validated by schema
+    const { limit = 100, offset = 0 } = request.query as { limit?: number; offset?: number };
 
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    const parsedOffset = offset ? parseInt(offset, 10) : 0;
-
-    const vehicles = await vehicleModel.findAll(parsedLimit, parsedOffset);
+    const vehicles = await vehicleModel.findAll(limit, offset);
     return reply.send(vehicles);
   });
 
@@ -260,20 +311,31 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // used for quote calculations and UI display. If the vehicle does not
   // exist, a 404 Not Found error is thrown.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
+    if (reply.sent || request.raw.aborted) {
+      return;
     }
 
-    const vehicle = await vehicleModel.findById(vehicleId);
+    const vehicle = await vehicleModel.findById(id);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
     }
 
-    return reply.send(vehicle);
+    // Fetch all bids for this vehicle
+    const bidsMap = await vehicleModel.getBidsForVehicles([id]);
+    const bids = bidsMap.get(id) || [];
+
+    if (reply.sent || request.raw.aborted) {
+      return;
+    }
+    return reply.send({ ...vehicle, bids });
   });
 
   // ---------------------------------------------------------------------------
@@ -285,56 +347,50 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // for "You may also like" style UI blocks and can be tuned in the
   // VehicleModel.findSimilarById implementation.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/similar', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const { limit, offset, year_range, price_radius } = request.query as {
-      limit?: string;
-      offset?: string;
-      year_range?: string;
-      price_radius?: string;
+  fastify.get('/vehicles/:id/similar', {
+    schema: {
+      params: idParamsSchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+          year_range: { type: 'integer', minimum: 1, maximum: 20, default: 2 },
+          price_radius: { type: 'number', minimum: 0.01, maximum: 1, default: 0.2 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
+    const { limit = 10, offset = 0, year_range = 2, price_radius = 0.2 } = request.query as {
+      limit?: number;
+      offset?: number;
+      year_range?: number;
+      price_radius?: number;
     };
 
-    const vehicleId = parseInt(id, 10);
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const exists = await vehicleModel.existsById(vehicleId);
+    const exists = await vehicleModel.existsById(id);
     if (!exists) {
       throw new NotFoundError('Vehicle');
     }
 
-    const parsedLimit = limit ? Number.parseInt(limit, 10) : 10;
-    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
-
-    const parsedOffset = offset ? Number.parseInt(offset, 10) : 0;
-    const safeOffset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
-
-    const parsedYearRange = year_range ? Number.parseInt(year_range, 10) : 2;
-    const safeYearRange = Number.isFinite(parsedYearRange) && parsedYearRange > 0
-      ? parsedYearRange
-      : 2;
-
-    const parsedPriceRadius = price_radius ? Number.parseFloat(price_radius) : 0.2;
-    const safePriceRadius = Number.isFinite(parsedPriceRadius) && parsedPriceRadius > 0
-      ? parsedPriceRadius
-      : 0.2;
-
-    const { items, total } = await vehicleModel.findSimilarById(vehicleId, {
-      limit: safeLimit,
-      offset: safeOffset,
-      yearRange: safeYearRange,
-      priceRadius: safePriceRadius,
+    const { items, total } = await vehicleModel.findSimilarById(id, {
+      limit,
+      offset,
+      yearRange: year_range,
+      priceRadius: price_radius,
     });
 
     return reply.send({
-      vehicleId,
+      vehicleId: id,
       items,
-      offset: safeOffset,
-      limit: safeLimit,
+      offset,
+      limit,
       total,
-      yearRange: safeYearRange,
-      priceRadius: safePriceRadius,
+      yearRange: year_range,
+      priceRadius: price_radius,
     });
   });
 
@@ -345,15 +401,15 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // This is useful when the UI needs to render the full gallery for a
   // selected vehicle without bloating the main vehicles list response.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/photos', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id/photos', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const photos = await vehicleModel.getPhotosByVehicleId(vehicleId);
+    const photos = await vehicleModel.getPhotosByVehicleId(id);
     return reply.send(photos);
   });
 
@@ -365,20 +421,20 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // This is useful for client UIs that want to render a detailed view
   // without making multiple separate HTTP calls.
   // ---------------------------------------------------------------------------
-  fastify.get('/vehicles/:id/full', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.get('/vehicles/:id/full', {
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const vehicle = await vehicleModel.findById(vehicleId);
+    const vehicle = await vehicleModel.findById(id);
     if (!vehicle) {
       throw new NotFoundError('Vehicle');
     }
 
-    const photos = await vehicleModel.getPhotosByVehicleId(vehicleId);
+    const photos = await vehicleModel.getPhotosByVehicleId(id);
 
     return reply.send({
       vehicle,
@@ -393,19 +449,27 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
   // admin / maintenance use cases. If the vehicle does not exist, a
   // 404 Not Found error is thrown. On success, an empty 204 response
   // is returned.
+  //
+  // Auth: Cookie-based (HttpOnly access token)
+  // CSRF: Required (X-CSRF-Token header)
+  // Authorization: Admin only (via requireAdmin middleware)
   // ---------------------------------------------------------------------------
-  fastify.delete('/vehicles/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const vehicleId = parseInt(id, 10);
+  fastify.delete('/vehicles/:id', {
+    preHandler: [fastify.authenticateCookie, fastify.requireAdmin, fastify.csrfProtection],
+    schema: {
+      params: idParamsSchema,
+    },
+  }, async (request, reply) => {
+    // SECURITY: id is already validated as positive integer by schema
+    const { id } = request.params as { id: number };
 
-    if (!Number.isFinite(vehicleId) || vehicleId <= 0) {
-      throw new ValidationError('Invalid vehicle id');
-    }
-
-    const deleted = await vehicleModel.deleteById(vehicleId);
+    const deleted = await vehicleModel.deleteById(id);
     if (!deleted) {
       throw new NotFoundError('Vehicle');
     }
+
+    // Bump cache version so all vehicle caches are invalidated
+    await incrementCacheVersion(fastify, 'vehicles');
 
     return reply.code(204).send();
   });

@@ -1,8 +1,44 @@
 @import "tailwindcss";
 
+/* * {
+  outline: 1px solid green;
+} */
+
 @font-face {
   font-family: "HomepageHeroFont";
   src: url("/font/font.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainRegular;
+  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainMedium;
+  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainSemiBold;
+  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: mainBold;
+  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BPG Nateli";
+  src: url("/font/bpg_nateli.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -12,8 +48,20 @@
 
 @theme {
   /* Modern Color Palette 2025 */
+  /* OKLCH aliases for 2025+ design system (currently mapped conceptually to existing palette) */
+  --oklch-bg: oklch(0.97 0.02 240);
+  --oklch-bg-elevated: oklch(0.94 0.03 240);
+  --oklch-surface: oklch(0.99 0 0);
+  --oklch-surface-muted: oklch(0.97 0.02 250);
+  --oklch-primary: oklch(0.45 0.13 150);
+  --oklch-primary-soft: oklch(0.7 0.07 150);
+  --oklch-accent: oklch(0.72 0.12 60);
+  --oklch-border-subtle: oklch(0.9 0.02 240);
+  --oklch-border-strong: oklch(0.8 0.04 240);
+
   --color-background: #ffffff;
-  --color-foreground: #0f172a; /* Slate 900 - softer than pure black */
+  --color-foreground: #0f172a;
+  /* Slate 900 - softer than pure black */
 
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
@@ -21,33 +69,42 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #0f172a;
 
-  --color-primary: #004700; /* Main Color - Dark Green */
-  --color-primary-foreground: #ffffff; /* White text on dark green for contrast */
+  --color-primary: var(--brand-primary, #1a2744);
+  /* Main Color - Dark Navy Blue */
+  --color-primary-foreground: #ffffff;
+  /* White text on dark blue for contrast */
 
-  --color-secondary: #f1f5f9; /* Slate 100 - kept for UI backgrounds */
+  --color-secondary: #f1f5f9;
+  /* Slate 100 - kept for UI backgrounds */
   --color-secondary-foreground: #0f172a;
 
-  --color-sub: #e9967a; /* Sub Color - Dark Salmon */
-  --color-sub-foreground: #0f172a;
+  --color-sub: var(--brand-accent, #f5a623);
+  /* Sub Color - Golden Orange */
+  --color-sub-foreground: var(--brand-primary, #1a2744);
 
-  --color-muted: #f8fafc; /* Slate 50 */
-  --color-muted-foreground: #64748b; /* Slate 500 */
+  --color-muted: #f8fafc;
+  /* Slate 50 */
+  --color-muted-foreground: #64748b;
+  /* Slate 500 */
 
-  --color-accent: #e9967a; /* Using Sub Color as Accent */
-  --color-accent-foreground: #0f172a;
+  --color-accent: var(--brand-accent, #f5a623);
+  /* Using Sub Color as Accent - Golden Orange */
+  --color-accent-foreground: var(--brand-primary, #1a2744);
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
-  --color-border: #e2e8f0; /* Slate 200 */
+  --color-border: #e2e8f0;
+  /* Slate 200 */
   --color-input: #e2e8f0;
-  --color-ring: #004700;
+  --color-ring: var(--brand-primary, #1a2744);
 
   --color-warning: #f59e0b;
   --color-warning-foreground: #ffffff;
 
   /* Radii - softer, more modern feel */
-  --radius: 0.5rem; /* 8px - standard */
+  --radius: 0.5rem;
+  /* 8px - standard */
   --radius-lg: 0.75rem;
   --radius-md: 0.5rem;
   --radius-sm: 0.3rem;
@@ -56,58 +113,75 @@
   --container-padding: 1rem;
 
   /* Typography */
-  --font-sans: "Inter", "Noto Sans Georgian", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "Inter", "Noto Sans Georgian", system-ui, sans-serif;
+  /* Base: English / Latin UI uses Inter */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Inter", system-ui, sans-serif;
+  /* Shared Georgian font variable */
   --font-georgian: "Noto Sans Georgian", sans-serif;
 
   /* Custom Shadows */
   --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(0, 71, 0, 0.15);
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--brand-primary, #1a2744) 15%, transparent);
 }
 
 /* Language Specific Font Overrides */
 :root[lang="ar"] {
-  --font-sans: "Cairo", sans-serif;
-  --font-heading: "Cairo", sans-serif;
+  /* Arabic → Cairo */
+  --font-sans: "Cairo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Cairo", system-ui, sans-serif;
 }
 
 :root[lang="ka"] {
-  --font-sans: "Noto Sans Georgian", sans-serif;
-  --font-heading: "Noto Sans Georgian", sans-serif;
+  /* Georgian → ONLY Noto Sans Georgian */
+  --font-sans: "Noto Sans Georgian", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Noto Sans Georgian", system-ui, sans-serif;
+  --font-georgian: "Noto Sans Georgian", sans-serif;
+}
+
+:root[lang="ru"] {
+  /* Russian → PT Sans (Google Font) */
+  --font-sans: "PT Sans", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "PT Sans", system-ui, sans-serif;
 }
 
 .dark {
-  --color-background: #020617; /* Slate 950 */
+  --color-background: #020617;
+  /* Slate 950 */
   --color-foreground: #f8fafc;
 
-  --color-card: #0f172a; /* Slate 900 */
+  --color-card: #0f172a;
+  /* Slate 900 */
   --color-card-foreground: #f8fafc;
 
   --color-popover: #0f172a;
   --color-popover-foreground: #f8fafc;
 
-  --color-primary: #004700;
+  --color-primary: var(--brand-primary, #1a2744);
   --color-primary-foreground: #ffffff;
 
-  --color-secondary: #1e293b; /* Slate 800 */
+  --color-secondary: #1e293b;
+  /* Slate 800 */
   --color-secondary-foreground: #f8fafc;
 
-  --color-sub: #e9967a;
-  --color-sub-foreground: #0f172a;
+  --color-sub: var(--brand-accent, #f5a623);
+  --color-sub-foreground: var(--brand-primary, #1a2744);
 
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
 
-  --color-accent: #e9967a;
-  --color-accent-foreground: #0f172a;
+  --color-accent: var(--brand-accent, #f5a623);
+  --color-accent-foreground: var(--brand-primary, #1a2744);
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #f8fafc;
 
   --color-border: #1e293b;
   --color-input: #1e293b;
-  --color-ring: #004700;
+  --color-ring: var(--brand-primary, #1a2744);
 
   --color-warning: #fbbf24;
   --color-warning-foreground: #020617;
@@ -148,10 +222,25 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+
+  html {
+    /* Prevent layout shift when Radix dialogs/selects hide scrollbar */
+    scrollbar-gutter: stable;
   }
+
+  /* Override Radix scroll lock - prevent body width change when scrollbar is hidden */
+  body[data-scroll-locked] {
+    overflow: auto !important;
+    margin-right: 0 !important;
+  }
+
+  body {
+    @apply text-foreground antialiased;
+    font-family: var(--font-sans);
+    /* Light neutral background so loading and blank states are not black */
+    background: #f8fafc;
+  }
+
   h1,
   h2,
   h3,
@@ -161,9 +250,11 @@
     font-family: var(--font-heading);
     @apply tracking-tight;
   }
+
   .font-homepage-hero {
     font-family: "HomepageHeroFont", var(--font-georgian);
   }
+
   /* Legacy font support */
   .font-logo-bebas {
     font-family: "Inter", "Noto Sans Georgian", sans-serif;
@@ -175,7 +266,7 @@
   /* Custom Scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-primary) transparent;
+    scrollbar-color: var(--brand-primary, #1a2744) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -188,7 +279,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: var(--color-primary);
+    background-color: var(--brand-primary, #1a2744);
     border-radius: 20px;
   }
 }
@@ -204,16 +295,64 @@
     text-wrap: balance;
   }
 
+  /* Long list optimization for 2025+ (Core Web Vitals) */
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px 600px;
+  }
+
+  /* Hero gradient mesh background with floating blurred spheres */
+  .hero-gradient-mesh {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 0% 0%, #2a3f5f 0%, #1a2744 40%),
+      radial-gradient(circle at 100% 0%, #243754 0%, #1a2744 35%),
+      radial-gradient(circle at 50% 100%, #f5a623 0%, #1a2744 45%);
+    background-color: #1a2744;
+    isolation: isolate;
+  }
+
+  .hero-gradient-mesh::before,
+  .hero-gradient-mesh::after {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(circle at 20% 30%,
+        rgba(255, 255, 255, 0.15),
+        transparent 55%),
+      radial-gradient(circle at 80% 20%,
+        rgba(245, 166, 35, 0.25),
+        transparent 55%),
+      radial-gradient(circle at 50% 80%,
+        rgba(26, 39, 68, 0.35),
+        transparent 60%);
+    filter: blur(40px);
+    opacity: 0.8;
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  .hero-gradient-mesh::before {
+    animation: heroMeshFloatSlow 48s ease-in-out infinite alternate;
+  }
+
+  .hero-gradient-mesh::after {
+    animation: heroMeshFloatSlow 60s ease-in-out infinite alternate-reverse;
+  }
+
   /* Dialog Animations */
   .dialog-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.35s ease-out forwards;
   }
+
   .dialog-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.35s ease-in forwards;
   }
+
   .dialog-content[data-state="open"] {
     animation: dialogContentIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .dialog-content[data-state="closed"] {
     animation: dialogContentOut 0.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
   }
@@ -222,6 +361,7 @@
   .sheet-overlay[data-state="open"] {
     animation: dialogOverlayFadeIn 0.5s ease-out forwards;
   }
+
   .sheet-overlay[data-state="closed"] {
     animation: dialogOverlayFadeOut 0.5s ease-in forwards;
   }
@@ -229,6 +369,7 @@
   .sheet-content[data-state="open"] {
     animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-state="closed"] {
     animation: slideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -236,6 +377,7 @@
   .sheet-content[data-side="right"][data-state="open"] {
     animation: slideInFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-side="right"][data-state="closed"] {
     animation: slideOutToRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -243,15 +385,101 @@
   .sheet-content[data-side="left"][data-state="open"] {
     animation: slideInFromLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .sheet-content[data-side="left"][data-state="closed"] {
     animation: slideOutToLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+}
+
+@keyframes heroMeshFloatSlow {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate3d(-4%, 2%, 0) scale(1.05);
+  }
+
+  50% {
+    transform: translate3d(3%, -3%, 0) scale(1.02);
+  }
+
+  75% {
+    transform: translate3d(-2%, -4%, 0) scale(1.06);
+  }
+
+  100% {
+    transform: translate3d(4%, 3%, 0) scale(1.03);
+  }
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+@keyframes float-slower {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(-40px, 40px) scale(1.15);
+  }
+}
+
+@keyframes float-medium {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(25px, 25px) scale(1.05);
+  }
+
+  75% {
+    transform: translate(-30px, -20px) scale(0.95);
+  }
+}
+
+@keyframes scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-33.333%);
+  }
+}
+
+.animate-scroll-vertical {
+  animation: scroll-vertical 20s linear infinite;
+}
+
+.animate-scroll-vertical:hover {
+  animation-play-state: paused;
 }
 
 @keyframes dialogOverlayFadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -261,9 +489,31 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-primary, #1a2744);
+  /* Primary Dark Navy */
+  border-radius: 5px;
+  border: 2px solid #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--brand-primary, #1a2744) 80%, white);
 }
 
 @keyframes dialogContentIn {
@@ -271,6 +521,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -282,6 +533,7 @@
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.95);
@@ -292,6 +544,7 @@
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -301,6 +554,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(100%);
   }
@@ -310,6 +564,7 @@
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -319,6 +574,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-100%);
   }
@@ -330,6 +586,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -340,6 +597,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -351,4 +609,666 @@
 
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Similar Vehicles - mobile/tablet horizontal strip (<1024px only) */
+@media (max-width: 1024px) {
+  .similar-vehicles-section {
+    width: 100%;
+    padding-inline: 16px;
+  }
+
+  .similar-vehicles-track {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 1rem;
+    /* 16px, matches desktop */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 12px;
+  }
+
+  .similar-vehicles-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .similar-vehicle-card {
+    flex: 0 0 260px;
+    /* compact fixed width so several cards fit in view */
+    max-width: 260px;
+    scroll-snap-align: start;
+    height: auto;
+  }
+}
+
+/* Similar Vehicles - normalize card + image heights on small phones (<768px) */
+@media (max-width: 768px) {
+
+  /* 1. Cards: full-width, fixed height, snap scroll */
+  .similar-vehicle-card {
+    flex: 0 0 100%;
+    max-width: 100%;
+    height: 380px;
+    /* uniform card height; tweak as needed */
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    overflow: hidden;
+    scroll-snap-align: start;
+  }
+
+  /* 2. Track: horizontal scroll strip with snap */
+  .similar-vehicles-track {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .similar-vehicles-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 3. Ensure inner card fills the fixed height */
+  .similar-vehicle-card>* {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 4. Middle row (image + gray info) gets fixed height so images are equal */
+  .similar-vehicle-card>*>div:nth-child(2) {
+    flex: 0 0 180px;
+    /* fixed image/info band */
+    min-height: 180px;
+  }
+
+  .similar-vehicle-card>*>div:nth-child(2) img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  /* 5. Normalize typography so text doesnt push height */
+  .similar-vehicle-card h3 {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .similar-vehicle-card p {
+    font-size: 12px;
+  }
+}
+
+/* Similar Vehicles - desktop grid sizing only (>=1024px) */
+@media (min-width: 1024px) {
+  .similar-vehicles-section {
+    width: 100%;
+  }
+
+  .similar-vehicles-track {
+    display: flex;
+    gap: 1rem;
+    /* 16px */
+  }
+
+  .similar-vehicles-card {
+    flex: 0 0 calc((100% - 3 * 16px) / 4);
+    /* default: 4 per row for 1024–1439px */
+    max-width: calc((100% - 3 * 16px) / 4);
+  }
+}
+
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .similar-vehicles-card {
+    flex: 0 0 calc((100% - 4 * 16px) / 5);
+    /* 5 per row */
+    max-width: calc((100% - 4 * 16px) / 5);
+  }
+}
+
+@media (min-width: 1920px) {
+  .similar-vehicles-card {
+    flex: 0 0 calc((100% - 5 * 16px) / 6);
+    /* 6 per row */
+    max-width: calc((100% - 5 * 16px) / 6);
+  }
+}
+
+/* Similar Vehicles - compact image + content only in this section */
+.similar-vehicle-card .group>div:first-child {
+  max-height: 110px;
+  /* smaller image area so full card looks more compact */
+}
+
+.similar-vehicle-card .group>div:nth-child(2) {
+  padding: 8px;
+  /* tighten inner padding */
+}
+
+.similar-vehicle-card .group h3 {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+/* VIN Hero - Mobile layout (<768px): full yellow background */
+@media (max-width: 767px) {
+  .vin-hero {
+    background: #f5a623;
+    background-image: none;
+  }
+}
+
+/* Vehicle Details Page - extra-small screens (<480px): tighter side padding */
+@media (max-width: 479px) {
+  .vehicle-details-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    overflow-x: hidden;
+  }
+}
+
+/* Copart gallery thumbnails - very small screens (<450px): fewer columns to avoid overflow */
+@media (max-width: 449px) {
+  .copart-gallery-thumbs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .vehicle-spec-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.25rem;
+  }
+
+  /* VIN page hero/header: full-width on small screens */
+  .vin-hero-container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0.75rem;
+    /* ~12px */
+    padding-right: 0.75rem;
+    /* ~12px */
+  }
+
+  .vin-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vin-hero-content {
+    max-width: 100%;
+  }
+
+  /* Vehicle header: compact vertical stack, left-aligned */
+  .vehicle-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .vehicle-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .vehicle-header-row .btn,
+  .vehicle-header-row button {
+    /* back link: smaller, subtle */
+    font-size: 0.75rem;
+    padding-left: 0;
+    padding-right: 0;
+    height: auto;
+  }
+
+  .vehicle-header-row .btn svg,
+  .vehicle-header-row button svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .vehicle-header-location {
+    text-align: left;
+  }
+
+  .vehicle-header-location div:first-child {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+  }
+
+  .vehicle-header-location div:last-child {
+    font-size: 0.7rem;
+  }
+
+  .vehicle-header-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .vehicle-header-title {
+    font-size: 1.05rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .vehicle-run-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    margin-top: 0.15rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .vehicle-header-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    /* ~6px between items */
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 0.25rem;
+    /* close to title/meta badge */
+    font-size: 0.75rem;
+  }
+
+  /* Lot#/VIN block: two compact lines, no separator dot */
+  .vehicle-header-meta-row span:nth-child(2) {
+    display: none;
+    /* hide the bullet between Lot# and VIN */
+  }
+
+  .vehicle-header-meta-row span:nth-child(1),
+  .vehicle-header-meta-row span:nth-child(3) {
+    color: #64748b;
+    /* muted */
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .vehicle-header-meta-row span:nth-child(3)::before {
+    content: "VIN: ";
+  }
+
+  /* Exterior condition grid: single column */
+  .vehicle-condition-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Quotes header + rows: allow wrapping, no horizontal overflow */
+  .vehicle-quotes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .vehicle-quotes-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .vehicle-quote-price {
+    width: 100%;
+    text-align: left;
+    margin-top: 0.25rem;
+  }
+}
+
+/* ==========================================================================
+   AUCTION VEHICLE CARDS - Mobile (<768px)
+   Two-column grid layout with compact cards
+   ========================================================================== */
+@media (max-width: 767.98px) {
+
+  /* Grid container for vehicle cards - 2 columns, equal height rows */
+  .auction-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  /* Card motion wrapper: stretch to fill grid cell */
+  .auction-cards-grid>div {
+    display: flex !important;
+    height: 100% !important;
+  }
+
+  /* Card wrapper: compact, fill grid cell, equal height */
+  .auction-card-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 6px !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Middle section (image + info) grows to fill space */
+  .auction-card-mobile .auction-card-middle {
+    flex: 1 1 auto !important;
+  }
+
+  /* Info panel grows to fill remaining space in middle section */
+  .auction-card-mobile .auction-card-info {
+    flex: 1 1 auto !important;
+  }
+
+  /* Buttons stick to bottom of card */
+  .auction-card-mobile .auction-card-buttons {
+    flex-shrink: 0 !important;
+  }
+
+  /* Header section: very compact */
+  .auction-card-mobile .auction-card-header {
+    padding: 0.375rem 0.5rem !important;
+    /* 6px 8px */
+  }
+
+  .auction-card-mobile .auction-card-header h3 {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .auction-card-mobile .auction-card-header p {
+    font-size: 9px !important;
+    margin-top: 1px !important;
+  }
+
+  /* Middle row: vertical stack */
+  .auction-card-mobile .auction-card-middle {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  /* Image container: aspect ratio controlled */
+  .auction-card-mobile .auction-card-image {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important;
+    background-color: #f0f1f3 !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Image button wrapper: fill container, clickable */
+  .auction-card-mobile .auction-card-image>button {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: #f0f1f3 !important;
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Image: cover to fill, centered */
+  .auction-card-mobile .auction-card-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
+  /* Info panel: very compact */
+  .auction-card-mobile .auction-card-info {
+    width: 100% !important;
+    padding: 0.375rem 0.5rem !important;
+    /* 6px 8px */
+    gap: 0.125rem !important;
+    /* 2px */
+    background-color: #f8f9fa !important;
+  }
+
+  .auction-card-mobile .auction-card-info>div {
+    margin-bottom: 0.125rem !important;
+    /* 2px */
+  }
+
+  .auction-card-mobile .auction-card-info p {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Smaller text overrides */
+  .auction-card-mobile .auction-card-info .text-\[13px\] {
+    font-size: 9px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[15px\] {
+    font-size: 11px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[12px\] {
+    font-size: 9px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[10px\],
+  .auction-card-mobile .auction-card-info .text-\[11px\] {
+    font-size: 8px !important;
+  }
+
+  /* Hide auction date section to save space */
+  .auction-card-mobile .auction-card-info>div:last-child:has(.text-emerald-600),
+  .auction-card-mobile .auction-card-info>div:last-child:has(.text-emerald-700) {
+    display: none !important;
+  }
+
+  /* Buttons row: compact, single row */
+  .auction-card-mobile .auction-card-buttons {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .auction-card-mobile .auction-card-buttons button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    font-size: 9px !important;
+    gap: 0.125rem !important;
+    padding: 0 0.25rem !important;
+  }
+
+  .auction-card-mobile .auction-card-buttons button svg,
+  .auction-card-mobile .auction-card-buttons button .iconify {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Override for similar vehicles - keep horizontal layout */
+  .similar-vehicle-card .auction-card-middle,
+  .force-horizontal-layout .auction-card-middle {
+    flex-direction: row !important;
+  }
+
+  .similar-vehicle-card .auction-card-image,
+  .force-horizontal-layout .auction-card-image {
+    width: 50% !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+  }
+
+  .similar-vehicle-card .auction-card-info,
+  .force-horizontal-layout .auction-card-info {
+    width: 50% !important;
+  }
+
+  /* Listing vehicle card - vertical layout: image on top, data below */
+  .listing-vehicle-card .auction-card-middle {
+    flex-direction: column !important;
+  }
+
+  .listing-vehicle-card .auction-card-image {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important;
+  }
+
+  .listing-vehicle-card .auction-card-info {
+    width: 100% !important;
+  }
+}
+
+/* AUCTION VEHICLE CARDS - Very Small Screens (<370px)
+   Single column layout for narrow devices
+   ========================================================================== */
+@media (max-width: 369px) {
+  .auction-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* VIN Hero - Tablet-only layout (768px–1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+  /* Make hero feel like a full orange landing section on tablet */
+  .vin-hero {
+    background: #f5a623;
+    background-image: none;
+  }
+
+  /* Soften overlay so content stays readable on orange */
+  .vin-hero-overlay {
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(0, 0, 0, 0.12));
+    mix-blend-mode: normal;
+  }
+
+  /* Centered content column with comfortable width/padding */
+  .vin-hero-container {
+    max-width: 760px;
+    margin-inline: auto;
+    padding-inline: 1.75rem;
+    /* ~28px */
+  }
+
+  .vin-hero-content,
+  .vin-hero-form,
+  .vin-hero-recent {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  /* Form row: favor single-line layout, but allow graceful wrap */
+  .vin-hero-form-row {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+
+  .vin-hero-input-wrapper {
+    min-width: 0;
+  }
+
+  .vin-hero-hint {
+    max-width: 40rem;
+  }
+
+  /* Features row: three equal-width items within centered container */
+  .vin-hero-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .vin-hero-feature {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    text-align: left;
+  }
+
+  .vin-hero-feature span {
+    font-size: 0.8rem;
+  }
+
+  /* Recent VINs: simple inline label + chips, no big pill */
+  .vin-hero-recent {
+    margin-top: 0.75rem;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    max-width: 520px;
+  }
+
+  .vin-hero-recent-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .vin-hero-recent-chips {
+    margin-top: 0;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+
+  /* Hide tablet-only car illustration card for this breakpoint */
+  .vin-hero-tablet-card {
+    display: none;
+  }
+}
+
+/* Popular Vehicles Section - Equal Height Cards */
+.popular-vehicle-card {
+
+  /* Fixed height for desktop (680px+) */
+  @media (min-width: 680px) {
+    min-height: 340px;
+  }
+
+  /* Smaller fixed height for mobile */
+  @media (max-width: 679px) {
+    min-height: 240px;
+  }
+}
+
+/* Responsive image sizing for favorites page - smaller below 550px */
+.responsive-image-cell {
+  width: 192px;
+  min-width: 192px;
+  max-width: 192px;
+}
+
+.responsive-image {
+  width: 192px;
+  /* w-48 */
+}
+
+@media (max-width: 549px) {
+  .responsive-image-cell {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+
+  .responsive-image {
+    width: 120px !important;
+    /* Larger on mobile to fill vertical space */
+  }
 }

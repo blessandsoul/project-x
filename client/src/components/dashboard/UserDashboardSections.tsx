@@ -1,18 +1,13 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { CompanyTile } from '@/components/dashboard/CompanyTile'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { mockCars } from '@/mocks/_mockData'
 import type { Company } from '@/types/api'
-import type { UserLeadOffer } from '@/api/userLeads'
 
 type ActivityStats = {
   viewedCount: number
@@ -41,9 +36,6 @@ type UserDashboardSectionsProps = {
   favoriteCompanies: Company[]
   recentlyViewedCompanies: Company[]
   activityStats: ActivityStats
-  userLeadOffers: UserLeadOffer[]
-  userLeadOffersLoading: boolean
-  userLeadOffersError: string | null
   mockGuides: Guide[]
   mockOffers: Offer[]
   mockReminders: Reminder[]
@@ -65,9 +57,6 @@ export function UserDashboardSections({
   favoriteCompanies,
   recentlyViewedCompanies,
   activityStats,
-  userLeadOffers,
-  userLeadOffersLoading,
-  userLeadOffersError,
   mockGuides,
   mockOffers,
   quickService,
@@ -82,28 +71,9 @@ export function UserDashboardSections({
   getSectionMotionProps,
 }: UserDashboardSectionsProps) {
   const { t } = useTranslation()
-  const [activeDialogOffer, setActiveDialogOffer] = useState<UserLeadOffer | null>(null)
-  const [compareIndices, setCompareIndices] = useState<number[]>([])
-  const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false)
 
   const sortedFavorites = [...favoriteCompanies].sort((a, b) => b.rating - a.rating)
   const sortedRecentlyViewed = [...recentlyViewedCompanies].sort((a, b) => b.rating - a.rating)
-
-  const getOfferStatusLabel = (status: string): string => {
-    switch (status) {
-      case 'SELECTED': return t('dashboard.user.offers.status.selected')
-      case 'PENDING': return t('dashboard.user.offers.status.pending')
-      case 'REJECTED': return t('dashboard.user.offers.status.rejected')
-      case 'EXPIRED': return t('dashboard.user.offers.status.expired')
-      case 'ACCEPTED': return t('dashboard.user.offers.status.accepted')
-      default: return status
-    }
-  }
-
-  const hasUserLeadOffers = userLeadOffers.length > 0
-  const selectedCompareOffers = compareIndices
-    .map((index) => userLeadOffers[index])
-    .filter((offer): offer is UserLeadOffer => Boolean(offer))
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -128,147 +98,8 @@ export function UserDashboardSections({
           </div>
         </motion.div>
 
-        {/* 2. Active Quotes - Minimal List */}
+        {/* 2. Favorites & Recent (Tabs) */}
         <motion.div {...getSectionMotionProps(1)}>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                {t('dashboard.user.quotes.title')}
-                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
-                  {userLeadOffers.length}
-                </span>
-              </h2>
-              {selectedCompareOffers.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10"
-                  onClick={() => setIsCompareDialogOpen(true)}
-                >
-                  <Icon icon="mdi:compare-horizontal" className="h-3 w-3" />
-                  {t('dashboard.user.quotes.compare_selected', { count: selectedCompareOffers.length })}
-                </Button>
-              )}
-            </div>
-
-            {userLeadOffersLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <Skeleton className="h-16 w-full rounded-lg" />
-              </div>
-            ) : userLeadOffersError ? (
-              <p className="text-sm text-red-500 p-4 bg-red-50/50 rounded-lg border border-red-100">{userLeadOffersError}</p>
-            ) : !hasUserLeadOffers ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center border rounded-xl border-dashed bg-muted/5">
-                <Icon icon="mdi:clipboard-text-outline" className="h-12 w-12 text-muted-foreground/20 mb-3" />
-                <p className="text-sm font-medium text-muted-foreground">{t('dashboard.user.quotes.empty')}</p>
-                <Button variant="link" className="text-xs mt-1 h-auto p-0 text-primary">
-                  {t('dashboard.user.actions.fill_brief')}
-                </Button>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/40 border-t border-b border-border/40">
-                {userLeadOffers.map((offer, index) => {
-                  const estimatedMin = Number(offer.estimatedTotalUsd)
-                  const estimatedMax = Number(offer.estimatedTotalUsdMax)
-                  const car = mockCars.find((mockCar) => mockCar.companyId === String(offer.companyId))
-                  const isSelected = compareIndices.includes(index)
-
-                  return (
-                    <div
-                      key={offer.offerId}
-                      className={`group relative flex flex-col sm:flex-row gap-4 py-4 hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}
-                    >
-                      {/* Selection Indicator (Left Border) */}
-                      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
-
-                      {/* Image & Company */}
-                      <div className="flex items-start gap-4 flex-1 px-2 sm:px-0">
-                        <div className="shrink-0">
-                           {car ? (
-                            <img
-                              src={car.imageUrl}
-                              alt={offer.companyName}
-                              className="h-12 w-16 rounded-md object-cover bg-muted shadow-sm"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted/50">
-                              <Icon icon="mdi:domain" className="h-6 w-6 text-muted-foreground/30" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-sm text-foreground truncate">{offer.companyName}</p>
-                            <span 
-                              className={`inline-flex sm:hidden items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
-                                offer.status === 'NEW' ? 'bg-blue-50 text-blue-700' : 'bg-muted text-muted-foreground'
-                              }`}
-                            >
-                              {getOfferStatusLabel(offer.status)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Icon icon="mdi:star" className="h-3 w-3 text-yellow-400" />
-                              <span className="tabular-nums text-foreground">{offer.companyRating}</span>
-                            </span>
-                            <span>•</span>
-                            <span className="tabular-nums font-medium text-foreground">
-                              {Number.isFinite(estimatedMin) ? `$${estimatedMin.toLocaleString()}` : 'N/A'} – {Number.isFinite(estimatedMax) ? `$${estimatedMax.toLocaleString()}` : 'N/A'}
-                            </span>
-                            <span>•</span>
-                            <span className="tabular-nums">{offer.estimatedDurationDays} {t('common.days')}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions (Desktop: Right side, Mobile: Bottom row) */}
-                      <div className="flex items-center justify-between sm:flex-col sm:items-end sm:justify-center gap-2 px-2 sm:px-0">
-                         <span 
-                            className={`hidden sm:inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium ${
-                              offer.status === 'NEW' ? 'bg-blue-50 text-blue-700' : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            {getOfferStatusLabel(offer.status)}
-                          </span>
-                          
-                          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                              title={t('dashboard.user.quotes.view_dialog')}
-                              onClick={() => setActiveDialogOffer(offer)}
-                            >
-                              <Icon icon="mdi:message-text-outline" className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={`h-8 w-8 ${isSelected ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                              title={t('dashboard.user.quotes.compare')}
-                              onClick={() => setCompareIndices(prev => 
-                                prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
-                              )}
-                            >
-                              <Icon icon={isSelected ? "mdi:checkbox-marked" : "mdi:plus-circle-outline"} className="h-4 w-4" />
-                            </Button>
-                          </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* 3. Favorites & Recent (Tabs) */}
-        <motion.div {...getSectionMotionProps(2)}>
            <Tabs defaultValue="favorites" className="w-full">
             <div className="flex items-center justify-between mb-4 px-1">
               <TabsList className="h-9 bg-muted/50 p-1">
@@ -437,66 +268,6 @@ export function UserDashboardSections({
         </motion.div>
       </aside>
 
-      {/* DIALOGS */}
-      {activeDialogOffer && (
-        <Dialog open onOpenChange={(open) => !open && setActiveDialogOffer(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{activeDialogOffer.companyName}</DialogTitle>
-              <DialogDescription>{t('dashboard.user.quotes.dialog.description')}</DialogDescription>
-            </DialogHeader>
-             <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('dashboard.user.quotes.budget')}</p>
-                     <p className="text-xl font-semibold tabular-nums">{activeDialogOffer.estimatedTotalUsd} – {activeDialogOffer.estimatedTotalUsdMax} <span className="text-sm text-muted-foreground font-normal">USD</span></p>
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('dashboard.user.quotes.duration_label')}</p>
-                     <p className="text-xl font-semibold tabular-nums">{activeDialogOffer.estimatedDurationDays} <span className="text-sm text-muted-foreground font-normal">{t('common.days')}</span></p>
-                  </div>
-                </div>
-                {activeDialogOffer.comment && (
-                  <div className="relative pl-4 border-l-2 border-muted">
-                    <p className="text-sm italic text-muted-foreground leading-relaxed">
-                      "{activeDialogOffer.comment}"
-                    </p>
-                  </div>
-                )}
-             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {isCompareDialogOpen && selectedCompareOffers.length > 0 && (
-        <Dialog open onOpenChange={(open) => !open && setIsCompareDialogOpen(false)}>
-           <DialogContent className="max-w-3xl">
-             <DialogHeader>
-               <DialogTitle>{t('dashboard.user.compare.title')}</DialogTitle>
-             </DialogHeader>
-             <div className="overflow-x-auto -mx-6 px-6">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 font-medium text-muted-foreground w-1/3">{t('dashboard.user.compare.headers.company')}</th>
-                      <th className="text-left py-3 font-medium text-muted-foreground">{t('dashboard.user.compare.headers.budget')}</th>
-                      <th className="text-left py-3 font-medium text-muted-foreground">{t('dashboard.user.compare.headers.duration')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {selectedCompareOffers.map(offer => (
-                      <tr key={offer.offerId}>
-                        <td className="py-3 font-medium">{offer.companyName}</td>
-                        <td className="py-3 tabular-nums">{offer.estimatedTotalUsd} – {offer.estimatedTotalUsdMax} $</td>
-                        <td className="py-3 tabular-nums">{offer.estimatedDurationDays} d</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-             </div>
-           </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }

@@ -49,7 +49,7 @@ export function MobileStickyCta() {
         {isCatalogPage ? (
           <Button
             size="sm"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex-1 bg-primary hover:bg-primary/90 text-white"
             onClick={() => {
               navigate('/auction-listings')
             }}

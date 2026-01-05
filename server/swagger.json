@@ -1,0 +1,1688 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Project-X API",
+    "description": "Complete API documentation for Project-X server - Vehicle auction shipping quote platform",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": {} },
+          "total": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "page": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "email": { "type": "string", "format": "email" },
+          "username": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["user", "dealer", "company", "admin"]
+          },
+          "company_id": { "type": "integer", "nullable": true }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "base_price": { "type": "number" },
+          "price_per_mile": { "type": "number" },
+          "customs_fee": { "type": "number" },
+          "service_fee": { "type": "number" },
+          "broker_fee": { "type": "number" },
+          "rating": { "type": "number" },
+          "description": { "type": "string", "nullable": true },
+          "phone_number": { "type": "string", "nullable": true }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "brand_name": { "type": "string" },
+          "model_name": { "type": "string" },
+          "year": { "type": "integer" },
+          "vin": { "type": "string" },
+          "mileage": { "type": "integer" },
+          "calc_price": { "type": "number" },
+          "source": { "type": "string" },
+          "yard_name": { "type": "string" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Health", "description": "Health check endpoints" },
+    {
+      "name": "Users",
+      "description": "User authentication and profile management"
+    },
+    { "name": "Admin", "description": "Admin user management" },
+    { "name": "Companies", "description": "Company management and search" },
+    { "name": "Vehicles", "description": "Vehicle catalog and search" },
+    { "name": "VIN", "description": "VIN decoding services" },
+    { "name": "Quotes", "description": "Shipping quote calculations" },
+    { "name": "Leads", "description": "Lead management for quotes" },
+    { "name": "Favorites", "description": "User favorites management" },
+    { "name": "Dashboard", "description": "Dashboard statistics" },
+    {
+      "name": "Reference Data",
+      "description": "Cities, ports, auctions reference data"
+    },
+    { "name": "Calculator", "description": "Shipping cost calculator" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Comprehensive health check",
+        "description": "Verifies application status, database connectivity, Redis, and VIN decoder service",
+        "responses": {
+          "200": {
+            "description": "All services healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["ok", "degraded"] },
+                    "timestamp": { "type": "string", "format": "date-time" },
+                    "uptime": { "type": "number" },
+                    "memory": { "type": "object" },
+                    "services": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "description": "One or more services unhealthy" }
+        }
+      }
+    },
+    "/health/db": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Database health check",
+        "description": "Performs a simple query to verify database connection",
+        "responses": {
+          "200": { "description": "Database connected" },
+          "500": { "description": "Database unavailable" }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Register a new user",
+        "description": "Create a new user account with email, username, and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "username", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50
+                  },
+                  "password": { "type": "string", "minLength": 6 },
+                  "role": { "type": "string", "enum": ["user", "company"] },
+                  "name": {
+                    "type": "string",
+                    "description": "Company name (required when role=company)"
+                  },
+                  "companyPhone": { "type": "string" },
+                  "basePrice": { "type": "number" },
+                  "pricePerMile": { "type": "number" },
+                  "customsFee": { "type": "number" },
+                  "serviceFee": { "type": "number" },
+                  "brokerFee": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully" },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Email or username already exists" }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "User login",
+        "description": "Authenticate with email/username and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["identifier", "password"],
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "description": "Email or username"
+                  },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user profile",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "username": { "type": "string" },
+                  "password": { "type": "string", "minLength": 6 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user account",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Account deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/avatar": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user avatar URLs",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Avatar URLs" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Upload user avatar",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Avatar uploaded" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Replace user avatar",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Avatar replaced" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user avatar",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "204": { "description": "Avatar deleted" }
+        }
+      }
+    },
+    "/user/favorites": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List favorite companies",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of favorite companies" }
+        }
+      }
+    },
+    "/user/favorites/{companyId}": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Add company to favorites",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "201": { "description": "Added to favorites" },
+          "200": { "description": "Already in favorites" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Remove company from favorites",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Removed from favorites" }
+        }
+      }
+    },
+    "/user/recent-companies": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List recently viewed companies",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of recent companies" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Add company to recent views",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "company_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Added to recent" }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all users (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10, "maximum": 100 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          { "name": "email", "in": "query", "schema": { "type": "string" } },
+          { "name": "username", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["user", "dealer", "company", "admin"]
+            }
+          },
+          {
+            "name": "is_blocked",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of users" },
+          "403": { "description": "Admin role required" }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get user by ID (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "User details" },
+          "403": { "description": "Admin role required" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Update user (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["user", "dealer", "company", "admin"]
+                  },
+                  "dealer_slug": { "type": "string", "nullable": true },
+                  "company_id": { "type": "integer", "nullable": true },
+                  "onboarding_ends_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "is_blocked": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated" },
+          "403": { "description": "Admin role required" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Delete user (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "User deleted" },
+          "403": { "description": "Admin role required" }
+        }
+      }
+    },
+    "/companies": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "List all companies",
+        "responses": {
+          "200": { "description": "List of companies" }
+        }
+      },
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Create a company (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "base_price",
+                  "price_per_mile",
+                  "customs_fee",
+                  "service_fee",
+                  "broker_fee"
+                ],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 255 },
+                  "base_price": { "type": "number", "minimum": 0 },
+                  "price_per_mile": { "type": "number", "minimum": 0 },
+                  "customs_fee": { "type": "number", "minimum": 0 },
+                  "service_fee": { "type": "number", "minimum": 0 },
+                  "broker_fee": { "type": "number", "minimum": 0 },
+                  "description": { "type": "string", "maxLength": 2000 },
+                  "phone_number": { "type": "string", "maxLength": 20 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Company created" },
+          "403": { "description": "Admin role required" }
+        }
+      }
+    },
+    "/companies/search": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "Search companies with filters",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "min_base_price",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "max_base_price",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "max_total_fee",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          { "name": "country", "in": "query", "schema": { "type": "string" } },
+          { "name": "city", "in": "query", "schema": { "type": "string" } },
+          { "name": "is_vip", "in": "query", "schema": { "type": "boolean" } },
+          {
+            "name": "onboarding_free",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string", "minLength": 3 }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["rating", "cheapest", "name", "newest"]
+            }
+          },
+          {
+            "name": "order_direction",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["asc", "desc"] }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Paginated company results" }
+        }
+      }
+    },
+    "/companies/{id}": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "Get company by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Company details with social links" },
+          "404": { "description": "Company not found" }
+        }
+      },
+      "put": {
+        "tags": ["Companies"],
+        "summary": "Update company",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "base_price": { "type": "number" },
+                  "price_per_mile": { "type": "number" },
+                  "customs_fee": { "type": "number" },
+                  "service_fee": { "type": "number" },
+                  "broker_fee": { "type": "number" },
+                  "description": { "type": "string" },
+                  "phone_number": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Company updated" },
+          "403": { "description": "Not authorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Companies"],
+        "summary": "Delete company",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Company deleted" },
+          "403": { "description": "Not authorized" }
+        }
+      }
+    },
+    "/companies/{id}/logo": {
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Upload company logo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Logo uploaded" }
+        }
+      }
+    },
+    "/companies/{companyId}/social-links": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "Get company social links",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of social links" }
+        }
+      },
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Add social link to company",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Social link created" }
+        }
+      }
+    },
+    "/social-links/{id}": {
+      "put": {
+        "tags": ["Companies"],
+        "summary": "Update social link",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Social link updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Companies"],
+        "summary": "Delete social link",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Social link deleted" }
+        }
+      }
+    },
+    "/companies/{companyId}/reviews": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "Get company reviews",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Paginated reviews" }
+        }
+      },
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Create company review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rating"],
+                "properties": {
+                  "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "comment": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Review created" }
+        }
+      }
+    },
+    "/companies/{companyId}/reviews/{reviewId}": {
+      "put": {
+        "tags": ["Companies"],
+        "summary": "Update company review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "comment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Review updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Companies"],
+        "summary": "Delete company review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Review deleted" }
+        }
+      }
+    },
+    "/companies/{companyId}/quotes": {
+      "get": {
+        "tags": ["Quotes"],
+        "summary": "Get quotes for a company",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          { "name": "currency", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Paginated quotes" } }
+      }
+    },
+    "/vehicles": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "List vehicles",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 100 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": { "200": { "description": "List of vehicles" } }
+      }
+    },
+    "/vehicles/search": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Search vehicles with filters",
+        "parameters": [
+          { "name": "make", "in": "query", "schema": { "type": "string" } },
+          { "name": "model", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "copart,iaai"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "v,c"
+          },
+          { "name": "buy_now", "in": "query", "schema": { "type": "string" } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } },
+          {
+            "name": "year_from",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          { "name": "year_to", "in": "query", "schema": { "type": "integer" } },
+          {
+            "name": "price_from",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          { "name": "price_to", "in": "query", "schema": { "type": "number" } },
+          {
+            "name": "odometer_from",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "odometer_to",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "title_type",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          { "name": "fuel", "in": "query", "schema": { "type": "string" } },
+          { "name": "drive", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "cylinders",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          { "name": "location", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "sold_from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          { "name": "sold_to", "in": "query", "schema": { "type": "string" } },
+          { "name": "date", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          },
+          { "name": "sort", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Paginated vehicle results" } }
+      }
+    },
+    "/vehicles/{id}": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get vehicle by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Vehicle details" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Vehicles"],
+        "summary": "Delete vehicle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/vehicles/{id}/similar": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get similar vehicles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Similar vehicles" } }
+      }
+    },
+    "/vehicles/{id}/photos": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get vehicle photos",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Photos list" } }
+      }
+    },
+    "/vehicles/{id}/full": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get vehicle with photos",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Vehicle with photos" } }
+      }
+    },
+    "/vehicles/{vehicleId}/calculate-quotes": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Calculate shipping quotes for vehicle",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } },
+          { "name": "currency", "in": "query", "schema": { "type": "string" } },
+          { "name": "minRating", "in": "query", "schema": { "type": "number" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["auction", "usacity"],
+                "properties": {
+                  "auction": { "type": "string" },
+                  "usacity": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Calculated quotes" } }
+      }
+    },
+    "/vehicles/{vehicleId}/cheapest-quotes": {
+      "get": {
+        "tags": ["Quotes"],
+        "summary": "Get cheapest quotes",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "currency", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Cheapest quotes" } }
+      }
+    },
+    "/vehicles/{vehicleId}/quotes": {
+      "get": {
+        "tags": ["Quotes"],
+        "summary": "Get all quotes for vehicle",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          { "name": "currency", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "All quotes" } }
+      }
+    },
+    "/vehicles/search-quotes": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Search vehicles with quotes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "make": { "type": "string" },
+                  "model": { "type": "string" },
+                  "year": { "type": "integer" },
+                  "limit": { "type": "integer" },
+                  "offset": { "type": "integer" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Vehicles with quotes" } }
+      }
+    },
+    "/vehicles/compare": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Compare quotes for vehicles",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["vehicle_ids"],
+                "properties": {
+                  "vehicle_ids": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  },
+                  "quotes_per_vehicle": { "type": "integer" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Comparison" } }
+      }
+    },
+    "/quotes": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Create quote (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["company_id", "vehicle_id"],
+                "properties": {
+                  "company_id": { "type": "integer" },
+                  "vehicle_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/quotes/{id}": {
+      "put": {
+        "tags": ["Quotes"],
+        "summary": "Update quote (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Quotes"],
+        "summary": "Delete quote (Admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/vin/decode": {
+      "post": {
+        "tags": ["VIN"],
+        "summary": "Decode VIN",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["vin"],
+                "properties": {
+                  "vin": { "type": "string", "minLength": 17, "maxLength": 17 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "VIN decoded" } }
+      }
+    },
+    "/api/vin/health": {
+      "get": {
+        "tags": ["VIN"],
+        "summary": "VIN service health",
+        "responses": { "200": { "description": "Health status" } }
+      }
+    },
+    "/api/auction/active-lots": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get active auction lots",
+        "responses": { "200": { "description": "Active lots" } }
+      }
+    },
+    "/auction/calculate-shipping": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Calculate shipping from address",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "source"],
+                "properties": {
+                  "address": { "type": "string" },
+                  "source": { "type": "string", "enum": ["copart", "iaai"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Shipping quotes" } }
+      }
+    },
+    "/favorites/vehicles": {
+      "get": {
+        "tags": ["Favorites"],
+        "summary": "List favorite vehicles",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Favorites list" } }
+      }
+    },
+    "/favorites/vehicles/{vehicleId}": {
+      "post": {
+        "tags": ["Favorites"],
+        "summary": "Add to favorites",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "201": { "description": "Added" } }
+      },
+      "delete": {
+        "tags": ["Favorites"],
+        "summary": "Remove from favorites",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "204": { "description": "Removed" } }
+      }
+    },
+    "/leads/from-quotes": {
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Create lead from quotes",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "vehicleId",
+                  "selectedCompanyIds",
+                  "name",
+                  "contact"
+                ],
+                "properties": {
+                  "vehicleId": { "type": "integer" },
+                  "selectedCompanyIds": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  },
+                  "name": { "type": "string" },
+                  "contact": { "type": "string" },
+                  "message": { "type": "string" },
+                  "priority": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Lead created" } }
+      }
+    },
+    "/leads/general": {
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Create general lead",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "phone", "terms"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "terms": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Lead created" } }
+      }
+    },
+    "/user/leads": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Get user leads",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "User leads" } }
+      }
+    },
+    "/user/leads/{leadId}/offers": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Get lead offers",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Offers" } }
+      }
+    },
+    "/user/leads/{leadId}/select-offer": {
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Select offer",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["offerId"],
+                "properties": { "offerId": { "type": "integer" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Selected" } }
+      }
+    },
+    "/company/leads": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Get company leads",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Company leads" } }
+      }
+    },
+    "/company/leads/{leadCompanyId}": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Get lead detail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "leadCompanyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Lead detail" } }
+      }
+    },
+    "/company/leads/{leadCompanyId}/offers": {
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Submit offer",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "leadCompanyId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["estimatedTotalUsd"],
+                "properties": {
+                  "estimatedTotalUsd": { "type": "number" },
+                  "estimatedDurationDays": { "type": "integer" },
+                  "comment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Offer submitted" } }
+      }
+    },
+    "/dashboard/summary": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard summary",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Dashboard stats" } }
+      }
+    },
+    "/api/cities": {
+      "get": {
+        "tags": ["Reference Data"],
+        "summary": "Get all cities",
+        "responses": { "200": { "description": "Cities list" } }
+      }
+    },
+    "/api/ports": {
+      "get": {
+        "tags": ["Reference Data"],
+        "summary": "Get all ports",
+        "responses": { "200": { "description": "Ports list" } }
+      }
+    },
+    "/api/auctions": {
+      "get": {
+        "tags": ["Reference Data"],
+        "summary": "Get all auctions",
+        "responses": { "200": { "description": "Auctions list" } }
+      }
+    },
+    "/api/calculator": {
+      "post": {
+        "tags": ["Calculator"],
+        "summary": "Calculate shipping costs",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["buyprice", "auction", "vehicletype"],
+                "properties": {
+                  "buyprice": { "type": "number" },
+                  "auction": { "type": "string" },
+                  "vehicletype": { "type": "string" },
+                  "usacity": { "type": "string" },
+                  "destinationport": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Calculation result" } }
+      }
+    },
+    "/api/vehicle-makes": {
+      "get": {
+        "tags": ["Reference Data"],
+        "summary": "Get vehicle makes",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["car", "motorcycle"] }
+          }
+        ],
+        "responses": { "200": { "description": "Makes list" } }
+      }
+    },
+    "/api/vehicle-models": {
+      "get": {
+        "tags": ["Reference Data"],
+        "summary": "Get vehicle models",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["car", "motorcycle"] }
+          },
+          {
+            "name": "makeId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "200": { "description": "Models list" } }
+      }
+    }
+  }
+}
