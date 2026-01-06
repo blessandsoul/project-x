@@ -125,9 +125,10 @@ export async function registerPlugins(fastify: FastifyInstance): Promise<void> {
                 directives: {
                     defaultSrc: ["'self'"],
                     connectSrc: ["'self'", 'wss:', 'ws:'],
+                    fontSrc: ["'self'", 'https://fonts.gstatic.com'],
                     imgSrc: ["'self'", 'data:', 'https:'],
                     scriptSrc: ["'self'"],
-                    styleSrc: ["'self'", "'unsafe-inline'"],
+                    styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
                 },
             }
             : false, // Disable CSP in development for easier debugging

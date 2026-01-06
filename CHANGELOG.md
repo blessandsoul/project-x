@@ -8,3 +8,9 @@
 - Refactored `TestimonialsSection` and `MiniBlogSection` with modern UI, hover effects, and removed coming-soon overlay.
 ### Added
 - Added Social Auth buttons (Google, Facebook) to Login and Register pages.
+
+### Fixed
+- Migrated local database to production and resolved VPS connection issues.
+- Fixed CSP (Content Security Policy) to allow Google Fonts in production.
+- Resolved MySQL port mapping conflict (3307).
+- Fixed CORS origin environment variable name.
