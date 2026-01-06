@@ -119,16 +119,23 @@ export async function registerPlugins(fastify: FastifyInstance): Promise<void> {
         crossOriginResourcePolicy: {
             policy: 'cross-origin',
         },
-        // Configure CSP to allow WebSocket connections for Socket.IO
+        // Disable X-Frame-Options to prevent conflicts with CSP frame-ancestors
+        frameguard: false,
+        // Configure CSP to allow WebSocket connections, Google Fonts, and inline styles
         contentSecurityPolicy: isProd
             ? {
                 directives: {
                     defaultSrc: ["'self'"],
-                    connectSrc: ["'self'", 'wss:', 'ws:'],
-                    fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-                    imgSrc: ["'self'", 'data:', 'https:'],
-                    scriptSrc: ["'self'"],
+                    connectSrc: ["'self'", 'wss:', 'ws:', 'https:'],
+                    fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://fonts.googleapis.com', 'data:'],
+                    imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+                    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
                     styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+                    frameSrc: ["'self'"],
+                    objectSrc: ["'none'"],
+                    baseUri: ["'self'"],
+                    formAction: ["'self'"],
+                    frameAncestors: ["'self'"],
                 },
             }
             : false, // Disable CSP in development for easier debugging

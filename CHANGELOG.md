@@ -14,3 +14,9 @@
 - Fixed CSP (Content Security Policy) to allow Google Fonts in production.
 - Resolved MySQL port mapping conflict (3307).
 - Fixed CORS origin environment variable name.
+- Fixed Coolify deployment CSP errors (stylesheets, fonts, inline scripts).
+- Fixed X-Frame-Options header conflict by disabling frameguard in Helmet.
+- Enhanced CSP directives for production (WebSocket, Google Fonts, blob URLs).
+### Added
+- Created comprehensive Coolify deployment guide (COOLIFY_DEPLOYMENT_GUIDE.md).
+
