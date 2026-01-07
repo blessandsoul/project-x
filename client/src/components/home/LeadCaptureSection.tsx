@@ -35,10 +35,10 @@ const initialState: LeadFormState = {
   carType: '',
   auctionSource: '',
   priority: '',
-   brand: '',
-   model: '',
-   yearFrom: '',
-   color: '',
+  brand: '',
+  model: '',
+  yearFrom: '',
+  color: '',
   message: '',
   consent: false,
 }
@@ -380,93 +380,93 @@ export function LeadCaptureSection() {
                         transition={{ duration: 0.18, ease: 'easeOut' }}
                         className="space-y-3 rounded-md border border-dashed border-muted p-3"
                       >
-                      <p className="text-[11px] text-muted-foreground">
-                        {t('home.lead_capture.advanced_hint')}
-                      </p>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="lead-brand" className="text-xs text-muted-foreground">
-                            {t('home.lead_capture.brand_label')}
-                          </Label>
-                          <Input
-                            id="lead-brand"
-                            name="brand"
-                            value={state.brand}
-                            onChange={(event) =>
-                              dispatch({
-                                type: 'SET_FIELD',
-                                field: 'brand',
-                                value: event.target.value,
-                              })
-                            }
-                            placeholder={t('home.lead_capture.placeholders.brands')}
-                          />
+                        <p className="text-[11px] text-muted-foreground">
+                          {t('home.lead_capture.advanced_hint')}
+                        </p>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label htmlFor="lead-brand" className="text-xs text-muted-foreground">
+                              {t('home.lead_capture.brand_label')}
+                            </Label>
+                            <Input
+                              id="lead-brand"
+                              name="brand"
+                              value={state.brand}
+                              onChange={(event) =>
+                                dispatch({
+                                  type: 'SET_FIELD',
+                                  field: 'brand',
+                                  value: event.target.value,
+                                })
+                              }
+                              placeholder={t('home.lead_capture.placeholders.brands')}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="lead-model" className="text-xs text-muted-foreground">
+                              {t('home.lead_capture.model_label')}
+                            </Label>
+                            <Input
+                              id="lead-model"
+                              name="model"
+                              value={state.model}
+                              onChange={(event) =>
+                                dispatch({
+                                  type: 'SET_FIELD',
+                                  field: 'model',
+                                  value: event.target.value,
+                                })
+                              }
+                              placeholder={t('home.lead_capture.placeholders.models')}
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="lead-model" className="text-xs text-muted-foreground">
-                            {t('home.lead_capture.model_label')}
-                          </Label>
-                          <Input
-                            id="lead-model"
-                            name="model"
-                            value={state.model}
-                            onChange={(event) =>
-                              dispatch({
-                                type: 'SET_FIELD',
-                                field: 'model',
-                                value: event.target.value,
-                              })
-                            }
-                            placeholder={t('home.lead_capture.placeholders.models')}
-                          />
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label htmlFor="lead-year-from" className="text-xs text-muted-foreground">
+                              {t('home.lead_capture.year_from_label')}
+                            </Label>
+                            <Input
+                              id="lead-year-from"
+                              name="yearFrom"
+                              type="number"
+                              min={1995}
+                              max={2100}
+                              value={state.yearFrom}
+                              onChange={(event) =>
+                                dispatch({
+                                  type: 'SET_FIELD',
+                                  field: 'yearFrom',
+                                  value: event.target.value,
+                                })
+                              }
+                              placeholder={t('home.lead_capture.placeholders.year')}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              {t('home.lead_capture.color_label')}
+                            </Label>
+                            <Select
+                              value={state.color}
+                              onValueChange={(value) =>
+                                dispatch({ type: 'SET_FIELD', field: 'color', value })
+                              }
+                            >
+                              <SelectTrigger size="sm">
+                                <SelectValue placeholder={t('home.lead_capture.placeholders.color')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any">{t('home.lead_capture.color_any')}</SelectItem>
+                                <SelectItem value="white">{t('home.lead_capture.color_white')}</SelectItem>
+                                <SelectItem value="black">{t('home.lead_capture.color_black')}</SelectItem>
+                                <SelectItem value="grey">{t('home.lead_capture.color_grey')}</SelectItem>
+                                <SelectItem value="blue">{t('home.lead_capture.color_blue')}</SelectItem>
+                                <SelectItem value="red">{t('home.lead_capture.color_red')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="lead-year-from" className="text-xs text-muted-foreground">
-                            {t('home.lead_capture.year_from_label')}
-                          </Label>
-                          <Input
-                            id="lead-year-from"
-                            name="yearFrom"
-                            type="number"
-                            min={1995}
-                            max={2100}
-                            value={state.yearFrom}
-                            onChange={(event) =>
-                              dispatch({
-                                type: 'SET_FIELD',
-                                field: 'yearFrom',
-                                value: event.target.value,
-                              })
-                            }
-                            placeholder={t('home.lead_capture.placeholders.year')}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">
-                            {t('home.lead_capture.color_label')}
-                          </Label>
-                          <Select
-                            value={state.color}
-                            onValueChange={(value) =>
-                              dispatch({ type: 'SET_FIELD', field: 'color', value })
-                            }
-                          >
-                            <SelectTrigger size="sm">
-                              <SelectValue placeholder={t('home.lead_capture.placeholders.color')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="any">{t('home.lead_capture.color_any')}</SelectItem>
-                              <SelectItem value="white">{t('home.lead_capture.color_white')}</SelectItem>
-                              <SelectItem value="black">{t('home.lead_capture.color_black')}</SelectItem>
-                              <SelectItem value="grey">{t('home.lead_capture.color_grey')}</SelectItem>
-                              <SelectItem value="blue">{t('home.lead_capture.color_blue')}</SelectItem>
-                              <SelectItem value="red">{t('home.lead_capture.color_red')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -496,34 +496,33 @@ export function LeadCaptureSection() {
 
                 <motion.div layout transition={{ duration: 0.18, ease: 'easeOut' }}>
                   <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                  motionVariant="scale"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Icon
-                        icon="mdi:loading"
-                        className="mr-2 h-4 w-4 animate-spin"
-                        aria-hidden="true"
-                      />
-                      {t('home.lead_capture.submitting_btn')}
-                    </>
-                  ) : (
-                    <>
-                      <Icon icon="mdi:send" className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {t('home.lead_capture.submit_btn')}
-                    </>
-                  )}
-                </Button>
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Icon
+                          icon="mdi:loading"
+                          className="mr-2 h-4 w-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                        {t('home.lead_capture.submitting_btn')}
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="mdi:send" className="mr-2 h-4 w-4" aria-hidden="true" />
+                        {t('home.lead_capture.submit_btn')}
+                      </>
+                    )}
+                  </Button>
 
-                {isSuccess ? (
-                  <div className="flex items-center gap-2 text-xs text-emerald-600">
-                    <Icon icon="mdi:check-circle" className="h-4 w-4" aria-hidden="true" />
-                    <span>{t('home.lead_capture.success_message')}</span>
-                  </div>
-                ) : null}
+                  {isSuccess ? (
+                    <div className="flex items-center gap-2 text-xs text-emerald-600">
+                      <Icon icon="mdi:check-circle" className="h-4 w-4" aria-hidden="true" />
+                      <span>{t('home.lead_capture.success_message')}</span>
+                    </div>
+                  ) : null}
                 </motion.div>
               </form>
             </CardContent>

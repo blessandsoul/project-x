@@ -14,7 +14,7 @@ const formatCurrency = (value: number): string => {
 }
 
 const QuoteBreakdownReceipt: React.FC<QuoteBreakdownReceiptProps> = ({ breakdown, companyName }) => {
-  const transportCost = breakdown.base_price + breakdown.mileage_cost
+  const transportCost = (breakdown.base_price ?? 0) + (breakdown.mileage_cost ?? 0)
 
   return (
     <Card className="mt-2 border-dashed bg-muted/40">
@@ -31,7 +31,7 @@ const QuoteBreakdownReceipt: React.FC<QuoteBreakdownReceiptProps> = ({ breakdown
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Auction ფასი (ავტომობილი)</span>
-            <span className="font-medium">${formatCurrency(breakdown.calc_price)}</span>
+            <span className="font-medium">${formatCurrency(breakdown.calc_price ?? 0)}</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -41,25 +41,25 @@ const QuoteBreakdownReceipt: React.FC<QuoteBreakdownReceiptProps> = ({ breakdown
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">საბაჟო გადასახადი</span>
-            <span className="font-medium">${formatCurrency(breakdown.customs_fee)}</span>
+            <span className="font-medium">${formatCurrency(breakdown.customs_fee ?? 0)}</span>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">სერვისი და ბროკერი</span>
             <span className="font-medium">
-              ${formatCurrency(breakdown.service_fee + breakdown.broker_fee)}
+              ${formatCurrency((breakdown.service_fee ?? 0) + (breakdown.broker_fee ?? 0))}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">დაზღვევა</span>
-            <span className="font-medium">${formatCurrency(breakdown.insurance_fee)}</span>
+            <span className="font-medium">${formatCurrency(breakdown.insurance_fee ?? 0)}</span>
           </div>
         </div>
 
         <div className="pt-2 mt-1 border-t flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground">სრული ფასი იმპორტზე</span>
-          <span className="text-sm font-semibold">${formatCurrency(breakdown.total_price)}</span>
+          <span className="text-sm font-semibold">${formatCurrency(breakdown.total_price ?? 0)}</span>
         </div>
 
         <p className="text-[10px] text-muted-foreground leading-snug mt-1">

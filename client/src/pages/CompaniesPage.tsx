@@ -25,7 +25,7 @@ const CompaniesPage = () => {
   const limit = Number(searchParams.get('limit')) || DEFAULT_LIMIT;
 
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [totalCompanies, setTotalCompanies] = useState(0);
+  const [_totalCompanies, setTotalCompanies] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);

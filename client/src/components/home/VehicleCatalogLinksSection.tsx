@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const MAKES = [
-  'Acura', 'Alfa Romeo', 'Audi', 'BMW', 'Buick', 'Cadillac',
-  'Chevrolet', 'Chrysler', 'Dodge', 'Ford', 'GMC', 'Honda',
-  'Hyundai', 'Infiniti', 'Jaguar', 'Jeep', 'Kia', 'Land Rover',
-  'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Nissan', 'Porsche',
-  'Ram', 'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo',
+  'Toyota', 'Ford', 'Chevrolet', 'Honda', 'Nissan', 'Jeep',
+  'Hyundai', 'Kia', 'Ram', 'Subaru', 'GMC', 'Volkswagen',
+  'BMW', 'Mercedes-Benz', 'Mazda', 'Lexus', 'Dodge', 'Audi',
+  'Tesla', 'Volvo', 'Cadillac', 'Buick', 'Chrysler', 'Acura',
+  'Infiniti', 'Lincoln', 'Land Rover', 'Porsche', 'Jaguar', 'Aston Martin',
 ];
 
 export function VehicleCatalogLinksSection() {
@@ -55,16 +55,25 @@ export function VehicleCatalogLinksSection() {
             </div>
 
             {/* Links */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-1">
-              {MAKES.map((item) => (
-                <Link
-                  key={item}
-                  to={`/auction-listings?q=${encodeURIComponent(item)}`}
-                  className="text-xs text-primary hover:underline py-1 truncate"
-                >
-                  {item}
-                </Link>
-              ))}
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+              {MAKES.map((item) => {
+                const logoPath = `/car-logos/${item.toLowerCase().replace(/ /g, '-')}.png`;
+                return (
+                  <Link
+                    key={item}
+                    to={`/auction-listings?q=${encodeURIComponent(item)}`}
+                    className="flex items-center justify-center p-2 rounded-lg border border-border/40 bg-card hover:bg-accent/50 hover:border-primary/20 transition-all group aspect-square"
+                    title={item}
+                  >
+                    <img
+                      src={logoPath}
+                      alt={item}
+                      className="w-full h-full object-contain transition-all duration-300"
+                      loading="lazy"
+                    />
+                  </Link>
+                );
+              })}
             </div>
           </div>
 

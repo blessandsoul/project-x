@@ -3,7 +3,7 @@ import { Pool, RowDataPacket } from 'mysql2/promise';
 
 interface PortRow extends RowDataPacket {
   id: number;
-  port: string;
+  name: string;
 }
 
 export class PortsController {
@@ -23,9 +23,9 @@ export class PortsController {
    */
   async getPorts(): Promise<string[]> {
     const [rows] = await this.db.execute<PortRow[]>(
-      'SELECT port FROM ports ORDER BY port ASC',
+      'SELECT name FROM ports ORDER BY name ASC',
     );
 
-    return rows.map(row => row.port);
+    return rows.map(row => row.name);
   }
 }

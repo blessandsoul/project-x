@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 // navigationItems now handled by MainLayout
-import { searchVehicles } from '@/api/vehicles';
+import { searchVehicles, compareVehicles } from '@/api/vehicles';
 import type { VehiclesCompareResponse } from '@/api/vehicles';
 import { fetchCatalogMakes, fetchCatalogModels } from '@/api/catalog';
 import type {
@@ -64,7 +64,7 @@ import { useTranslation } from 'react-i18next';
 import { AuctionSidebarFilters, type CategoryFilter } from '@/components/auction/AuctionSidebarFilters';
 import { AuctionFiltersDrawer } from '@/components/auction/AuctionFiltersDrawer';
 import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
-import { AuctionVehicleListItem } from '@/components/auction/AuctionVehicleListItem';
+
 import { ComparisonModal } from '@/components/auction/ComparisonModal';
 import { QuotesShowcase } from '@/components/auction/QuotesShowcase';
 
@@ -214,7 +214,7 @@ const createColumns = (
   localeList: string[],
   isGeorgian: boolean,
   monthShortKa: string[],
-  isLargeScreen: boolean,
+  _isLargeScreen: boolean,
 ): ColumnDef<BackendItem>[] => [
     // Checkbox column
     ...(showCompareCheckbox ? [{
@@ -577,10 +577,10 @@ const AuctionListingsPage = () => {
   const [filterModelName, setFilterModelName] = useState<string | undefined>(undefined);
   // Ref to always get latest filterMakeName in callbacks (avoids stale closure)
   const filterMakeNameRef = useRef<string | undefined>(undefined);
-  const [catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
-  const [catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
-  const [isLoadingMakes, setIsLoadingMakes] = useState(false);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [_catalogMakes, setCatalogMakes] = useState<CatalogMake[]>([]);
+  const [_catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
+  const [_isLoadingMakes, setIsLoadingMakes] = useState(false);
+  const [_isLoadingModels, setIsLoadingModels] = useState(false);
   const [searchKind, setSearchKind] = useState<"all" | "car" | "moto" | "van">(
     "all"
   );
@@ -616,7 +616,7 @@ const AuctionListingsPage = () => {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareResult, setCompareResult] =
     useState<VehiclesCompareResponse | null>(null);
-  const [showCompareCheckboxes, setShowCompareCheckboxes] = useState(false);
+  const [showCompareCheckboxes, _setShowCompareCheckboxes] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const { isWatched, toggleWatch } = useVehicleWatchlist();
   const { isAuthenticated } = useAuth();
@@ -628,6 +628,7 @@ const AuctionListingsPage = () => {
   } = useCalculateVehicleQuotes();
   const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   const [isLargeScreen, setIsLargeScreen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -714,27 +715,7 @@ const AuctionListingsPage = () => {
     return "car";
   }, [searchKind]);
 
-  const selectedMakeName = useMemo(() => {
-    if (selectedMakeId === "all") {
-      return undefined;
-    }
 
-    const matchedMake = catalogMakes.find(
-      (make) => String(make.makeId) === selectedMakeId
-    );
-    return matchedMake?.name;
-  }, [selectedMakeId, catalogMakes]);
-
-  const selectedModelName = useMemo(() => {
-    if (selectedModelId === "all") {
-      return undefined;
-    }
-
-    const matchedModel = catalogModels.find(
-      (model) => String(model.modelId) === selectedModelId
-    );
-    return matchedModel?.name;
-  }, [selectedModelId, catalogModels]);
 
   const updateUrlFromFilters = (
     filters: VehiclesSearchFilters & { page?: number; limit?: number },
@@ -2199,29 +2180,6 @@ const AuctionListingsPage = () => {
     updateUrlFromFilters(nextFilters, { replace: false });
   };
 
-  const resetDrawerFilters = () => {
-    const defaultYearRange: [number, number] = [0, 0];
-    const defaultPriceRange: [number, number] = [0, 0];
-    const defaultMileageRange: [number, number] = [0, 0];
-
-    setAuctionFilter("all");
-    setSearchKind("all");
-    setFuelType("all");
-    setCategory("all");
-    setDrive("all");
-    setYearRange(defaultYearRange);
-    setExactYear("");
-    setMileageRange(defaultMileageRange);
-    setPriceRange(defaultPriceRange);
-    setSelectedMakeId("all");
-    setSelectedModelId("all");
-    setFilterMakeName(undefined);
-    setFilterModelName(undefined);
-    filterMakeNameRef.current = undefined;
-    setCatalogModels([]);
-    setBuyNowOnly(false);
-    setLimit(36);
-  };
 
   const resetFilters = () => {
     const defaultYearRange: [number, number] = [0, 0];
@@ -2566,6 +2524,8 @@ const AuctionListingsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+
+
                   <span className="text-sm text-muted-foreground hidden sm:inline">
                     {t("common.sort_by")}
                   </span>
@@ -2643,6 +2603,28 @@ const AuctionListingsPage = () => {
                     </SelectContent>
                   </Select>
 
+                  {/* View Mode Toggle - Desktop only (md and up) */}
+                  <div className="hidden md:flex items-center gap-1 border rounded-lg p-1 bg-muted/30">
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      className="h-7 px-2"
+                      onClick={() => setViewMode('table')}
+                      aria-label="Table view"
+                    >
+                      <Icon icon="mdi:table" className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      className="h-7 px-2"
+                      onClick={() => setViewMode('grid')}
+                      aria-label="Grid view"
+                    >
+                      <Icon icon="mdi:view-grid" className="w-4 h-4" />
+                    </Button>
+                  </div>
+
                   {/* Compare feature hidden for now */}
                 </div>
               </div>
@@ -2707,63 +2689,113 @@ const AuctionListingsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    {/* Table View (md and up) */}
-                    <div className="hidden md:block rounded-md border overflow-x-auto">
-                      <div>
-                        <Table className="w-full table-fixed xl:table-auto">
-                          <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                              <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                  <TableHead
-                                    key={header.id}
-                                    className={`bg-muted/50 whitespace-normal lg:whitespace-nowrap ${header.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px]' : ''}`}
-                                  >
-                                    {header.isPlaceholder
-                                      ? null
-                                      : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext()
-                                      )}
-                                  </TableHead>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableHeader>
-                          <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                              table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                  key={row.id}
-                                  data-state={row.getIsSelected() && "selected"}
-                                >
-                                  {row.getVisibleCells().map((cell) => (
-                                    <TableCell
-                                      key={cell.id}
-                                      className={`align-top whitespace-normal lg:whitespace-nowrap break-words p-2 ${cell.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px] px-1 overflow-visible' : 'overflow-hidden'}`}
+                    {/* Table View (md and up, only when viewMode is 'table') */}
+                    {viewMode === 'table' && (
+                      <div className="hidden md:block rounded-md border overflow-x-auto">
+                        <div>
+                          <Table className="w-full table-fixed xl:table-auto">
+                            <TableHeader>
+                              {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                  {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                      key={header.id}
+                                      className={`bg-muted/50 whitespace-normal lg:whitespace-nowrap ${header.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px]' : ''}`}
                                     >
-                                      {flexRender(
-                                        cell.column.columnDef.cell,
-                                        cell.getContext()
-                                      )}
-                                    </TableCell>
+                                      {header.isPlaceholder
+                                        ? null
+                                        : flexRender(
+                                          header.column.columnDef.header,
+                                          header.getContext()
+                                        )}
+                                    </TableHead>
                                   ))}
                                 </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={columns.length}
-                                  className="h-24 text-center"
-                                >
-                                  No results.
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
+                              ))}
+                            </TableHeader>
+                            <TableBody>
+                              {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                  <TableRow
+                                    key={row.id}
+                                    data-state={row.getIsSelected() && "selected"}
+                                  >
+                                    {row.getVisibleCells().map((cell) => (
+                                      <TableCell
+                                        key={cell.id}
+                                        className={`align-top whitespace-normal lg:whitespace-nowrap break-words p-2 ${cell.column.id === 'image' ? 'w-[128px] min-w-[128px] max-w-[128px] px-1 overflow-visible' : 'overflow-hidden'}`}
+                                      >
+                                        {flexRender(
+                                          cell.column.columnDef.cell,
+                                          cell.getContext()
+                                        )}
+                                      </TableCell>
+                                    ))}
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                  >
+                                    No results.
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Desktop Grid View (md and up, only when viewMode is 'grid') */}
+                    {viewMode === 'grid' && (
+                      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-5">
+                        {displayedItems.length > 0 ? (
+                          displayedItems.map((item, idx) => (
+                            <AuctionVehicleCard
+                              key={`${item.id}-${item.vehicle_id}`}
+                              item={item as any}
+                              priority={idx < 4}
+                              isSelected={selectedVehicleIds.includes(item.vehicle_id ?? item.id)}
+                              showCompareCheckbox={showCompareCheckboxes}
+                              isWatched={isWatched(item.vehicle_id ?? item.id)}
+                              forceLayout="desktop"
+                              onToggleSelect={(checked: boolean) => {
+                                const id = item.vehicle_id ?? item.id;
+                                const isMobile = window.innerWidth < 640;
+                                const maxCompare = isMobile ? 2 : 5;
+                                setSelectedVehicleIds((prev) =>
+                                  checked
+                                    ? prev.length < maxCompare
+                                      ? [...prev, id]
+                                      : prev
+                                    : prev.filter((pid) => pid !== id)
+                                );
+                              }}
+                              onToggleWatch={() => {
+                                const id = item.vehicle_id ?? item.id;
+                                if (!isAuthenticated) {
+                                  setIsAuthDialogOpen(true);
+                                  return;
+                                }
+                                toggleWatch(id);
+                              }}
+                              onCalculate={() => {
+                                const id = item.vehicle_id ?? item.id;
+                                setIsCalcModalOpen(true);
+                                calculateQuotes(id);
+                              }}
+                              onViewDetails={() => {
+                                const id = item.vehicle_id ?? item.id;
+                                navigate({ pathname: `/vehicle/${id}` });
+                              }}
+                            />
+                          ))
+                        ) : null}
+                      </div>
+                    )}
 
                     {/* Mobile List View (<768px) - Copart-style cards */}
                     <div className="md:hidden auction-cards-grid">
@@ -2897,7 +2929,7 @@ const AuctionListingsPage = () => {
                     setCompareResult(null);
                     compareVehicles({ vehicle_ids: selectedVehicleIds })
                       .then(setCompareResult)
-                      .catch((err) => setCompareError(err.message))
+                      .catch((err: Error) => setCompareError(err.message))
                       .finally(() => setIsCompareLoading(false));
                   }}
                 >

@@ -184,7 +184,6 @@ export function PriceCalculatorSection() {
                 <Button
                   className="mt-2 w-full"
                   onClick={handleFindCompanies}
-                  motionVariant="scale"
                 >
                   <Icon icon="mdi:magnify" className="me-2 h-4 w-4" aria-hidden="true" />
                   {t('home.price_calculator.find_btn')}

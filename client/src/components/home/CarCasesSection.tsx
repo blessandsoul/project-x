@@ -81,7 +81,6 @@ export function CarCasesSection() {
               variant="outline"
               size="sm"
               className="inline-flex items-center gap-1"
-              motionVariant="scale"
             >
               <Link to="/catalog">
                 <Icon icon="mdi:view-grid" className="me-1 h-4 w-4" aria-hidden="true" />

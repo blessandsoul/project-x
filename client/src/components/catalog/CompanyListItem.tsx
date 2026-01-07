@@ -17,10 +17,10 @@ interface CompanyListItemProps {
   /** Whether an auction branch has been selected */
   hasAuctionBranch?: boolean;
   /** Whether shipping prices are currently being loaded */
-  isLoadingShipping?: boolean;
+  _isLoadingShipping?: boolean;
 }
 
-export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false, isLoadingShipping = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
+export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
