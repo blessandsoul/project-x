@@ -225,7 +225,7 @@ export function AuctionVehicleCard({
         )}>
           {/* 1️⃣ HEADER - Title + Lot (Copart-style) */}
           <div className="auction-card-header px-4 py-3">
-            <h3 className="font-bold text-[16px] leading-snug text-slate-900 uppercase tracking-tight">
+            <h3 className="font-bold text-[16px] leading-snug text-slate-900 uppercase tracking-tight truncate">
               {item.year} {item.make} {item.model}
             </h3>
             <p className="text-[13px] text-slate-600 mt-0.5">
@@ -286,20 +286,17 @@ export function AuctionVehicleCard({
               )}
 
               {/* Current Bid section */}
-              <div className="mb-1">
-                <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.current_bid')}:</p>
+              <div className="mb-0.5">
+                <p className="text-[13px] font-bold text-slate-800">{t('auction.fields.current_bid')}</p>
                 <p className="text-[15px] font-bold text-slate-900">
                   {formatMoney(displayPrice)} <span className="text-[12px] font-normal text-slate-500">USD</span>
                 </p>
-                {bidTime && (
-                  <p className="text-[10px] text-slate-500">{formatBidTime(bidTime)}</p>
-                )}
               </div>
 
               {/* Buy Now section - plain text like Copart, only if exists */}
               {hasBuyNow && buyNowPriceLabel && (
-                <div>
-                  <p className="text-[13px] font-bold text-slate-800">{t('auction.buy_now_label')}:</p>
+                <div className="mb-0.5">
+                  <p className="text-[13px] font-bold text-slate-800">{t('auction.buy_now_label')}</p>
                   <p className="text-[15px] font-bold text-slate-900">
                     {buyNowPriceLabel} <span className="text-[12px] font-normal text-slate-500">USD</span>
                   </p>
@@ -308,24 +305,26 @@ export function AuctionVehicleCard({
 
               {/* Auction start date (mobile) */}
               {auctionInfo && (
-                <div className="mt-1 flex flex-col gap-0.5">
+                <div className="mt-1 flex flex-col min-[501px]:flex-col max-[500px]:flex-row max-[500px]:justify-between max-[500px]:items-center gap-0.5">
                   <div className="flex items-center gap-1">
                     <Icon
                       icon={auctionInfo.isUpcoming ? "mdi:calendar-clock" : "mdi:calendar-check"}
-                      className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'}`}
+                      className={`w-3.5 h-3.5 ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'} max-[500px]:hidden`}
                     />
                     <span className={`text-[11px] font-semibold uppercase tracking-wide ${auctionInfo.isUpcoming ? 'text-emerald-700' : 'text-slate-600'
                       }`}>
-                      {auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date')}
+                      {isMobile && isGeorgian ? 'იწყება' : (auctionInfo.isUpcoming ? t('auction.auction_starts') : t('auction.auction_start_date'))}
                     </span>
                   </div>
-                  <div className={`text-[13px] font-bold ${auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
-                    }`}>
-                    {auctionInfo.date}
-                  </div>
-                  <div className={`text-[12px] font-semibold ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
-                    }`}>
-                    {auctionInfo.time}
+                  <div className="flex flex-row gap-1 items-center">
+                    <div className={`text-[13px] font-bold ${auctionInfo.isUpcoming ? 'text-emerald-800' : 'text-slate-700'
+                      }`}>
+                      {auctionInfo.date}
+                    </div>
+                    <div className={`text-[12px] font-semibold ${auctionInfo.isUpcoming ? 'text-emerald-600' : 'text-slate-500'
+                      }`}>
+                      {auctionInfo.time}
+                    </div>
                   </div>
                 </div>
               )}
@@ -439,7 +438,7 @@ export function AuctionVehicleCard({
         <div className="flex flex-col flex-1 p-3">
           {/* Title */}
           <button onClick={onViewDetails} className="text-left mb-1.5">
-            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-primary leading-snug line-clamp-2">
+            <h3 className="font-semibold text-[13px] text-slate-900 hover:text-primary leading-snug truncate">
               {item.year} {item.make} {item.model}
             </h3>
           </button>

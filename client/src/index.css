@@ -4,45 +4,7 @@
   outline: 1px solid green;
 } */
 
-@font-face {
-  font-family: "HomepageHeroFont";
-  src: url("/font/font.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: mainRegular;
-  src: url("https://onservice.ge/_next/static/media/5b4d9145037b49dc-s.p.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: mainMedium;
-  src: url("https://onservice.ge/_next/static/media/6a364ecf88de6f13-s.p.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: mainSemiBold;
-  src: url("https://onservice.ge/_next/static/media/532e80037e4399c3-s.p.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: mainBold;
-  src: url("https://onservice.ge/_next/static/media/06e1024f6878e938-s.p.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "BPG Nateli";
-  src: url("/font/bpg_nateli.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* All fonts now loaded via Google Fonts CDN - see index.html */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -113,10 +75,10 @@
   --container-padding: 1rem;
 
   /* Typography */
-  /* Base: English / Latin UI uses Inter */
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+  /* Base: Default uses Roboto Condensed for all languages */
+  --font-sans: "Roboto Condensed", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "Inter", system-ui, sans-serif;
+  --font-heading: "Roboto Condensed", system-ui, sans-serif;
   /* Shared Georgian font variable */
   --font-georgian: "Noto Sans Georgian", sans-serif;
 
@@ -126,26 +88,12 @@
 }
 
 /* Language Specific Font Overrides */
-:root[lang="ar"] {
-  /* Arabic → Cairo */
-  --font-sans: "Cairo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "Cairo", system-ui, sans-serif;
-}
-
 :root[lang="ka"] {
-  /* Georgian → ONLY Noto Sans Georgian */
+  /* Georgian → Noto Sans Georgian */
   --font-sans: "Noto Sans Georgian", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: "Noto Sans Georgian", system-ui, sans-serif;
   --font-georgian: "Noto Sans Georgian", sans-serif;
-}
-
-:root[lang="ru"] {
-  /* Russian → PT Sans (Google Font) */
-  --font-sans: "PT Sans", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "PT Sans", system-ui, sans-serif;
 }
 
 .dark {
@@ -252,13 +200,14 @@
   }
 
   .font-homepage-hero {
-    font-family: "HomepageHeroFont", var(--font-georgian);
+    font-family: var(--font-georgian);
+    font-weight: 700;
   }
 
   /* Legacy font support */
   .font-logo-bebas {
-    font-family: "Inter", "Noto Sans Georgian", sans-serif;
-    font-weight: 800;
+    font-family: "Roboto Condensed", "Noto Sans Georgian", sans-serif;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: -0.02em;
   }
@@ -1111,16 +1060,56 @@
   /* Listing vehicle card - vertical layout: image on top, data below */
   .listing-vehicle-card .auction-card-middle {
     flex-direction: column !important;
+    display: flex !important;
   }
 
   .listing-vehicle-card .auction-card-image {
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
     height: auto !important;
     aspect-ratio: 4 / 3 !important;
+    flex-shrink: 0 !important;
   }
+
 
   .listing-vehicle-card .auction-card-info {
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+}
+
+/* AUCTION VEHICLE CARDS - Small Screens (below 446px)
+   Fix card width inconsistency in 2-column grid
+   ========================================================================== */
+@media (max-width: 445.98px) {
+
+  /* Ensure grid cells are equal width */
+  .auction-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  /* Force all cards to fill their grid cell equally */
+  .auction-cards-grid>div {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .auction-card-mobile {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Ensure image and info sections are 100% width */
+  .listing-vehicle-card .auction-card-image,
+  .listing-vehicle-card .auction-card-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 }
 
@@ -1130,6 +1119,66 @@
 @media (max-width: 369px) {
   .auction-cards-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* AUCTION VEHICLE CARDS - Medium Screens (500px-768px)
+   2-column grid layout for auction card info data
+   ========================================================================== */
+@media (min-width: 501px) and (max-width: 768px) {
+  .auction-card-info {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .auction-card-info>div {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* AUCTION VEHICLE CARDS - Small Mobile (<500px)
+   Horizontal key-value pairs in a vertical stack
+   ========================================================================== */
+@media (max-width: 500px) {
+  .auction-card-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.25rem !important;
+  }
+
+  .auction-card-info>div {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Unify text colors and weights for small screens */
+  .auction-card-mobile .auction-card-info p,
+  .auction-card-mobile .auction-card-info span,
+  .auction-card-mobile .auction-card-info div {
+    color: #0f172a !important;
+    /* slate-900 */
+    font-weight: 700 !important;
+  }
+
+  /* Increase font size for better readability on small screens */
+  .auction-card-mobile .auction-card-info .text-\[13px\] {
+    font-size: 10px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[15px\],
+  .auction-card-mobile .auction-card-info .text-\[16px\] {
+    font-size: 12px !important;
+  }
+
+  .auction-card-mobile .auction-card-info .text-\[12px\],
+  .auction-card-mobile .auction-card-info .text-\[11px\],
+  .auction-card-mobile .auction-card-info .text-\[10px\] {
+    font-size: 9.5px !important;
   }
 }
 
