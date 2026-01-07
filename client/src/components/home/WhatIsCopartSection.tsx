@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
@@ -31,7 +31,7 @@ export function WhatIsCopartSection() {
               <p>{t('home.what_is_copart.description1')}</p>
               <p>{t('home.what_is_copart.description2')}</p>
             </div>
-            <Button 
+            <Button
               size="sm"
               className="bg-accent hover:bg-accent/90 text-slate-900 font-semibold text-xs rounded-full px-4"
               onClick={() => navigate('/auction-listings')}
@@ -43,40 +43,52 @@ export function WhatIsCopartSection() {
           {/* Right: 4-Icon Feature Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Feature 1: Easy Search */}
-            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+            <Link
+              to="/companies"
+              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+            >
               <Icon icon="mdi:magnify" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.search_title')}</h4>
               <p className="text-xs opacity-70 text-center mt-1">
                 {t('home.what_is_copart.features.search_desc')}
               </p>
-            </div>
+            </Link>
 
             {/* Feature 2: Compare */}
-            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+            <Link
+              to="/auction-listings"
+              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+            >
               <Icon icon="mdi:scale-balance" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.compare_title')}</h4>
               <p className="text-xs opacity-70 text-center mt-1">
                 {t('home.what_is_copart.features.compare_desc')}
               </p>
-            </div>
+            </Link>
 
             {/* Feature 3: Full Calculation */}
-            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+            <Link
+              to="/catalog"
+              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+            >
               <Icon icon="mdi:calculator-variant" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.calculate_title')}</h4>
               <p className="text-xs opacity-70 text-center mt-1">
                 {t('home.what_is_copart.features.calculate_desc')}
               </p>
-            </div>
+            </Link>
 
             {/* Feature 4: Trusted Reviews */}
-            <div className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5">
+            <Link
+              to="/"
+              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+            >
               <Icon icon="mdi:star-outline" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.reviews_title')}</h4>
               <p className="text-xs opacity-70 text-center mt-1">
                 {t('home.what_is_copart.features.reviews_desc')}
               </p>
-            </div>
+            </Link>
           </div>
         </div>
       </div>

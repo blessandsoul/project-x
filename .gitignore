@@ -64,3 +64,5 @@ Thumbs.db
 .windsurf/rules/seo.md
 
 /server/zap-reports
+
+*.sql

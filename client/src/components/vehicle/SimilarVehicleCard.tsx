@@ -65,7 +65,7 @@ export function SimilarVehicleCard({
             <div className="similar-vehicle-card-inner bg-white border border-slate-200 shadow-md flex flex-col h-full overflow-hidden rounded-lg">
                 {/* Header - Title + Lot */}
                 <div className="px-3 py-2">
-                    <h3 className="font-bold text-[14px] leading-snug text-slate-900 uppercase tracking-tight line-clamp-1">
+                    <h3 className="font-bold text-[14px] leading-snug text-slate-900 uppercase tracking-tight truncate">
                         {item.year} {item.make} {item.model}
                     </h3>
                     <p className="text-[11px] text-slate-600 mt-0.5">

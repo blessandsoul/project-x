@@ -146,7 +146,6 @@ export function AudienceSegmentationSection() {
                   className="mt-2 w-full"
                   variant="outline"
                   onClick={() => handleSelectPersona(persona.id)}
-                  motionVariant="scale"
                 >
                   <Icon icon="mdi:arrow-right" className="me-2 h-4 w-4" aria-hidden="true" />
                   {t(persona.ctaLabelKey)}

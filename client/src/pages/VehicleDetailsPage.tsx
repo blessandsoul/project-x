@@ -689,19 +689,62 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
     >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('vehicle.similar.title')}</h2>
+        {/* Desktop Navigation Buttons */}
+        <div className="hidden lg:flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-full border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
+            onClick={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ left: -400, behavior: 'smooth' });
+              }
+            }}
+            aria-label="Scroll left"
+          >
+            <Icon icon="mdi:chevron-left" className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-full border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
+            onClick={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+              }
+            }}
+            aria-label="Scroll right"
+          >
+            <Icon icon="mdi:chevron-right" className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Horizontal scrolling carousel for similar vehicles */}
       <div
         ref={scrollContainerRef}
         className={cn(
-          "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide select-none",
-          isDragging ? "snap-none cursor-grabbing" : "snap-x snap-mandatory cursor-grab"
+          "flex overflow-x-auto gap-4 pb-4 scrollbar-hide select-none",
+          // Only show cursor-grab/grabbing on touch devices or small screens
+          isDragging ? "lg:cursor-auto cursor-grabbing snap-none" : "lg:cursor-auto cursor-grab snap-x snap-mandatory"
         )}
-        onMouseDown={handleMouseDown}
-        onMouseLeave={handleMouseLeave}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
+        onMouseDown={(e) => {
+          // Disable drag on desktop (lg breakpoint 1024px)
+          if (window.innerWidth >= 1024) return;
+          handleMouseDown(e);
+        }}
+        onMouseLeave={(_e) => {
+          if (window.innerWidth >= 1024) return;
+          handleMouseLeave();
+        }}
+        onMouseUp={(_e) => {
+          if (window.innerWidth >= 1024) return;
+          handleMouseUp();
+        }}
+        onMouseMove={(e) => {
+          if (window.innerWidth >= 1024) return;
+          handleMouseMove(e);
+        }}
       >
         {similarItems.map((item) => (
           <div key={item.id} className="flex-shrink-0 w-[240px] min-[460px]:w-[280px] min-[500px]:w-[340px] sm:w-[380px] md:w-[420px] lg:w-[400px] snap-start">
@@ -731,7 +774,7 @@ const VehicleDetailsPage = () => {
   // NOTE: Do NOT use useSearchParams - it causes re-renders on ANY query param change
   // Instead, read initial params directly from window.location.search (only once on mount)
   const shouldReduceMotion = useReducedMotion()
-  const { isAuthenticated, userRole } = useAuth()
+  const { isAuthenticated, userRole: _userRole } = useAuth()
   const { isWatched, toggleWatch, isLoading: isWatchlistLoading } = useVehicleWatchlist()
 
   // Parse URL params for initial values - use ref to only read once on mount
@@ -771,8 +814,8 @@ const VehicleDetailsPage = () => {
   const [activeBreakdownQuote, setActiveBreakdownQuote] = useState<VehicleQuote | null>(null)
 
   // State: Filters (local UI filters - VIP and Fast are client-side only)
-  const [filterVip, _setFilterVip] = useState(false)
-  const [filterFast, _setFilterFast] = useState(false)
+  const [_filterVip, _setFilterVip] = useState(false)
+  const [_filterFast, _setFilterFast] = useState(false)
 
   // State: Lead Modal
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
@@ -1210,7 +1253,6 @@ const VehicleDetailsPage = () => {
                   </div>
                   {lastBidDate && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-slate-500">{t('vehicle.bids.last_bid_date', 'Last bid date:')}</span>
                       <span className="text-[11px] font-medium text-slate-700">{lastBidDate}</span>
                     </div>
                   )}

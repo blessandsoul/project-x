@@ -1,5 +1,21 @@
 import { useState, useEffect } from 'react';
-import type { FilterState } from '@/components/auction/AuctionFilters';
+
+// Define FilterState locally since AuctionFilters component doesn't export it
+interface FilterState {
+  searchQuery: string;
+  selectedMakeId: string;
+  selectedModelId: string;
+  auctionFilter: string;
+  fuelType: string;
+  category: string;
+  drive: string;
+  buyNowOnly: boolean;
+  priceRange: [number, number];
+  yearRange: [number, number];
+  mileageRange: [number, number];
+  exactYear: number | '';
+  limit: number;
+}
 
 export interface SearchHistoryItem {
   id: string;
@@ -46,61 +62,61 @@ export const useSearchHistory = () => {
 
   const createDisplayText = (filters: Omit<FilterState, 'limit'>): string => {
     const parts: string[] = [];
-    
+
     if (filters.searchQuery.trim()) {
       parts.push(`"${filters.searchQuery.trim()}"`);
     }
-    
+
     if (filters.selectedMakeId !== 'all') {
       parts.push(`Make: ${filters.selectedMakeId}`);
     }
-    
+
     if (filters.selectedModelId !== 'all') {
       parts.push(`Model: ${filters.selectedModelId}`);
     }
-    
+
     if (filters.auctionFilter !== 'all') {
       parts.push(`Auction: ${filters.auctionFilter}`);
     }
-    
+
     if (filters.fuelType !== 'all') {
       parts.push(`Fuel: ${filters.fuelType}`);
     }
-    
+
     if (filters.category !== 'all') {
       parts.push(`Category: ${filters.category}`);
     }
-    
+
     if (filters.drive !== 'all') {
       parts.push(`Drive: ${filters.drive}`);
     }
-    
+
     if (filters.buyNowOnly) {
       parts.push('Buy Now');
     }
-    
+
     if (filters.priceRange[0] > 0 || filters.priceRange[1] > 0) {
       const from = filters.priceRange[0] || '?';
       const to = filters.priceRange[1] || '?';
       parts.push(`Price: $${from}-${to}`);
     }
-    
+
     if (filters.yearRange[0] > 0 || filters.yearRange[1] > 0) {
       const from = filters.yearRange[0] || '?';
       const to = filters.yearRange[1] || '?';
       parts.push(`Year: ${from}-${to}`);
     }
-    
+
     if (filters.mileageRange[0] > 0 || filters.mileageRange[1] > 0) {
       const from = filters.mileageRange[0] || '?';
       const to = filters.mileageRange[1] || '?';
       parts.push(`Mileage: ${from}-${to}`);
     }
-    
+
     if (filters.exactYear) {
       parts.push(`Year: ${filters.exactYear}`);
     }
-    
+
     return parts.length > 0 ? parts.join(', ') : 'All vehicles';
   };
 
@@ -109,21 +125,21 @@ export const useSearchHistory = () => {
     resultCount?: number
   ) => {
     // Don't save if search query is too short and no other filters are applied
-    const hasContent = filters.searchQuery.trim().length >= 3 || 
-                      filters.selectedMakeId !== 'all' ||
-                      filters.selectedModelId !== 'all' ||
-                      filters.auctionFilter !== 'all' ||
-                      filters.fuelType !== 'all' ||
-                      filters.category !== 'all' ||
-                      filters.drive !== 'all' ||
-                      filters.buyNowOnly ||
-                      filters.priceRange[0] > 0 ||
-                      filters.priceRange[1] > 0 ||
-                      filters.yearRange[0] > 0 ||
-                      filters.yearRange[1] > 0 ||
-                      filters.mileageRange[0] > 0 ||
-                      filters.mileageRange[1] > 0 ||
-                      filters.exactYear !== '';
+    const hasContent = filters.searchQuery.trim().length >= 3 ||
+      filters.selectedMakeId !== 'all' ||
+      filters.selectedModelId !== 'all' ||
+      filters.auctionFilter !== 'all' ||
+      filters.fuelType !== 'all' ||
+      filters.category !== 'all' ||
+      filters.drive !== 'all' ||
+      filters.buyNowOnly ||
+      filters.priceRange[0] > 0 ||
+      filters.priceRange[1] > 0 ||
+      filters.yearRange[0] > 0 ||
+      filters.yearRange[1] > 0 ||
+      filters.mileageRange[0] > 0 ||
+      filters.mileageRange[1] > 0 ||
+      filters.exactYear !== '';
 
     if (!hasContent) return;
 
@@ -141,11 +157,11 @@ export const useSearchHistory = () => {
 
     setSearchHistory(prev => {
       // Remove any existing searches with the same filters
-      const filtered = prev.filter(item => 
+      const filtered = prev.filter(item =>
         item.searchQuery !== searchItem.searchQuery ||
         JSON.stringify(item.filters) !== JSON.stringify(searchItem.filters)
       );
-      
+
       // Add new search at the beginning and limit to MAX_HISTORY_ITEMS
       const updated = [searchItem, ...filtered].slice(0, MAX_HISTORY_ITEMS);
       return updated;

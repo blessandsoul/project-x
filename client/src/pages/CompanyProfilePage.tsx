@@ -33,7 +33,7 @@ const CompanyProfilePage = () => {
   // Fetch company by ID directly (not from cached list)
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [_loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {

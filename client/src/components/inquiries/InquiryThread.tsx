@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { type Inquiry, type InquiryMessage, type OptimisticMessage, type LocalMessageStatus, getInquiryCounterparty } from '@/api/inquiries'
+import { type Inquiry, type InquiryMessage, type OptimisticMessage, getInquiryCounterparty } from '@/api/inquiries'
 import { Send, Check, X, Loader2, ArrowDown, Clock, RotateCcw, CheckCheck } from 'lucide-react'
 
 // Union type for messages that can be either server or optimistic
@@ -42,13 +42,13 @@ function formatMessageTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
-  
+
   if (isToday) {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   }
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit'
@@ -64,7 +64,7 @@ function getStatusBadge(status: string) {
     cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Cancelled' },
     expired: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Expired' },
   }
-  
+
   const style = styles[status] || styles.pending
   return (
     <Badge variant="secondary" className={cn('text-xs', style.bg, style.text)}>
@@ -95,14 +95,14 @@ export function InquiryThread({
   const isNearBottomRef = useRef(true)
   const prevMessagesLengthRef = useRef(messages.length)
   const isInitialLoadRef = useRef(true)
-  
+
   // Get the actual scrollable viewport element from ScrollArea
   const getScrollViewport = useCallback(() => {
     if (!scrollAreaRef.current) return null
     // ScrollArea renders a viewport div with data-radix-scroll-area-viewport
     return scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null
   }, [])
-  
+
   // Check if user is near bottom of scroll
   const checkIfNearBottom = useCallback(() => {
     const viewport = getScrollViewport()
@@ -110,7 +110,7 @@ export function InquiryThread({
     const { scrollTop, scrollHeight, clientHeight } = viewport
     return scrollHeight - scrollTop - clientHeight < 100
   }, [getScrollViewport])
-  
+
   // Handle scroll events
   const handleScroll = useCallback(() => {
     isNearBottomRef.current = checkIfNearBottom()
@@ -118,7 +118,7 @@ export function InquiryThread({
       setShowNewMessages(false)
     }
   }, [checkIfNearBottom])
-  
+
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
     const viewport = getScrollViewport()
@@ -127,7 +127,7 @@ export function InquiryThread({
       setShowNewMessages(false)
     }
   }, [getScrollViewport])
-  
+
   // Scroll to bottom on initial load
   useEffect(() => {
     if (!isLoading && messages.length > 0 && isInitialLoadRef.current) {
@@ -138,17 +138,17 @@ export function InquiryThread({
       })
     }
   }, [isLoading, messages.length, scrollToBottom])
-  
+
   // Reset initial load flag when inquiry changes
   useEffect(() => {
     isInitialLoadRef.current = true
   }, [inquiry?.id])
-  
+
   // Smart auto-scroll when messages change
   useEffect(() => {
     const hasNewMessages = messages.length > prevMessagesLengthRef.current
     prevMessagesLengthRef.current = messages.length
-    
+
     if (hasNewMessages && !isInitialLoadRef.current) {
       if (isNearBottomRef.current) {
         // User is near bottom, auto-scroll
@@ -161,25 +161,25 @@ export function InquiryThread({
       }
     }
   }, [messages, scrollToBottom])
-  
+
   const handleSend = () => {
     const text = messageText.trim()
     if (!text) return
-    
+
     // Generate client_message_id for optimistic UI
     const clientMessageId = crypto.randomUUID()
     onSendMessage(text, clientMessageId)
     setMessageText('')
     textareaRef.current?.focus()
   }
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }
-  
+
   // Loading state when creating/finding inquiry from vehicle page
   if (isCreating) {
     return (
@@ -190,7 +190,7 @@ export function InquiryThread({
       </div>
     )
   }
-  
+
   // Empty state
   if (!inquiry) {
     return (
@@ -203,12 +203,12 @@ export function InquiryThread({
       </div>
     )
   }
-  
+
   const isTerminal = ['accepted', 'declined', 'cancelled', 'expired'].includes(inquiry.status)
   const canAccept = inquiry.status === 'active' && inquiry.final_price != null
   const canCancel = ['pending', 'active'].includes(inquiry.status)
   const counterparty = getInquiryCounterparty(inquiry, currentUserRole ?? null)
-  
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -229,10 +229,10 @@ export function InquiryThread({
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {getStatusBadge(inquiry.status)}
-            
+
             {/* Action buttons */}
             {!isTerminal && (
               <div className="flex items-center gap-1.5 ml-2">
@@ -264,7 +264,7 @@ export function InquiryThread({
             )}
           </div>
         </div>
-        
+
         {/* Final price indicator */}
         {inquiry.final_price != null && (
           <div className="mt-2 px-3 py-2 bg-green-50 rounded-lg border border-green-100">
@@ -275,7 +275,7 @@ export function InquiryThread({
           </div>
         )}
       </div>
-      
+
       {/* Messages */}
       <div className="flex-1 relative overflow-hidden">
         <ScrollArea className="h-full px-4" ref={scrollAreaRef} onScrollCapture={handleScroll}>
@@ -306,19 +306,19 @@ export function InquiryThread({
                   <p className="text-xs text-yellow-700">Waiting for company response…</p>
                 </div>
               )}
-              
+
               {messages.map((msg, index) => {
                 const isOwn = msg.sender_id === currentUserId
                 const isSystem = msg.message_type === 'system'
                 const showSender = !isOwn && !isSystem && (
                   index === 0 || messages[index - 1]?.sender_id !== msg.sender_id
                 )
-                
+
                 // Check if this is an optimistic message
                 const isOptimistic = isOptimisticMessage(msg)
                 const localStatus = isOptimistic ? msg._localStatus : 'sent'
                 const messageKey = isOptimistic ? msg._localId : String(msg.id)
-                
+
                 // System messages - centered, muted
                 if (isSystem) {
                   return (
@@ -329,7 +329,7 @@ export function InquiryThread({
                     </div>
                   )
                 }
-                
+
                 return (
                   <div
                     key={messageKey}
@@ -344,7 +344,7 @@ export function InquiryThread({
                       </Avatar>
                     )}
                     {!isOwn && !showSender && <div className="w-9 shrink-0" />}
-                    
+
                     <div className={cn('max-w-[70%]', !isOwn && showSender && 'mt-1')}>
                       {showSender && msg.sender && (
                         <p className="text-xs text-slate-500 mb-1 ml-1">
@@ -364,7 +364,7 @@ export function InquiryThread({
                           {msg.message}
                         </p>
                       </div>
-                      
+
                       {/* Status indicator row */}
                       <div className={cn(
                         'flex items-center gap-1.5 mt-1',
@@ -374,7 +374,7 @@ export function InquiryThread({
                         <span className="text-[10px] text-slate-400">
                           {formatMessageTime(msg.created_at)}
                         </span>
-                        
+
                         {/* Status icons for own messages */}
                         {isOwn && localStatus === 'sending' && (
                           <Clock className="size-3 text-slate-400 animate-pulse" />
@@ -419,7 +419,7 @@ export function InquiryThread({
             </div>
           )}
         </ScrollArea>
-        
+
         {/* New messages button */}
         {showNewMessages && (
           <Button
@@ -433,9 +433,9 @@ export function InquiryThread({
           </Button>
         )}
       </div>
-      
+
       <Separator />
-      
+
       {/* Composer */}
       <div className="p-3 bg-white">
         {/* Status-specific banners */}
@@ -459,7 +459,7 @@ export function InquiryThread({
             <p className="text-xs text-slate-500">Inquiry expired</p>
           </div>
         )}
-        
+
         {isTerminal ? (
           <div className="text-center py-2 text-sm text-slate-400">
             This conversation is closed.

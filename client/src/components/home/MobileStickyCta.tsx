@@ -54,7 +54,6 @@ export function MobileStickyCta() {
               navigate('/auction-listings')
             }}
             aria-label={t('navigation.auctionListings') || 'Auction Listings'}
-            motionVariant="scale"
           >
             <Icon icon="mdi:gavel" className="mr-2 h-4 w-4" />
             <span className="truncate text-sm font-medium">{t('navigation.auctionListings') || 'Auction Listings'}</span>
@@ -68,7 +67,6 @@ export function MobileStickyCta() {
               navigate('/catalog')
             }}
             aria-label={t('navigation.catalog') || 'Company Catalog'}
-            motionVariant="scale"
           >
             <Icon icon="mdi:view-grid" className="mr-2 h-4 w-4" />
             <span className="truncate text-sm font-medium">{t('navigation.catalog') || 'Company Catalog'}</span>

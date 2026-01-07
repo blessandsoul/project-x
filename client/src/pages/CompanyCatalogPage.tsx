@@ -407,7 +407,6 @@ const CompanyCatalogPage = () => {
                   isSelected={selectedCompanies.includes(company.id)}
                   onToggleCompare={() => toggleComparison(company.id)}
                   hasAuctionBranch={hasCalculation}
-                  isLoadingShipping={isCalculatingPrice}
                   calculatedShippingPrice={companyPrices.get(company.id) ?? defaultPrice ?? undefined}
                 />
               ))}

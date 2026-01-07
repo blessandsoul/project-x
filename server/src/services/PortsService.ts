@@ -11,7 +11,7 @@ interface PortsApiResponse {
 
 interface PortRow extends RowDataPacket {
   id: number;
-  port: string;
+  code: string;
 }
 
 /**
@@ -82,10 +82,10 @@ export class PortsService {
    */
   private async getExistingPorts(): Promise<Set<string>> {
     const [rows] = await this.db.execute<PortRow[]>(
-      'SELECT port FROM ports',
+      'SELECT code FROM ports',
     );
 
-    return new Set(rows.map(row => row.port));
+    return new Set(rows.map(row => row.code));
   }
 
   /**
@@ -98,7 +98,7 @@ export class PortsService {
 
     // Build bulk insert query
     const values = ports.map(() => '(?)').join(', ');
-    const query = `INSERT INTO ports (port) VALUES ${values}`;
+    const query = `INSERT INTO ports (code) VALUES ${values}`;
 
     const [result] = await this.db.execute(query, ports);
     return (result as any).affectedRows || 0;

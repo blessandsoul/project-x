@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -17,10 +26,10 @@ export interface FilterSectionProps {
   defaultOpen?: boolean;
 }
 
-export function FilterSection({ 
-  title, 
-  children, 
-  defaultOpen = true 
+export function FilterSection({
+  title,
+  children,
+  defaultOpen = true
 }: FilterSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -39,7 +48,7 @@ export function FilterSection({
       setHeight(0);
     }
   }, [isOpen]);
-  
+
   return (
     <div className="border-b border-slate-200">
       <button
@@ -49,12 +58,12 @@ export function FilterSection({
         <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
           {title}
         </span>
-        <Icon 
-          icon="mdi:chevron-down" 
+        <Icon
+          icon="mdi:chevron-down"
           className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
-      <div 
+      <div
         className="overflow-hidden transition-all duration-200 ease-in-out"
         style={{ height: height === undefined ? 'auto' : height }}
       >
@@ -92,11 +101,10 @@ export function FilterCheckboxItem({
       "flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded",
       className
     )}>
-      <input
-        type="checkbox"
+      <Checkbox
         checked={checked}
-        onChange={(e) => onCheckedChange(e.target.checked)}
-        className="h-3.5 w-3.5 rounded-sm border-slate-300 text-primary focus:ring-primary"
+        onCheckedChange={(checked) => onCheckedChange(checked as boolean)}
+        className="h-3.5 w-3.5 rounded-sm border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
       />
       <span className="text-[11px] text-slate-700">{label}</span>
     </label>
@@ -149,17 +157,17 @@ export function FilterRangeInputs({
   showCurrencyPrefix = false,
 }: FilterRangeInputsProps) {
   const { t } = useTranslation();
-  
+
   // Sharp inputs (rounded-none) to match auction-listings filter panel design
-  const inputClassName = "h-7 text-[10px] px-2 bg-white border border-slate-300 flex-1 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary";
-  const currencyInputClassName = "h-7 text-[10px] pl-4 pr-1 bg-white border border-slate-300 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary w-full";
+  const inputClassName = "h-7 text-[10px] px-2 bg-white border-slate-300 flex-1 rounded-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary shadow-none";
+  const currencyInputClassName = "h-7 text-[10px] pl-4 pr-1 bg-white border-slate-300 rounded-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary w-full shadow-none";
 
   if (showCurrencyPrefix) {
     return (
       <div className="flex items-center gap-1">
         <div className="relative flex-1">
           <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">$</span>
-          <input
+          <Input
             type={type}
             inputMode={inputMode}
             maxLength={maxLength}
@@ -174,7 +182,7 @@ export function FilterRangeInputs({
         <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
         <div className="relative flex-1">
           <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">$</span>
-          <input
+          <Input
             type={type}
             inputMode={inputMode}
             maxLength={maxLength}
@@ -192,7 +200,7 @@ export function FilterRangeInputs({
 
   return (
     <div className="flex items-center gap-1">
-      <input
+      <Input
         type={type}
         inputMode={inputMode}
         maxLength={maxLength}
@@ -204,7 +212,7 @@ export function FilterRangeInputs({
         className={inputClassName}
       />
       <span className="text-slate-400 text-[10px]">{t('common.to')}</span>
-      <input
+      <Input
         type={type}
         inputMode={inputMode}
         maxLength={maxLength}
@@ -270,14 +278,14 @@ export function FiltersSidebarLayout({
       {/* Action Buttons */}
       {showActions && (
         <div className="p-2 bg-slate-50 border-t border-slate-200 space-y-1.5">
-          <Button 
+          <Button
             className="w-full h-7 text-[10px] bg-accent hover:bg-accent/90 text-primary font-bold"
             onClick={onApply}
           >
             {applyButtonText || t('auction.filters.apply')}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full h-7 text-[10px] border-slate-300 text-slate-600 hover:bg-slate-100"
             onClick={onReset}
           >
@@ -317,25 +325,23 @@ export function FilterSelect({
   className,
 }: FilterSelectProps) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onValueChange(e.target.value)}
-      disabled={disabled}
-      className={cn(
-        // Sharp select (rounded-none) to match auction-listings filter panel design
-        "h-7 w-full text-[10px] px-2 bg-white border border-slate-300 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed",
-        className
-      )}
-    >
-      {placeholder && (
-        <option value="">{placeholder}</option>
-      )}
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+      <SelectTrigger
+        className={cn(
+          "h-7 w-full text-[10px] px-2 bg-white border-slate-300 rounded-none focus:ring-1 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-none",
+          className
+        )}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -383,7 +389,7 @@ export function FilterInput({
 }: FilterInputProps) {
   // Sharp input (rounded-none) to match auction-listings filter panel design
   const inputClassName = cn(
-    "h-7 w-full text-[10px] bg-white border border-slate-300 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed",
+    "h-7 w-full text-[10px] bg-white border-slate-300 rounded-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary disabled:opacity-50 disabled:cursor-not-allowed shadow-none",
     icon ? "pl-7 pr-2" : "px-2",
     className
   );
@@ -391,12 +397,12 @@ export function FilterInput({
   return (
     <div className="relative">
       {icon && (
-        <Icon 
-          icon={icon} 
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" 
+        <Icon
+          icon={icon}
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 z-10"
         />
       )}
-      <input
+      <Input
         type={type}
         inputMode={inputMode}
         maxLength={maxLength}

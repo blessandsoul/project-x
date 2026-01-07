@@ -2,6 +2,13 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Footer translations for all supported languages
 const footerTranslations = {
@@ -176,61 +183,6 @@ const footerTranslations = {
       { label: "Cookies", href: "/cookies" },
     ],
   },
-  ar: {
-    sections: {
-      trustedImporters: {
-        title: "TrustedImporters",
-        links: [
-          { label: "من نحن", href: "/about" },
-          { label: "كيف يعمل", href: "/how-it-works" },
-          { label: "مهمتنا", href: "/mission" },
-          { label: "الفريق", href: "/team" },
-          { label: "الأخبار / المدونة", href: "/blog" },
-        ],
-      },
-      auctions: {
-        title: "المزادات",
-        links: [
-          { label: "مزادات اليوم", href: "/auction-listings?today=true" },
-          { label: "تقويم المزادات", href: "/auction-calendar" },
-          { label: "عروض Copart", href: "/auction-listings?source=copart" },
-          { label: "عروض IAAI", href: "/auction-listings?source=iaai" },
-          { label: "المزادات الأمريكية", href: "/auction-listings" },
-        ],
-      },
-      services: {
-        title: "الخدمات",
-        links: [
-          { label: "حاسبة الشحن", href: "/calculator" },
-          { label: "التكلفة الكاملة للاستيراد", href: "/import-cost" },
-          { label: "الشركات الشريكة", href: "/companies" },
-          { label: "حلول للتجار", href: "/dealers" },
-          { label: "خدمات إضافية", href: "/services" },
-        ],
-      },
-      support: {
-        title: "الدعم",
-        links: [
-          { label: "مركز المساعدة", href: "/help" },
-          { label: "الأسئلة الشائعة", href: "/faq" },
-          { label: "دليل المبتدئين", href: "/guide" },
-          { label: "الأسعار والتعريفات", href: "/pricing" },
-          { label: "اتصل بنا", href: "/contact" },
-        ],
-      },
-    },
-    connect: "تواصل معنا",
-    downloadApp: "حمّل التطبيق",
-    partners: "الشركاء",
-    copyright: "جميع الحقوق محفوظة.",
-    bottomLinks: [
-      { label: "خريطة الموقع", href: "/sitemap" },
-      { label: "اتصل بنا", href: "/contact" },
-      { label: "شروط الخدمة", href: "/terms" },
-      { label: "سياسة الخصوصية", href: "/privacy" },
-      { label: "ملفات تعريف الارتباط", href: "/cookies" },
-    ],
-  },
 };
 
 const Footer = ({ onNavigate }) => {
@@ -336,22 +288,19 @@ const Footer = ({ onNavigate }) => {
             </Link>
 
             {/* Language Selector */}
-            <div className="relative">
-              <select
-                className="w-full bg-[#1a1f2e] text-gray-300 text-sm px-3 py-2 rounded border border-gray-700 focus:border-accent focus:outline-none appearance-none cursor-pointer"
-                value={i18n.language?.substring(0, 2) || "ka"}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-              >
-                <option value="ka">GE ქართული</option>
-                <option value="en">US English</option>
-                <option value="ru">RU Русский</option>
-                <option value="ar">SA العربية</option>
-              </select>
-              <Icon
-                icon="mdi:chevron-down"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none"
-              />
-            </div>
+            <Select
+              value={i18n.language?.substring(0, 2) || "ka"}
+              onValueChange={handleLanguageChange}
+            >
+              <SelectTrigger className="w-full bg-[#1a1f2e] text-gray-300 text-sm px-3 py-2 rounded border border-gray-700 focus:ring-accent focus:ring-offset-0 h-[38px]">
+                 <SelectValue placeholder="Select Language" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-gray-700 text-gray-300">
+                <SelectItem value="ka" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">GE ქართული</SelectItem>
+                <SelectItem value="en" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">US English</SelectItem>
+                <SelectItem value="ru" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">RU Русский</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Partner logos */}
             <div className="space-y-2 pt-2">
