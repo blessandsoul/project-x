@@ -9,6 +9,7 @@ import type {
     RequestFieldMapping,
     ResponseFieldMapping,
 } from './ICalculatorAdapter.js';
+import { DefaultAdapter } from './DefaultAdapter.js';
 
 /**
  * Configurable Calculator Adapter
@@ -18,52 +19,67 @@ import type {
  * and responses.
  * 
  * Used when company.calculator_type === 'custom_api'.
+ * 
+ * FALLBACK BEHAVIOR: If a company has calculator_type='custom_api' but
+ * hasn't configured their calculator_api_url or calculator_config yet,
+ * this adapter falls back to the DefaultAdapter so the company still
+ * appears in listings with default pricing.
  */
 export class ConfigurableAdapter implements ICalculatorAdapter {
     private readonly fastify: FastifyInstance;
     private readonly CACHE_TTL_SECONDS = 86400; // 24 hours
+    private defaultAdapter: DefaultAdapter | null = null;
 
     constructor(fastify: FastifyInstance) {
         this.fastify = fastify;
     }
 
     /**
+     * Get or create a DefaultAdapter instance for fallback.
+     */
+    private getDefaultAdapter(): DefaultAdapter {
+        if (!this.defaultAdapter) {
+            this.defaultAdapter = new DefaultAdapter(this.fastify);
+        }
+        return this.defaultAdapter;
+    }
+
+    /**
      * Calculate shipping quote using a company's custom calculator API.
+     * Falls back to DefaultAdapter if the company hasn't configured their API yet.
      */
     async calculate(
         request: StandardCalculatorRequest,
         company: Company
     ): Promise<StandardCalculatorResponse> {
-        // Validate configuration
+        // Check configuration - fall back to default if not configured
         const apiUrl = (company as any).calculator_api_url;
         const config = (company as any).calculator_config as CalculatorConfig | null | undefined;
 
-        if (!apiUrl) {
-            this.fastify.log.error(
-                { companyId: company.id, companyName: company.name },
-                '[ConfigurableAdapter] Company has calculator_type=custom_api but no calculator_api_url'
+        if (!apiUrl || !config || !config.field_mapping) {
+            // Company has custom_api type but hasn't configured their calculator yet
+            // Fall back to default calculator so they still appear in listings
+            this.fastify.log.warn(
+                {
+                    companyId: company.id,
+                    companyName: company.name,
+                    calculatorType: (company as any).calculator_type,
+                    hasApiUrl: !!apiUrl,
+                    hasConfig: !!config,
+                    hasFieldMapping: !!(config && config.field_mapping),
+                },
+                '[ConfigurableAdapter] Company custom_api not configured, falling back to default calculator'
             );
-            return {
-                success: false,
-                totalPrice: 0,
-                distanceMiles: 0,
-                currency: 'USD',
-                error: `Company ${company.name} is not properly configured for custom calculator`,
-            };
-        }
-
-        if (!config || !config.field_mapping) {
-            this.fastify.log.error(
-                { companyId: company.id, companyName: company.name },
-                '[ConfigurableAdapter] Company has calculator_type=custom_api but no calculator_config'
+            const fallbackResult = await this.getDefaultAdapter().calculate(request, company);
+            this.fastify.log.warn(
+                {
+                    companyId: company.id,
+                    fallbackSuccess: fallbackResult.success,
+                    fallbackPrice: fallbackResult.totalPrice,
+                },
+                '[ConfigurableAdapter] Fallback result'
             );
-            return {
-                success: false,
-                totalPrice: 0,
-                distanceMiles: 0,
-                currency: 'USD',
-                error: `Company ${company.name} is missing calculator configuration`,
-            };
+            return fallbackResult;
         }
 
         // Build cache key including company ID
@@ -114,46 +130,32 @@ export class ConfigurableAdapter implements ICalculatorAdapter {
 
             return result;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                this.fastify.log.error(
-                    {
-                        companyId: company.id,
-                        apiUrl,
-                        status: error.response?.status,
-                        statusText: error.response?.statusText,
-                        data: error.response?.data,
-                        message: error.message,
-                    },
-                    '[ConfigurableAdapter] Error calling custom calculator API'
-                );
+            this.fastify.log.error(
+                {
+                    companyId: company.id,
+                    apiUrl,
+                    error: axios.isAxiosError(error) ? error.message : error,
+                },
+                '[ConfigurableAdapter] Error calling custom calculator API, falling back to default'
+            );
 
-                const errorMessage =
-                    (error.response?.data as any)?.message ||
-                    (error.response?.data as any)?.error ||
-                    error.message ||
-                    'Custom calculator API error';
+            // Fallback to default calculator on any error
+            try {
+                return await this.getDefaultAdapter().calculate(request, company);
+            } catch (fallbackError) {
+                this.fastify.log.error(
+                    { companyId: company.id, fallbackError },
+                    '[ConfigurableAdapter] Fallback also failed'
+                );
 
                 return {
                     success: false,
                     totalPrice: 0,
                     distanceMiles: 0,
                     currency: 'USD',
-                    error: `Custom calculator error for ${company.name}: ${errorMessage}`,
+                    error: `Both custom and default calculators failed for ${company.name}`,
                 };
             }
-
-            this.fastify.log.error(
-                { companyId: company.id, error },
-                '[ConfigurableAdapter] Unexpected error calling custom calculator API'
-            );
-
-            return {
-                success: false,
-                totalPrice: 0,
-                distanceMiles: 0,
-                currency: 'USD',
-                error: `Unexpected error for ${company.name}`,
-            };
         }
     }
 

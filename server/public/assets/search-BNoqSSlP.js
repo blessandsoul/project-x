@@ -1,1 +1,0 @@
-import{d as c}from"./index-CIs9PTNC.js";const e=[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]],t=c("chevron-right",e);const o=[["path",{d:"m21 21-4.34-4.34",key:"14j7rj"}],["circle",{cx:"11",cy:"11",r:"8",key:"4ej97u"}]],h=c("search",o);export{t as C,h as S};

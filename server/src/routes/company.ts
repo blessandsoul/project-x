@@ -1248,7 +1248,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       querystring: {
         type: 'object',
         properties: {
-          limit: { type: 'integer', minimum: 1, maximum: 50, default: 5 },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 5 },
           offset: { type: 'integer', minimum: 0, default: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
           minRating: { type: 'number', minimum: 0, maximum: 5 },
@@ -1323,7 +1323,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
         offset: Number.isFinite(parsedOffset) ? parsedOffset : undefined,
       },
-      { limit: 5, maxLimit: 50 },
+      { limit: 5, maxLimit: 100 },
     );
 
     // Cache quote calculations - same vehicle + calculator input + currency + pagination = same result

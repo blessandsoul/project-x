@@ -348,15 +348,14 @@ const accountRoutes: FastifyPluginAsync = async (fastify) => {
     // Schedule permanent deletion for 30 days from now
     const deletionScheduledAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // If user is a company owner, deactivate their companies first
-    if (user.role === 'company') {
-      const deactivatedCount = await companyModel.deactivateByOwnerId(userId);
-      if (deactivatedCount > 0) {
-        fastify.log.info({ userId, deactivatedCount }, 'Companies deactivated due to account deactivation');
-        // Invalidate company cache so public listings update
-        const { incrementCacheVersion } = await import('../utils/cache.js');
-        await incrementCacheVersion(fastify, 'companies');
-      }
+    // Always check for and deactivate owned companies, regardless of user role
+    // This handles edge cases where a role might have changed but ownership remained
+    const deactivatedCount = await companyModel.deactivateByOwnerId(userId);
+    if (deactivatedCount > 0) {
+      fastify.log.info({ userId, deactivatedCount, role: user.role }, 'Companies deactivated due to account deactivation');
+      // Invalidate company cache so public listings update
+      const { incrementCacheVersion } = await import('../utils/cache.js');
+      await incrementCacheVersion(fastify, 'companies');
     }
 
     // Mark user as deactivated with scheduled deletion date

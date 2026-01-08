@@ -28,9 +28,10 @@ const VehicleQuotesContainer = memo(({
     priceUnavailableMessage,
     onOpenBreakdown,
     onOpenLeadModal,
-}: VehicleQuotesContainerProps) => {
+    limit = 5,
+}: VehicleQuotesContainerProps & { limit?: number }) => {
     // TEMPORARY DEBUG: Track renders
-    console.count('VehicleQuotesContainer render')
+
 
     const {
         quotes,
@@ -45,7 +46,7 @@ const VehicleQuotesContainer = memo(({
         vehicleId,
         auction,
         usacity,
-        limit: 5,
+        limit,
         vehiclecategory,
     })
 

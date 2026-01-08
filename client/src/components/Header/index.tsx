@@ -110,15 +110,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
 
   // Navy blue CSS variable overrides for non-green pages
   // These override the same variables the header already uses via Tailwind classes
-  const navyVariableOverrides: React.CSSProperties = !isGreenHeaderPage ? {
-    '--header-glass-bg': 'rgba(26, 39, 68, 0.85)',
-    '--header-glass-bg-scrolled': 'rgba(26, 39, 68, 0.95)',
-    '--header-glass-border': 'rgba(255, 255, 255, 0.1)',
-    '--header-glass-shadow': '0 4px 30px rgba(0, 0, 0, 0.15)',
-    '--header-nav-hover': 'rgba(255, 255, 255, 0.1)',
-    '--header-nav-active': 'rgba(255, 255, 255, 0.18)',
-    '--header-nav-active-border': 'rgba(255, 255, 255, 0.25)',
-  } as React.CSSProperties : {};
+  // Use the standard green/glass header everywhere (removed navy overrides)
+  const navyVariableOverrides: React.CSSProperties = {};
 
   return (
     <header
