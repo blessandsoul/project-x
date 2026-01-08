@@ -42,10 +42,10 @@ export const CompanyCard = memo(({ company, className }: CompanyCardProps) => {
           <div className="flex justify-between items-start">
             <div className="relative">
               <div className="h-16 w-16 rounded-xl border border-slate-100 bg-white p-1 shadow-sm overflow-hidden group-hover:border-blue-100 transition-colors">
-                <Image 
-                  src={company.logo ?? ''} 
-                  alt={company.name} 
-                  className="h-full w-full object-contain" 
+                <Image
+                  src={company.logo ?? ''}
+                  alt={company.name}
+                  className="h-full w-full object-contain"
                 />
               </div>
               {company.vipStatus && (
@@ -63,7 +63,7 @@ export const CompanyCard = memo(({ company, className }: CompanyCardProps) => {
                 </TooltipProvider>
               )}
             </div>
-            
+
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                 <Icon icon="mdi:star" className="h-4 w-4 text-amber-400" />
@@ -145,8 +145,8 @@ export const CompanyCard = memo(({ company, className }: CompanyCardProps) => {
             </div>
           </div>
 
-          <Button 
-            className="bg-slate-900 text-white hover:bg-primary shadow-md hover:shadow-primary/20 transition-all duration-300 rounded-xl font-semibold px-6"
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl font-semibold px-6"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/company/${company.id}`);

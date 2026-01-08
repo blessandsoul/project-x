@@ -10,14 +10,17 @@ export function WhatIsCopartSection() {
 
   return (
     <motion.section
-      className="py-12 bg-slate-900 text-white"
+      className="py-12 text-white relative overflow-hidden"
       aria-labelledby="home-what-is-copart-heading"
       initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.55, ease: 'easeOut' }}
+      style={{
+        background: `linear-gradient(135deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 50%, var(--hero-gradient-end) 100%)`,
+      }}
     >
-      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
+      <div className="w-full px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto relative z-10">
         <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)] gap-8 items-start">
           {/* Left: Text Content */}
           <div className="space-y-4">
@@ -45,7 +48,7 @@ export function WhatIsCopartSection() {
             {/* Feature 1: Easy Search */}
             <Link
               to="/companies"
-              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+              className="flex flex-col items-center justify-center p-5 bg-white/5 rounded-xl text-white shadow-sm border border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
             >
               <Icon icon="mdi:magnify" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.search_title')}</h4>
@@ -57,7 +60,7 @@ export function WhatIsCopartSection() {
             {/* Feature 2: Compare */}
             <Link
               to="/auction-listings"
-              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+              className="flex flex-col items-center justify-center p-5 bg-white/5 rounded-xl text-white shadow-sm border border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
             >
               <Icon icon="mdi:scale-balance" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.compare_title')}</h4>
@@ -69,7 +72,7 @@ export function WhatIsCopartSection() {
             {/* Feature 3: Full Calculation */}
             <Link
               to="/catalog"
-              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+              className="flex flex-col items-center justify-center p-5 bg-white/5 rounded-xl text-white shadow-sm border border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
             >
               <Icon icon="mdi:calculator-variant" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.calculate_title')}</h4>
@@ -81,7 +84,7 @@ export function WhatIsCopartSection() {
             {/* Feature 4: Trusted Reviews */}
             <Link
               to="/"
-              className="flex flex-col items-center justify-center p-5 bg-[#0F1A35] rounded-xl text-white shadow-sm border border-white/5 hover:bg-[#1A2542] transition-colors"
+              className="flex flex-col items-center justify-center p-5 bg-white/5 rounded-xl text-white shadow-sm border border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
             >
               <Icon icon="mdi:star-outline" className="h-8 w-8 mb-2 text-accent" aria-hidden="true" />
               <h4 className="font-semibold text-sm">{t('home.what_is_copart.features.reviews_title')}</h4>

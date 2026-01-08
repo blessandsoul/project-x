@@ -273,9 +273,15 @@ const Footer = ({ onNavigate }) => {
   };
 
   return (
-    <footer className="bg-[#12151d]" role="contentinfo">
+    <footer 
+      className="text-white relative overflow-hidden" 
+      role="contentinfo"
+      style={{
+        background: `linear-gradient(135deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 50%, var(--hero-gradient-end) 100%)`,
+      }}
+    >
       {/* Main footer content */}
-      <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-8 py-10 lg:py-14">
+      <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-8 py-10 lg:py-14 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-6">
           {/* Column 1: Brand & Selectors */}
           <div className="space-y-6 sm:col-span-2 md:col-span-1 xl:col-span-1">
@@ -292,29 +298,29 @@ const Footer = ({ onNavigate }) => {
               value={i18n.language?.substring(0, 2) || "ka"}
               onValueChange={handleLanguageChange}
             >
-              <SelectTrigger className="w-full bg-[#1a1f2e] text-gray-300 text-sm px-3 py-2 rounded border border-gray-700 focus:ring-accent focus:ring-offset-0 h-[38px]">
+              <SelectTrigger className="w-full bg-white/5 text-gray-200 text-sm px-3 py-2 rounded border border-white/10 focus:ring-accent focus:ring-offset-0 h-[38px] hover:bg-white/10 transition-colors">
                  <SelectValue placeholder="Select Language" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-gray-700 text-gray-300">
-                <SelectItem value="ka" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">GE ქართული</SelectItem>
-                <SelectItem value="en" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">US English</SelectItem>
-                <SelectItem value="ru" className="focus:bg-[#252a3a] focus:text-white cursor-pointer">RU Русский</SelectItem>
+              <SelectContent className="bg-emerald-950/90 border-white/10 text-gray-200 backdrop-blur-xl">
+                <SelectItem value="ka" className="focus:bg-white/10 focus:text-white cursor-pointer">GE ქართული</SelectItem>
+                <SelectItem value="en" className="focus:bg-white/10 focus:text-white cursor-pointer">US English</SelectItem>
+                <SelectItem value="ru" className="focus:bg-white/10 focus:text-white cursor-pointer">RU Русский</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Partner logos */}
             <div className="space-y-2 pt-2">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">
+              <p className="text-white/60 text-xs uppercase tracking-wide">
                 {t.partners}
               </p>
               <div className="flex flex-col gap-2">
-                <div className="bg-[#002d72] rounded h-8 flex items-center justify-center">
-                  <span className="text-white text-xs font-semibold">
+                <div className="bg-white/5 border border-white/10 rounded h-8 flex items-center justify-center backdrop-blur-sm">
+                  <span className="text-white text-xs font-semibold tracking-wider">
                     Copart
                   </span>
                 </div>
-                <div className="bg-[#c41230] rounded h-8 flex items-center justify-center">
-                  <span className="text-white text-xs font-semibold">IAAI</span>
+                <div className="bg-white/5 border border-white/10 rounded h-8 flex items-center justify-center backdrop-blur-sm">
+                  <span className="text-white text-xs font-semibold tracking-wider">IAAI</span>
                 </div>
               </div>
             </div>
@@ -358,7 +364,7 @@ const Footer = ({ onNavigate }) => {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-[#1a1f2e] hover:bg-[#252a3a] text-gray-400 hover:text-white p-2 rounded transition-colors"
+                    className="bg-white/5 border border-white/10 hover:bg-white/15 text-gray-300 hover:text-white p-2 rounded transition-all duration-300 backdrop-blur-sm"
                     aria-label={social.label}
                   >
                     <Icon icon={social.icon} className="h-5 w-5" />
@@ -375,11 +381,11 @@ const Footer = ({ onNavigate }) => {
               <div className="flex flex-col gap-2">
                 <a
                   href="#"
-                  className="bg-[#1a1f2e] hover:bg-[#252a3a] rounded-lg px-3 py-2 flex items-center gap-2 transition-colors"
+                  className="bg-white/5 border border-white/10 hover:bg-white/15 rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 backdrop-blur-sm group"
                 >
-                  <Icon icon="mdi:apple" className="h-6 w-6 text-white" />
+                  <Icon icon="mdi:apple" className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
                   <div className="text-left">
-                    <p className="text-[10px] text-gray-400 leading-none">
+                    <p className="text-[10px] text-white/60 leading-none">
                       Download on the
                     </p>
                     <p className="text-white text-sm font-medium">App Store</p>
@@ -387,11 +393,11 @@ const Footer = ({ onNavigate }) => {
                 </a>
                 <a
                   href="#"
-                  className="bg-[#1a1f2e] hover:bg-[#252a3a] rounded-lg px-3 py-2 flex items-center gap-2 transition-colors"
+                  className="bg-white/5 border border-white/10 hover:bg-white/15 rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 backdrop-blur-sm group"
                 >
-                  <Icon icon="mdi:google-play" className="h-6 w-6 text-white" />
+                  <Icon icon="mdi:google-play" className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
                   <div className="text-left">
-                    <p className="text-[10px] text-gray-400 leading-none">
+                    <p className="text-[10px] text-white/60 leading-none">
                       Get it on
                     </p>
                     <p className="text-white text-sm font-medium">
@@ -406,15 +412,15 @@ const Footer = ({ onNavigate }) => {
       </div>
 
       {/* Bottom strip */}
-      <div className="border-t border-gray-800">
+      <div className="border-t border-white/10 relative z-10 bg-black/10">
         <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-8 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Copyright */}
-            <p className="text-gray-500 text-xs text-center md:text-left">
+            <p className="text-white/40 text-xs text-center md:text-left">
               © {currentYear}{" "}
               <span className="font-logo-bebas">
                 <span className="text-accent font-bold">Trusted</span>
-                <span className="text-gray-400 font-normal">Importers</span>
+                <span className="text-white/60 font-normal">Importers</span>
               </span>
               . {t.copyright}
             </p>
@@ -426,7 +432,7 @@ const Footer = ({ onNavigate }) => {
                   <li key={index}>
                     <Link
                       to={link.href}
-                      className="text-gray-500 hover:text-gray-300 text-xs transition-colors"
+                      className="text-white/40 hover:text-white text-xs transition-colors"
                     >
                       {link.label}
                     </Link>
