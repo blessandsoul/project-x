@@ -1,4 +1,6 @@
 ### Fixed
+- Fixed critical crash on Catalog page caused by empty values in Shipping Calculator dropdowns.
+- Updated Content Security Policy (CSP) to allow external media sources (fixing Copart video loading).
 - Fixed Dialog animation centering issue in `client/src/index.css`
 - Fixed localization text in `client/src/pages/CompanyCatalogPage.tsx`
 - Fixed "Invalid hook call" error by moving i18n dependencies to client package and configuring Vite dedupe.
