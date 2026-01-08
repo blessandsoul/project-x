@@ -5,6 +5,64 @@
     "description": "Complete API collection for Project X - Vehicle Auction Platform\n\nAuthentication: HttpOnly cookie-based auth\nCSRF: Required for unsafe methods (POST/PUT/PATCH/DELETE)\n\nAll routes now use /api/v1 prefix",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Automatically add X-CSRF-Token header to all unsafe requests",
+          "// This prevents you from having to manually add the header to every request",
+          "const method = pm.request.method;",
+          "if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {",
+          "    const csrfToken = pm.collectionVariables.get('csrfToken');",
+          "    if (csrfToken) {",
+          "        // Check if header already exists to avoid duplication",
+          "        if (!pm.request.headers.has('X-CSRF-Token')) {",
+          "            pm.request.headers.add({",
+          "                key: 'X-CSRF-Token',",
+          "                value: csrfToken",
+          "            });",
+          "            console.log('Added X-CSRF-Token header automatically');",
+          "        }",
+          "    } else {",
+          "        console.warn('CSRF Token is missing! Call /auth/csrf or Login first.');",
+          "    }",
+          "}",
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Automatically extract CSRF token from cookies/response",
+          "// This ensures the token is always fresh",
+          "var csrfCookie = pm.cookies.get('csrf-token');",
+          "if (csrfCookie) {",
+          "    var currentToken = pm.collectionVariables.get('csrfToken');",
+          "    if (csrfCookie !== currentToken) {",
+          "        pm.collectionVariables.set('csrfToken', csrfCookie);",
+          "        console.log('Updated CSRF Token from cookie');",
+          "    }",
+          "}",
+          "",
+          "// Also check JSON body just in case (e.g. initial CSRF endpoint)",
+          "try {",
+          "    var jsonData = pm.response.json();",
+          "    if (jsonData.csrfToken) {",
+          "        pm.collectionVariables.set('csrfToken', jsonData.csrfToken);",
+          "        console.log('Updated CSRF Token from response body');",
+          "    }",
+          "} catch (e) {",
+          "    // Response was not JSON, ignore",
+          "}"
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "baseUrl",
@@ -623,6 +681,80 @@
               "raw": "{{baseUrl}}/account/deactivate",
               "host": ["{{baseUrl}}"],
               "path": ["account", "deactivate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Calculator",
+      "description": "Admin-only endpoints for managing company calculator configurations",
+      "item": [
+        {
+          "name": "Get Calculator Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Update Calculator Config",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calculator_type\": \"custom_api\",\n  \"calculator_api_url\": \"http://localhost:3000/api/v1/testing/calculator/simple\",\n  \"calculator_config\": {\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"city\",\n        \"vehicletype\": \"vehicleType\",\n        \"destinationport\": \"port\",\n        \"auction\": \"auction\",\n        \"buyprice\": \"buyPrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"totalPrice\",\n        \"distanceMiles\": \"distanceMiles\",\n        \"currency\": \"currency\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Test Calculator Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calculator_api_url\": \"http://localhost:3000/api/v1/testing/calculator/simple\",\n  \"calculator_config\": {\n    \"field_mapping\": {\n      \"request\": {\n        \"usacity\": \"city\",\n        \"vehicletype\": \"vehicleType\",\n        \"destinationport\": \"port\",\n        \"auction\": \"auction\",\n        \"buyprice\": \"buyPrice\"\n      },\n      \"response\": {\n        \"totalPrice\": \"totalPrice\",\n        \"distanceMiles\": \"distanceMiles\",\n        \"currency\": \"currency\"\n      }\n    }\n  },\n  \"test_request\": {\n    \"usacity\": \"Dallas (TX)\",\n    \"auction\": \"Copart\",\n    \"buyprice\": 5000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator", "test"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Reset Calculator Config",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/companies/:id/calculator",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "companies", ":id", "calculator"],
+              "variable": [{ "key": "id", "value": "1" }]
             }
           }
         }

@@ -12,6 +12,16 @@ import { cn } from '@/lib/utils';
 import type { VehicleQuote } from '@/types/vehicles';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+
 
 interface VehicleQuotesSectionProps {
   /** Quotes from the server API */
@@ -261,105 +271,94 @@ const VehicleQuotesSection = ({
       {/* Pagination footer */}
       {onPageChange && totalPages > 1 && (
         <footer className="px-4 py-3 bg-slate-50/50 border-t border-slate-100">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {/* Page info */}
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1 && !isLoading) onPageChange(currentPage - 1);
+                  }}
+                  className={cn(
+                    'cursor-pointer',
+                    (currentPage <= 1 || isLoading) && 'pointer-events-none opacity-50'
+                  )}
+                />
+              </PaginationItem>
 
+              {(() => {
+                const pages: (number | 'ellipsis')[] = [];
+                const maxVisible = 5;
 
-            {/* Pagination controls */}
-            <div className="flex items-center gap-1">
-              {/* Previous button */}
-              <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage <= 1 || isLoading}
-                className={cn(
-                  'h-8 px-3 rounded-md text-[12px] font-medium transition-colors',
-                  'border border-slate-200',
-                  currentPage <= 1 || isLoading
-                    ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
-                    : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                )}
-              >
-                {t('vehicle.quotes_section.prev', 'Prev')}
-              </button>
-
-              {/* Page numbers */}
-              <div className="flex items-center gap-1">
-                {(() => {
-                  const pages: (number | 'ellipsis')[] = [];
-                  const maxVisible = 5;
-
-                  if (totalPages <= maxVisible) {
-                    // Show all pages
-                    for (let i = 1; i <= totalPages; i++) {
-                      pages.push(i);
-                    }
+                if (totalPages <= maxVisible) {
+                  // Show all pages
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Show first, last, current, and neighbors
+                  if (currentPage <= 3) {
+                    for (let i = 1; i <= 4; i++) pages.push(i);
+                    pages.push('ellipsis');
+                    pages.push(totalPages);
+                  } else if (currentPage >= totalPages - 2) {
+                    pages.push(1);
+                    pages.push('ellipsis');
+                    for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
                   } else {
-                    // Show first, last, current, and neighbors
-                    if (currentPage <= 3) {
-                      for (let i = 1; i <= 4; i++) pages.push(i);
-                      pages.push('ellipsis');
-                      pages.push(totalPages);
-                    } else if (currentPage >= totalPages - 2) {
-                      pages.push(1);
-                      pages.push('ellipsis');
-                      for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-                    } else {
-                      pages.push(1);
-                      pages.push('ellipsis');
-                      pages.push(currentPage - 1);
-                      pages.push(currentPage);
-                      pages.push(currentPage + 1);
-                      pages.push('ellipsis');
-                      pages.push(totalPages);
-                    }
+                    pages.push(1);
+                    pages.push('ellipsis');
+                    pages.push(currentPage - 1);
+                    pages.push(currentPage);
+                    pages.push(currentPage + 1);
+                    pages.push('ellipsis');
+                    pages.push(totalPages);
+                  }
+                }
+
+                return pages.map((page, idx) => {
+                  if (page === 'ellipsis') {
+                    return (
+                      <PaginationItem key={`ellipsis-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
                   }
 
-                  return pages.map((page, idx) => {
-                    if (page === 'ellipsis') {
-                      return (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">
-                          …
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => onPageChange(page)}
-                        disabled={isLoading}
-                        className={cn(
-                          'h-8 min-w-[32px] px-2 rounded-md text-[12px] font-medium transition-colors',
-                          'border',
-                          page === currentPage
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900',
-                          isLoading && 'opacity-50 cursor-not-allowed'
-                        )}
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        isActive={page === currentPage}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!isLoading) onPageChange(page);
+                        }}
+                        className={cn('cursor-pointer', isLoading && 'pointer-events-none opacity-50')}
                       >
                         {page}
-                      </button>
-                    );
-                  });
-                })()}
-              </div>
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                });
+              })()}
 
-              {/* Next button */}
-              <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages || isLoading}
-                className={cn(
-                  'h-8 px-3 rounded-md text-[12px] font-medium transition-colors',
-                  'border border-slate-200',
-                  currentPage >= totalPages || isLoading
-                    ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
-                    : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                )}
-              >
-                {t('vehicle.quotes_section.next', 'Next')}
-              </button>
-            </div>
-          </div>
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages && !isLoading) onPageChange(currentPage + 1);
+                  }}
+                  className={cn(
+                    'cursor-pointer',
+                    (currentPage >= totalPages || isLoading) && 'pointer-events-none opacity-50'
+                  )}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </footer>
       )}
     </section>

@@ -324,6 +324,9 @@ export function FilterSelect({
   disabled,
   className,
 }: FilterSelectProps) {
+  // Filter out any options with empty string values to prevent Radix UI Select error
+  const validOptions = options.filter(opt => opt.value !== '');
+
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger
@@ -335,7 +338,7 @@ export function FilterSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((opt) => (
+        {validOptions.map((opt) => (
           <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
             {opt.label}
           </SelectItem>

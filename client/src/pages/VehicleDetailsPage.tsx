@@ -766,7 +766,7 @@ const SimilarVehicles = ({ baseVehicleId }: { baseVehicleId: number }) => {
 
 const VehicleDetailsPage = () => {
   // TEMPORARY DEBUG: Track renders
-  console.count('VehicleDetailsPage render')
+
 
   const { t, i18n } = useTranslation()
   const { id } = useParams<{ id: string }>()
@@ -784,10 +784,10 @@ const VehicleDetailsPage = () => {
     const searchParams = new URLSearchParams(window.location.search)
     const urlLimit = searchParams.get('limit')
     const urlRating = searchParams.get('rating')
-    const parsedLimit = urlLimit ? parseInt(urlLimit, 10) : 5
+    const parsedLimit = urlLimit ? parseInt(urlLimit, 10) : 100
     const parsedRating = urlRating ? parseFloat(urlRating) : null
     initialParamsRef.current = {
-      limit: [5, 10, 15].includes(parsedLimit) ? parsedLimit : 5,
+      limit: (parsedLimit > 0 && parsedLimit <= 100) ? parsedLimit : 100,
       rating: parsedRating && parsedRating > 0 ? parsedRating : null,
     }
   }
