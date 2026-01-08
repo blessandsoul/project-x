@@ -322,7 +322,7 @@ export const ShippingCalculator = ({
                       {city}
                     </SelectItem>
                   )}
-                  {cities.map((cityName) => (
+                  {cities.filter(c => c && c.trim().length > 0).map((cityName) => (
                     <SelectItem key={cityName} value={cityName} className="text-sm">
                       {cityName}
                     </SelectItem>
@@ -351,7 +351,7 @@ export const ShippingCalculator = ({
                       {t(`calculator.ports.${destinationPort}`, destinationPort)}
                     </SelectItem>
                   )}
-                  {ports.map((portName) => (
+                  {ports.filter(p => p && p.trim().length > 0).map((portName) => (
                     <SelectItem key={portName} value={portName} className="text-sm">
                       {t(`calculator.ports.${portName}`, portName)}
                     </SelectItem>
