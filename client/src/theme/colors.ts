@@ -130,7 +130,7 @@ export const colors = {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /** @deprecated Use colors.text.primary or colors.gradient.hero.start */
-  primary: '#1a2744',
+  primary: '#0d4a4a',
   /** @deprecated Use colors.bg.section */
   secondary: '#f1f5f9',
   /** @deprecated Use colors.brand.accent */

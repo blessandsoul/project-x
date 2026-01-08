@@ -78,7 +78,12 @@ export function VehicleCatalogLinksSection() {
           </div>
 
           {/* Right: Promo Banner */}
-          <div className="rounded-2xl border border-border bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white flex flex-col justify-between relative overflow-hidden p-5 shadow-[0_16px_48px_rgba(15,23,42,0.4)]">
+          <div
+            className="rounded-2xl border border-white/10 text-white flex flex-col justify-between relative overflow-hidden p-5 shadow-[0_16px_48px_rgba(15,23,42,0.4)]"
+            style={{
+              background: `linear-gradient(135deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 50%, var(--hero-gradient-end) 100%)`,
+            }}
+          >
             <div>
               <h3 className="text-2xl font-semibold leading-tight tracking-tight">
                 {t('home.vehicle_catalog.promo.title_line1')}<br />

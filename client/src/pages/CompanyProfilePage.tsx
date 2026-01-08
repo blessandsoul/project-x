@@ -370,7 +370,7 @@ const CompanyProfilePage = () => {
             title={t('company_profile.not_found.title')}
             description={t('company_profile.not_found.description')}
             action={(
-              <Button onClick={() => navigate('/catalog')} className="bg-slate-900 hover:bg-slate-800 text-white">
+              <Button onClick={() => navigate('/catalog')} className="bg-primary hover:bg-primary/90 text-white">
                 {t('company_profile.not_found.back_to_catalog')}
               </Button>
             )}
@@ -475,7 +475,7 @@ const CompanyProfilePage = () => {
                     <Button
                       size="lg"
                       onClick={() => setIsPhoneModalOpen(true)}
-                      className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+                      className="bg-primary hover:bg-primary/90 text-white shadow-lg"
                     >
                       <Icon icon="mdi:phone" className="me-2 h-5 w-5" />
                       {t('company_profile.contact_btn')}
@@ -709,7 +709,7 @@ const CompanyProfilePage = () => {
                               type="submit"
                               size="sm"
                               disabled={isSubmittingReview}
-                              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white"
+                              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
                             >
                               {isSubmittingReview && (
                                 <Icon

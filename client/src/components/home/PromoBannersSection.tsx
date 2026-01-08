@@ -2,31 +2,39 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 
-const PROMO_BANNERS = [
+type PromoBanner = {
+  id: string;
+  icon: string;
+  image: string;
+  bgColor?: string;
+  useGradient?: boolean;
+  textDark?: boolean;
+};
+
+const PROMO_BANNERS: PromoBanner[] = [
   {
     id: 'bid_anytime',
     icon: 'mdi:gavel',
-    bgColor: 'bg-primary',
+    useGradient: true,
     image: '/cars/1.webp',
   },
   {
     id: 'daily_sales',
     icon: 'mdi:tag',
-    bgColor: 'bg-[#002d72]',
+    useGradient: true,
     image: '/cars/2.webp',
   },
   {
     id: 'no_license',
     icon: 'mdi:card-remove',
-    bgColor: 'bg-primary',
+    useGradient: true,
     image: '/cars/3.webp',
   },
   {
     id: 'bid_wins',
     icon: 'mdi:trophy',
-    bgColor: 'bg-accent',
+    useGradient: true,
     image: '/cars/1.webp',
-    textDark: true,
   },
 ];
 
@@ -48,7 +56,10 @@ export function PromoBannersSection() {
           {PROMO_BANNERS.map((banner) => (
             <div
               key={banner.id}
-              className={`${banner.bgColor} rounded-2xl p-4 relative overflow-hidden cursor-pointer group hover:shadow-lg transition-shadow min-h-[140px]`}
+              className={`${banner.bgColor || ''} rounded-2xl p-4 relative overflow-hidden cursor-pointer group hover:shadow-lg transition-shadow min-h-[140px]`}
+              style={banner.useGradient ? {
+                background: `linear-gradient(135deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 50%, var(--hero-gradient-end) 100%)`,
+              } : undefined}
             >
               {/* Text */}
               <div className={banner.textDark ? 'text-primary' : 'text-white'}>
