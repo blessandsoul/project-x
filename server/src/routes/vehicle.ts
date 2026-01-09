@@ -92,7 +92,7 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
         // This catches model names, trim levels, and other single-word searches
         if (parts.length === 1) {
           if (!filters.keyword) {
-            filters.keyword = parts[0];
+            filters.keyword = parts[0]!;
           }
         } else {
           // Multiple words: first is make, rest is model

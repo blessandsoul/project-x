@@ -323,4 +323,5 @@ export interface VehicleSearchFilters {
   location?: string;
   fuzzyLocation?: boolean;
   date?: string;
+  keyword?: string;
 }
