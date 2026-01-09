@@ -160,6 +160,7 @@ export class VehicleModel extends BaseModel {
       location?: string;
       fuzzyLocation?: boolean;
       date?: string;
+      keyword?: string;
     },
     limit: number = 50,
     offset: number = 0,
@@ -171,12 +172,10 @@ export class VehicleModel extends BaseModel {
     const conditions: string[] = [];
     const params: any[] = [];
 
-    // Canonical make matching: exact match on pre-computed canonical_brand
+    // Canonical make matching: exact match on pre-computed canonical_brand_key
     if (filters.make) {
       const canonicalBrandKey = toCanonicalBrandKey(filters.make);
-      conditions.push('canonical_brand = ?');
-      // Also try fuzzy fallback for vehicles without canonical data
-      // conditions.push('(canonical_brand = ? OR LOWER(REPLACE(REPLACE(brand_name, \'-\', \' \'), \'_\', \' \')) LIKE ?)');
+      conditions.push('canonical_brand_key = ?');
       params.push(canonicalBrandKey);
     }
     // Canonical model matching: exact match on pre-computed canonical_model_key
@@ -184,6 +183,12 @@ export class VehicleModel extends BaseModel {
       const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
       conditions.push('canonical_model_key = ?');
       params.push(canonicalModelKey);
+    }
+    // Keyword search: fallback to title column for free-text search
+    // This catches trim levels, editions, and vehicles with missing structured data
+    if (filters.keyword) {
+      conditions.push('title LIKE ?');
+      params.push(`%${filters.keyword}%`);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
@@ -449,14 +454,15 @@ export class VehicleModel extends BaseModel {
     location?: string;
     fuzzyLocation?: boolean;
     date?: string;
+    keyword?: string;
   }): Promise<number> {
     const conditions: string[] = [];
     const params: any[] = [];
 
-    // Canonical make matching: exact match on pre-computed canonical_brand
+    // Canonical make matching: exact match on pre-computed canonical_brand_key
     if (filters.make) {
       const canonicalBrandKey = toCanonicalBrandKey(filters.make);
-      conditions.push('canonical_brand = ?');
+      conditions.push('canonical_brand_key = ?');
       params.push(canonicalBrandKey);
     }
     // Canonical model matching: exact match on pre-computed canonical_model_key
@@ -464,6 +470,11 @@ export class VehicleModel extends BaseModel {
       const canonicalModelKey = toCanonicalModelKey(filters.make || '', filters.model);
       conditions.push('canonical_model_key = ?');
       params.push(canonicalModelKey);
+    }
+    // Keyword search: fallback to title column for free-text search
+    if (filters.keyword) {
+      conditions.push('title LIKE ?');
+      params.push(`%${filters.keyword}%`);
     }
     if (typeof filters.year === 'number' && Number.isFinite(filters.year)) {
       conditions.push('year = ?');
