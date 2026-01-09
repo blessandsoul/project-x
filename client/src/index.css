@@ -897,16 +897,17 @@
     display: flex !important;
     height: 100% !important;
   }
+}
 
   /* Card wrapper: compact, fill grid cell, equal height */
   .auction-card-mobile {
-    display: flex !important;
-    flex-direction: column !important;
-    border-radius: 6px !important;
-    margin-bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px;
+    margin-bottom: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Middle section (image + info) grows to fill space */
@@ -1074,12 +1075,11 @@
 
 
   .listing-vehicle-card .auction-card-info {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 100% !important;
-    flex: 1 1 auto !important;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    flex: 1 1 auto;
   }
-}
 
 /* AUCTION VEHICLE CARDS - Small Screens (below 446px)
    Fix card width inconsistency in 2-column grid
