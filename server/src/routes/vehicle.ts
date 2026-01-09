@@ -87,19 +87,30 @@ const vehicleRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         const parts = withoutYear.split(/\s+/).filter(Boolean);
-        if (parts.length > 0) {
-          derivedMake = parts[0];
-        }
-        if (parts.length > 1) {
-          derivedModel = parts.slice(1).join(' ');
+
+        // If only one word (e.g., "Sprinter"), use keyword search instead of assuming it's a brand
+        // This catches model names, trim levels, and other single-word searches
+        if (parts.length === 1) {
+          if (!filters.keyword) {
+            filters.keyword = parts[0];
+          }
+        } else {
+          // Multiple words: first is make, rest is model
+          if (parts.length > 0) {
+            derivedMake = parts[0];
+          }
+          if (parts.length > 1) {
+            derivedModel = parts.slice(1).join(' ');
+          }
+
+          if (!filters.make && derivedMake) {
+            filters.make = derivedMake;
+          }
+          if (!filters.model && derivedModel) {
+            filters.model = derivedModel;
+          }
         }
 
-        if (!filters.make && derivedMake) {
-          filters.make = derivedMake;
-        }
-        if (!filters.model && derivedModel) {
-          filters.model = derivedModel;
-        }
         if (!filters.year && typeof derivedYear === 'number' && Number.isFinite(derivedYear)) {
           filters.year = derivedYear;
         }
