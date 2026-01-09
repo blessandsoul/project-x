@@ -753,7 +753,7 @@ const CompanySettingsPage = () => {
                             disabled={isSaving || isDeleting}
                           />
                           <Label htmlFor={`service-${service.id}`} className="font-normal cursor-pointer">
-                            {service.name}
+                            {t('services.' + service.name.toLowerCase().replace(/ /g, '_'), service.name)}
                           </Label>
                         </div>
                       ))}

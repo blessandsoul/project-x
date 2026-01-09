@@ -1409,7 +1409,14 @@
       "submit": "გაგზავნა"
     },
     "services": {
-      "title": "სერვისები"
+      "title": "სერვისები",
+      "items": {
+        "ocean_freight": "საზღვაო გადაზიდვა",
+        "inland_trucking": "სახმელეთო გადაზიდვა",
+        "customs_clearance": "განბაჟება",
+        "insurance": "დაზღვევა",
+        "parts_shipping": "ნაწილების ჩამოტანა"
+      }
     },
     "cars": {
       "title": "მანქანები მარაგში",

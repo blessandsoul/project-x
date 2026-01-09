@@ -166,7 +166,7 @@ export function AuctionVehicleListItem({
                 }}
               >
                 <Icon icon="mdi:bookmark" className="w-3 h-3" />
-                {t('auction.actions.watch')}
+                {isWatched ? t('auction.actions.watched') : t('auction.actions.watch')}
               </Button>
             )}
           </div>
@@ -201,7 +201,7 @@ export function AuctionVehicleListItem({
       {/* Bids Column (fixed) */}
       <td className="align-top whitespace-normal lg:whitespace-nowrap break-words p-2 overflow-hidden">
         <div className="flex flex-col">
-          <div className="text-muted-foreground text-[10px]">Current Bid</div>
+          <div className="text-muted-foreground text-[10px]">{t('auction.fields.current_bid')}</div>
           <div className="text-base font-bold text-foreground">
             {formatMoney(currentBid)} <span className="text-xs font-normal text-muted-foreground">USD</span>
           </div>

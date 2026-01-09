@@ -9,3 +9,12 @@ Task VC-138: Major server.ts refactoring - extracted hooks, plugins, routes, sta
 Task VC-139: Database migration and production SSL/CORS setup.
 Task VC-140: Fixed Coolify deployment CSP/CORS/SSL errors and created comprehensive deployment guide.
 
+Task VC-141: Refined Russian translations for Companies and Auction pages.
+Task VC-142: Refined Company Profile translations (Services list, Phone modal).
+Task VC-143: Refined Vehicle Details translations (Color, Drive, Damage mappings, Georgian data fallbacks).
+Task VC-144: Refined Auth translations (Login screen polish).
+Task VC-145: Fixed Auth Register translations (Missing key + Polish).
+Task VC-146: Refined Profile Settings translations (Professional wording).
+Task VC-147: Refined Favorites Page (Fixed hardcodes, better Russian).
+Task VC-148: Refined Company Settings (Professional, concise, fixed English services).
+Task VC-149: Fixed TS build error in VehicleDetailsPage.

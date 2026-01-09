@@ -22,3 +22,18 @@
 ### Added
 - Created comprehensive Coolify deployment guide (COOLIFY_DEPLOYMENT_GUIDE.md).
 
+
+### Fixed
+- Refined Russian translations for Companies and Auction pages.
+
+### Fixed
+- Refined Company Profile translations (Services list, Phone modal).
+
+### Fixed
+- Improved Russian translations on Vehicle Details page (Color, Drive, Damage, Fallbacks).
+- Improved Russian translations for Login/Auth pages ('Впервые у нас?', 'Войти через').
+- Fixed missing 'username' translation on Register page and refined Russian text.
+- Refined Russian translations for Profile Settings page to be more professional ('Личные данные', 'Фотография профиля').
+- Fixed hardcoded 'Current Bid' and improved Favorite/Watch button translations in Auction list.
+- Refined translations for Company Settings page (Shortened titles, fixed hardcoded service names).
+- Fixed TypeScript build error in VehicleDetailsPage related to dynamic translation keys.

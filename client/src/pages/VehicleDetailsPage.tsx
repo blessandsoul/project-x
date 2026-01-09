@@ -1103,7 +1103,9 @@ const VehicleDetailsPage = () => {
                 {vehicle.damage_main_damages && (
                   <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.primary_damage', 'Primary damage:')}</span>
-                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.damage_main_damages}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">
+                      {t('vehicle.damage_types.' + vehicle.damage_main_damages.toLowerCase().replace(/[\/\s]+/g, '_'), vehicle.damage_main_damages)}
+                    </span>
                   </div>
                 )}
 
@@ -1125,7 +1127,9 @@ const VehicleDetailsPage = () => {
                 {vehicle.color && (
                   <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.color', 'Color:')}</span>
-                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">{vehicle.color}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase break-words">
+                      {t('vehicle.colors.' + vehicle.color.toLowerCase(), vehicle.color)}
+                    </span>
                   </div>
                 )}
 
@@ -1167,7 +1171,9 @@ const VehicleDetailsPage = () => {
                 {(vehicle as any).drive && (
                   <div className="grid grid-cols-[120px_1fr] md:grid-cols-[130px_1fr] px-4 py-1.5 min-w-0">
                     <span className="text-[11px] text-slate-500">{t('vehicle.details.drive', 'Drive:')}</span>
-                    <span className="text-[11px] font-medium text-slate-900 uppercase">{(vehicle as any).drive}</span>
+                    <span className="text-[11px] font-medium text-slate-900 uppercase">
+                      {t('vehicle.drive_types.' + (vehicle as any).drive.toLowerCase(), (vehicle as any).drive) as string}
+                    </span>
                   </div>
                 )}
 

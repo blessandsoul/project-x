@@ -69,6 +69,8 @@ const footerTranslations = {
       { label: "კონფიდენციალურობა", href: "/privacy" },
       { label: "ქუქი-ფაილები", href: "/cookies" },
     ],
+    appStoreAction: "ჩამოტვირთეთ",
+    googlePlayAction: "შეიძინეთ",
   },
   en: {
     sections: {
@@ -124,6 +126,8 @@ const footerTranslations = {
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Cookies", href: "/cookies" },
     ],
+    appStoreAction: "Download on the",
+    googlePlayAction: "Get it on",
   },
   ru: {
     sections: {
@@ -171,9 +175,11 @@ const footerTranslations = {
         ],
       },
     },
-    connect: "Свяжитесь с нами",
+    connect: "Мы в соцсетях",
     downloadApp: "Скачать приложение",
     partners: "Партнёры",
+    appStoreAction: "Загрузите в",
+    googlePlayAction: "Доступно в",
     copyright: "Все права защищены.",
     bottomLinks: [
       { label: "Карта сайта", href: "/sitemap" },
@@ -386,7 +392,7 @@ const Footer = ({ onNavigate }) => {
                   <Icon icon="mdi:apple" className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
                   <div className="text-left">
                     <p className="text-[10px] text-white/60 leading-none">
-                      Download on the
+                      {t.appStoreAction}
                     </p>
                     <p className="text-white text-sm font-medium">App Store</p>
                   </div>
@@ -398,7 +404,7 @@ const Footer = ({ onNavigate }) => {
                   <Icon icon="mdi:google-play" className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
                   <div className="text-left">
                     <p className="text-[10px] text-white/60 leading-none">
-                      Get it on
+                      {t.googlePlayAction}
                     </p>
                     <p className="text-white text-sm font-medium">
                       Google Play
