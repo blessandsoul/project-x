@@ -31,7 +31,7 @@ const RegisterPage = () => {
 
     try {
       await register(email, username, password)
-      navigate('/dashboard', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       const message =
         err instanceof Error && err.message
@@ -78,7 +78,7 @@ const RegisterPage = () => {
             </div>
 
             <Link to="/" className="mx-auto flex items-center gap-2 mb-4">
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20"
@@ -155,15 +155,15 @@ const RegisterPage = () => {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                      <>
-                        <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
-                        {t('auth.register.loading')}
-                      </>
+                    <>
+                      <Icon icon="mdi:loading" className="mr-2 h-4 w-4 animate-spin" />
+                      {t('auth.register.loading')}
+                    </>
                   ) : (
-                      <>
-                        <Icon icon="mdi:account-plus" className="mr-2 h-5 w-5" />
-                        {t('auth.register.submit')}
-                      </>
+                    <>
+                      <Icon icon="mdi:account-plus" className="mr-2 h-5 w-5" />
+                      {t('auth.register.submit')}
+                    </>
                   )}
                 </Button>
               </motion.div>
@@ -171,7 +171,7 @@ const RegisterPage = () => {
 
             <div className="mt-8 text-center space-y-4">
               <SocialAuthButtons isLoading={isLoading} mode="register" />
-              
+
               <p className="text-sm text-muted-foreground">
                 {t('auth.register.has_account')}{' '}
                 <Link to="/login" className="font-medium text-primary hover:text-primary/90 hover:underline underline-offset-4">

@@ -8,7 +8,7 @@ import MainLayout from '@/layouts/MainLayout'
 
 // Lazy load ALL pages for better performance (Code Splitting)
 const HomePage = lazy(() => import('./pages/HomePage'))
-const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+
 const CompanyCatalogPage = lazy(() => import('./pages/CompanyCatalogPage'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -126,14 +126,7 @@ function AppRoutes() {
             />
 
             {/* Protected Pages (Auth Required) */}
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <LazyRoute><DashboardPage /></LazyRoute>
-                </RequireAuth>
-              }
-            />
+
             <Route
               path="/profile"
               element={

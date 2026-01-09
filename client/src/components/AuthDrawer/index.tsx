@@ -52,7 +52,7 @@ const AuthDrawer: React.FC<AuthDrawerProps> = ({ open, onOpenChange }) => {
     try {
       await login(loginEmail, loginPassword);
       handleClose();
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       const message =
         error instanceof Error && error.message

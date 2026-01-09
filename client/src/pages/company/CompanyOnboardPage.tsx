@@ -358,7 +358,7 @@ const CompanyOnboardPage = () => {
         case 'conflict':
           toast.error('You already have a company')
           await refreshProfile()
-          navigate('/dashboard', { replace: true })
+          navigate('/', { replace: true })
           break
         case 'rate_limit':
           toast.error('Too many attempts. Please try again later.')

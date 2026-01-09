@@ -263,7 +263,7 @@ const CompanySettingsPage = () => {
       await deleteCompanyFromApi(companyId)
       await refreshProfile()
       toast.success(t('company_settings.delete_success'))
-      navigate('/dashboard', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       const message = err instanceof Error ? err.message : t('company_settings.error.delete')
       setError(message)
