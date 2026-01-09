@@ -591,7 +591,9 @@ const CompanyProfilePage = () => {
                     {(company.services ?? []).map(service => (
                       <div key={service} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
                         <Icon icon="mdi:check-circle" className="h-5 w-5 text-accent" />
-                        <span className="text-sm font-medium text-slate-700">{service}</span>
+                        <span className="text-sm font-medium text-slate-700">
+                          {t(`company_profile.services.items.${service.replace(/\s+/g, '_').toLowerCase()}`, service)}
+                        </span>
                       </div>
                     ))}
                   </div>

@@ -469,7 +469,7 @@ export function AuctionSidebarFilters({
   onApplyFilters,
   onResetFilters,
 }: AuctionSidebarFiltersProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Makes state
   const [makes, setMakes] = useState<VehicleMake[]>([]);
@@ -1029,7 +1029,7 @@ export function AuctionSidebarFilters({
               onCheckedChange={() => handleTitleTypeToggle('clean title')}
               className="h-3.5 w-3.5 rounded-sm"
             />
-            <span className="text-[11px] text-slate-700">Clean Title</span>
+            <span className="text-[11px] text-slate-700">{t('auction.filters.clean_title')}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
             <Checkbox
@@ -1037,7 +1037,7 @@ export function AuctionSidebarFilters({
               onCheckedChange={() => handleTitleTypeToggle('nonrepairable')}
               className="h-3.5 w-3.5 rounded-sm"
             />
-            <span className="text-[11px] text-slate-700">NonRepairable</span>
+            <span className="text-[11px] text-slate-700">{t('auction.filters.non_repairable')}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
             <Checkbox
@@ -1045,7 +1045,7 @@ export function AuctionSidebarFilters({
               onCheckedChange={() => handleTitleTypeToggle('salvage title')}
               className="h-3.5 w-3.5 rounded-sm"
             />
-            <span className="text-[11px] text-slate-700">Salvage Title</span>
+            <span className="text-[11px] text-slate-700">{t('auction.filters.salvage_title')}</span>
           </label>
         </div>
       </FilterSection>
@@ -1282,7 +1282,7 @@ export function AuctionSidebarFilters({
               >
                 <CalendarIcon className="mr-1.5 h-3 w-3" />
                 {date ? (
-                  new Date(date).toLocaleDateString('ka-GE', {
+                  new Date(date).toLocaleDateString(i18n.language, {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
