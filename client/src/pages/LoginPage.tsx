@@ -61,7 +61,7 @@ const LoginPage = () => {
     try {
       await login(email, password)
       // Redirect to origin or default to dashboard/onboarding
-      const redirectTo = state?.from?.pathname || '/dashboard'
+      const redirectTo = state?.from?.pathname || '/'
       navigate(redirectTo, { replace: true })
     } catch (err: unknown) {
       // Check if this is a reactivation needed error
@@ -102,7 +102,7 @@ const LoginPage = () => {
       toast.success(t('auth.reactivation.success', 'Account reactivated successfully!'))
 
       // Redirect to dashboard
-      const redirectTo = state?.from?.pathname || '/dashboard'
+      const redirectTo = state?.from?.pathname || '/'
       navigate(redirectTo, { replace: true })
     } catch (err: unknown) {
       const message =

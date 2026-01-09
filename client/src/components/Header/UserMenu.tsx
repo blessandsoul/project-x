@@ -40,7 +40,6 @@ type NavItem = {
 };
 
 const userMenuNavigationItems: NavItem[] = [
-  { id: 'dashboard', icon: 'mdi:view-dashboard-outline', labelKey: 'navigation.dashboard', href: '/dashboard' },
   { id: 'favorite-vehicles', icon: 'mdi:star-outline', labelKey: 'navigation.favorite_vehicles', href: '/favorite-vehicles' },
   // { id: 'messages', icon: 'mdi:message-text-outline', labelKey: 'header.messages', action: 'openMessages' }, // Disabled - inquiry system not ready
 ];
@@ -110,6 +109,17 @@ const UserMenu: FC<UserMenuProps> = ({ user, onLogout, theme = 'light' }) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {!companyId && (
+          <DropdownMenuItem
+            onSelect={event => {
+              event.preventDefault();
+              navigate('/company/onboard');
+            }}
+          >
+            <Icon icon="mdi:domain-plus" className="me-2 h-4 w-4" />
+            <span>{t('company_settings.create_company')}</span>
+          </DropdownMenuItem>
+        )}
         {userMenuNavigationItems.map(item => (
           <DropdownMenuItem
             key={item.id}
