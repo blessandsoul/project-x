@@ -829,7 +829,10 @@
       "automobiles": "ავტომობილები",
       "motorcycles": "მოტოციკლები",
       "cylinders": "ცილინდრები",
-      "location": "ლოკაცია"
+      "location": "ლოკაცია",
+      "clean_title": "Clean Title",
+      "non_repairable": "Non-Repairable",
+      "salvage_title": "Salvage Title"
     },
     "compare": {
       "title": "სრული ღირებულების შედარება",

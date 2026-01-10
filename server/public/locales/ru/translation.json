@@ -806,8 +806,8 @@
       "motorcycles": "Мотоциклы",
       "cylinders": "Цилиндры",
       "location": "Местоположение",
-      "clean_title": "Чистый тайтл",
-      "salvage_title": "Salvage (Утиль)",
+      "clean_title": "Clean Title",
+      "salvage_title": "Salvage Title",
       "non_repairable": "Non-Repairable"
     },
     "load_more": "Загрузить ещё",

@@ -832,7 +832,10 @@
       "automobiles": "Automobiles",
       "motorcycles": "Motorcycles",
       "cylinders": "Cylinders",
-      "location": "Location"
+      "location": "Location",
+      "clean_title": "Clean Title",
+      "non_repairable": "Non-Repairable",
+      "salvage_title": "Salvage Title"
     },
     "compare": {
       "title": "Compare Total Cost",
