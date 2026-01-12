@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { HeroDeviceShowcase } from './HeroDeviceShowcase';
 import { HeroFloatingOrbs } from './hero-widgets/HeroFloatingOrbs';
-import { TabletAuctionPreview } from './hero-widgets/TabletAuctionPreview';
+import { TabletCatalogPreview } from './hero-widgets/TabletCatalogPreview';
 
 /**
  * Glass Card Component for Hero Section
@@ -290,7 +290,7 @@ export function CopartHeroSection() {
                   <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-slate-800 rounded-full z-20" />
                   {/* Screen content */}
                   <div className="absolute inset-0 pt-3">
-                    <TabletAuctionPreview />
+                    <TabletCatalogPreview />
                   </div>
                 </div>
               </div>
@@ -438,7 +438,7 @@ export function CopartHeroSection() {
                   <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-800 rounded-full z-20" />
                   {/* Screen content */}
                   <div className="absolute inset-0 pt-2">
-                    <TabletAuctionPreview />
+                    <TabletCatalogPreview />
                   </div>
                 </div>
               </div>

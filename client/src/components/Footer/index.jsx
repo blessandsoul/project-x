@@ -14,179 +14,116 @@ import {
 const footerTranslations = {
   ka: {
     sections: {
-      trustedImporters: {
-        title: "TrustedImporters",
+      navigation: {
+        title: "ნავიგაცია",
+        links: [
+          { label: "მთავარი", href: "/" },
+          { label: "ლოჯისტიკა", href: "/catalog" },
+          { label: "ავტომობილები", href: "/auction-listings" },
+          { label: "Carfax", href: "/vin" },
+          { label: "კომპანიები", href: "/companies" },
+        ],
+      },
+      company: {
+        title: "კომპანია",
         links: [
           { label: "ჩვენს შესახებ", href: "/about" },
-          { label: "როგორ მუშაობს პლატფორმა", href: "/how-it-works" },
-          { label: "ჩვენი მისია", href: "/mission" },
-          { label: "გუნდი", href: "/team" },
-          { label: "სიახლეები / ბლოგი", href: "/blog" },
-        ],
-      },
-      auctions: {
-        title: "აუქციონები",
-        links: [
-          {
-            label: "დღევანდელი აუქციონები",
-            href: "/auction-listings?today=true",
-          },
-          { label: "აუქციონების კალენდარი", href: "/auction-calendar" },
-          { label: "Copart ლოტები", href: "/auction-listings?source=copart" },
-          { label: "IAAI ლოტები", href: "/auction-listings?source=iaai" },
-          { label: "ამერიკული აუქციონები", href: "/auction-listings" },
-        ],
-      },
-      services: {
-        title: "სერვისები",
-        links: [
-          { label: "ტრანსპორტირების გამოთვლა", href: "/calculator" },
-          { label: "იმპორტის სრული ღირებულება", href: "/import-cost" },
-          { label: "პარტნიორი კომპანიები", href: "/companies" },
-          { label: "დილერებისთვის გადაწყვეტილებები", href: "/dealers" },
-          { label: "სხვა დამატებითი სერვისები", href: "/services" },
+          { label: "კონტაქტი", href: "/contact" },
         ],
       },
       support: {
         title: "დახმარება",
         links: [
           { label: "დახმარების ცენტრი", href: "/help" },
-          { label: "ხშირი კითხვები (FAQ)", href: "/faq" },
-          { label: "გზამკვლევი ახალ მომხმარებლებს", href: "/guide" },
-          { label: "ფასები და ტარიფები", href: "/pricing" },
-          { label: "კონტაქტი", href: "/contact" },
+          { label: "კალკულატორი", href: "/catalog" },
         ],
       },
     },
     connect: "დაგვიკავშირდით",
-    downloadApp: "ჩამოტვირთე აპლიკაცია",
+    downloadApp: "აპლიკაცია",
     partners: "პარტნიორები",
     copyright: "ყველა უფლება დაცულია.",
     bottomLinks: [
-      { label: "საიტის რუკა", href: "/sitemap" },
-      { label: "კონტაქტი", href: "/contact" },
-      { label: "მომსახურების პირობები", href: "/terms" },
+      { label: "წესები და პირობები", href: "/terms" },
       { label: "კონფიდენციალურობა", href: "/privacy" },
-      { label: "ქუქი-ფაილები", href: "/cookies" },
     ],
     appStoreAction: "ჩამოტვირთეთ",
     googlePlayAction: "შეიძინეთ",
   },
   en: {
     sections: {
-      trustedImporters: {
-        title: "TrustedImporters",
+      navigation: {
+        title: "Navigation",
+        links: [
+          { label: "Home", href: "/" },
+          { label: "Logistics", href: "/catalog" },
+          { label: "Vehicles", href: "/auction-listings" },
+          { label: "Carfax", href: "/vin" },
+          { label: "Companies", href: "/companies" },
+        ],
+      },
+      company: {
+        title: "Company",
         links: [
           { label: "About Us", href: "/about" },
-          { label: "How It Works", href: "/how-it-works" },
-          { label: "Our Mission", href: "/mission" },
-          { label: "Team", href: "/team" },
-          { label: "News / Blog", href: "/blog" },
-        ],
-      },
-      auctions: {
-        title: "Auctions",
-        links: [
-          { label: "Today's Auctions", href: "/auction-listings?today=true" },
-          { label: "Auction Calendar", href: "/auction-calendar" },
-          { label: "Copart Lots", href: "/auction-listings?source=copart" },
-          { label: "IAAI Lots", href: "/auction-listings?source=iaai" },
-          { label: "US Auctions", href: "/auction-listings" },
-        ],
-      },
-      services: {
-        title: "Services",
-        links: [
-          { label: "Shipping Calculator", href: "/calculator" },
-          { label: "Full Import Cost", href: "/import-cost" },
-          { label: "Partner Companies", href: "/companies" },
-          { label: "Dealer Solutions", href: "/dealers" },
-          { label: "Additional Services", href: "/services" },
+          { label: "Contact Us", href: "/contact" },
         ],
       },
       support: {
         title: "Support",
         links: [
           { label: "Help Center", href: "/help" },
-          { label: "FAQ", href: "/faq" },
-          { label: "Beginner's Guide", href: "/guide" },
-          { label: "Pricing & Tariffs", href: "/pricing" },
-          { label: "Contact", href: "/contact" },
+          { label: "Calculator", href: "/catalog" },
         ],
       },
     },
     connect: "Connect With Us",
-    downloadApp: "Download the App",
+    downloadApp: "Get the App",
     partners: "Partners",
     copyright: "All rights reserved.",
     bottomLinks: [
-      { label: "Site Map", href: "/sitemap" },
-      { label: "Contact Us", href: "/contact" },
       { label: "Terms of Service", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },
-      { label: "Cookies", href: "/cookies" },
     ],
     appStoreAction: "Download on the",
     googlePlayAction: "Get it on",
   },
   ru: {
     sections: {
-      trustedImporters: {
-        title: "TrustedImporters",
+      navigation: {
+        title: "Навигация",
+        links: [
+          { label: "Главная", href: "/" },
+          { label: "Логистика", href: "/catalog" },
+          { label: "Автомобили", href: "/auction-listings" },
+          { label: "Carfax", href: "/vin" },
+          { label: "Компании", href: "/companies" },
+        ],
+      },
+      company: {
+        title: "Компания",
         links: [
           { label: "О нас", href: "/about" },
-          { label: "Как это работает", href: "/how-it-works" },
-          { label: "Наша миссия", href: "/mission" },
-          { label: "Команда", href: "/team" },
-          { label: "Новости / Блог", href: "/blog" },
-        ],
-      },
-      auctions: {
-        title: "Аукционы",
-        links: [
-          {
-            label: "Сегодняшние аукционы",
-            href: "/auction-listings?today=true",
-          },
-          { label: "Календарь аукционов", href: "/auction-calendar" },
-          { label: "Лоты Copart", href: "/auction-listings?source=copart" },
-          { label: "Лоты IAAI", href: "/auction-listings?source=iaai" },
-          { label: "Американские аукционы", href: "/auction-listings" },
-        ],
-      },
-      services: {
-        title: "Услуги",
-        links: [
-          { label: "Калькулятор доставки", href: "/calculator" },
-          { label: "Полная стоимость импорта", href: "/import-cost" },
-          { label: "Компании-партнёры", href: "/companies" },
-          { label: "Решения для дилеров", href: "/dealers" },
-          { label: "Дополнительные услуги", href: "/services" },
+          { label: "Контакты", href: "/contact" },
         ],
       },
       support: {
         title: "Поддержка",
         links: [
           { label: "Центр помощи", href: "/help" },
-          { label: "Частые вопросы (FAQ)", href: "/faq" },
-          { label: "Руководство для новичков", href: "/guide" },
-          { label: "Цены и тарифы", href: "/pricing" },
-          { label: "Контакты", href: "/contact" },
+          { label: "Калькулятор", href: "/catalog" },
         ],
       },
     },
     connect: "Мы в соцсетях",
-    downloadApp: "Скачать приложение",
+    downloadApp: "Приложение",
     partners: "Партнёры",
     appStoreAction: "Загрузите в",
     googlePlayAction: "Доступно в",
     copyright: "Все права защищены.",
     bottomLinks: [
-      { label: "Карта сайта", href: "/sitemap" },
-      { label: "Связаться с нами", href: "/contact" },
       { label: "Условия использования", href: "/terms" },
       { label: "Политика конфиденциальности", href: "/privacy" },
-      { label: "Cookies", href: "/cookies" },
     ],
   },
 };
@@ -229,7 +166,7 @@ const Footer = ({ onNavigate }) => {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-white transition-colors text-sm leading-relaxed"
+          className="text-white hover:text-accent transition-colors text-sm leading-relaxed"
         >
           {children}
         </a>
@@ -239,7 +176,7 @@ const Footer = ({ onNavigate }) => {
       <Link
         to={href}
         onClick={() => onNavigate?.(href)}
-        className="text-gray-400 hover:text-white transition-colors text-sm leading-relaxed"
+        className="text-white hover:text-accent transition-colors text-sm leading-relaxed"
       >
         {children}
       </Link>
@@ -288,7 +225,7 @@ const Footer = ({ onNavigate }) => {
     >
       {/* Main footer content */}
       <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-8 py-10 lg:py-14 relative z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
           {/* Column 1: Brand & Selectors */}
           <div className="space-y-6 sm:col-span-2 md:col-span-1 xl:col-span-1">
             {/* Logo */}
@@ -332,31 +269,25 @@ const Footer = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Column 2: TrustedImporters */}
+          {/* Column 2: Navigation */}
           <FooterSection
-            title={t.sections.trustedImporters.title}
-            links={t.sections.trustedImporters.links}
+            title={t.sections.navigation.title}
+            links={t.sections.navigation.links}
           />
 
-          {/* Column 3: Auctions */}
+          {/* Column 3: Company */}
           <FooterSection
-            title={t.sections.auctions.title}
-            links={t.sections.auctions.links}
+            title={t.sections.company.title}
+            links={t.sections.company.links}
           />
 
-          {/* Column 4: Services */}
-          <FooterSection
-            title={t.sections.services.title}
-            links={t.sections.services.links}
-          />
-
-          {/* Column 5: Support */}
+          {/* Column 4: Support */}
           <FooterSection
             title={t.sections.support.title}
             links={t.sections.support.links}
           />
 
-          {/* Column 6: Connect with Us / Apps */}
+          {/* Column 5: Connect with Us / Apps */}
           <div className="space-y-6">
             {/* Social Links */}
             <div className="space-y-4">

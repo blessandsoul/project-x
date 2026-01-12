@@ -316,14 +316,41 @@ export function HeroDeviceShowcase() {
         .group:hover .hero-device-iphone {
           transform: translateY(-50%) translateX(-100px) rotate(6deg) scale(1.0) translateZ(0);
         }
-        
-        /* Full hover transforms at 1420px+ */
-        @media (min-width: 1420px) {
+
+        /* Special spacing for 1024px - 1300px (Laptop/Tablet Landscape) */
+        @media (min-width: 1024px) and (max-width: 1299px) {
+          .hero-device-ipad {
+            transform: translateY(-50%) translateX(100px) rotate(-4deg) scale(0.95) translateZ(0);
+          }
+          .hero-device-iphone {
+            transform: translateY(-50%) translateX(-60px) rotate(4deg) scale(0.95) translateZ(0);
+          }
+          
+          /* Adjust hover for this range */
           .group:hover .hero-device-ipad {
-            transform: translateY(-50%) translateX(120px) rotate(-8deg) scale(1.02) translateZ(0);
+            transform: translateY(-50%) translateX(80px) rotate(-6deg) scale(0.98) translateZ(0);
           }
           .group:hover .hero-device-iphone {
-            transform: translateY(-50%) translateX(-80px) rotate(8deg) scale(1.05) translateZ(0);
+            transform: translateY(-50%) translateX(-40px) rotate(6deg) scale(1.0) translateZ(0);
+          }
+        }
+        
+        /* Full hover transforms at 1300px+ */
+        @media (min-width: 1300px) {
+          /* Default state - more separated */
+          .hero-device-ipad {
+            transform: translateY(-50%) translateX(100px) rotate(-4deg) scale(0.95) translateZ(0);
+          }
+          .hero-device-iphone {
+            transform: translateY(-50%) translateX(-60px) rotate(4deg) scale(0.95) translateZ(0);
+          }
+
+          /* Hover state - expanded separation */
+          .group:hover .hero-device-ipad {
+            transform: translateY(-50%) translateX(60px) rotate(-8deg) scale(1.02) translateZ(0);
+          }
+          .group:hover .hero-device-iphone {
+            transform: translateY(-50%) translateX(-20px) rotate(8deg) scale(1.05) translateZ(0);
           }
         }
         
