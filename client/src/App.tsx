@@ -8,6 +8,9 @@ import MainLayout from '@/layouts/MainLayout'
 
 // Lazy load ALL pages for better performance (Code Splitting)
 const HomePage = lazy(() => import('./pages/HomePage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
+const HelpPage = lazy(() => import('./pages/HelpPage'))
 
 const CompanyCatalogPage = lazy(() => import('./pages/CompanyCatalogPage'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage'))
@@ -100,6 +103,9 @@ function AppRoutes() {
           <Route element={<MainLayout />}>
             {/* Public Pages */}
             <Route path="/" element={<LazyRoute><HomePage /></LazyRoute>} />
+            <Route path="/about" element={<LazyRoute><AboutPage /></LazyRoute>} />
+            <Route path="/contact" element={<LazyRoute><ContactPage /></LazyRoute>} />
+            <Route path="/help" element={<LazyRoute><HelpPage /></LazyRoute>} />
             <Route path="/catalog" element={<LazyRoute><CompanyCatalogPage /></LazyRoute>} />
             <Route path="/companies" element={<NoAnimationRoute><CompaniesPage /></NoAnimationRoute>} />
             <Route path="/company/:id" element={<LazyRoute><CompanyProfilePage /></LazyRoute>} />
