@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -18,6 +19,13 @@ type FormLabels = {
     subject: string;
     message: string;
     submit: string;
+    sending: string;
+    successTitle: string;
+    successMessage: string;
+    validation: {
+        required: string;
+        emailInvalid: string;
+    };
 };
 
 type TranslationSection = {
@@ -82,6 +90,13 @@ const ContactPage = () => {
                     subject: "თემა",
                     message: "შეტყობინება",
                     submit: "გაგზავნა",
+                    sending: "იგზავნება...",
+                    successTitle: "შეტყობინება გაგზავნილია!",
+                    successMessage: "მადლობა დაკავშირებისთვის. ჩვენ მალე გიპასუხებთ.",
+                    validation: {
+                        required: "ველი სავალდებულოა",
+                        emailInvalid: "არასწორი ელ-ფოსტის ფორმატი",
+                    },
                 },
             },
         },
@@ -127,6 +142,13 @@ const ContactPage = () => {
                     subject: "Subject",
                     message: "Message",
                     submit: "Send Message",
+                    sending: "Sending...",
+                    successTitle: "Message Sent!",
+                    successMessage: "Thank you for contacting us. We will get back to you shortly.",
+                    validation: {
+                        required: "This field is required",
+                        emailInvalid: "Invalid email format",
+                    },
                 },
             },
         },
@@ -172,6 +194,13 @@ const ContactPage = () => {
                     subject: "Тема",
                     message: "Сообщение",
                     submit: "Отправить",
+                    sending: "Отправка...",
+                    successTitle: "Сообщение отправлено!",
+                    successMessage: "Спасибо за обращение. Мы свяжемся с вами в ближайшее время.",
+                    validation: {
+                        required: "Поле обязательно для заполнения",
+                        emailInvalid: "Неверный формат email",
+                    },
                 },
             },
         },
@@ -187,6 +216,53 @@ const ContactPage = () => {
 
     const currentLang = getLanguage();
     const content = translations[currentLang];
+
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        subject: "",
+        message: ""
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+        if (!formData.name.trim()) newErrors.name = content.form.labels.validation.required;
+        if (!formData.email.trim()) {
+            newErrors.email = content.form.labels.validation.required;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = content.form.labels.validation.emailInvalid;
+        }
+        if (!formData.subject.trim()) newErrors.subject = content.form.labels.validation.required;
+        if (!formData.message.trim()) newErrors.message = content.form.labels.validation.required;
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (validateForm()) {
+            setIsSubmitting(true);
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            setIsSubmitting(false);
+            setIsSuccess(true);
+            setFormData({ name: "", email: "", subject: "", message: "" });
+            setErrors({});
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: "" }));
+        }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -274,65 +350,133 @@ const ContactPage = () => {
                             transition={{ duration: 0.6 }}
                             className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:p-10"
                         >
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                                    {content.form.title}
-                                </h2>
-                                <p className="text-slate-500">
-                                    {content.form.subtitle}
-                                </p>
-                            </div>
-
-                            <form className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">
-                                            {content.form.labels.name}
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">
-                                            {content.form.labels.email}
-                                        </label>
-                                        <input
-                                            type="email"
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">
-                                        {content.form.labels.subject}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">
-                                        {content.form.labels.message}
-                                    </label>
-                                    <textarea
-                                        rows={5}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                                    ></textarea>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg transform active:scale-[0.99] flex items-center justify-center gap-2"
+                            {isSuccess ? (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-center py-12"
                                 >
-                                    <Icon icon="mdi:send" width="18" height="18" />
-                                    {content.form.labels.submit}
-                                </button>
-                            </form>
+                                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <Icon icon="mdi:check-circle" width="48" height="48" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                                        {content.form.labels.successTitle}
+                                    </h3>
+                                    <p className="text-slate-600 mb-8">
+                                        {content.form.labels.successMessage}
+                                    </p>
+                                    <button
+                                        onClick={() => setIsSuccess(false)}
+                                        className="text-primary font-medium hover:text-primary/80 transition-colors"
+                                    >
+                                        {content.form.subtitle}
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                                            {content.form.title}
+                                        </h2>
+                                        <p className="text-slate-500">
+                                            {content.form.subtitle}
+                                        </p>
+                                    </div>
+
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">
+                                                    {content.form.labels.name} <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        name="name"
+                                                        value={formData.name}
+                                                        onChange={handleChange}
+                                                        className={`w-full px-4 py-2 bg-slate-50 border ${errors.name ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all`}
+                                                    />
+                                                    {errors.name && (
+                                                        <p className="text-red-500 text-xs mt-1 absolute">{errors.name}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">
+                                                    {content.form.labels.email} <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="email"
+                                                        name="email"
+                                                        value={formData.email}
+                                                        onChange={handleChange}
+                                                        className={`w-full px-4 py-2 bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all`}
+                                                    />
+                                                    {errors.email && (
+                                                        <p className="text-red-500 text-xs mt-1 absolute">{errors.email}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-slate-700">
+                                                {content.form.labels.subject} <span className="text-red-500">*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    name="subject"
+                                                    value={formData.subject}
+                                                    onChange={handleChange}
+                                                    className={`w-full px-4 py-2 bg-slate-50 border ${errors.subject ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all`}
+                                                />
+                                                {errors.subject && (
+                                                    <p className="text-red-500 text-xs mt-1 absolute">{errors.subject}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-slate-700">
+                                                {content.form.labels.message} <span className="text-red-500">*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <textarea
+                                                    name="message"
+                                                    rows={5}
+                                                    value={formData.message}
+                                                    onChange={handleChange}
+                                                    className={`w-full px-4 py-2 bg-slate-50 border ${errors.message ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none`}
+                                                ></textarea>
+                                                {errors.message && (
+                                                    <p className="text-red-500 text-xs mt-1 absolute">{errors.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg transform active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Icon icon="mdi:loading" className="animate-spin" width="18" height="18" />
+                                                    {content.form.labels.sending}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Icon icon="mdi:send" width="18" height="18" />
+                                                    {content.form.labels.submit}
+                                                </>
+                                            )}
+                                        </button>
+                                    </form>
+                                </>
+                            )}
                         </motion.div>
                     </div>
                 </div>
