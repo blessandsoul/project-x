@@ -490,7 +490,7 @@
       "appstore": "App Store",
       "get_on": "ჩამოტვირთეთ",
       "google_play": "Google Play",
-      "buyer_protection": "Copart / IAAI აუქციონების ერთიანი ძიება",
+      "buyer_protection": "Copart / IAAI ავტომობილების ერთ საიტზე ძიება",
       "nationwide_delivery": "იმპორტის რეალური ფასები",
       "vehicle_history": "კლიენტების გამოცდილება",
       "browse_inventory": "დაიწყე ძიება",
@@ -499,7 +499,7 @@
       "all_prices_title": "ყველა ფასი ერთ სივრცეში",
       "all_prices_desc": "გაიგე ყველა კომპანიის ფასი ერთ სივრცეში და აირჩიე შენთვის საუკეთესო.",
       "real_reviews_title": "რეალური მიმოხილვები",
-      "real_reviews_desc": "წაიკითხეთ რეალური კლიენტების გამოცდილება და შეფასებები"
+      "real_reviews_desc": "იხილეთ რეალური კლიენტების შეფასებები ამ თუ იმ კომპანიაზე"
     },
     "popular_vehicles": {
       "title": "პოპულარული",

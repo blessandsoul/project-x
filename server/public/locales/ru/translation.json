@@ -440,7 +440,7 @@
       "appstore": "App Store",
       "get_on": "Скачать",
       "google_play": "Google Play",
-      "buyer_protection": "Поиск по Copart / IAAI в одном месте",
+      "buyer_protection": "Поиск автомобилей Copart / IAAI на одном сайте",
       "nationwide_delivery": "Реальные цены на импорт",
       "vehicle_history": "Отзывы клиентов",
       "browse_inventory": "Начать поиск",
@@ -449,7 +449,7 @@
       "all_prices_title": "Все цены в одном месте",
       "all_prices_desc": "Узнай цены всех компаний в одном месте и выбери лучшее предложение для себя.",
       "real_reviews_title": "Реальные отзывы",
-      "real_reviews_desc": "Читайте реальные отзывы и оценки клиентов."
+      "real_reviews_desc": "Смотрите реальные отзывы клиентов о разных компаниях"
     },
     "membership": {
       "title": "Варианты членства",
