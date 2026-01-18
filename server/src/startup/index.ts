@@ -9,7 +9,6 @@
 
 import { FastifyInstance } from 'fastify';
 import { FxRateService } from '../services/FxRateService.js';
-import { CitiesService } from '../services/CitiesService.js';
 import { PortsService } from '../services/PortsService.js';
 import { AuctionsService } from '../services/AuctionsService.js';
 import { initializeSocketIO } from '../realtime/index.js';
@@ -18,7 +17,7 @@ import { initializeSocketIO } from '../realtime/index.js';
  * Start the server
  *
  * This function:
- * 1. Syncs required data (FX rates, cities, ports, auctions)
+ * 1. Syncs required data (FX rates, ports, auctions)
  * 2. Starts the HTTP server
  * 3. Initializes Socket.IO for real-time features
  * 4. Signals PM2 readiness (if running under PM2)
@@ -35,7 +34,6 @@ export async function startServer(fastify: FastifyInstance): Promise<void> {
         // -------------------------------------------------------------------------
         // Initialize services for startup sync
         const fxRateService = new FxRateService(fastify);
-        const citiesService = new CitiesService(fastify);
         const portsService = new PortsService(fastify);
         const auctionsService = new AuctionsService(fastify);
 
@@ -44,7 +42,6 @@ export async function startServer(fastify: FastifyInstance): Promise<void> {
         await fxRateService.ensureTodayUsdGelRate();
 
         // Sync reference data on server startup
-        await citiesService.syncCities();
         await portsService.syncPorts();
         await auctionsService.syncAuctions();
 

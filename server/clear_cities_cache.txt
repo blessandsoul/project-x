@@ -1,0 +1,10 @@
+-- Clear the cities cache version in Redis
+-- Run this after manually updating the cities table
+
+-- This will increment the cache version, making all old cached cities data invalid
+-- The next request to /api/v1/cities will fetch fresh data from the database
+
+-- If you have Redis CLI access, run:
+-- INCR v:cities
+
+-- Or simply restart your server to clear all cache

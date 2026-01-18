@@ -331,23 +331,12 @@ export class VehicleModel extends BaseModel {
       params.push(datePart, datePart, timePart);
     }
 
-    // Location filter (matches yard_name)
-    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
+    // Location filter (matches yard_name using LIKE/contains)
+    // Always use fuzzy matching so "ALBANY" matches "ALBANY - NY", "ALBANY COPART", etc.
     if (filters.location) {
-      if (filters.fuzzyLocation) {
-        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
-        const likePatterns = buildLocationLikePatterns(filters.location);
-        if (likePatterns.length > 0) {
-          // Use OR for multiple patterns to get candidate matches
-          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
-          conditions.push(`(${likeConditions})`);
-          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
-        }
-      } else {
-        // Exact matching (legacy behavior): lowercase with spaces removed
-        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
-        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
-      }
+      // Use LIKE pattern for contains matching
+      conditions.push('UPPER(yard_name) LIKE ?');
+      params.push(`%${filters.location.toUpperCase()}%`);
     }
 
     // Exact date filter (sold_at_date = date)
@@ -616,22 +605,12 @@ export class VehicleModel extends BaseModel {
       params.push(datePart, datePart, timePart);
     }
 
-    // Location filter (matches yard_name)
-    // Two modes: exact match (default) or fuzzy match (when fuzzyLocation=true)
+    // Location filter (matches yard_name using LIKE/contains)
+    // Always use fuzzy matching so "ALBANY" matches "ALBANY - NY", "ALBANY COPART", etc.
     if (filters.location) {
-      if (filters.fuzzyLocation) {
-        // Fuzzy matching: use LIKE patterns for broad DB-level filtering
-        const likePatterns = buildLocationLikePatterns(filters.location);
-        if (likePatterns.length > 0) {
-          const likeConditions = likePatterns.slice(0, 3).map(() => 'UPPER(yard_name) LIKE ?').join(' OR ');
-          conditions.push(`(${likeConditions})`);
-          params.push(...likePatterns.slice(0, 3).map(p => p.toUpperCase()));
-        }
-      } else {
-        // Exact matching (legacy behavior): lowercase with spaces removed
-        conditions.push('LOWER(REPLACE(yard_name, \' \', \'\')) = ?');
-        params.push(filters.location.toLowerCase().replace(/\s/g, ''));
-      }
+      // Use LIKE pattern for contains matching
+      conditions.push('UPPER(yard_name) LIKE ?');
+      params.push(`%${filters.location.toUpperCase()}%`);
     }
 
     // Exact date filter (sold_at_date = date)

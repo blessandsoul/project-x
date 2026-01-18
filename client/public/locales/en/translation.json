@@ -206,12 +206,12 @@
       "calculation_failed": "Calculation failed. Please try again."
     },
     "info": {
-      "title": "How It Works",
-      "description": "Use calculator to calculate import prices from auction to port.",
-      "point1": "Select your pickup city and destination port",
-      "point2": "Choose your vehicle type and category",
-      "point3": "Compare prices of different companies",
-      "disclaimer": "Prices are indicative estimates and may vary based on actual conditions."
+      "title": "How it Works",
+      "description": "With this calculator, you can easily find a reliable auto importer with the best shipping rates.",
+      "point1": "Select the auction, state, and city where your vehicle is located, then choose the destination country.",
+      "point2": "Our calculator will list shipping prices from all companies, helping you choose the best option.",
+      "point3": "Before purchasing, we recommend visiting the company's profile to verify all details.",
+      "disclaimer": "After purchasing, we would appreciate it if you left a review for the company importing your vehicle."
     }
   },
   "header": {
@@ -505,16 +505,16 @@
       "real_reviews_title": "Real reviews",
       "real_reviews_desc": "See real client reviews for various companies",
       "transparent_prices_title": "Transparent prices",
-      "transparent_prices_desc": "No hidden fees. You see exactly what you pay for.",
+      "transparent_prices_desc": "See shipping prices from carrier companies next to each lot.",
       "all_prices_title": "All prices in one place",
-      "all_prices_desc": "See every company's price in one place and choose the best for you.",
+      "all_prices_desc": "Choose your trusted importer without wasting time.",
       "browse_inventory": "Start searching",
       "download_appstore": "Download on",
       "appstore": "App Store",
       "get_on": "Get it on",
       "google_play": "Google Play",
-      "buyer_protection": "Search Copart / IAAI cars on one site",
-      "nationwide_delivery": "Real import prices",
+      "buyer_protection": "Copart, IAAI, Manheim - all auction cars on one site",
+      "nationwide_delivery": "All shipping prices on one site",
       "vehicle_history": "Client Experience"
     },
     "popular_vehicles": {
@@ -911,7 +911,10 @@
   "vin": {
     "title": "VIN Check",
     "subtitle": "Enter VIN code to see complete vehicle information",
-    "vin_placeholder": "Enter 17-character VIN...",
+    "vin_placeholder": "Enter vin number",
+    "feature_accurate": "Accurate Data",
+    "feature_instant": "Instant Results",
+    "feature_detailed": "Full Specs",
     "check_btn": "Check",
     "check_btn_loading": "Checking...",
     "vin_hint": "Enter a 17-character VIN (letters A-Z except I, O, Q and digits 0-9).",

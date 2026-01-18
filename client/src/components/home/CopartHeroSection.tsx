@@ -104,7 +104,7 @@ export function CopartHeroSection() {
                   {t('home.copart_hero.title')}
                 </h1>
                 <p
-                  className="text-lg text-white/80 max-w-md leading-relaxed"
+                  className="hidden text-lg text-white/80 max-w-md leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: t('home.copart_hero.subtitle') }}
                 />
               </div>
@@ -207,7 +207,7 @@ export function CopartHeroSection() {
 
           {/* Subtitle */}
           <motion.p
-            className="text-sm sm:text-base text-white/80 max-w-lg leading-relaxed"
+            className="hidden text-sm sm:text-base text-white/80 max-w-lg leading-relaxed"
             dangerouslySetInnerHTML={{ __html: t('home.copart_hero.subtitle') }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -355,7 +355,7 @@ export function CopartHeroSection() {
 
           {/* Subtitle */}
           <motion.p
-            className="text-sm text-white/80 max-w-sm leading-relaxed"
+            className="hidden text-sm text-white/80 max-w-sm leading-relaxed"
             dangerouslySetInnerHTML={{ __html: t('home.copart_hero.subtitle') }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
