@@ -420,8 +420,8 @@ export class CompanyController {
     }
 
     const { rating, comment = null } = payload;
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      throw new ValidationError('Rating must be a number between 1 and 5');
+    if (!Number.isFinite(rating) || rating < 1 || rating > 10) {
+      throw new ValidationError('Rating must be a number between 1 and 10');
     }
 
     const createData: CompanyReviewCreate = {
@@ -489,8 +489,8 @@ export class CompanyController {
 
     if (updates.rating !== undefined) {
       const r = updates.rating;
-      if (!Number.isFinite(r) || r < 1 || r > 5) {
-        throw new ValidationError('Rating must be a number between 1 and 5');
+      if (!Number.isFinite(r) || r < 1 || r > 10) {
+        throw new ValidationError('Rating must be a number between 1 and 10');
       }
     }
 

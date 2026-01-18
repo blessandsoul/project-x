@@ -6,7 +6,6 @@
  *
  * Jobs included:
  * - FX Rate Sync: Daily at 00:05 - refreshes USD->GEL exchange rate
- * - Cities Sync: Daily at 00:00 - syncs cities from external API
  * - Ports Sync: Every 10 days - syncs ports from external API
  * - Auctions Sync: Every 10 days - syncs auctions from external API
  * - Account Cleanup: Daily at 02:00 - anonymizes expired deactivated accounts
@@ -15,7 +14,6 @@
 import { FastifyInstance } from 'fastify';
 import cron from 'node-cron';
 import { createFxRateSyncJob } from './fxRateSync.js';
-import { createCitiesSyncJob } from './citiesSync.js';
 import { createPortsSyncJob } from './portsSync.js';
 import { createAuctionsSyncJob } from './auctionsSync.js';
 import { createAccountCleanupJob } from './accountCleanup.js';
@@ -36,7 +34,6 @@ export function registerCronJobs(fastify: FastifyInstance): void {
     // Create all job instances
     const jobs: CronJob[] = [
         createFxRateSyncJob(fastify),
-        createCitiesSyncJob(fastify),
         createPortsSyncJob(fastify),
         createAuctionsSyncJob(fastify),
         createAccountCleanupJob(fastify),
@@ -60,7 +57,6 @@ export function registerCronJobs(fastify: FastifyInstance): void {
 export function getJobSummaries(): Array<{ name: string; schedule: string }> {
     return [
         { name: 'FX Rate Sync', schedule: '5 0 * * * (Daily 00:05)' },
-        { name: 'Cities Sync', schedule: '0 0 * * * (Daily 00:00)' },
         { name: 'Ports Sync', schedule: '0 0 1,11,21 * * (Every 10 days)' },
         { name: 'Auctions Sync', schedule: '0 0 1,11,21 * * (Every 10 days)' },
         { name: 'Account Cleanup', schedule: '0 2 * * * (Daily 02:00)' },

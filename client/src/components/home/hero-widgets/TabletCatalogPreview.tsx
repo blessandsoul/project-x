@@ -2,20 +2,72 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { motion } from 'framer-motion';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
 import type { Company } from '@/types/api';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
 
+/**
+ * AnimatedCountingPrice - Counts up to the target value
+ */
+function AnimatedCountingPrice({ value }: { value: number }) {
+    const [displayValue, setDisplayValue] = useState(value - 400);
+
+    useEffect(() => {
+        let start = value - 400;
+        const duration = 1500;
+        const startTime = performance.now();
+        let animationFrameId: number;
+
+        const update = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Ease out quart
+            const ease = 1 - Math.pow(1 - progress, 4);
+
+            const current = start + (value - start) * ease;
+            setDisplayValue(current);
+
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(update);
+            }
+        };
+        animationFrameId = requestAnimationFrame(update);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [value]);
+
+    return (
+        <span>
+            {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+            }).format(displayValue)}
+        </span>
+    );
+}
+
 export function TabletCatalogPreview() {
     const { t } = useTranslation();
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [displayCompanies, setDisplayCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [animationKey, setAnimationKey] = useState(0);
 
     useEffect(() => {
         searchCompaniesFromApi({ limit: 8, offset: 0 })
             .then((result) => {
-                setCompanies(result.companies || []);
+                const fetched = result.companies || [];
+                setCompanies(fetched);
+                // Initial shuffle
+                if (fetched.length > 0) {
+                    setDisplayCompanies([...fetched].sort(() => Math.random() - 0.5));
+                }
             })
             .catch((err) => {
                 console.error('Failed to fetch companies:', err);
@@ -23,6 +75,19 @@ export function TabletCatalogPreview() {
             })
             .finally(() => setLoading(false));
     }, []);
+
+    // Periodic Re-shuffle (every 10s)
+    useEffect(() => {
+        if (loading || !companies || companies.length === 0) return;
+
+        const intervalId = setInterval(() => {
+            const shuffled = [...companies].sort(() => Math.random() - 0.5);
+            setDisplayCompanies(shuffled);
+            setAnimationKey(prev => prev + 1);
+        }, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [companies, loading]);
 
     if (loading) {
         return (
@@ -79,17 +144,37 @@ export function TabletCatalogPreview() {
 
             {/* List Content */}
             <div className="p-6 space-y-3 overflow-y-auto flex-1">
-                {companies.map((company, index) => {
+                {displayCompanies.map((company, index) => {
                     // Generate a deterministic "calculated" price for visual consistency 
-                    const mockPrice = 1450 + (index * 25);
+                    const idSum = company.id.toString().split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                    const mockPrice = 1450 + (idSum % 500);
+
+                    // Animation timing: Total 2s
+                    const totalAnimationTime = 2; // seconds
+                    const animationDuration = 0.5; // seconds
+                    const totalCompanies = displayCompanies.length;
+                    const delayPerItem = totalCompanies > 1
+                        ? (totalAnimationTime - animationDuration) / (totalCompanies - 1)
+                        : 0;
+
                     return (
-                        <div key={company.id} className="pointer-events-none select-none">
+                        <motion.div
+                            key={`${company.id}-${animationKey}`}
+                            initial={{ opacity: 0, x: -30 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                                duration: animationDuration,
+                                delay: index * delayPerItem,
+                                ease: "easeOut"
+                            }}
+                            className="pointer-events-none select-none"
+                        >
                             <CompanyListItem
                                 company={company}
                                 hasAuctionBranch={true}
-                                calculatedShippingPrice={mockPrice}
+                                calculatedShippingPrice={<AnimatedCountingPrice value={mockPrice} />}
                             />
-                        </div>
+                        </motion.div>
                     );
                 })}
             </div>

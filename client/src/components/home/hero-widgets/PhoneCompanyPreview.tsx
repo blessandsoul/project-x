@@ -41,13 +41,13 @@ export function PhoneCompanyPreview() {
   return (
     <div className="h-full w-full bg-slate-50 overflow-hidden relative flex flex-col">
       <div className="absolute inset-0 flex flex-col overflow-hidden">
-        <div className="animate-scroll-vertical space-y-2 px-2 py-2">
+        <div className="animate-scroll-yoyo space-y-2 px-2 py-2">
           {tripleCompanies.map((company, idx) => (
             <CompanyMobileCard key={`${company.id}-${idx}`} company={company} />
           ))}
         </div>
       </div>
-      
+
       {/* Gradient fade at bottom only */}
       <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none z-10" />
     </div>

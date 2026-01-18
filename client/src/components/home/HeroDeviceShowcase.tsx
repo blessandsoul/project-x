@@ -54,8 +54,13 @@ export function HeroDeviceShowcase() {
     // Refs for auto-scroll
     const iPadScrollRef = useRef<HTMLDivElement>(null);
     const iPhoneScrollRef = useRef<HTMLDivElement>(null);
-    const [isHovered, setIsHovered] = useState(false);
     const animationRef = useRef<number | null>(null);
+
+    // Scroll state for yoyo animation (position and direction: 1=down, -1=up)
+    const scrollState = useRef({
+        ipad: { pos: 0, direction: 1 },
+        iphone: { pos: 0, direction: 1 }
+    });
 
     // Data state
     const [vehicles, setVehicles] = useState<VehicleSearchItem[]>([]);
@@ -86,34 +91,37 @@ export function HeroDeviceShowcase() {
         fetchData();
     }, []);
 
-    // Auto-scroll effect on hover
+    // Auto-scroll effect (Always active)
     useEffect(() => {
-        if (!isHovered) {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-                animationRef.current = null;
-            }
-            return;
-        }
-
         const animate = () => {
-            // Auto-scroll iPad (stop at bottom, no loop)
-            if (iPadScrollRef.current) {
-                const el = iPadScrollRef.current;
-                const maxScroll = el.scrollHeight - el.clientHeight;
-                if (el.scrollTop < maxScroll) {
-                    el.scrollTop += AUTO_SCROLL_SPEED;
-                }
-            }
+            const updateScroll = (el: HTMLDivElement | null, key: 'ipad' | 'iphone') => {
+                if (!el) return;
 
-            // Auto-scroll iPhone (stop at bottom, no loop)
-            if (iPhoneScrollRef.current) {
-                const el = iPhoneScrollRef.current;
                 const maxScroll = el.scrollHeight - el.clientHeight;
-                if (el.scrollTop < maxScroll) {
-                    el.scrollTop += AUTO_SCROLL_SPEED;
+                if (maxScroll <= 0) {
+                    scrollState.current[key].pos = 0;
+                    return;
                 }
-            }
+
+                const state = scrollState.current[key];
+
+                // Update position
+                state.pos += state.direction * AUTO_SCROLL_SPEED;
+
+                // Yoyo/Bounce logic
+                if (state.pos >= maxScroll) {
+                    state.pos = maxScroll;
+                    state.direction = -1; // Switch to Up
+                } else if (state.pos <= 0) {
+                    state.pos = 0;
+                    state.direction = 1; // Switch to Down
+                }
+
+                el.scrollTop = state.pos;
+            };
+
+            updateScroll(iPadScrollRef.current, 'ipad');
+            updateScroll(iPhoneScrollRef.current, 'iphone');
 
             animationRef.current = requestAnimationFrame(animate);
         };
@@ -125,7 +133,7 @@ export function HeroDeviceShowcase() {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [isHovered]);
+    }, []);
 
     return (
         <div className="relative w-full h-full flex items-center justify-center">
@@ -140,8 +148,6 @@ export function HeroDeviceShowcase() {
             {/* Device composition wrapper - group for hover detection */}
             <div
                 className="device-showcase-wrapper relative w-full max-w-[650px] h-[480px] xl:h-[540px] group overflow-visible isolate"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
             >
 
                 {/* iPad - Behind, rotated left */}
@@ -259,7 +265,7 @@ export function HeroDeviceShowcase() {
                                         {/* Scrollable list area */}
                                         <div
                                             ref={iPhoneScrollRef}
-                                            className="overflow-y-auto overflow-x-hidden bg-slate-50"
+                                            className="overflow-hidden bg-slate-50 scrollbar-hide pointer-events-none"
                                             style={{ height: IPHONE_VIEWPORT_HEIGHT - 100 }}
                                         >
                                             <IPhoneListingLayout
@@ -440,7 +446,37 @@ const IPhoneListingLayout = memo(function IPhoneListingLayout({ vehicles, loadin
  * 
  * Renders companies in a list layout (Catalog view)
  */
+/**
+ * IPadCompanyLayout - Company list for iPad
+ * 
+ * Renders companies in a list layout (Catalog view).
+ * Shuffles companies every 10 seconds to keep the preview alive.
+ */
 const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, error }: LayoutProps) {
+    const [displayCompanies, setDisplayCompanies] = useState<Company[]>([]);
+    const [animationKey, setAnimationKey] = useState(0);
+
+    // Initial load + Periodic Shuffle
+    useEffect(() => {
+        if (loading || !companies || companies.length === 0) return;
+
+        // Function to shuffle and update
+        const shuffleAndUpdate = () => {
+            const shuffled = [...companies].sort(() => Math.random() - 0.5);
+            setDisplayCompanies(shuffled);
+            setAnimationKey(prev => prev + 1); // Trigger re-render of motion components
+        };
+
+        // Initial set
+        shuffleAndUpdate();
+
+        // Interval
+        const intervalId = setInterval(shuffleAndUpdate, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [companies, loading]);
+
+
     if (loading) {
         return (
             <div className="w-full bg-slate-50">
@@ -471,7 +507,7 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
         );
     }
 
-    if (!companies || companies.length === 0) {
+    if (!displayCompanies || displayCompanies.length === 0) {
         return (
             <div className="w-full bg-slate-50 p-8 flex items-center justify-center min-h-[400px]">
                 <p className="text-sm text-slate-500 text-center">No companies found</p>
@@ -506,18 +542,82 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
 
             {/* Company List - Wrapped in pointer-events-none for showcase */}
             <div className="p-4 space-y-3 pointer-events-none select-none">
-                {companies.map((company, index) => {
-                    // Generate a deterministic "calculated" price for visual consistnecy based on index
-                    // Base price $1450 + index * 25
-                    const mockPrice = 1450 + (index * 25);
+                {displayCompanies.map((company, index) => {
+                    // Generate a deterministic "calculated" price based on company ID hash to keep it consistent per company even when shuffled
+                    const idSum = company.id.toString().split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                    const mockPrice = 1450 + (idSum % 500);
+
+                    // Calculate timing to complete all animations in 2 seconds
+                    // Total time = 2s, Animation duration = 0.5s
+                    // Available time for delays = 1.5s
+                    const totalAnimationTime = 2; // seconds
+                    const animationDuration = 0.5; // seconds
+                    const totalCompanies = displayCompanies.length;
+                    const delayPerItem = totalCompanies > 1
+                        ? (totalAnimationTime - animationDuration) / (totalCompanies - 1)
+                        : 0;
+
+                    /**
+                     * AnimatedCountingPrice - Counts up to the target value
+                     */
+                    function AnimatedCountingPrice({ value }: { value: number }) {
+                        const [displayValue, setDisplayValue] = useState(value - 400);
+
+                        useEffect(() => {
+                            let start = value - 400;
+                            const duration = 1500;
+                            const startTime = performance.now();
+                            let animationFrameId: number;
+
+                            const update = (now: number) => {
+                                const elapsed = now - startTime;
+                                const progress = Math.min(elapsed / duration, 1);
+
+                                // Ease out quart
+                                const ease = 1 - Math.pow(1 - progress, 4);
+
+                                const current = start + (value - start) * ease;
+                                setDisplayValue(current);
+
+                                if (progress < 1) {
+                                    animationFrameId = requestAnimationFrame(update);
+                                }
+                            };
+                            animationFrameId = requestAnimationFrame(update);
+
+                            return () => {
+                                cancelAnimationFrame(animationFrameId);
+                            };
+                        }, [value]);
+
+                        return (
+                            <span>
+                                {new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: 'USD',
+                                    maximumFractionDigits: 0,
+                                }).format(displayValue)}
+                            </span>
+                        );
+                    }
 
                     return (
-                        <CompanyListItem
-                            key={company.id}
-                            company={company}
-                            hasAuctionBranch={true}
-                            calculatedShippingPrice={mockPrice}
-                        />
+                        <motion.div
+                            key={`${company.id}-${animationKey}`} // Force re-render on shuffle
+                            initial={{ opacity: 0, x: -30 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                                duration: animationDuration,
+                                delay: index * delayPerItem,
+                                ease: "easeOut"
+                            }}
+                        >
+                            <CompanyListItem
+                                company={company}
+                                hasAuctionBranch={true}
+                                calculatedShippingPrice={<AnimatedCountingPrice value={mockPrice} />}
+                            />
+                        </motion.div>
                     );
                 })}
             </div>

@@ -321,7 +321,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         properties: {
           limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
           offset: { type: 'integer', minimum: 0, default: 0 },
-          min_rating: { type: 'number', minimum: 0, maximum: 5 },
+          min_rating: { type: 'number', minimum: 0, maximum: 10 },
           min_base_price: { type: 'number', minimum: 0 },
           max_base_price: { type: 'number', minimum: 0 },
           max_total_fee: { type: 'number', minimum: 0 },
@@ -1106,7 +1106,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
         type: 'object',
         required: ['rating'],
         properties: {
-          rating: { type: 'number', minimum: 1, maximum: 5 },
+          rating: { type: 'number', minimum: 1, maximum: 10 },
           comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
         additionalProperties: false,
@@ -1163,7 +1163,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       body: {
         type: 'object',
         properties: {
-          rating: { type: 'number', minimum: 1, maximum: 5 },
+          rating: { type: 'number', minimum: 1, maximum: 10 },
           comment: { type: ['string', 'null'], minLength: 10, maxLength: 2000 },
         },
         additionalProperties: false,
@@ -1251,7 +1251,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
           limit: { type: 'integer', minimum: 1, maximum: 100, default: 5 },
           offset: { type: 'integer', minimum: 0, default: 0 },
           currency: { type: 'string', minLength: 3, maxLength: 3 },
-          minRating: { type: 'number', minimum: 0, maximum: 5 },
+          minRating: { type: 'number', minimum: 0, maximum: 10 },
         },
         additionalProperties: false,
       },
@@ -1327,7 +1327,7 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     // Cache quote calculations - same vehicle + calculator input + currency + pagination = same result
-    const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 5 ? minRating : undefined;
+    const safeMinRating = typeof minRating === 'number' && minRating >= 0 && minRating <= 10 ? minRating : undefined;
     const fullResult = await withVersionedCache(
       fastify,
       'companies',

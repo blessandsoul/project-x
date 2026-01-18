@@ -13,7 +13,7 @@ interface CompanyListItemProps {
   className?: string;
   isCompareMode?: boolean;
   /** Calculated shipping price from selected auction branch. If undefined, shows placeholder. */
-  calculatedShippingPrice?: number;
+  calculatedShippingPrice?: number | React.ReactNode;
   /** Whether an auction branch has been selected */
   hasAuctionBranch?: boolean;
   /** Whether shipping prices are currently being loaded */
@@ -109,8 +109,12 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         <div className="flex flex-col justify-between h-11 md:h-[54px] py-0.5 w-full">
           {/* Price - Top Aligned */}
           <div className="text-lg md:text-xl font-bold text-slate-900 tracking-tight tabular-nums leading-none whitespace-nowrap">
-            {hasAuctionBranch && calculatedShippingPrice !== undefined && calculatedShippingPrice >= 0 ? (
-              formatCurrency(calculatedShippingPrice)
+            {hasAuctionBranch && calculatedShippingPrice !== undefined ? (
+              typeof calculatedShippingPrice === 'number' ? (
+                calculatedShippingPrice >= 0 ? formatCurrency(calculatedShippingPrice) : <span className="text-sm md:text-base text-slate-400 font-normal">—</span>
+              ) : (
+                calculatedShippingPrice
+              )
             ) : (
               <span className="text-sm md:text-base text-slate-400 font-normal">—</span>
             )}
