@@ -560,35 +560,43 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
                     /**
                      * AnimatedCountingPrice - Counts up to the target value
                      */
-                    function AnimatedCountingPrice({ value }: { value: number }) {
+                    function AnimatedCountingPrice({ value, delay = 0 }: { value: number; delay?: number }) {
                         const [displayValue, setDisplayValue] = useState(value - 400);
 
                         useEffect(() => {
                             let start = value - 400;
-                            const duration = 1500;
-                            const startTime = performance.now();
+                            const duration = 2000;
                             let animationFrameId: number;
+                            let timeoutId: number;
 
-                            const update = (now: number) => {
-                                const elapsed = now - startTime;
-                                const progress = Math.min(elapsed / duration, 1);
+                            // Wait for the delay before starting animation
+                            timeoutId = window.setTimeout(() => {
+                                const startTime = performance.now();
 
-                                // Ease out quart
-                                const ease = 1 - Math.pow(1 - progress, 4);
+                                const update = (now: number) => {
+                                    const elapsed = now - startTime;
+                                    const progress = Math.min(elapsed / duration, 1);
 
-                                const current = start + (value - start) * ease;
-                                setDisplayValue(current);
+                                    // Ease out quart
+                                    const ease = 1 - Math.pow(1 - progress, 4);
 
-                                if (progress < 1) {
-                                    animationFrameId = requestAnimationFrame(update);
-                                }
-                            };
-                            animationFrameId = requestAnimationFrame(update);
+                                    const current = start + (value - start) * ease;
+                                    setDisplayValue(current);
+
+                                    if (progress < 1) {
+                                        animationFrameId = requestAnimationFrame(update);
+                                    }
+                                };
+                                animationFrameId = requestAnimationFrame(update);
+                            }, delay * 1000); // Convert seconds to milliseconds
 
                             return () => {
-                                cancelAnimationFrame(animationFrameId);
+                                clearTimeout(timeoutId);
+                                if (animationFrameId) {
+                                    cancelAnimationFrame(animationFrameId);
+                                }
                             };
-                        }, [value]);
+                        }, [value, delay]);
 
                         return (
                             <span>
@@ -615,7 +623,7 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
                             <CompanyListItem
                                 company={company}
                                 hasAuctionBranch={true}
-                                calculatedShippingPrice={<AnimatedCountingPrice value={mockPrice} />}
+                                calculatedShippingPrice={<AnimatedCountingPrice value={mockPrice} delay={index * delayPerItem} />}
                             />
                         </motion.div>
                     );
