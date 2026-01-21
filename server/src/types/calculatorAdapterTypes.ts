@@ -198,8 +198,9 @@ export interface CalculatorConfig {
 
 /**
  * Calculator type enum matching the database ENUM.
+ * ⚠️ 'fake' is for development only - remove in production
  */
-export type CalculatorType = 'default' | 'custom_api' | 'formula';
+export type CalculatorType = 'default' | 'custom_api' | 'formula' | 'fake';
 
 // =============================================================================
 // ADAPTER FACTORY OPTIONS

@@ -3,6 +3,7 @@ import type { Company } from '../../types/company.js';
 import type { ICalculatorAdapter, CalculatorType } from './ICalculatorAdapter.js';
 import { DefaultAdapter } from './DefaultAdapter.js';
 import { ConfigurableAdapter } from './ConfigurableAdapter.js';
+import { FakeCalculatorAdapter } from './FakeCalculatorAdapter.js'; // ⚠️ FAKE - Remove in production
 
 /**
  * Calculator Adapter Factory
@@ -24,6 +25,7 @@ export class CalculatorAdapterFactory {
     // Singleton instances for adapters (they're stateless, so we can reuse)
     private defaultAdapter: DefaultAdapter | null = null;
     private configurableAdapter: ConfigurableAdapter | null = null;
+    private fakeAdapter: FakeCalculatorAdapter | null = null; // ⚠️ FAKE - Remove in production
 
     constructor(fastify: FastifyInstance) {
         this.fastify = fastify;
@@ -41,6 +43,10 @@ export class CalculatorAdapterFactory {
         switch (calculatorType) {
             case 'custom_api':
                 return this.getConfigurableAdapter();
+
+            case 'fake':
+                // ⚠️ FAKE CALCULATOR - Development only, remove in production
+                return this.getFakeAdapter();
 
             case 'formula':
                 // Formula-based calculation - for now, fall back to default
@@ -76,5 +82,16 @@ export class CalculatorAdapterFactory {
             this.configurableAdapter = new ConfigurableAdapter(this.fastify);
         }
         return this.configurableAdapter;
+    }
+
+    /**
+     * Get or create the fake adapter (singleton).
+     * ⚠️ FAKE - Remove in production
+     */
+    private getFakeAdapter(): FakeCalculatorAdapter {
+        if (!this.fakeAdapter) {
+            this.fakeAdapter = new FakeCalculatorAdapter(this.fastify);
+        }
+        return this.fakeAdapter;
     }
 }

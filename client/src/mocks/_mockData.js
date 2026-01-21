@@ -53,7 +53,7 @@ const generateCompanies = (count = 20) => {
     const reviews = Array.from({ length: Math.min(reviewCount, 10) }, () => ({
       id: faker.string.uuid(),
       userName: faker.person.fullName(),
-      rating: faker.number.int({ min: 1, max: 5 }),
+      rating: faker.number.int({ min: 2, max: 10 }),
       comment: faker.lorem.sentence({ min: 10, max: 30 }),
       date: faker.date.past({ years: 1 }).toISOString().split('T')[0]
     }));
@@ -67,7 +67,7 @@ const generateCompanies = (count = 20) => {
 
     const vipStatus = faker.datatype.boolean({ probability: 0.3 });
 
-    const ratingScore = (avgRating / 5) * 70;
+    const ratingScore = (avgRating / 10) * 70;
     const reviewScore = Math.min(20, Math.log10(reviewCount + 1) * 10);
     const vipBonus = vipStatus ? 10 : 0;
     const trustScore = Math.round(Math.min(100, ratingScore + reviewScore + vipBonus));
@@ -118,130 +118,169 @@ const generateCompanies = (count = 20) => {
 
 export const mockCompanies = generateCompanies();
 
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/companies
-// Expected Data:
-//   type: array
-//   items:
-//     type: object
-//     properties:
-//       id:
-//         type: string
-//         example: "1"
-//       name:
-//         type: string
-//         example: "Premium Auto Import LLC"
-//       logo:
-//         type: string
-//         format: uri
-//       description:
-//         type: string
-//       services:
-//         type: array
-//         items:
-//           type: string
-//       priceRange:
-//         type: object
-//         properties:
-//           min:
-//             type: number
-//           max:
-//             type: number
-//           currency:
-//             type: string
-//             example: "USD"
-//       rating:
-//         type: number
-//         minimum: 0
-//         maximum: 5
-//       reviewCount:
-//         type: integer
-//       vipStatus:
-//         type: boolean
-//       location:
-//         type: object
-//         properties:
-//           state:
-//             type: string
-//           city:
-//             type: string
-//       contact:
-//         type: object
-//         properties:
-//           email:
-//             type: string
-//             format: email
-//           phone:
-//             type: string
-//           website:
-//             type: string
-//             format: uri
-//       establishedYear:
-//         type: integer
-//       reviews:
-//         type: array
-//         items:
-//           type: object
-//           properties:
-//             id:
-//               type: string
-//             userName:
-//               type: string
-//             rating:
-//               type: number
-//               minimum: 1
-//               maximum: 5
-//             comment:
-//               type: string
-//             date:
-//               type: string
-//               format: date
+// Real vehicle data samples from the database
+const realVehiclesData = [
+  {
+    make: 'Hyundai', model: 'Elantra', year: 2023, trim: 'SEL',
+    vin: 'KMHLS4AG3PU613738', mileage: 17675, color: 'BLACK',
+    damage_main: 'FRONT END', damage_secondary: '',
+    est_value: 17675.00, repair_cost: 17675.00,
+    engine: '2.0L', drive: 'front', transmission: 'auto',
+    images: ["https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0325/0138aa658c4345d6854cf9f283cef429_frames_0.jpg", "https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0325/0138aa658c4345d6854cf9f283cef429_frames_1.jpg"]
+  },
+  {
+    make: 'Ford', model: 'Explorer', year: 2017, trim: 'LIMITED',
+    vin: '1FM5K8F83HGB81976', mileage: 14883, color: 'Black',
+    damage_main: 'UNKNOWN', damage_secondary: '',
+    est_value: 9699.00, repair_cost: 14883.00,
+    engine: '3.5L', drive: 'full', transmission: 'auto',
+    images: ["https://mediastorageaccountprod.blob.core.windows.net/media/42561742_VES-100_1"]
+  },
+  {
+    make: 'Nissan', model: 'Pathfinder', year: 2014, trim: 'SL',
+    vin: '5N1AR2MN2EC729856', mileage: 1000, color: 'Unknown',
+    damage_main: 'UNKNOWN', damage_secondary: '',
+    est_value: 0.00, repair_cost: 1000.00,
+    engine: '3.5L', drive: 'front', transmission: 'auto',
+    images: ["https://mediastorageaccountprod.blob.core.windows.net/media/42605820_VES-100_1"]
+  },
+  {
+    make: 'Volkswagen', model: 'Taos', year: 2024, trim: '1.5T S',
+    vin: '3VV5X7B23RM101795', mileage: 1000, color: 'Unknown',
+    damage_main: 'UNKNOWN', damage_secondary: '',
+    est_value: 0.00, repair_cost: 1000.00,
+    engine: '1.5L', drive: 'front', transmission: 'auto',
+    images: ["https://mediastorageaccountprod.blob.core.windows.net/media/42725454_VES-100_1"]
+  },
+  {
+    make: 'Cadillac', model: 'CT6', year: 2017, trim: 'LUXURY',
+    vin: '1G6KD5RS8HU157880', mileage: 72339, color: 'White',
+    damage_main: 'FRONT END', damage_secondary: '',
+    est_value: 0.00, repair_cost: 1000.00,
+    engine: '3.6L', drive: 'full', transmission: 'auto',
+    images: ["https://mediastorageaccountprod.blob.core.windows.net/media/42779400_VES-100_1"]
+  },
+  {
+    make: 'Audi', model: 'A4', year: 2018, trim: 'PREMIUM PLUS',
+    vin: 'WAUENAF46JA059280', mileage: 67098, color: 'BLACK',
+    damage_main: 'REAR END', damage_secondary: 'TOP/ROOF',
+    est_value: 17678.79, repair_cost: 19065.00,
+    engine: '2.0L', drive: 'full', transmission: 'auto',
+    images: ["https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0725/08f19a1191114366a9907fa571f76a28_O.jpeg", "https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0725/61c09914763644d88e8eb900f02dcdce_frames_0.jpg"]
+  },
+  {
+    make: 'Toyota', model: 'Camry', year: 2024, trim: 'LE',
+    vin: '4T1C11AK0RU216254', mileage: 28561, color: 'BLACK',
+    damage_main: 'SIDE', damage_secondary: '',
+    est_value: 17247.00, repair_cost: 22234.00,
+    engine: '2.5L', drive: 'front', transmission: 'auto',
+    images: ["https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0725/61eacb94ef4f46cf913e4f28290cfeb3_O.jpeg", "https://c-static.copart.com/v1/AUTH_svc.pdoc00001/ids-c-prod-lpp/0725/5302299586ab447385f9c65dce9c3222_frames_0.jpg"]
+  }
+];
 
-function generateCars(companies, targetCount = 40) {
-  const cars = [];
+const generateVehicles = (targetCount = 40) => {
+  const vehicles = [];
+  const baseData = realVehiclesData;
 
-  const bodyTypes = ['Sedan', 'SUV', 'Coupe', 'Hatchback', 'Pickup', 'Wagon'];
-  const fuelTypes = ['Gasoline', 'Diesel', 'Hybrid', 'Electric'];
-  const transmissions = ['Automatic', 'Manual'];
+  for (let i = 0; i < targetCount; i++) {
+    // Cycle through real data or use faker
+    const template = baseData[i % baseData.length];
+    const isReal = i < baseData.length;
 
-  if (!Array.isArray(companies) || companies.length === 0) {
-    return cars;
+    // Basic fields
+    const make = isReal ? template.make : faker.vehicle.manufacturer();
+    const model = isReal ? template.model : faker.vehicle.model();
+    const year = isReal ? template.year : faker.number.int({ min: 2012, max: 2024 });
+    const mileage = isReal ? template.mileage : faker.number.int({ min: 5000, max: 200000 });
+
+    // Derived/Complex fields
+    const price = isReal ? template.est_value : faker.number.int({ min: 5000, max: 60000 });
+    const retail_value = price > 0 ? price : faker.number.int({ min: 10000, max: 50000 });
+
+    // Images
+    const photos = isReal ? template.images.map((url, idx) => ({
+      id: faker.number.int(),
+      vehicle_id: i,
+      url: url,
+      thumb_url: url,
+      thumb_url_min: url,
+      thumb_url_middle: url
+    })) : Array.from({ length: 5 }).map((_, idx) => {
+      const url = `https://images.pexels.com/photos/${faker.helpers.arrayElement(['170811', '112460', '1235698', '210019'])}/pexels-photo-${faker.helpers.arrayElement(['170811', '112460'])}.jpeg?auto=compress&cs=tinysrgb&w=600`;
+      return {
+        id: faker.number.int(),
+        vehicle_id: i,
+        url,
+        thumb_url: url,
+        thumb_url_min: url,
+        thumb_url_middle: url
+      };
+    });
+
+    vehicles.push({
+      id: (5000000000 + i).toString(), // Mimic large IDs from DB
+      // Snake_case fields matching VehicleDetails interface
+      make,
+      model,
+      year,
+      mileage,
+      vin: isReal ? template.vin : faker.vehicle.vin(),
+
+      // Detailed specs
+      trim: isReal ? template.trim : 'Base',
+      engine_volume: isReal && template.engine ? parseFloat(template.engine) : 2.0,
+      engine_fuel: 'petrol',
+      transmission: isReal ? template.transmission : 'auto',
+      drive: isReal ? template.drive : 'front',
+      color: isReal ? template.color : faker.vehicle.color(),
+      cylinders: '4',
+      body_type: 'Sedan', // Approximate
+
+      // Values
+      retail_value,
+      buy_it_now_price: faker.datatype.boolean() ? retail_value * 0.8 : null,
+      repair_cost: isReal ? template.repair_cost : retail_value * 0.5,
+      calc_price: faker.number.int({ min: 1000, max: 20000 }), // Current bid?
+
+      // Status & Damage
+      status: 'used',
+      damage_main_damages: isReal ? template.damage_main : faker.helpers.arrayElement(['FRONT END', 'REAR END', 'SIDE', 'HAIL']),
+      damage_secondary_damages: isReal ? template.damage_secondary : 'UNKNOWN',
+      run_and_drive: 'Run & Drive Verified',
+      has_keys: true,
+      has_keys_readable: 'YES',
+      airbags: 'intact',
+      odometer_brand: 'ACTUAL',
+
+      // Location
+      source: 'IAAI',
+      yard_name: `${faker.location.city()} (${faker.location.state({ abbreviated: true })})`,
+      city: faker.location.city(),
+      state: faker.location.state({ abbreviated: true }),
+      country: 'USA',
+
+      // Images
+      primary_photo_url: photos[0].url,
+      photos: photos,
+
+      // Dates
+      sold_at_date: faker.date.future().toISOString().split('T')[0],
+      created_at: faker.date.past().toISOString(),
+      updated_at: faker.date.recent().toISOString(),
+
+      // Legacy camelCase for backward compatibility if needed
+      price,
+      imageUrl: photos[0].url,
+      bodyType: 'Sedan',
+      fuelType: 'Gasoline'
+    });
   }
 
-  const companiesCount = companies.length;
-  const basePerCompany = Math.max(1, Math.floor(targetCount / companiesCount));
+  return vehicles;
+};
 
-  companies.forEach((company) => {
-    const count = faker.number.int({ min: basePerCompany, max: basePerCompany + 1 });
-
-    for (let i = 0; i < count; i += 1) {
-      const make = faker.vehicle.manufacturer();
-      const model = faker.vehicle.model();
-      const year = faker.number.int({ min: 2010, max: 2024 });
-      const price = faker.number.int({ min: 5000, max: 60000 });
-      const mileage = faker.number.int({ min: 10000, max: 150000 });
-
-      cars.push({
-        id: faker.string.uuid(),
-        companyId: company.id,
-        make,
-        model,
-        year,
-        price,
-        mileage,
-        imageUrl: `https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=600`,
-        vin: faker.vehicle.vin(),
-        bodyType: faker.helpers.arrayElement(bodyTypes),
-        fuelType: faker.helpers.arrayElement(fuelTypes),
-        transmission: faker.helpers.arrayElement(transmissions),
-      });
-    }
-  });
-
-  return cars.slice(0, targetCount);
-}
-
-export const mockCars = generateCars(mockCompanies);
+export const mockCars = generateVehicles(30);
+export const mockVehicles = mockCars; // Alias
 
 export const mockUser = {
   id: '1',
@@ -249,22 +288,6 @@ export const mockUser = {
   email: faker.internet.email(),
   avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${faker.person.firstName()}`
 };
-
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/user/profile
-// Expected Data:
-//   type: object
-//   properties:
-//     id:
-//       type: string
-//     name:
-//       type: string
-//     email:
-//       type: string
-//       format: email
-//     avatar:
-//       type: string
-//       format: uri
 
 // Navigation and Footer are now in client/src/config/navigation.ts
 
@@ -292,29 +315,6 @@ export const mockContent = {
   ]
 };
 
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/content/home
-// Expected Data:
-//   type: object
-//   properties:
-//     title:
-//       type: string
-//     subtitle:
-//       type: string
-//     description:
-//       type: string
-//     features:
-//       type: array
-//       items:
-//         type: object
-//         properties:
-//           id:
-//             type: string
-//           title:
-//             type: string
-//           description:
-//             type: string
-
 // Footer links are now in client/src/config/navigation.ts
 
 
@@ -325,32 +325,6 @@ export const mockSearchFilters = {
   rating: 0,
   vipOnly: false
 };
-
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/search/filters
-// Expected Data:
-//   type: object
-//   properties:
-//     geography:
-//       type: array
-//       items:
-//         type: string
-//     services:
-//       type: array
-//       items:
-//         type: string
-//     priceRange:
-//       type: array
-//       items:
-//         type: number
-//       minItems: 2
-//       maxItems: 2
-//     rating:
-//       type: number
-//       minimum: 0
-//       maximum: 5
-//     vipOnly:
-//       type: boolean
 
 const generateRecentCases = (count = 3) => {
   const destinations = ['Tbilisi', 'Batumi', 'Poti', 'Kutaisi'];
@@ -375,33 +349,3 @@ const generateRecentCases = (count = 3) => {
 };
 
 export const mockRecentCases = generateRecentCases();
-
-// TODO-FX: Replace with real API call.
-// API Endpoint: GET /api/imports/recent-cases
-// Expected Data:
-//   type: array
-//   items:
-//     type: object
-//     properties:
-//       id:
-//         type: string
-//         example: "case-1"
-//       make:
-//         type: string
-//         example: "BMW"
-//       model:
-//         type: string
-//         example: "X5"
-//       from:
-//         type: string
-//         example: "USA (New York)"
-//       to:
-//         type: string
-//         example: "Batumi"
-//       days:
-//         type: integer
-//         example: 12
-//       completedAt:
-//         type: string
-//         format: date
-//         example: "2024-05-12"

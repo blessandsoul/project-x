@@ -11,6 +11,8 @@ export type ApiCompanyReview = {
   avatar?: string | null
   rating: number
   comment: string | null
+  company_reply?: string | null
+  company_reply_date?: string | null
   created_at: string
   updated_at: string
 }

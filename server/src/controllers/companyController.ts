@@ -581,6 +581,48 @@ export class CompanyController {
     });
   }
 
+  /**
+   * Allow a company to reply to a review.
+   * Only the owner of the company (user.company_id === review.company_id) can reply.
+   */
+  async replyToCompanyReview(
+    companyId: number,
+    reviewId: number,
+    userCompanyId: number | null | undefined,
+    reply: string,
+  ): Promise<CompanyReview> {
+    const company = await this.companyModel.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company');
+    }
+
+    // Verify the user is the owner of this company
+    if (userCompanyId !== companyId) {
+      throw new AuthorizationError('Only the company owner can reply to reviews');
+    }
+
+    const existing = await this.companyReviewModel.getById(reviewId);
+    if (!existing || existing.company_id !== companyId) {
+      throw new NotFoundError('Review');
+    }
+
+    const trimmedReply = reply.trim();
+    if (trimmedReply.length === 0) {
+      throw new ValidationError('Reply cannot be empty');
+    }
+
+    if (trimmedReply.length > 2000) {
+      throw new ValidationError('Reply cannot exceed 2000 characters');
+    }
+
+    const updated = await this.companyReviewModel.updateReply(reviewId, trimmedReply);
+    if (!updated) {
+      throw new NotFoundError('Review');
+    }
+
+    return updated;
+  }
+
   // ---------------------------------------------------------------------------
   // Quotes (auto-calculated per vehicle & company)
   // ---------------------------------------------------------------------------

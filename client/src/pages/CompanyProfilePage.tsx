@@ -670,17 +670,17 @@ const CompanyProfilePage = () => {
                             <div className="flex items-center justify-between">
                               <Label htmlFor="review-comment" className="text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
                               <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                {[1, 2, 3, 4, 5].map((star) => (
                                   <button
                                     key={star}
                                     type="button"
                                     className="focus:outline-none focus:ring-2 focus:ring-accent rounded hover:scale-110 transition-transform"
-                                    onClick={() => setReviewRating(star)}
+                                    onClick={() => setReviewRating(star * 2)}
                                     aria-label={`${star} stars`}
                                   >
                                     <Icon
                                       icon="mdi:star"
-                                      className={`h-5 w-5 ${star <= reviewRating
+                                      className={`h-5 w-5 ${star * 2 <= reviewRating
                                         ? 'text-accent fill-current'
                                         : 'text-slate-300'
                                         }`}
@@ -853,14 +853,21 @@ const CompanyProfilePage = () => {
                                 </div>
 
                                 <div className="flex items-center mt-1">
-                                  {[...Array(10)].map((_, index) => (
-                                    <Icon
-                                      key={index}
-                                      icon="mdi:star"
-                                      className={`h-3.5 w-3.5 ${index < review.rating ? 'text-accent fill-current' : 'text-slate-300'
-                                        }`}
-                                    />
-                                  ))}
+                                  {[...Array(5)].map((_, index) => {
+                                    const rating = review.rating / 2;
+                                    const val = index + 1;
+                                    const isFull = rating >= val;
+                                    const isHalf = !isFull && rating >= val - 0.5;
+
+                                    return (
+                                      <Icon
+                                        key={index}
+                                        icon={isHalf ? "mdi:star-half-full" : "mdi:star"}
+                                        className={`h-3.5 w-3.5 ${isFull || isHalf ? 'text-accent fill-current' : 'text-slate-300'
+                                          }`}
+                                      />
+                                    );
+                                  })}
                                 </div>
                               </div>
                             </div>
@@ -869,17 +876,17 @@ const CompanyProfilePage = () => {
                                 <div className="space-y-2">
                                   <Label className="text-sm font-medium text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
                                   <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                    {[1, 2, 3, 4, 5].map((star) => (
                                       <button
                                         key={star}
                                         type="button"
                                         className="focus:outline-none focus:ring-2 focus:ring-accent rounded"
-                                        onClick={() => setEditRating(star)}
+                                        onClick={() => setEditRating(star * 2)}
                                         aria-label={`${star} stars`}
                                       >
                                         <Icon
                                           icon="mdi:star"
-                                          className={`h-5 w-5 ${star <= editRating
+                                          className={`h-5 w-5 ${star * 2 <= editRating
                                             ? 'text-accent fill-current'
                                             : 'text-slate-300'
                                             }`}
@@ -909,6 +916,26 @@ const CompanyProfilePage = () => {
                                   {review.comment}
                                 </p>
                               )
+                            )}
+
+                            {/* Company Reply Section */}
+                            {!editingReviewId && review.company_reply && (
+                              <div className="mt-4 ms-2 sm:ms-0 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Icon icon="mdi:message-reply-text" className="h-4 w-4 text-slate-500" />
+                                  <span className="font-semibold text-sm text-slate-900">
+                                    {t('company_profile.reviews.response_from_admin', 'Response from %s administration', { replace: { company: company.name } }).replace('%s', company.name)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                                  {review.company_reply}
+                                </p>
+                                {review.company_reply_date && (
+                                  <p className="text-xs text-slate-400 mt-2">
+                                    {formatDate(review.company_reply_date, i18n.language)}
+                                  </p>
+                                )}
+                              </div>
                             )}
                           </div>
                         ))}
