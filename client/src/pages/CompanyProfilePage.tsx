@@ -81,12 +81,12 @@ const CompanyProfilePage = () => {
   const [isReviewsLoading, setIsReviewsLoading] = useState<boolean>(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
-  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewRating, setReviewRating] = useState<number>(10);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewSubmitError, setReviewSubmitError] = useState<string | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
-  const [editRating, setEditRating] = useState<number>(5);
+  const [editRating, setEditRating] = useState<number>(10);
   const [editComment, setEditComment] = useState('');
   const [isUpdatingReview, setIsUpdatingReview] = useState(false);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
@@ -202,7 +202,7 @@ const CompanyProfilePage = () => {
 
   const handleSubmitReview = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!company || !canWriteReviews || isSubmittingReview || reviewRating < 1 || reviewRating > 5) {
+    if (!company || !canWriteReviews || isSubmittingReview || reviewRating < 1 || reviewRating > 10) {
       return;
     }
 
@@ -222,7 +222,7 @@ const CompanyProfilePage = () => {
       });
 
       // Reset form
-      setReviewRating(5);
+      setReviewRating(10);
       setReviewComment('');
       setIsReviewFormOpen(false);
 
@@ -257,7 +257,7 @@ const CompanyProfilePage = () => {
 
   const handleCancelEditReview = () => {
     setEditingReviewId(null);
-    setEditRating(5);
+    setEditRating(10);
     setEditComment('');
   };
 
@@ -281,7 +281,7 @@ const CompanyProfilePage = () => {
 
       // Reset edit state
       setEditingReviewId(null);
-      setEditRating(5);
+      setEditRating(10);
       setEditComment('');
 
       // Refresh reviews
@@ -670,7 +670,7 @@ const CompanyProfilePage = () => {
                             <div className="flex items-center justify-between">
                               <Label htmlFor="review-comment" className="text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
                               <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                {[1, 2, 3, 4, 5].map((star) => (
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                   <button
                                     key={star}
                                     type="button"
@@ -688,7 +688,7 @@ const CompanyProfilePage = () => {
                                   </button>
                                 ))}
                                 <span className="ms-2 text-sm text-slate-500">
-                                  {reviewRating} / 5
+                                  {reviewRating} / 10
                                 </span>
                               </div>
                             </div>
@@ -727,7 +727,7 @@ const CompanyProfilePage = () => {
                               size="sm"
                               onClick={() => {
                                 setIsReviewFormOpen(false);
-                                setReviewRating(5);
+                                setReviewRating(10);
                                 setReviewComment('');
                                 setReviewSubmitError(null);
                               }}
@@ -853,7 +853,7 @@ const CompanyProfilePage = () => {
                                 </div>
 
                                 <div className="flex items-center mt-1">
-                                  {[...Array(5)].map((_, index) => (
+                                  {[...Array(10)].map((_, index) => (
                                     <Icon
                                       key={index}
                                       icon="mdi:star"
@@ -869,7 +869,7 @@ const CompanyProfilePage = () => {
                                 <div className="space-y-2">
                                   <Label className="text-sm font-medium text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
                                   <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    {[1, 2, 3, 4, 5].map((star) => (
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                       <button
                                         key={star}
                                         type="button"
@@ -887,7 +887,7 @@ const CompanyProfilePage = () => {
                                       </button>
                                     ))}
                                     <span className="ms-2 text-sm text-slate-500">
-                                      {editRating} / 5
+                                      {editRating} / 10
                                     </span>
                                   </div>
                                 </div>

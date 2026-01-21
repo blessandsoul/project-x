@@ -30,13 +30,17 @@ interface HeaderProps {
   user?: User | null;
   navigationItems: NavigationItem[];
   onNavigate?: (href: string) => void;
+  /** Force the header to render in mobile mode regardless of viewport width */
+  forceMobile?: boolean;
+  /** Force the header to appear in its scrolled (solid/dark) state */
+  forceScrolled?: boolean;
 }
 
 /**
  * Header component - Copart-inspired design
  * Dark blue gradient with search bar and navigation
  */
-const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate, forceMobile = false, forceScrolled = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
@@ -106,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
 
   // Header style: glass effect on green pages (not scrolled), solid on scrolled
   // Green on home page and VIN page, navy blue on all other pages
-  const showGlassHeader = isGreenHeaderPage && !isScrolled;
+  const showGlassHeader = isGreenHeaderPage && !isScrolled && !forceScrolled;
 
   // Navy blue CSS variable overrides for non-green pages
   // These override the same variables the header already uses via Tailwind classes
@@ -134,7 +138,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
           <div className="flex h-14 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <span className="font-logo-bebas text-sm min-[330px]:text-base min-[390px]:text-xl md:text-2xl tracking-wide">
+              <span className={cn(
+                "font-logo-bebas tracking-wide",
+                forceMobile ? "text-xl" : "text-sm min-[330px]:text-base min-[390px]:text-xl md:text-2xl"
+              )}>
                 <span className="text-accent font-bold">Trusted</span>{' '}
                 <span className="text-white font-normal">Importers</span>
               </span>
@@ -164,21 +171,21 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
               {/* Language Switcher */}
-              <div className="hidden lg:flex items-center">
+              <div className={cn("items-center", forceMobile ? "hidden" : "hidden lg:flex")}>
                 <LanguageSwitcher />
               </div>
 
               {/* Auth Buttons */}
               {!isInitialized ? (
                 /* Skeleton placeholder while auth is initializing */
-                <div className="hidden sm:flex items-center gap-2">
+                <div className={cn("items-center gap-2", forceMobile ? "hidden" : "hidden sm:flex")}>
                   <Skeleton className="h-7 w-7 rounded-full bg-white/20" />
                   <Skeleton className="h-4 w-20 rounded bg-white/20" />
                 </div>
               ) : effectiveMenuUser ? (
                 <UserMenu user={effectiveMenuUser} onLogout={logout} theme="dark" />
               ) : (
-                <div className="flex items-center gap-2">
+                <div className={cn("items-center gap-2", forceMobile ? "hidden" : "flex")}>
                   <Button
                     variant="outline"
                     size="sm"
@@ -187,7 +194,8 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                       "hidden sm:flex h-8 px-4 rounded-full text-sm font-medium transition-all",
                       showGlassHeader
                         ? "bg-[var(--glass-surface)] border-[var(--glass-border)] text-white hover:bg-[var(--glass-surface-hover)] hover:border-[var(--glass-border-hover)] backdrop-blur-sm"
-                        : "bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white"
+                        : "bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white",
+                      forceMobile && "hidden"
                     )}
                   >
                     {t('navigation.register')}
@@ -195,7 +203,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   <Button
                     size="sm"
                     onClick={() => navigate('/login')}
-                    className="hidden sm:flex h-8 px-5 bg-white hover:bg-white/90 text-[var(--hero-gradient-start)] rounded-full text-sm font-semibold shadow-lg shadow-black/10"
+                    className={cn(
+                      "hidden sm:flex h-8 px-5 bg-white hover:bg-white/90 text-[var(--hero-gradient-start)] rounded-full text-sm font-semibold shadow-lg shadow-black/10",
+                      forceMobile && "hidden"
+                    )}
                   >
                     {t('navigation.sign_in')}
                   </Button>
@@ -208,7 +219,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="lg:hidden text-white hover:bg-white/10"
+                    className={cn(
+                      "text-white hover:bg-white/10",
+                      forceMobile ? "flex" : "lg:hidden"
+                    )}
                   >
                     <Icon icon="mdi:menu" className="h-6 w-6" />
                   </Button>
@@ -323,7 +337,10 @@ const Header: React.FC<HeaderProps> = ({ user, navigationItems, onNavigate }) =>
       </div>
 
       {/* Bottom Nav Bar - Glass style (hidden below 1024px) */}
-      <div className="hidden lg:block border-t border-[var(--header-glass-border)] transition-all duration-300">
+      <div className={cn(
+        "border-t border-[var(--header-glass-border)] transition-all duration-300",
+        forceMobile ? "hidden" : "hidden lg:block"
+      )}>
         <div className="px-4 lg:px-8 lg:max-w-[1440px] lg:mx-auto">
           <div className="flex items-center justify-between h-10">
             {/* Navigation Links */}

@@ -11,6 +11,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { apiGet, apiPost } from '@/lib/apiClient';
 
 // Types - API returns arrays of strings
@@ -107,6 +121,7 @@ export const ShippingCalculator = ({
 
   // Data loading states
   const [cities, setCities] = useState<string[]>([]);
+  const [openCity, setOpenCity] = useState(false);
   const [ports, setPorts] = useState<string[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isLoadingPorts, setIsLoadingPorts] = useState(true);
@@ -302,7 +317,7 @@ export const ShippingCalculator = ({
 
       {/* Form - 2 columns on desktop */}
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 min-[1181px]:grid-cols-2 gap-3">
           {/* City Select */}
           <div>
             <Label htmlFor="calc-city" className="text-xs font-medium text-muted-foreground mb-1 block">
@@ -311,24 +326,70 @@ export const ShippingCalculator = ({
             {isLoadingCities ? (
               <Skeleton className="h-9 w-full" />
             ) : (
-              <Select value={city} onValueChange={setCity}>
-                <SelectTrigger id="calc-city" className="w-full h-9 text-sm">
-                  <SelectValue placeholder={t('calculator.select_city', 'Select city...')} />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {/* Include initial value if not in list (for URL restore) */}
-                  {city && !cities.includes(city) && (
-                    <SelectItem key={city} value={city} className="text-sm">
-                      {city}
-                    </SelectItem>
-                  )}
-                  {cities.filter(c => c && c.trim().length > 0).map((cityName) => (
-                    <SelectItem key={cityName} value={cityName} className="text-sm">
-                      {cityName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openCity} onOpenChange={setOpenCity}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCity}
+                    id="calc-city"
+                    className="w-full h-9 text-sm justify-between font-normal"
+                  >
+                    {city || t('calculator.select_city', 'Select city...')}
+                    <Icon icon="mdi:chevron-down" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder={t('calculator.search_city', 'Search city...')} />
+                    <CommandList>
+                      <CommandEmpty>{t('calculator.no_city_found', 'No city found.')}</CommandEmpty>
+                      <CommandGroup>
+                        {city && !cities.includes(city) && (
+                          <CommandItem
+                            key={city}
+                            value={city}
+                            onSelect={() => {
+                              setCity(city);
+                              setOpenCity(false);
+                            }}
+                          >
+                            <Icon
+                              icon="mdi:check"
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                city === city ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {city}
+                          </CommandItem>
+                        )}
+                        {cities
+                          .filter((c) => c && c.trim().length > 0)
+                          .map((cityName) => (
+                            <CommandItem
+                              key={cityName}
+                              value={cityName}
+                              onSelect={() => {
+                                setCity(cityName);
+                                setOpenCity(false);
+                              }}
+                            >
+                              <Icon
+                                icon="mdi:check"
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  city === cityName ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {cityName}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
 

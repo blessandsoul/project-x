@@ -18,9 +18,11 @@ interface CompanyListItemProps {
   hasAuctionBranch?: boolean;
   /** Whether shipping prices are currently being loaded */
   _isLoadingShipping?: boolean;
+  /** Hide the rating column (for compact mobile views) */
+  hideRating?: boolean;
 }
 
-export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
+export const CompanyListItem = memo(({ company, className, isCompareMode = false, isSelected, onToggleCompare, calculatedShippingPrice, hasAuctionBranch = false, hideRating = false }: CompanyListItemProps & { isSelected?: boolean, onToggleCompare?: (checked: boolean) => void }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -43,7 +45,8 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
   return (
     <div
       className={cn(
-        "relative grid grid-cols-[minmax(0,1fr)_auto_auto] gap-1.5 md:gap-4 items-center rounded-lg border border-slate-200 bg-white shadow-sm px-2 py-2.5 md:px-5 md:py-3 cursor-pointer",
+        "relative grid gap-1.5 md:gap-4 items-center rounded-lg border border-slate-200 bg-white shadow-sm px-2 py-2.5 md:px-5 md:py-3 cursor-pointer",
+        hideRating ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[minmax(0,1fr)_auto_auto]",
         "transition-all duration-200 hover:bg-slate-50/50 hover:shadow-md hover:border-slate-300",
         isSelected && "bg-blue-50/50 border-blue-300 ring-1 ring-blue-200",
         className
@@ -129,14 +132,16 @@ export const CompanyListItem = memo(({ company, className, isCompareMode = false
         </div>
       </div>
 
-      {/* Column 3: Rating (Fit Content) - Always Visible */}
-      <div className="flex items-center justify-center border-l border-slate-100 pl-2 md:pl-4 h-full">
-        <div className="flex items-center gap-1 md:gap-1.5 whitespace-nowrap">
-          <Icon icon="mdi:star" className="h-3 w-3 md:h-4 md:w-4 text-amber-400 fill-current" />
-          <span className="font-semibold text-xs md:text-sm text-slate-700">{company.rating}</span>
-          <span className="hidden md:inline text-xs text-slate-400">({company.reviewCount})</span>
+      {/* Column 3: Rating (Fit Content) - Conditionally Visible */}
+      {!hideRating && (
+        <div className="flex items-center justify-center border-l border-slate-100 pl-2 md:pl-4 h-full">
+          <div className="flex items-center gap-1 md:gap-1.5 whitespace-nowrap">
+            <Icon icon="mdi:star" className="h-3 w-3 md:h-4 md:w-4 text-amber-400 fill-current" />
+            <span className="font-semibold text-xs md:text-sm text-slate-700">{company.rating}</span>
+            <span className="hidden md:inline text-xs text-slate-400">({company.reviewCount})</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

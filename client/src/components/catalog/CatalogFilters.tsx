@@ -170,9 +170,11 @@ export const CatalogFilters = ({
           }}
           options={[
             { value: '0', label: t('catalog.filters.rating_all') },
-            { value: '3', label: `3+ ${t('common.stars')}` },
-            { value: '4', label: `4+ ${t('common.stars')}` },
-            { value: '5', label: `5 ${t('common.stars')}` },
+            { value: '6', label: `6+ ${t('common.stars')}` },
+            { value: '7', label: `7+ ${t('common.stars')}` },
+            { value: '8', label: `8+ ${t('common.stars')}` },
+            { value: '9', label: `9+ ${t('common.stars')}` },
+            { value: '10', label: `10 ${t('common.stars')}` },
           ]}
         />
       </FilterSection>
@@ -286,9 +288,11 @@ export const CatalogFilters = ({
           }}
           options={[
             { value: '0', label: t('catalog.filters.rating_all') },
-            { value: '3', label: `3+ ${t('common.stars')}` },
-            { value: '4', label: `4+ ${t('common.stars')}` },
-            { value: '5', label: `5 ${t('common.stars')}` },
+            { value: '6', label: `6+ ${t('common.stars')}` },
+            { value: '7', label: `7+ ${t('common.stars')}` },
+            { value: '8', label: `8+ ${t('common.stars')}` },
+            { value: '9', label: `9+ ${t('common.stars')}` },
+            { value: '10', label: `10 ${t('common.stars')}` },
           ]}
         />
       </FilterSection>

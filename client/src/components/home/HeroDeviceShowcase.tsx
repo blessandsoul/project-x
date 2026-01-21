@@ -6,8 +6,9 @@ import { searchVehicles } from '@/api/vehicles';
 import { searchCompaniesFromApi } from '@/services/companiesApi';
 import type { VehicleSearchItem } from '@/types/vehicles';
 import type { Company } from '@/types/api';
-import { AuctionVehicleCard } from '@/components/auction/AuctionVehicleCard';
 import { CompanyListItem } from '@/components/catalog/CompanyListItem';
+import Header from '@/components/Header';
+import { navigationItems } from '@/config/navigation';
 
 /**
  * HeroDeviceShowcase - iPhone + iPad device composition for hero section
@@ -16,8 +17,8 @@ import { CompanyListItem } from '@/components/catalog/CompanyListItem';
  * - Device frame = visual mask with rotation
  * - Screen content = real viewport (360px iPhone, 768px iPad)
  * - Entire viewport is scaled to fit device frame
- * - iPad = List layout of Companies (Catalog view)
- * - iPhone = 2-column grid layout (Mobile view of /auction-listings)
+ * - iPad = Auction vehicles table (Desktop view of /auction-listings)
+ * - iPhone = Companies list (Mobile view of /catalog)
  * - Cards render EXACTLY as on /auction-listings and /catalog
  * 
  * Hover behavior:
@@ -25,9 +26,60 @@ import { CompanyListItem } from '@/components/catalog/CompanyListItem';
  * - On hover: Devices "come alive" with enhanced glow + auto-scroll
  */
 
+/**
+ * AnimatedCountingPrice - Counts up to the target value
+ */
+function AnimatedCountingPrice({ value, delay = 0 }: { value: number; delay?: number }) {
+    const [displayValue, setDisplayValue] = useState(value - 400);
+
+    useEffect(() => {
+        let start = value - 400;
+        const duration = 2000;
+        let animationFrameId: number;
+        let timeoutId: number;
+
+        // Wait for the delay before starting animation
+        timeoutId = window.setTimeout(() => {
+            const startTime = performance.now();
+
+            const update = (now: number) => {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Ease out quart
+                const ease = 1 - Math.pow(1 - progress, 4);
+
+                const current = start + (value - start) * ease;
+                setDisplayValue(current);
+
+                if (progress < 1) {
+                    animationFrameId = requestAnimationFrame(update);
+                }
+            };
+            animationFrameId = requestAnimationFrame(update);
+        }, delay * 1000); // Convert seconds to milliseconds
+
+        return () => {
+            clearTimeout(timeoutId);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
+    }, [value, delay]);
+
+    return (
+        <span>
+            {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+            }).format(displayValue)}
+        </span>
+    );
+}
+
 // Viewport dimensions (real device widths)
 const IPHONE_VIEWPORT_WIDTH = 375; // iPhone viewport
-const IPAD_VIEWPORT_WIDTH = 768;   // iPad viewport
 
 // Device frame dimensions
 const IPAD_FRAME = { width: 380, height: 500, bezel: 28 };
@@ -40,11 +92,9 @@ const IPHONE_SCREEN_WIDTH = IPHONE_FRAME.width - IPHONE_FRAME.bezel; // 198px
 const IPHONE_SCREEN_HEIGHT = IPHONE_FRAME.height - IPHONE_FRAME.bezel; // 428px
 
 // Scale factors: screen width / viewport width
-const IPAD_SCALE = IPAD_SCREEN_WIDTH / IPAD_VIEWPORT_WIDTH;
 const IPHONE_SCALE = IPHONE_SCREEN_WIDTH / IPHONE_VIEWPORT_WIDTH;
 
 // Viewport heights (screen height / scale = how tall the viewport appears at full size)
-const IPAD_VIEWPORT_HEIGHT = IPAD_SCREEN_HEIGHT / IPAD_SCALE;
 const IPHONE_VIEWPORT_HEIGHT = IPHONE_SCREEN_HEIGHT / IPHONE_SCALE;
 
 // Auto-scroll speed (pixels per frame at ~60fps)
@@ -178,21 +228,42 @@ export function HeroDeviceShowcase() {
                                     {/* Front Camera */}
                                     <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-slate-800 rounded-full z-30" />
 
-                                    {/* Real Content (Companies) */}
+                                    {/* Header (Absolute + Scaled) */}
                                     <div
-                                        ref={iPadScrollRef}
-                                        className="h-full overflow-y-auto overflow-x-hidden"
                                         style={{
-                                            width: IPAD_VIEWPORT_WIDTH,
-                                            height: IPAD_VIEWPORT_HEIGHT,
-                                            zoom: IPAD_SCALE,
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: 580,
+                                            transform: `scale(${IPAD_SCREEN_WIDTH / 580})`,
+                                            transformOrigin: 'top left',
+                                            zIndex: 40,
                                         }}
                                     >
-                                        <IPadCompanyLayout
-                                            companies={companies}
-                                            loading={loading}
-                                            error={error}
-                                        />
+                                        <div className="relative">
+                                            {/* Solid backing to prevent content bleed */}
+                                            <div className="absolute inset-0 h-14 bg-[#115e59] z-[-1]" />
+                                            <Header navigationItems={navigationItems} forceMobile forceScrolled />
+                                        </div>
+                                    </div>
+
+                                    {/* Real Content (Auction Vehicles) */}
+                                    <div className="h-full w-full overflow-hidden">
+                                        <div
+                                            ref={iPadScrollRef}
+                                            className="overflow-y-auto overflow-x-hidden origin-top-left pt-14"
+                                            style={{
+                                                width: 580, // Reduced from 768px to "zoom in" content
+                                                height: IPAD_SCREEN_HEIGHT / (IPAD_SCREEN_WIDTH / 580),
+                                                transform: `scale(${IPAD_SCREEN_WIDTH / 580})`,
+                                            }}
+                                        >
+                                            <IPadAuctionLayout
+                                                vehicles={vehicles}
+                                                loading={loading}
+                                                error={error}
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Bottom fade mask */}
@@ -240,36 +311,38 @@ export function HeroDeviceShowcase() {
                                         </div>
                                     </div>
 
-                                    {/* Listings - matching /auction-listings mobile */}
+                                    {/* Header (Absolute + Scaled) */}
                                     <div
-                                        className="pt-7"
                                         style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
                                             width: IPHONE_VIEWPORT_WIDTH,
-                                            zoom: IPHONE_SCALE,
+                                            transform: `scale(${IPHONE_SCALE})`,
+                                            transformOrigin: 'top left',
+                                            zIndex: 40,
                                         }}
                                     >
-                                        {/* Fixed header outside scroll */}
-                                        <div className="px-3 py-2.5 bg-white border-b border-slate-200">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center">
-                                                        <Icon icon="mdi:car" className="h-4 w-4 text-white" />
-                                                    </div>
-                                                    <div className="text-[13px] font-bold text-slate-900">Live Auctions</div>
-                                                </div>
-                                                <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center">
-                                                    <Icon icon="mdi:magnify" className="h-4 w-4 text-slate-500" />
-                                                </div>
-                                            </div>
+                                        <div className="relative">
+                                            {/* Solid backing to prevent content bleed */}
+                                            <div className="absolute inset-0 h-14 bg-[#115e59] z-[-1]" />
+                                            <Header navigationItems={navigationItems} forceMobile forceScrolled />
                                         </div>
-                                        {/* Scrollable list area */}
+                                    </div>
+
+                                    {/* Companies List - matching /catalog mobile */}
+                                    <div className="h-full w-full overflow-hidden">
                                         <div
                                             ref={iPhoneScrollRef}
-                                            className="overflow-hidden bg-slate-50 scrollbar-hide pointer-events-none"
-                                            style={{ height: IPHONE_VIEWPORT_HEIGHT - 100 }}
+                                            className="overflow-y-auto overflow-x-hidden origin-top-left pt-14"
+                                            style={{
+                                                width: IPHONE_VIEWPORT_WIDTH,
+                                                height: IPHONE_VIEWPORT_HEIGHT,
+                                                transform: `scale(${IPHONE_SCALE})`,
+                                            }}
                                         >
-                                            <IPhoneListingLayout
-                                                vehicles={vehicles}
+                                            <IPhoneCompanyLayout
+                                                companies={companies}
                                                 loading={loading}
                                                 error={error}
                                             />
@@ -380,24 +453,29 @@ interface LayoutProps {
 }
 
 /**
- * IPhoneListingLayout - Auction list for iPhone
+ * IPhoneCompanyLayout - Companies list for iPhone
  * 
- * Matches /auction-listings page mobile list view.
+ * Matches /catalog page mobile list view.
  */
-const IPhoneListingLayout = memo(function IPhoneListingLayout({ vehicles, loading, error }: LayoutProps) {
+const IPhoneCompanyLayout = memo(function IPhoneCompanyLayout({ companies, loading, error }: LayoutProps) {
+    const [displayCompanies, setDisplayCompanies] = useState<Company[]>([]);
+
+    // Shuffle companies on mount
+    useEffect(() => {
+        if (loading || !companies || companies.length === 0) return;
+        const shuffled = [...companies].sort(() => Math.random() - 0.5);
+        setDisplayCompanies(shuffled);
+    }, [companies, loading]);
+
     if (loading) {
         return (
-            <div className="w-full bg-slate-50 p-3 space-y-3" aria-hidden="true">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                        {/* Header Skeleton */}
-                        <div className="px-4 py-3 border-b border-slate-100">
-                            <Skeleton className="h-4 w-3/4 mb-1" />
+            <div className="w-full bg-slate-50 p-3 space-y-2" aria-hidden="true">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center gap-3">
+                        <Skeleton className="h-12 w-12 rounded-lg" />
+                        <div className="space-y-2 flex-1">
+                            <Skeleton className="h-4 w-1/3" />
                             <Skeleton className="h-3 w-1/4" />
-                        </div>
-                        {/* Image Skeleton */}
-                        <div className="h-[180px] w-full bg-slate-100">
-                            <Skeleton className="h-full w-full" />
                         </div>
                     </div>
                 ))}
@@ -414,102 +492,9 @@ const IPhoneListingLayout = memo(function IPhoneListingLayout({ vehicles, loadin
         );
     }
 
-    if (!vehicles || vehicles.length === 0) {
-        return (
-            <div className="w-full bg-slate-50 p-6 flex items-center justify-center min-h-[300px] pointer-events-none select-none" aria-hidden="true">
-                <p className="text-sm text-slate-500 text-center">No vehicles found</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="w-full bg-slate-50" aria-hidden="true">
-            <div className="p-2 pointer-events-none select-none">
-                {/* Force 2-column grid to match mobile layout behavior even on desktop viewport */}
-                <div className="grid grid-cols-2 gap-[10px] items-stretch">
-                    {vehicles.map((vehicle) => (
-                        <AuctionVehicleCard
-                            key={vehicle.id}
-                            item={vehicle}
-                            variant="preview"
-                            forceLayout="mobile"
-                        />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-});
-
-/**
- * IPadCompanyLayout - Company list for iPad
- * 
- * Renders companies in a list layout (Catalog view)
- */
-/**
- * IPadCompanyLayout - Company list for iPad
- * 
- * Renders companies in a list layout (Catalog view).
- * Shuffles companies every 10 seconds to keep the preview alive.
- */
-const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, error }: LayoutProps) {
-    const [displayCompanies, setDisplayCompanies] = useState<Company[]>([]);
-    const [animationKey, setAnimationKey] = useState(0);
-
-    // Initial load + Periodic Shuffle
-    useEffect(() => {
-        if (loading || !companies || companies.length === 0) return;
-
-        // Function to shuffle and update
-        const shuffleAndUpdate = () => {
-            const shuffled = [...companies].sort(() => Math.random() - 0.5);
-            setDisplayCompanies(shuffled);
-            setAnimationKey(prev => prev + 1); // Trigger re-render of motion components
-        };
-
-        // Initial set
-        shuffleAndUpdate();
-
-        // Interval
-        const intervalId = setInterval(shuffleAndUpdate, 10000);
-
-        return () => clearInterval(intervalId);
-    }, [companies, loading]);
-
-
-    if (loading) {
-        return (
-            <div className="w-full bg-slate-50">
-                <div className="px-4 py-3 bg-white border-b border-slate-200">
-                    <Skeleton className="h-6 w-32" />
-                </div>
-                <div className="p-4 space-y-3">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center gap-3">
-                            <Skeleton className="h-12 w-12 rounded-lg" />
-                            <div className="space-y-2 flex-1">
-                                <Skeleton className="h-4 w-1/3" />
-                                <Skeleton className="h-3 w-1/4" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="w-full bg-slate-50 p-8 flex flex-col items-center justify-center min-h-[400px]">
-                <Icon icon="mdi:alert-circle" className="h-8 w-8 text-red-500 mb-2" />
-                <p className="text-sm text-red-600 text-center font-medium">Failed to load companies</p>
-            </div>
-        );
-    }
-
     if (!displayCompanies || displayCompanies.length === 0) {
         return (
-            <div className="w-full bg-slate-50 p-8 flex items-center justify-center min-h-[400px]">
+            <div className="w-full bg-slate-50 p-6 flex items-center justify-center min-h-[300px] pointer-events-none select-none" aria-hidden="true">
                 <p className="text-sm text-slate-500 text-center">No companies found</p>
             </div>
         );
@@ -517,39 +502,13 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
 
     return (
         <div className="w-full bg-slate-50" aria-hidden="true">
-            {/* App Header */}
-            <div className="px-4 py-3 bg-white border-b border-slate-200 sticky top-0 z-10 pointer-events-none select-none">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                            <Icon icon="mdi:domain" className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                            <div className="text-sm font-bold text-slate-900">Trusted Importers</div>
-                            <div className="text-xs text-slate-500">Verified partners</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                            <Icon icon="mdi:magnify" className="h-4 w-4 text-slate-500" />
-                        </div>
-                        <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                            <Icon icon="mdi:filter-variant" className="h-4 w-4 text-slate-500" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Company List - Wrapped in pointer-events-none for showcase */}
-            <div className="p-4 space-y-3 pointer-events-none select-none">
+            <div className="p-3 space-y-2 pointer-events-none select-none">
                 {displayCompanies.map((company, index) => {
-                    // Generate a deterministic "calculated" price based on company ID hash to keep it consistent per company even when shuffled
                     const idSum = company.id.toString().split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-                    const mockPrice = 1450 + (idSum % 500);
+                    // Randomize between 1100-1500
+                    const mockPrice = 1100 + (idSum % 401);
 
-                    // Calculate timing to complete all animations in 2 seconds
-                    // Total time = 2s, Animation duration = 0.5s
-                    // Available time for delays = 1.5s
+                    // Animation timing: Total 2s
                     const totalAnimationTime = 2; // seconds
                     const animationDuration = 0.5; // seconds
                     const totalCompanies = displayCompanies.length;
@@ -557,62 +516,10 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
                         ? (totalAnimationTime - animationDuration) / (totalCompanies - 1)
                         : 0;
 
-                    /**
-                     * AnimatedCountingPrice - Counts up to the target value
-                     */
-                    function AnimatedCountingPrice({ value, delay = 0 }: { value: number; delay?: number }) {
-                        const [displayValue, setDisplayValue] = useState(value - 400);
-
-                        useEffect(() => {
-                            let start = value - 400;
-                            const duration = 2000;
-                            let animationFrameId: number;
-                            let timeoutId: number;
-
-                            // Wait for the delay before starting animation
-                            timeoutId = window.setTimeout(() => {
-                                const startTime = performance.now();
-
-                                const update = (now: number) => {
-                                    const elapsed = now - startTime;
-                                    const progress = Math.min(elapsed / duration, 1);
-
-                                    // Ease out quart
-                                    const ease = 1 - Math.pow(1 - progress, 4);
-
-                                    const current = start + (value - start) * ease;
-                                    setDisplayValue(current);
-
-                                    if (progress < 1) {
-                                        animationFrameId = requestAnimationFrame(update);
-                                    }
-                                };
-                                animationFrameId = requestAnimationFrame(update);
-                            }, delay * 1000); // Convert seconds to milliseconds
-
-                            return () => {
-                                clearTimeout(timeoutId);
-                                if (animationFrameId) {
-                                    cancelAnimationFrame(animationFrameId);
-                                }
-                            };
-                        }, [value, delay]);
-
-                        return (
-                            <span>
-                                {new Intl.NumberFormat('en-US', {
-                                    style: 'currency',
-                                    currency: 'USD',
-                                    maximumFractionDigits: 0,
-                                }).format(displayValue)}
-                            </span>
-                        );
-                    }
-
                     return (
                         <motion.div
-                            key={`${company.id}-${animationKey}`} // Force re-render on shuffle
-                            initial={{ opacity: 0, x: -30 }}
+                            key={company.id}
+                            initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{
                                 duration: animationDuration,
@@ -624,10 +531,145 @@ const IPadCompanyLayout = memo(function IPadCompanyLayout({ companies, loading, 
                                 company={company}
                                 hasAuctionBranch={true}
                                 calculatedShippingPrice={<AnimatedCountingPrice value={mockPrice} delay={index * delayPerItem} />}
+                                hideRating={true}
                             />
                         </motion.div>
                     );
                 })}
+            </div>
+        </div>
+    );
+});
+
+/**
+ * IPadAuctionLayout - Auction vehicles table for iPad
+ * 
+ * Renders auction vehicles in a table layout (Desktop view).
+ */
+const IPadAuctionLayout = memo(function IPadAuctionLayout({ vehicles, loading, error }: LayoutProps) {
+
+
+
+    if (loading) {
+        return (
+            <div className="w-full bg-white">
+                <div className="p-4">
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-full" />
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="w-full bg-white p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <Icon icon="mdi:alert-circle" className="h-8 w-8 text-red-500 mb-2" />
+                <p className="text-sm text-red-600 text-center font-medium">Failed to load vehicles</p>
+            </div>
+        );
+    }
+
+    if (!vehicles || vehicles.length === 0) {
+        return (
+            <div className="w-full bg-white p-8 flex items-center justify-center min-h-[400px]">
+                <p className="text-sm text-slate-500 text-center">No vehicles found</p>
+            </div>
+        );
+    }
+
+    // Render auction table (simplified version of TabletAuctionPreview)
+    return (
+        <div className="w-full bg-white text-foreground overflow-hidden" aria-hidden="true">
+            <div className="h-full w-full overflow-auto pointer-events-none select-none">
+                <table className="w-full text-left border-collapse table-fixed">
+                    <colgroup>
+                        <col className="w-[100px]" />
+                        <col className="w-[100px]" />
+                        <col className="w-[130px]" />
+                        <col className="w-[120px]" />
+                        <col className="w-[130px]" />
+                    </colgroup>
+                    <thead className="bg-white sticky top-0 z-10 border-b shadow-sm">
+                        <tr>
+                            <th className="p-3 text-[11px] font-bold text-muted-foreground uppercase">Image</th>
+                            <th className="p-3 text-[11px] font-bold text-muted-foreground uppercase">Lot Info</th>
+                            <th className="p-3 text-[11px] font-bold text-muted-foreground uppercase">Vehicle</th>
+                            <th className="p-3 text-[11px] font-bold text-muted-foreground uppercase">Document</th>
+                            <th className="p-3 text-[11px] font-bold text-muted-foreground uppercase">Bids</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                        {vehicles.map((item) => {
+                            const mainPhotoUrl = item.primary_photo_url || item.primary_thumb_url || '/cars/1.webp';
+                            const currentBid = item.last_bid?.bid || item.calc_price || 0;
+                            const retailValue = item.retail_value || null;
+
+                            return (
+                                <tr key={item.id} className="hover:bg-orange-50/30 transition-colors">
+                                    <td className="p-2 align-top">
+                                        <div className="relative aspect-[4/3] w-full rounded-md overflow-hidden bg-muted">
+                                            <img
+                                                src={mainPhotoUrl}
+                                                alt={`${item.year} ${item.make} ${item.model}`}
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                            />
+                                            {item.source && (
+                                                <div className={`absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-bold uppercase text-white ${item.source.toLowerCase() === 'copart' ? 'bg-[#002d72]' : 'bg-[#c41230]'
+                                                    }`}>
+                                                    {item.source.toLowerCase() === 'copart' ? 'Copart' : 'IAAI'}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-2.5 align-top">
+                                        <div className="flex flex-col gap-1">
+                                            <h3 className="font-semibold text-xs text-primary leading-tight uppercase">
+                                                {item.year} {item.make} {item.model}
+                                            </h3>
+                                            <div className="text-muted-foreground text-[11px]">
+                                                Lot <span className="text-primary font-medium">{item.source_lot_id || item.id}</span>
+                                            </div>
+                                            {item.yard_name && (
+                                                <div className="text-[11px] text-muted-foreground truncate" title={item.yard_name}>
+                                                    {item.yard_name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-2.5 align-top">
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="text-muted-foreground text-[11px]">Odometer</div>
+                                            <div className="font-semibold text-foreground text-sm">
+                                                {item.mileage ? item.mileage.toLocaleString() : 'N/A'}
+                                            </div>
+                                            <div className="text-muted-foreground text-[11px] mt-1">Est. Retail</div>
+                                            <div className="font-semibold text-foreground text-sm">
+                                                {retailValue ? `$${retailValue.toLocaleString()}` : 'N/A'}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-2.5 align-top">
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="text-muted-foreground text-[10px]">Document</div>
+                                            <div className="text-foreground font-medium text-[11px]">{item.document || 'N/A'}</div>
+                                        </div>
+                                    </td>
+                                    <td className="p-2.5 align-top">
+                                        <div className="flex flex-col">
+                                            <div className="text-muted-foreground text-[10px]">Current Bid</div>
+                                            <div className="text-base font-bold text-foreground">
+                                                ${typeof currentBid === 'number' ? currentBid.toLocaleString() : currentBid}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
