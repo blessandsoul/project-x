@@ -106,6 +106,7 @@
     "register": {
       "title": "Create account",
       "subtitle": "Create an account to start using Trusted Importers.",
+      "username": "Username",
       "name": "Full name",
       "email": "Email",
       "password": "Password",
@@ -138,6 +139,7 @@
     "contact_phone": "Contact phone",
     "placeholders": {
       "email": "you@example.com",
+      "username": "johndoe",
       "password": "••••••••",
       "name": "Your name",
       "phone": "+995 5XX XXX XXX",
@@ -174,6 +176,8 @@
     "helper_text": "Price appears in the company list below.",
     "city": "City",
     "select_city": "Select city...",
+    "search_city": "Search city...",
+    "no_city_found": "No city found.",
     "destination_port": "Destination Port",
     "select_port": "Select port...",
     "vehicle_type": "Vehicle Type",

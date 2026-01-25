@@ -1,8 +1,10 @@
 
+import { useState, useEffect } from 'react';
+
 /**
  * AnimatedCountingPrice - Counts up to the target value
  */
-function AnimatedCountingPrice({ value, delay = 0 }: { value: number; delay?: number }) {
+export default function AnimatedCountingPrice({ value, delay = 0 }: { value: number; delay?: number }) {
     const [displayValue, setDisplayValue] = useState(value - 400);
 
     useEffect(() => {
