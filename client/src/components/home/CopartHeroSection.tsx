@@ -20,22 +20,22 @@ interface GlassCardProps {
 
 const GlassCard = ({ icon, title, description, className = '' }: GlassCardProps) => (
   <motion.div
-    className={`group relative rounded-xl border border-white/15 bg-white/5 p-4 transition-all duration-300 hover:bg-white/10 hover:border-white/25 hover:shadow-xl hover:shadow-black/10 ${className}`}
+    className={`group relative rounded-xl border border-white/15 bg-white/5 p-2 min-[500px]:p-4 transition-all duration-300 hover:bg-white/10 hover:border-white/25 hover:shadow-xl hover:shadow-black/10 ${className}`}
     style={{ backdropFilter: 'blur(15px)' }}
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.5 }}
   >
-    <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white shadow-lg shadow-black/5">
-        <Icon icon={icon} className="h-5 w-5" aria-hidden="true" />
+    <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-1.5 min-[500px]:gap-3">
+      <div className="flex h-7 w-7 min-[500px]:h-10 min-[500px]:w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white shadow-lg shadow-black/5">
+        <Icon icon={icon} className="h-3.5 w-3.5 min-[500px]:h-5 min-[500px]:w-5" aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="text-sm font-semibold text-white leading-tight mb-0.5">
+        <h3 className="!text-[9px] min-[500px]:!text-sm font-semibold text-white leading-[1.1] mb-0.5 xl:whitespace-nowrap">
           {title}
         </h3>
-        <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
+        <p className="!text-[8px] min-[500px]:!text-xs text-white/60 leading-relaxed line-clamp-2">
           {description}
         </p>
       </div>
@@ -111,14 +111,14 @@ export function CopartHeroSection() {
 
               {/* Glass Feature Cards */}
               <GlassCard
-                icon="mdi:shield-check"
-                title={t('home.copart_hero.buyer_protection')}
-                description={t('home.copart_hero.transparent_prices_desc')}
-              />
-              <GlassCard
                 icon="mdi:truck-delivery"
                 title={t('home.copart_hero.nationwide_delivery')}
                 description={t('home.copart_hero.all_prices_desc')}
+              />
+              <GlassCard
+                icon="mdi:shield-check"
+                title={t('home.copart_hero.buyer_protection')}
+                description={t('home.copart_hero.transparent_prices_desc')}
               />
               <GlassCard
                 icon="mdi:file-document-check"
@@ -246,15 +246,15 @@ export function CopartHeroSection() {
             transition={{ duration: 0.4, delay: 0.2 }}
           >
             <GlassCard
-              icon="mdi:shield-check"
-              title={t('home.copart_hero.buyer_protection')}
-              description={t('home.copart_hero.transparent_prices_desc')}
-              className="min-[500px]:col-span-2"
-            />
-            <GlassCard
               icon="mdi:truck-delivery"
               title={t('home.copart_hero.nationwide_delivery')}
               description={t('home.copart_hero.all_prices_desc')}
+              className="min-[500px]:col-span-2"
+            />
+            <GlassCard
+              icon="mdi:shield-check"
+              title={t('home.copart_hero.buyer_protection')}
+              description={t('home.copart_hero.transparent_prices_desc')}
             />
             <GlassCard
               icon="mdi:file-document-check"
@@ -388,21 +388,21 @@ export function CopartHeroSection() {
 
           {/* Feature Cards - 2-column grid layout matching tablet */}
           <motion.div
-            className="w-full grid grid-cols-1 min-[500px]:grid-cols-2 gap-3"
+            className="w-full grid grid-cols-1 min-[700px]:grid-cols-2 gap-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
           >
             <GlassCard
-              icon="mdi:shield-check"
-              title={t('home.copart_hero.buyer_protection')}
-              description={t('home.copart_hero.transparent_prices_desc')}
-              className="min-[500px]:col-span-2"
-            />
-            <GlassCard
               icon="mdi:truck-delivery"
               title={t('home.copart_hero.nationwide_delivery')}
               description={t('home.copart_hero.all_prices_desc')}
+              className="min-[700px]:col-span-2"
+            />
+            <GlassCard
+              icon="mdi:shield-check"
+              title={t('home.copart_hero.buyer_protection')}
+              description={t('home.copart_hero.transparent_prices_desc')}
             />
             <GlassCard
               icon="mdi:file-document-check"

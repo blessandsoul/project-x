@@ -884,7 +884,7 @@
                 "type": "object",
                 "required": ["rating"],
                 "properties": {
-                  "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "rating": { "type": "number", "minimum": 1, "maximum": 10 },
                   "comment": {
                     "type": "string",
                     "minLength": 10,
@@ -925,7 +925,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "rating": { "type": "number", "minimum": 1, "maximum": 10 },
                   "comment": { "type": "string" }
                 }
               }

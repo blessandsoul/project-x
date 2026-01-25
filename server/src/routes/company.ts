@@ -1208,6 +1208,48 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.code(204).send();
   });
 
+  /**
+   * POST /companies/:companyId/reviews/:reviewId/reply
+   *
+   * Add a reply from the company to a review. Only the owner of the
+   * company can reply to reviews on their profile.
+   *
+   * Auth: Cookie-based (HttpOnly access token)
+   * CSRF: Required (X-CSRF-Token header)
+   */
+  fastify.post('/companies/:companyId/reviews/:reviewId/reply', {
+    preHandler: [fastify.authenticateCookie, fastify.csrfProtection],
+    schema: {
+      params: companyReviewParamsSchema,
+      body: {
+        type: 'object',
+        required: ['reply'],
+        properties: {
+          reply: { type: 'string', minLength: 1, maxLength: 2000 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    // SECURITY: companyId and reviewId are already validated as positive integers by schema
+    const { companyId, reviewId } = request.params as { companyId: number; reviewId: number };
+
+    if (!request.user || typeof request.user.id !== 'number') {
+      throw new AuthorizationError('Authentication required to reply to reviews');
+    }
+
+    // Only company role can reply (they must own the company)
+    if (request.user.role !== 'company' && request.user.role !== 'admin') {
+      throw new AuthorizationError('Only company owners can reply to reviews');
+    }
+
+    const body = request.body as { reply: string };
+    const userCompanyId = request.user.company_id as number | null | undefined;
+
+    const updated = await controller.replyToCompanyReview(companyId, reviewId, userCompanyId, body.reply);
+    return reply.send(updated);
+  });
+
   // ---------------------------------------------------------------------------
   // Company Quotes: auto-calculated based on vehicle & company pricing
   // ---------------------------------------------------------------------------
@@ -1286,32 +1328,33 @@ const companyRoutes: FastifyPluginAsync = async (fastify) => {
       ...(vehiclecategory && { vehiclecategory }),
     });
 
-    // If city/auction couldn't be matched, return a response indicating price unavailable
+    // If city/auction couldn't be matched, we can still proceed with fake calculators
+    // by using the raw city string. Only default/custom_api calculators need matched cities.
+    let calculatorInput: any;
+
     if (!buildResult.success || !buildResult.request) {
       request.log.warn(
         { vehicleId, auction, usacity, error: buildResult.error },
-        'Could not build calculator request - price calculation unavailable'
+        'Could not build calculator request - will use raw city for fake calculators'
       );
 
-      // Return a response indicating price couldn't be calculated (not an error)
-      return reply.code(200).send({
-        vehicle_id: vehicleId,
-        price_available: false,
-        message: buildResult.error || 'Price calculation is not available for this location.',
-        unmatched_city: buildResult.unmatchedCity,
-        quotes: [],
-        total: 0,
-        limit: 5,
-        offset: 0,
-        totalPages: 0,
-      });
+      // Build a fallback request with raw city for fake calculators
+      // Fake calculators don't need city matching - they work with any city string
+      calculatorInput = {
+        buyprice: 1,
+        auction: auction || 'Copart', // Use raw auction
+        vehicletype: 'standard',
+        usacity, // Use raw city string (unmatched)
+        destinationport: 'POTI',
+        vehiclecategory: vehiclecategory || 'Sedan',
+      };
+    } else {
+      calculatorInput = buildResult.request;
     }
-
-    const calculatorInput = buildResult.request;
 
     request.log.info(
       { calculatorInput },
-      'Built normalized calculator request'
+      'Built calculator request (matched or fallback)'
     );
 
     // Parse pagination for companies/quotes

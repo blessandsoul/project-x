@@ -11,7 +11,7 @@ export class CompanyReviewModel extends BaseModel {
     const safeLimit = Math.floor(limit);
     const safeOffset = Math.floor(offset);
     const rows = await this.executeQuery(
-      `SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.company_id = ? ORDER BY r.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      `SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.company_reply, r.company_reply_at, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.company_id = ? ORDER BY r.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       [companyId],
     );
     return rows as CompanyReview[];
@@ -47,7 +47,7 @@ export class CompanyReviewModel extends BaseModel {
 
   async getById(id: number): Promise<CompanyReview | null> {
     const rows = await this.executeQuery(
-      'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.id = ?',
+      'SELECT r.id, r.company_id, r.user_id, u.username AS user_name, r.rating, r.comment, r.company_reply, r.company_reply_at, r.created_at, r.updated_at FROM company_reviews r JOIN users u ON u.id = r.user_id WHERE r.id = ?',
       [id],
     );
     if (!rows.length) return null;
@@ -120,5 +120,13 @@ export class CompanyReviewModel extends BaseModel {
   async updateCompanyRating(companyId: number): Promise<void> {
     const { rating } = await this.getAggregatedRating(companyId);
     await this.executeCommand('UPDATE companies SET rating = ? WHERE id = ?', [rating, companyId]);
+  }
+
+  async updateReply(reviewId: number, reply: string | null): Promise<CompanyReview | null> {
+    await this.executeCommand(
+      'UPDATE company_reviews SET company_reply = ?, company_reply_at = NOW(), updated_at = NOW() WHERE id = ?',
+      [reply, reviewId],
+    );
+    return this.getById(reviewId);
   }
 }

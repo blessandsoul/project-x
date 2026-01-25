@@ -18,3 +18,4 @@ Task VC-146: Refined Profile Settings translations (Professional wording).
 Task VC-147: Refined Favorites Page (Fixed hardcodes, better Russian).
 Task VC-148: Refined Company Settings (Professional, concise, fixed English services).
 Task VC-149: Fixed TS build error in VehicleDetailsPage.
+Task VC-150: Updated `client/src/mocks/_mockData.js` with realistic vehicle data derived from `vehicles.sql`. Added robust `generateVehicles` function supporting `VehicleDetails` snake_case interface for accurate frontend prototyping without backend dependencies.

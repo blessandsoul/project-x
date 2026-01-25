@@ -136,6 +136,7 @@
     "placeholders": {
       "name": "Ваше имя",
       "email": "you@example.com",
+      "username": "johndoe",
       "password": "••••••••",
       "phone": "+995...",
       "company_name": "Название компании"
@@ -671,6 +672,8 @@
     "vehicle_type": "Тип транспорта",
     "vehicle_category": "Категория ТС",
     "select_city": "Выберите город...",
+    "search_city": "Поиск города...",
+    "no_city_found": "Город не найден.",
     "select_port": "Выберите порт...",
     "select_vehicle_type": "Выберите тип...",
     "select_vehicle_category": "Выберите категорию...",

@@ -4,8 +4,10 @@ export interface CompanyReview {
   user_id: number;
   user_name?: string | null;
   avatar?: string | null;
-  rating: number; // 1-5
+  rating: number; // 1-10
   comment: string | null;
+  company_reply?: string | null;
+  company_reply_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }
