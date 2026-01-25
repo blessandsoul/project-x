@@ -23,6 +23,7 @@
  * - NODE_ENV: 'production' or 'development'
  * - LOG_LEVEL: Logging level (default: 'info' in prod, 'debug' in dev)
  */
+// 
 
 import 'dotenv/config';
 import Fastify from 'fastify';
