@@ -53,7 +53,7 @@ async function seedRandomLogos() {
         for (const company of companies) {
             // Pick random file
             const randomFile = logoFiles[Math.floor(Math.random() * logoFiles.length)];
-            const filePath = path.join(logoDir, randomFile);
+            const filePath = path.join(logoDir, randomFile!);
 
             console.log(`Processing ${company.name} -> ${randomFile}`);
 
@@ -62,7 +62,7 @@ async function seedRandomLogos() {
                 // We don't trust the extension, checking magic bytes is handled by the service, 
                 // but passing a hint based on file extension is good practice or just generic 'image/png' if uncertain,
                 // however the service takes a declared mime. Let's infer it roughly.
-                const ext = path.extname(randomFile).toLowerCase();
+                const ext = path.extname(randomFile!).toLowerCase();
                 let mime = 'image/png';
                 if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
                 if (ext === '.webp') mime = 'image/webp';
