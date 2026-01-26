@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Image } from '@/components/ui/image';
 import type { Company } from '@/types/api';
-import { cn } from '@/lib/utils';
+import { cn, formatRating } from '@/lib/utils';
 
 interface CompanyCardProps {
   company: Company;
@@ -67,7 +67,7 @@ export const CompanyCard = memo(({ company, className }: CompanyCardProps) => {
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                 <Icon icon="mdi:star" className="h-4 w-4 text-amber-400" />
-                <span className="font-bold text-slate-900">{company.rating}</span>
+                <span className="font-bold text-slate-900">{formatRating(company.rating)}</span>
                 <span className="text-xs text-slate-500">({company.reviewCount})</span>
               </div>
             </div>

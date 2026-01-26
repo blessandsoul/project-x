@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Company } from '@/types/api';
-import { cn } from '@/lib/utils';
+import { cn, formatRating } from '@/lib/utils';
 
 // Import custom Image component or use standard img
 // import { Image } from '@/components/ui/image'; // Commented out as it's not being used
@@ -48,20 +48,20 @@ export function CompanyComparisonModal({
     </span>
   );
 
-  const formatCurrency = (val?: number) => 
+  const formatCurrency = (val?: number) =>
     val ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val) : '—';
 
   // Comparison Rows Configuration
   const rows = [
-    { 
-      label: 'რეიტინგი', 
+    {
+      label: 'რეიტინგი',
       tooltip: 'Average rating based on user reviews from Google and internal feedback.',
       icon: 'mdi:star-circle',
       render: (c: Company) => (
         <div className="flex flex-col items-center gap-0.5">
           <div className={cn("flex items-center gap-1 font-bold text-sm lg:text-base", c.rating === bestRating ? "text-amber-500" : "text-slate-700")}>
             <Icon icon="mdi:star" className={cn("h-3.5 w-3.5", c.rating === bestRating ? "text-amber-500" : "text-slate-300")} />
-            {c.rating}
+            {formatRating(c.rating)}
           </div>
           <span className="text-[9px] lg:text-[11px] text-slate-400 font-medium">{c.reviewCount} შეფასება</span>
         </div>
@@ -95,21 +95,21 @@ export function CompanyComparisonModal({
         const score = c.trustScore ?? 0;
         const color = score >= 90 ? 'text-emerald-500' : score >= 70 ? 'text-blue-500' : 'text-amber-500';
         const isBest = score === maxTrustScore;
-        
+
         return (
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-9 w-9">
               <svg className="h-full w-full -rotate-90" viewBox="0 0 24 24">
                 <circle className="text-slate-100" strokeWidth="2.5" stroke="currentColor" fill="transparent" r="10" cx="12" cy="12" />
-                <circle 
-                  className={color} 
-                  strokeWidth="2.5" 
+                <circle
+                  className={color}
+                  strokeWidth="2.5"
                   strokeDasharray={62.8}
                   strokeDashoffset={62.8 - (62.8 * score) / 100}
-                  strokeLinecap="round" 
-                  stroke="currentColor" 
-                  fill="transparent" 
-                  r="10" cx="12" cy="12" 
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r="10" cx="12" cy="12"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
@@ -206,16 +206,16 @@ export function CompanyComparisonModal({
                   <p className="text-xs text-slate-500">ვადარებთ {companies.length} კომპანიას</p>
                 </div>
               </div>
-              
+
               {/* Sticky Header CTA */}
               <div className="flex items-center gap-2">
-                 <div className="hidden sm:flex items-center text-xs text-slate-500 mr-2">
-                    <Icon icon="mdi:information-outline" className="mr-1 h-3.5 w-3.5" />
-                    <span>გამოკვეთილი უჯრები საუკეთესო მნიშვნელობას აჩვენებს</span>
-                 </div>
-                 <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700">
-                   <Icon icon="mdi:close" className="h-5 w-5" />
-                 </Button>
+                <div className="hidden sm:flex items-center text-xs text-slate-500 mr-2">
+                  <Icon icon="mdi:information-outline" className="mr-1 h-3.5 w-3.5" />
+                  <span>გამოკვეთილი უჯრები საუკეთესო მნიშვნელობას აჩვენებს</span>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700">
+                  <Icon icon="mdi:close" className="h-5 w-5" />
+                </Button>
               </div>
             </div>
 
@@ -223,9 +223,9 @@ export function CompanyComparisonModal({
             <div className="flex-1 overflow-auto relative bg-slate-50/50">
               <div className="h-full">
                 <div className="min-w-max grid" style={{ gridTemplateColumns: `120px repeat(${companies.length}, minmax(120px, 1fr))` }}>
-                  
+
                   {/* --- Sticky Header Row (Logos) --- */}
-                  
+
                   {/* Top-Left Corner (Sticky x & y) */}
                   <div className="sticky top-0 left-0 z-30 bg-slate-50 border-b border-r border-slate-200 p-2.5 flex items-center justify-center">
                     <Icon icon="mdi:format-list-bulleted-square" className="h-4 w-4 text-slate-400" />
@@ -237,9 +237,9 @@ export function CompanyComparisonModal({
                     return (
                       <div key={company.id} className="sticky top-0 z-20 bg-white border-b border-r border-slate-100 p-3 flex flex-col items-center gap-2.5 relative overflow-hidden">
                         {isBestOverall && (
-                           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
+                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
                         )}
-                        
+
                         <div className="relative h-10 w-10 group-hover:scale-105 transition-transform">
                           <img src={company.logo ?? ''} alt={company.name} className="h-full w-full object-cover rounded-full shadow-sm" />
                           {company.vipStatus && (
@@ -253,17 +253,17 @@ export function CompanyComparisonModal({
                             {company.name}
                           </h3>
                           {isBestOverall ? (
-                             <Badge className="h-4 bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[9px] font-bold shadow-sm">
-                                <Icon icon="mdi:trophy" className="mr-1 h-3 w-3" /> რეკომენდებული
-                             </Badge>
-                           ) : (
-                             <div className="flex items-center justify-center gap-1 text-xs text-slate-500 h-5">
-                               <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                               {company.location?.city || 'საქართველო'}
-                             </div>
+                            <Badge className="h-4 bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[9px] font-bold shadow-sm">
+                              <Icon icon="mdi:trophy" className="mr-1 h-3 w-3" /> რეკომენდებული
+                            </Badge>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1 text-xs text-slate-500 h-5">
+                              <Icon icon="mdi:map-marker" className="h-3 w-3" />
+                              {company.location?.city || 'საქართველო'}
+                            </div>
                           )}
                         </div>
-                        
+
                         {/* Header CTA */}
                         <Button
                           size="sm"
@@ -280,16 +280,16 @@ export function CompanyComparisonModal({
                   })}
 
                   {/* --- Comparison Rows --- */}
-                  
+
                   {rows.map((row) => (
                     <div key={row.label} className="contents group">
                       {/* Row Label (Sticky left) */}
                       <div className="sticky left-0 z-10 bg-white border-r border-slate-200 border-b border-slate-100 px-1.5 py-1 flex items-center gap-1 group-hover:bg-slate-50/80 transition-colors">
                         <Icon icon={row.icon} className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                         {row.tooltip ? (
-                           <LabelWithTooltip label={row.label} tooltip={row.tooltip} />
+                          <LabelWithTooltip label={row.label} tooltip={row.tooltip} />
                         ) : (
-                           <span className="text-[8px] font-semibold text-slate-600 uppercase tracking-tight whitespace-pre-line break-words max-w-[68px]">{row.label}</span>
+                          <span className="text-[8px] font-semibold text-slate-600 uppercase tracking-tight whitespace-pre-line break-words max-w-[68px]">{row.label}</span>
                         )}
                       </div>
 

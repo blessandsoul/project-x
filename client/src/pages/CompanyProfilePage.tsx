@@ -1,13 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/lib/formatDate';
+import { formatRating } from '@/lib/utils';
 import ColorThief from 'colorthief';
 // Header and Footer are provided by MainLayout
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CompanyRating } from '@/components/company/CompanyRating';
 import { VipBadge } from '@/components/company/VipBadge';
+import { CompanyReviewItem } from '@/components/company/CompanyReviewItem';
 import { EmptyState } from '@/components/company/EmptyState';
 import { Icon } from '@iconify/react/dist/iconify.js';
 // navigationItems/footerLinks now handled by MainLayout
@@ -90,8 +91,25 @@ const CompanyProfilePage = () => {
   const [editComment, setEditComment] = useState('');
   const [isUpdatingReview, setIsUpdatingReview] = useState(false);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
+  const reviewsRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
   const [gradientColors, setGradientColors] = useState<string[]>([]);
   const reviewsLimit = 5;
+
+  // Scroll to reviews top when page changes
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (reviewsRef.current) {
+      // Small timeout to allow render to complete if needed, or just scroll immediately
+      // Using { block: 'start' } to align top of card with top of viewport
+      // Adding a small offset might be nice if we have a sticky header, but we'll stick to standard behavior first
+      reviewsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [reviewsPage]);
   const { user, userRole } = useAuth();
 
   const logoSrc = company?.logo ?? '';
@@ -643,7 +661,7 @@ const CompanyProfilePage = () => {
               )}
 
               {/* Reviews */}
-              <Card className="border-slate-200 bg-white shadow-sm">
+              <Card ref={reviewsRef} className="border-slate-200 bg-white shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-slate-900">{t('company_profile.reviews.title')} ({company.reviewCount})</CardTitle>
@@ -773,172 +791,106 @@ const CompanyProfilePage = () => {
 
                     {!isReviewsLoading && !reviewsError && reviews.length > 0 && (
                       <div className="space-y-4">
-                        {reviews.map((review) => (
-                          <div key={`review-${review.id}-${review.created_at}`} className="border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
-                            <div className="flex items-start gap-3 mb-2">
-                              {review.avatar && review.avatar.trim().length > 0 && (
-                                <img
-                                  src={review.avatar}
-                                  alt={review.user_name || `${t('common.user')} #${review.user_id}`}
-                                  className="h-9 w-9 rounded-full object-cover border border-slate-200 flex-shrink-0 mt-1"
-                                />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-medium text-sm sm:text-base text-slate-900 truncate">
-                                    {review.user_name && review.user_name.trim().length > 0
-                                      ? review.user_name
-                                      : `${t('common.user')} #${review.user_id}`}
-                                  </span>
-
-                                  <div className="flex items-center gap-2 ml-auto sm:ml-0">
-                                    {isReviewOwner(review) && (
+                        {reviews.map((review) => {
+                          // Edit Mode View (Preserving existing logic/layout for editing)
+                          if (editingReviewId === String(review.id)) {
+                            return (
+                              <div key={`review-edit-${review.id}`} className="py-6 border-b border-slate-100 last:border-b-0 space-y-4">
+                                <div className="flex items-start gap-3">
+                                  {review.avatar && (
+                                    <img
+                                      src={review.avatar}
+                                      alt={review.user_name || 'User'}
+                                      className="h-9 w-9 rounded-full object-cover border border-slate-200 mt-1"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-slate-900">
+                                        {review.user_name || `${t('common.user')} #${review.user_id}`}
+                                      </span>
                                       <div className="flex items-center gap-1">
-                                        {editingReviewId === String(review.id) ? (
-                                          <>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleUpdateReview(String(review.id))}
-                                              disabled={isUpdatingReview}
-                                              className="h-6 w-6"
-                                              title={t('common.save')}
-                                            >
-                                              {isUpdatingReview ? (
-                                                <Icon icon="mdi:loading" className="h-3.5 w-3.5 animate-spin" />
-                                              ) : (
-                                                <Icon icon="mdi:check" className="h-3.5 w-3.5 text-green-600" />
-                                              )}
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={handleCancelEditReview}
-                                              disabled={isUpdatingReview}
-                                              className="h-6 w-6"
-                                              title={t('common.cancel')}
-                                            >
-                                              <Icon icon="mdi:close" className="h-3.5 w-3.5 text-slate-400" />
-                                            </Button>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleStartEditReview(review)}
-                                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
-                                              title={t('common.edit')}
-                                            >
-                                              <Icon icon="mdi:pencil" className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleDeleteReview(String(review.id))}
-                                              disabled={isDeletingReview}
-                                              className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                              title={t('common.delete')}
-                                            >
-                                              <Icon icon="mdi:delete" className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </>
-                                        )}
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleUpdateReview(String(review.id))}
+                                          disabled={isUpdatingReview}
+                                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                          title={t('common.save')}
+                                        >
+                                          {isUpdatingReview ? (
+                                            <Icon icon="mdi:loading" className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Icon icon="mdi:check" className="h-5 w-5" />
+                                          )}
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={handleCancelEditReview}
+                                          disabled={isUpdatingReview}
+                                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                          title={t('common.cancel')}
+                                        >
+                                          <Icon icon="mdi:close" className="h-5 w-5" />
+                                        </Button>
                                       </div>
-                                    )}
-                                    <span className="text-xs text-slate-500 whitespace-nowrap">
-                                      {formatDate(review.created_at, i18n.language)}
-                                    </span>
-                                  </div>
-                                </div>
+                                    </div>
 
-                                <div className="flex items-center mt-1">
-                                  {[...Array(5)].map((_, index) => {
-                                    const rating = review.rating / 2;
-                                    const val = index + 1;
-                                    const isFull = rating >= val;
-                                    const isHalf = !isFull && rating >= val - 0.5;
+                                    {/* Edit Form */}
+                                    <div className="mt-2 space-y-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('company_profile.reviews.your_rating')}</Label>
+                                        <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                                          {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                              key={star}
+                                              type="button"
+                                              className="focus:outline-none focus:ring-2 focus:ring-accent rounded transition-transform hover:scale-110"
+                                              onClick={() => setEditRating(star * 2)}
+                                            >
+                                              <Icon
+                                                icon="mdi:star"
+                                                className={`h-6 w-6 ${star * 2 <= editRating
+                                                  ? 'text-accent fill-current'
+                                                  : 'text-slate-300'
+                                                  }`}
+                                              />
+                                            </button>
+                                          ))}
+                                          <span className="ms-2 text-sm font-bold text-slate-700">
+                                            {editRating}/10
+                                          </span>
+                                        </div>
+                                      </div>
 
-                                    return (
-                                      <Icon
-                                        key={index}
-                                        icon={isHalf ? "mdi:star-half-full" : "mdi:star"}
-                                        className={`h-3.5 w-3.5 ${isFull || isHalf ? 'text-accent fill-current' : 'text-slate-300'
-                                          }`}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                            {editingReviewId === String(review.id) ? (
-                              <div className="mt-3 space-y-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-slate-700">{t('company_profile.reviews.your_rating')}</Label>
-                                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                      <button
-                                        key={star}
-                                        type="button"
-                                        className="focus:outline-none focus:ring-2 focus:ring-accent rounded"
-                                        onClick={() => setEditRating(star * 2)}
-                                        aria-label={`${star} stars`}
-                                      >
-                                        <Icon
-                                          icon="mdi:star"
-                                          className={`h-5 w-5 ${star * 2 <= editRating
-                                            ? 'text-accent fill-current'
-                                            : 'text-slate-300'
-                                            }`}
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`edit-comment-${review.id}`} className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('company_profile.reviews.comment_label')}</Label>
+                                        <textarea
+                                          id={`edit-comment-${review.id}`}
+                                          value={editComment}
+                                          onChange={(event) => setEditComment(event.target.value)}
+                                          className="min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
                                         />
-                                      </button>
-                                    ))}
-                                    <span className="ms-2 text-sm text-slate-500">
-                                      {editRating} / 10
-                                    </span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor={`edit-comment-${review.id}`} className="text-slate-700">{t('company_profile.reviews.comment_label')}</Label>
-                                  <textarea
-                                    id={`edit-comment-${review.id}`}
-                                    value={editComment}
-                                    onChange={(event) => setEditComment(event.target.value)}
-                                    placeholder={t('company_profile.reviews.comment_placeholder')}
-                                    className="min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                                  />
-                                </div>
                               </div>
-                            ) : (
-                              review.comment && (
-                                <p className="text-sm text-slate-600">
-                                  {review.comment}
-                                </p>
-                              )
-                            )}
+                            );
+                          }
 
-                            {/* Company Reply Section */}
-                            {!editingReviewId && review.company_reply && (
-                              <div className="mt-4 ms-2 sm:ms-0 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Icon icon="mdi:message-reply-text" className="h-4 w-4 text-slate-500" />
-                                  <span className="font-semibold text-sm text-slate-900">
-                                    {t('company_profile.reviews.response_from_admin', 'Response from %s administration', { replace: { company: company.name } }).replace('%s', company.name)}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                                  {review.company_reply}
-                                </p>
-                                {review.company_reply_date && (
-                                  <p className="text-xs text-slate-400 mt-2">
-                                    {formatDate(review.company_reply_date, i18n.language)}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          // Display Mode View (New Design)
+                          return (
+                            <CompanyReviewItem
+                              key={`review-${review.id}-${review.created_at}`}
+                              review={review}
+                              onEdit={handleStartEditReview}
+                              onDelete={handleDeleteReview}
+                              isOwner={isReviewOwner(review)}
+                            />
+                          );
+                        })}
                       </div>
                     )}
 
@@ -1044,7 +996,7 @@ const CompanyProfilePage = () => {
                     {/* Rating */}
                     <div className="flex flex-col items-center p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                       <Icon icon="mdi:star" className="h-6 w-6 text-accent fill-current mb-2" />
-                      <span className="text-xl font-bold text-slate-900">{company.rating}</span>
+                      <span className="text-xl font-bold text-slate-900">{formatRating(company.rating)}</span>
                       <p className="text-xs text-slate-500 mt-1">{t('company_profile.stats.rating')}</p>
                     </div>
 

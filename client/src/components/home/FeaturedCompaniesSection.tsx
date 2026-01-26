@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/company/EmptyState'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Image } from '@/components/ui/image'
 import type { Company } from '@/types/api'
-import { cn } from '@/lib/utils'
+import { cn, formatRating } from '@/lib/utils'
 
 type VipTier = 'diamond' | 'gold' | 'silver'
 
@@ -28,9 +28,9 @@ export function FeaturedCompaniesSection({
   const vipCompanies = useMemo<Company[]>(() => {
     if (!companies || companies.length === 0) return []
     return [...companies]
-       .filter((c) => c.vipStatus)
-       .sort((a, b) => b.rating - a.rating)
-       .slice(0, 3)
+      .filter((c) => c.vipStatus)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 3)
   }, [companies])
 
   const renderContent = () => {
@@ -38,13 +38,13 @@ export function FeaturedCompaniesSection({
       return Array.from({ length: 3 }).map((_, index) => (
         <Card key={index} className="h-full">
           <CardHeader className="space-y-2">
-             <Skeleton className="h-6 w-1/3" />
-             <Skeleton className="h-4 w-1/4" />
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-4 w-1/4" />
           </CardHeader>
           <CardContent className="space-y-4">
-             <Skeleton className="h-20 w-full rounded-lg" />
-             <Skeleton className="h-4 w-full" />
-             <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
           </CardContent>
         </Card>
       ))
@@ -67,7 +67,7 @@ export function FeaturedCompaniesSection({
 
     return vipCompanies.map((company, index) => {
       const tier = tiers[index] ?? 'silver'
-      
+
       const tierStyles = {
         diamond: 'border-cyan-200 bg-cyan-50/50 dark:border-cyan-800 dark:bg-cyan-950/20 shadow-cyan-100/50',
         gold: 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 shadow-amber-100/50',
@@ -78,80 +78,80 @@ export function FeaturedCompaniesSection({
         <Card
           key={company.id}
           className={cn(
-             "group h-full cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
-             tierStyles[tier]
+            "group h-full cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+            tierStyles[tier]
           )}
           onClick={() => navigate(`/company/${company.id}`)}
         >
           <div className="p-6 flex flex-col h-full">
             {/* Header: Logo & Name */}
             <div className="flex items-start justify-between mb-4">
-               <div className="flex items-center gap-3">
-                   <div className="h-12 w-12 rounded-xl overflow-hidden border shadow-sm bg-white">
-                       <Image 
-                           src={company.logo ?? ''} 
-                           alt={company.name} 
-                           className="h-full w-full object-cover"
-                           objectFit="contain"
-                       />
-                   </div>
-                   <div>
-                       <h3 className="font-bold text-lg leading-none mb-1 group-hover:text-primary transition-colors">
-                           {company.name}
-                       </h3>
-                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                           <Icon icon="mdi:map-marker" className="h-3 w-3" />
-                           {company.location?.city || 'Tbilisi'}
-                       </div>
-                   </div>
-               </div>
-               {tier === 'diamond' && (
-                   <div className="bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-1.5 rounded-lg shadow-lg shadow-cyan-500/30">
-                       <Icon icon="mdi:diamond-stone" className="h-5 w-5" />
-                   </div>
-               )}
-               {tier === 'gold' && <Icon icon="mdi:trophy" className="h-6 w-6 text-amber-400 drop-shadow-sm" />}
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl overflow-hidden border shadow-sm bg-white">
+                  <Image
+                    src={company.logo ?? ''}
+                    alt={company.name}
+                    className="h-full w-full object-cover"
+                    objectFit="contain"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-none mb-1 group-hover:text-primary transition-colors">
+                    {company.name}
+                  </h3>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Icon icon="mdi:map-marker" className="h-3 w-3" />
+                    {company.location?.city || 'Tbilisi'}
+                  </div>
+                </div>
+              </div>
+              {tier === 'diamond' && (
+                <div className="bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-1.5 rounded-lg shadow-lg shadow-cyan-500/30">
+                  <Icon icon="mdi:diamond-stone" className="h-5 w-5" />
+                </div>
+              )}
+              {tier === 'gold' && <Icon icon="mdi:trophy" className="h-6 w-6 text-amber-400 drop-shadow-sm" />}
             </div>
 
             {/* Rating & Stats */}
             <div className="flex items-center gap-3 mb-4 bg-background/50 rounded-lg p-2 border border-border/50">
-                <div className="flex items-center gap-1.5">
-                   <span className="text-lg font-bold text-foreground">{company.rating}</span>
-                   <CompanyRating rating={company.rating} showValue={false} className="h-4" />
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <span className="text-xs text-muted-foreground">
-                    {company.reviewCount} {t('common.reviews')}
-                </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg font-bold text-foreground">{formatRating(company.rating)}</span>
+                <CompanyRating rating={company.rating} showValue={false} className="h-4" />
+              </div>
+              <div className="h-4 w-px bg-border" />
+              <span className="text-xs text-muted-foreground">
+                {company.reviewCount} {t('common.reviews')}
+              </span>
             </div>
 
             {/* Badges */}
             <div className="flex flex-wrap gap-2 mb-auto">
-                 {tier === 'diamond' && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-cyan-100/50 text-cyan-700 text-[10px] font-bold uppercase tracking-wider dark:bg-cyan-900/30 dark:text-cyan-300">
-                        Top Partner
-                    </span>
-                 )}
-                 <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
-                    Verified
-                 </span>
-                 {(company.services || []).slice(0, 2).map(service => (
-                     <span key={service} className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground text-[10px] font-medium">
-                        {service}
-                     </span>
-                 ))}
+              {tier === 'diamond' && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md bg-cyan-100/50 text-cyan-700 text-[10px] font-bold uppercase tracking-wider dark:bg-cyan-900/30 dark:text-cyan-300">
+                  Top Partner
+                </span>
+              )}
+              <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+                Verified
+              </span>
+              {(company.services || []).slice(0, 2).map(service => (
+                <span key={service} className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground text-[10px] font-medium">
+                  {service}
+                </span>
+              ))}
             </div>
 
             {/* Footer: Response Time */}
             <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                    <Icon icon="mdi:clock-check-outline" className="h-4 w-4" />
-                    <span>Quick Response</span>
-                </div>
-                <div className="flex items-center gap-1.5 group-hover:translate-x-1 transition-transform text-primary font-medium">
-                    View Profile
-                    <Icon icon="mdi:arrow-right" className="h-3.5 w-3.5" />
-                </div>
+              <div className="flex items-center gap-1.5">
+                <Icon icon="mdi:clock-check-outline" className="h-4 w-4" />
+                <span>Quick Response</span>
+              </div>
+              <div className="flex items-center gap-1.5 group-hover:translate-x-1 transition-transform text-primary font-medium">
+                View Profile
+                <Icon icon="mdi:arrow-right" className="h-3.5 w-3.5" />
+              </div>
             </div>
           </div>
         </Card>
