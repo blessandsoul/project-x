@@ -5,7 +5,7 @@ import { Icon } from '@iconify/react';
 import { Image } from '@/components/ui/image';
 
 import type { Company } from '@/types/api';
-import { cn } from '@/lib/utils';
+import { cn, formatRating } from '@/lib/utils';
 
 interface CompanyRowItemProps {
     company: Company;
@@ -92,7 +92,7 @@ export const CompanyRowItem = memo(({ company, className }: CompanyRowItemProps)
             <div className="flex items-center justify-center border-l border-slate-100 pl-2 md:pl-4 h-full">
                 <div className="flex items-center gap-1 md:gap-1.5 whitespace-nowrap">
                     <Icon icon="mdi:star" className="h-3 w-3 md:h-4 md:w-4 text-amber-400 fill-current" />
-                    <span className="font-semibold text-xs md:text-sm text-slate-700">{company.rating}</span>
+                    <span className="font-semibold text-xs md:text-sm text-slate-700">{formatRating(company.rating)}</span>
                     <span className="hidden md:inline text-xs text-slate-400">({company.reviewCount})</span>
                 </div>
             </div>

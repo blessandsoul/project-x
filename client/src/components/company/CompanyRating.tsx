@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { cn } from '@/lib/utils'
+import { cn, formatRating } from '@/lib/utils'
 
 interface CompanyRatingProps {
   rating: number
@@ -11,7 +11,7 @@ interface CompanyRatingProps {
 export function CompanyRating({ rating, size = 'sm', className, showValue = true }: CompanyRatingProps) {
   const iconSizeClass = size === 'md' ? 'h-5 w-5' : 'h-4 w-4'
   const textSizeClass = size === 'md' ? 'text-lg' : 'text-sm'
-  const formattedRating = Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
+  const formattedRating = formatRating(rating)
 
   return (
     <div className={cn('flex items-center', className)}>

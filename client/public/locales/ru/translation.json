@@ -1391,6 +1391,17 @@
       }
     }
   },
+  "reviews": {
+    "labels": {
+      "rating_perfect": "Идеально",
+      "rating_exceptional": "Исключительно",
+      "rating_excellent": "Отлично",
+      "rating_very_good": "Очень хорошо",
+      "rating_good": "Хорошо",
+      "rating_average": "Средне",
+      "rating_poor": "Плохо"
+    }
+  },
   "company_profile": {
     "back": "Назад",
     "favorites": {
@@ -1436,7 +1447,9 @@
       "empty": "Пока нет отзывов",
       "prev": "Назад",
       "next": "Вперёд",
-      "delete_confirm": "Вы уверены, что хотите удалить этот отзыв?"
+      "delete_confirm": "Вы уверены, что хотите удалить этот отзыв?",
+      "date_prefix": "Дата отзыва",
+      "response_from_company": "Ответ компании"
     },
     "contact_info": {
       "title": "Контактная информация"

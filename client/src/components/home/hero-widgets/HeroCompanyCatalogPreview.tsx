@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import { formatRating } from '@/lib/utils';
 
 export function CompanyListMock() {
   const companies = [
@@ -21,7 +22,7 @@ export function CompanyListMock() {
             <Icon icon="mdi:bell-outline" className="h-4 w-4" />
           </div>
         </div>
-        
+
         {/* Search Bar */}
         <div className="relative">
           <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -48,7 +49,7 @@ export function CompanyListMock() {
               <div className="flex items-center gap-2 text-xs text-slate-400">
                 <div className="flex items-center gap-0.5 text-amber-400">
                   <Icon icon="mdi:star" className="h-3 w-3" />
-                  <span className="font-medium">{company.rating}</span>
+                  <span className="font-medium">{formatRating(company.rating)}</span>
                 </div>
                 <span>•</span>
                 <span>{company.reviews} reviews</span>
@@ -57,7 +58,7 @@ export function CompanyListMock() {
             <Icon icon="mdi:chevron-right" className="h-5 w-5 text-slate-600 group-hover:text-slate-400" />
           </div>
         ))}
-        
+
         {/* Fade out at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
       </div>
