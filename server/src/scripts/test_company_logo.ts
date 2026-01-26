@@ -21,6 +21,7 @@ async function testLogo() {
     console.log('Slugs in DB:', rows);
     process.exit(0);
 
+    const slug = 'test-company';
     const initial = 'T';
     const svg = `<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="red"/><text x="50%" y="50%" font-size="200" fill="white">${initial}</text></svg>`;
     const buffer = await sharp(Buffer.from(svg)).png().toBuffer();

@@ -1398,6 +1398,17 @@
     "open": "გახსნა",
     "share": "გაზიარება"
   },
+  "reviews": {
+    "labels": {
+      "rating_perfect": "იდეალური",
+      "rating_exceptional": "გამორჩეული",
+      "rating_excellent": "შესანიშნავი",
+      "rating_very_good": "ძალიან კარგი",
+      "rating_good": "კარგი",
+      "rating_average": "საშუალო",
+      "rating_poor": "ცუდი"
+    }
+  },
   "company_profile": {
     "back": "უკან",
     "favorites": {
@@ -1443,7 +1454,9 @@
       "empty": "მიმოხილვები ჯერ არ არის",
       "prev": "წინა",
       "next": "შემდეგი",
-      "delete_confirm": "დარწმუნებული ხართ, რომ გსურთ მიმოხილვის წაშლა?"
+      "delete_confirm": "დარწმუნებული ხართ, რომ გსურთ მიმოხილვის წაშლა?",
+      "date_prefix": "შეფასების თარიღი",
+      "response_from_company": "კომპანიის პასუხი"
     },
     "contact_info": {
       "title": "საკონტაქტო ინფორმაცია"

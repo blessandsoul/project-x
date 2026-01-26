@@ -46,13 +46,13 @@ const georgianReplies = [
 ];
 
 function getRandomItem<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
 function shuffleArray<T>(array: T[]): T[] {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [array[i], array[j]] = [array[j]!, array[i]!];
     }
     return array;
 }
@@ -60,9 +60,9 @@ function shuffleArray<T>(array: T[]): T[] {
 async function run() {
     const connection = await mysql.createConnection({
         host: process.env.MYSQL_HOST || '127.0.0.1',
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
+        user: process.env.MYSQL_USER!,
+        password: process.env.MYSQL_PASSWORD!,
+        database: process.env.MYSQL_DATABASE!,
     });
 
     try {
