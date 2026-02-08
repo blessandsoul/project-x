@@ -50,7 +50,7 @@ export function CopartHeroSection() {
 
   return (
     <section
-      className="relative min-h-screen overflow-hidden"
+      className="relative min-h-screen overflow-x-hidden lg:overflow-hidden"
       role="banner"
       aria-labelledby="home-copart-hero-heading"
       style={{
